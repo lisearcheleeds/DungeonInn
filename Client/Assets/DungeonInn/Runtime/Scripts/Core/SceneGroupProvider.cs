@@ -14,15 +14,24 @@ namespace DungeonInn.Runtime.Scripts.Core
             DungeonInnModuleSceneId.ScreenStack
         };
 
+        static readonly ModuleSceneId[] GameSceneModules =
+        {
+            DungeonInnModuleSceneId.WorldRenderModule,
+            DungeonInnModuleSceneId.UIModule,
+            DungeonInnModuleSceneId.CameraModule,
+        };
+
         static readonly IReadOnlyDictionary<MainSceneId, ModuleSceneId[]> SceneModuleMap =
             new Dictionary<MainSceneId, ModuleSceneId[]>
             {
                 { DungeonInnMainSceneId.FirstScene, null },
+                { DungeonInnMainSceneId.GameScene, GameSceneModules },
             };
 
         static readonly MainSceneId[][] MainSceneGroupList =
         {
             new[] { DungeonInnMainSceneId.FirstScene },
+            new[] { DungeonInnMainSceneId.GameScene },
         };
 
         static readonly SceneGroup[] SceneGroupList = CreateSceneGroups();

@@ -1,5 +1,5 @@
 using Cysharp.Threading.Tasks;
-using DungeonInn.Runtime.Scripts.View.Scene.MainScene.QuickFirst;
+using DungeonInn.Runtime.Scripts.View.Scene.MainScene.Game;
 using Lighthouse.Scene;
 using UnityEngine;
 using VContainer;
@@ -54,7 +54,7 @@ namespace DungeonInn.Runtime.Scripts.Core
         {
             UniTask.Void(async () =>
             {
-                await sceneManager.TransitionScene(new FirstSceneScene.QuickFirstTransitionData());
+                await sceneManager.TransitionScene(new GameScene.GameTransitionData());
 
                 if (!string.IsNullOrEmpty(UnityEngine.SceneManagement.SceneManager.GetSceneByName(LauncherSceneName).name))
                 {
