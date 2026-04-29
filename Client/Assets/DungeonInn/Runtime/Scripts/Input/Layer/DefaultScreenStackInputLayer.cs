@@ -1,6 +1,6 @@
 using System;
+using DungeonInn.Input;
 using LighthouseExtends.InputLayer;
-using SampleProduct.Input;
 using UnityEngine.InputSystem;
 
 namespace DungeonInn.Runtime.Scripts.Input.Layer

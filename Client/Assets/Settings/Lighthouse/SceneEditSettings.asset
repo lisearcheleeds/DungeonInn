@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: SceneEditSettings
   m_EditorClassIdentifier: Lighthouse.Editor::Lighthouse.Editor.ScriptableObject.SceneEditSettings
   enableSceneEditProcess: 1
-  canvasSceneEditorOnlyObject: {fileID: 0}
+  canvasSceneEditorOnlyObject: {fileID: 8387603837051107844, guid: 663607290645fd641a6fc45032e29e62, type: 3}
   editorOnlyObjectName: __EditorOnly__

@@ -6,13 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/DungeonInnProduct/Runtime/Scene/Launcher.unity
+    path: Assets/DungeonInn/Runtime/Scene/Launcher.unity
     guid: 54370f34dae6d2b41a27fb229c33dee8
   - enabled: 1
-    path: Assets/DungeonInnProduct/Runtime/Scene/MainScene/FirstScene.unity
+    path: Assets/DungeonInn/Runtime/Scene/MainScene/FirstScene.unity
     guid: 417b1809f7d55864c9f9d3da29df8340
   - enabled: 1
-    path: Assets/DungeonInnProduct/Runtime/Scene/ModuleScene/ScreenStack.unity
+    path: Assets/DungeonInn/Runtime/Scene/ModuleScene/ScreenStack.unity
     guid: 5afa4d0be71c43440ad57b749e93ffa2
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

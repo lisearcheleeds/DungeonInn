@@ -1,3 +1,4 @@
+using DungeonInn.Input;
 using DungeonInn.Runtime.Scripts.Infrastructure.AssetLoader;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneCamera;
@@ -9,7 +10,6 @@ using LighthouseExtends.TextTable;
 using LighthouseExtends.UIComponent.CanvasSceneObject;
 using LighthouseExtends.UIComponent.ExclusiveInput;
 using LighthouseExtends.UIComponent.InputBlocker;
-using SampleProduct.Input;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VContainer;

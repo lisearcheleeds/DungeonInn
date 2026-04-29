@@ -1,8 +1,8 @@
 using Cysharp.Threading.Tasks;
+using DungeonInn.Input;
 using LighthouseExtends.Animation;
 using LighthouseExtends.InputLayer;
 using LighthouseExtends.ScreenStack;
-using SampleProduct.Input;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VContainer;

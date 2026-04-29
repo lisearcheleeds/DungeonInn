@@ -1,11 +1,11 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Input;
 using DungeonInn.Runtime.Scripts.Core;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneBase;
 using LighthouseExtends.Animation;
 using LighthouseExtends.InputLayer;
-using SampleProduct.Input;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VContainer;
