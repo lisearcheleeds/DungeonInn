@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: LighthouseExtends.ScreenStack.Editor::LighthouseExtends.ScreenStack.Editor.ScriptableObject.ScreenStackGenerateSettings
   screenStackEntityFactoryDirectoryAsset: {fileID: 102900000, guid: 420c8e3f373889f44b334ff6cab545d5, type: 3}
   screenStackEntityFactoryClassName: ScreenStackEntityFactory
-  screenStackEntityFactoryNamespace: YourProduct
+  screenStackEntityFactoryNamespace: DungeonInn
   screenStackEntityFactoryTemplate: {fileID: 4900000, guid: 92696567377dffb4b8a91a147196bcaa, type: 3}
   screenStackDialogScriptOutputDirectoryAsset: {fileID: 102900000, guid: c5c2f3f6abaef3e4ea6d4af556d3c4f0, type: 3}
-  screenStackDialogScriptNamespace: YourProduct
+  screenStackDialogScriptNamespace: DungeonInn
   screenStackScriptTemplates:
   - {fileID: 11400000, guid: daf1342a90e36cd408a59214cd63a223, type: 2}
