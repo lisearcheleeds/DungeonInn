@@ -1,0 +1,30 @@
+{
+    "name": "SampleProduct.Runtime",
+    "rootNamespace": "",
+    "references": [
+        "Lighthouse.Runtime",
+        "LighthouseExtends.InputLayer.Runtime",
+        "Unity.InputSystem",
+        "LighthouseExtends.Font.Runtime",
+        "LighthouseExtends.Language.Runtime",
+        "LighthouseExtends.Animation.Runtime",
+        "LighthouseExtends.ScreenStack.Runtime",
+        "LighthouseExtends.UIComponent.Runtime",
+        "LighthouseExtends.TextTable.Runtime",
+        "UniTask",
+        "R3.Unity",
+        "VContainer",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "LighthouseExtends.TextMeshPro.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

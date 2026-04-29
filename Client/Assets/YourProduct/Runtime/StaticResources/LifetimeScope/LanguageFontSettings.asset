@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afa7c562de8558447a131a55082a876e, type: 3}
+  m_Name: LanguageFontSettings
+  m_EditorClassIdentifier: LighthouseExtends.Font.Runtime::LighthouseExtends.Font.LanguageFontSettings
+  entries:
+  - languageCode: ja
+    fontAsset: {fileID: 11400000, guid: 47d19175fae931641a776c994c1e67dd, type: 2}
+  - languageCode: ko
+    fontAsset: {fileID: 11400000, guid: 2e0bca689d430b947bceec2dd5a51c4d, type: 2}
+  - languageCode: zh
+    fontAsset: {fileID: 11400000, guid: 5c7c9065ae342034b9418dc89d293573, type: 2}
+  defaultFont: {fileID: 11400000, guid: 47d19175fae931641a776c994c1e67dd, type: 2}
