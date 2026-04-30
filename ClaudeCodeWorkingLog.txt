@@ -1,0 +1,25 @@
+2026-04-30 08:55 [START] Phase4 動作確認セッション開始
+2026-04-30 08:55 [OK] コンパイル 0エラー 0警告 確認済み
+2026-04-30 08:55 [OK] [ProductEntryPoint] Launch complete ログ確認 → 遷移成功
+2026-04-30 08:55 [OK] Hierarchy確認: GameScene/ScreenStack/WorldRenderModule/UIModule/CameraModule/DontDestroyOnLoad
+2026-04-30 08:55 [FIX] QuaternionToEuler エラー → CameraModule.unity MainCamera quaternion 0.3827/0.9239 → 0.38268343/0.9238795 に修正
+2026-04-30 08:55 [FIX] FreeCamera.cs HandleRotation末尾に transform.rotation.normalized 追加（float蓄積誤差対策）
+2026-04-30 08:55 [OK] QuaternionToEuler エラー解消確認
+2026-04-30 08:55 [INFO] Camera Priority -1→0 ユーザー変更 → WorldRenderModule表示されるようになった
+2026-04-30 08:55 [ISSUE] ライト不在 → WorldRenderModule が暗い
+2026-04-30 08:55 [ISSUE] HUDCanvas RenderMode=ScreenSpace-Camera、SceneCamera参照 → UI Text非表示
+2026-04-30 08:55 [START] 調査: SceneCanvasInitializer / SceneCameraManager のUICamera仕組みを確認
+2026-04-30 09:10 [FOUND] SceneCameraManager.UpdateCameraStack() は MainScene.GetSceneCameraList() + UICamera のみ使用。ModuleScene カメラは取得しない
+2026-04-30 09:10 [FOUND] GameScene.GetSceneCameraList() 未オーバーライド → 空配列 → UICamera だけが Lighthouse スタックに入り Base カメラになる
+2026-04-30 09:10 [FOUND] FreeCamera も Base(depth0) → 両 Base が競合、後描画の FreeCamera が Canvas を上書き → UI非表示
+2026-04-30 09:10 [FIX] GameScene.cs に GetSceneCameraList() オーバーライド追加 → FindFirstObjectByType<CameraModuleScene>() で Camera3D を返す
+2026-04-30 09:10 [FIX] WorldRenderModule.unity に Directional Light 追加 (rotation 50,-30,0 / Realtime)
+2026-04-30 09:10 [FIX] ProductEntryPoint.cs のデバッグログ削除
+2026-04-30 09:10 [OK] コンパイル 0エラー 0警告
+2026-04-30 09:20 [FIX] GameScene.cs GetSceneCameraList() → FindFirstObjectByType に FindObjectsInactive.Include 追加（EnterSceneStep並列実行中に非アクティブなCameraModuleSceneを検索できなかった問題の修正）
+2026-04-30 09:20 [OK] コンパイル 0エラー 0警告 確認済み
+2026-04-30 21:00 [ISSUE] グレー画面：SceneCameraManager が Base camera の depth を常に 0 にハードコード。URP では depth>=1 が必要な模様（ユーザー確認: Priority 0→1 で解消）
+2026-04-30 21:00 [FIX] GameScene.cs に Camera3DDepthWrapper (ISceneCamera) を追加 → SetupCamera で depth=1 を強制
+2026-04-30 21:00 [FIX] DungeonInn.Runtime.asmdef に Unity.RenderPipelines.Universal.Runtime 参照追加
+2026-04-30 21:00 [OK] コンパイル 0エラー 0警告 確認済み
+2026-04-30 21:00 [OK] スクリーンショット確認: 3Dワールド（緑床）表示 / HUD（Day 1 06:00 / Gold: 0）表示 / コンソールエラー 0件

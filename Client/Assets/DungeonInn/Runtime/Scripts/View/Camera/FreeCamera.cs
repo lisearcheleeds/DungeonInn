@@ -63,6 +63,7 @@ namespace DungeonInn.Runtime.Scripts.View.Camera
             euler.x = Mathf.Clamp(newPitch, -80f, 80f);
 
             transform.eulerAngles = euler;
+            transform.rotation = transform.rotation.normalized;
         }
     }
 }

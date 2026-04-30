@@ -1,0 +1,1953 @@
+{
+  "ExportTimestamp": "2026-04-30 22:00:07",
+  "Context": {
+    "sceneType": "runtime",
+    "sceneName": "Multiple(6): GameScene, ScreenStack, WorldRenderModule, UIModule, CameraModule, DontDestroyOnLoad",
+    "nodeCount": 133,
+    "maxDepth": 4
+  },
+  "Hierarchy": [
+    {
+      "sceneName": "GameScene",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 1,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "GameScene",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHSceneTransitionAnimatorManager",
+            "GameLifetimeScope",
+            "GameScene"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "sceneName": "ScreenStack",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 4,
+        "maxDepth": 2
+      },
+      "roots": [
+        {
+          "name": "ScreenStackScene",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHSceneTransitionAnimatorManager",
+            "CanvasGroup",
+            "SceneCanvasInitializer",
+            "ScreenStackCanvasController",
+            "ScreenStackLifetimeScope",
+            "ScreenStackModuleScene"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "Canvas",
+              "isActive": true,
+              "components": [
+                "RectTransform",
+                "Canvas",
+                "CanvasScaler",
+                "GraphicRaycaster"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 5,
+              "children": [
+                {
+                  "name": "ScreenStackBackgroundInputBlocker(Clone)",
+                  "isActive": false,
+                  "components": [
+                    "RectTransform",
+                    "CanvasRenderer",
+                    "LHRaycastTargetObject",
+                    "ScreenStackBackgroundInputBlocker"
+                  ],
+                  "siblingIndex": 0,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "SystemCanvas",
+              "isActive": true,
+              "components": [
+                "RectTransform",
+                "Canvas",
+                "CanvasScaler",
+                "GraphicRaycaster"
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 5,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sceneName": "WorldRenderModule",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 99,
+        "maxDepth": 2
+      },
+      "componentsLut": [
+        "Transform",
+        "LHSceneTransitionAnimatorManager",
+        "WorldRenderLifetimeScope",
+        "WorldRenderModuleScene",
+        "WorldRenderer",
+        "MeshFilter",
+        "MeshRenderer",
+        "GridChunk",
+        "Light",
+        "UniversalAdditionalLightData"
+      ],
+      "roots": [
+        {
+          "name": "WorldRenderModuleScene",
+          "isActive": true,
+          "componentsIdx": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "WorldRenderer",
+              "isActive": true,
+              "componentsIdx": [
+                0,
+                4
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": [
+                {
+                  "name": "Chunk_F0_0_0",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 0,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_0_1",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 1,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_0_2",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 2,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_0_3",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 3,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_1_0",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 4,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_1_1",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 5,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_1_2",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 6,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_1_3",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 7,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_2_0",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 8,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_2_1",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 9,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_2_2",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 10,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_2_3",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 11,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_3_0",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 12,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_3_1",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 13,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_3_2",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 14,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F0_3_3",
+                  "isActive": true,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 15,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_0_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 16,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_0_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 17,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_0_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 18,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_0_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 19,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_1_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 20,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_1_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 21,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_1_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 22,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_1_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 23,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_2_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 24,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_2_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 25,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_2_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 26,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_2_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 27,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_3_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 28,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_3_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 29,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_3_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 30,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F1_3_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 31,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_0_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 32,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_0_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 33,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_0_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 34,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_0_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 35,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_1_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 36,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_1_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 37,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_1_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 38,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_1_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 39,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_2_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 40,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_2_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 41,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_2_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 42,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_2_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 43,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_3_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 44,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_3_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 45,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_3_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 46,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F2_3_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 47,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_0_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 48,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_0_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 49,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_0_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 50,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_0_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 51,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_1_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 52,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_1_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 53,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_1_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 54,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_1_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 55,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_2_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 56,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_2_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 57,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_2_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 58,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_2_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 59,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_3_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 60,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_3_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 61,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_3_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 62,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F3_3_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 63,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_0_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 64,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_0_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 65,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_0_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 66,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_0_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 67,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_1_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 68,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_1_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 69,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_1_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 70,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_1_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 71,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_2_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 72,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_2_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 73,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_2_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 74,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_2_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 75,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_3_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 76,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_3_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 77,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_3_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 78,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F4_3_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 79,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_0_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 80,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_0_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 81,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_0_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 82,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_0_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 83,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_1_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 84,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_1_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 85,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_1_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 86,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_1_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 87,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_2_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 88,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_2_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 89,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_2_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 90,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_2_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 91,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_3_0",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 92,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_3_1",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 93,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_3_2",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 94,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                },
+                {
+                  "name": "Chunk_F5_3_3",
+                  "isActive": false,
+                  "componentsIdx": [
+                    0,
+                    5,
+                    6,
+                    7
+                  ],
+                  "siblingIndex": 95,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "Directional Light",
+              "isActive": true,
+              "componentsIdx": [
+                0,
+                8,
+                9
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sceneName": "UIModule",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 18,
+        "maxDepth": 4
+      },
+      "componentsLut": [
+        "Transform",
+        "CanvasGroup",
+        "SceneCanvasInitializer",
+        "LHSceneTransitionAnimatorManager",
+        "UIModuleLifetimeScope",
+        "UIModuleScene",
+        "RectTransform",
+        "Canvas",
+        "CanvasScaler",
+        "GraphicRaycaster",
+        "FloorSwitcherView",
+        "CanvasRenderer",
+        "Button",
+        "TextMeshProUGUI",
+        "HudView"
+      ],
+      "roots": [
+        {
+          "name": "UIModuleScene",
+          "isActive": true,
+          "componentsIdx": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "HUDCanvas",
+              "isActive": true,
+              "componentsIdx": [
+                6,
+                7,
+                8,
+                9
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 5,
+              "children": [
+                {
+                  "name": "FloorSwitcher",
+                  "isActive": true,
+                  "componentsIdx": [
+                    6,
+                    10
+                  ],
+                  "siblingIndex": 0,
+                  "tag": "Untagged",
+                  "layer": 5,
+                  "children": [
+                    {
+                      "name": "Btn_Ground",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        11,
+                        12
+                      ],
+                      "siblingIndex": 0,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": [
+                        {
+                          "name": "Label",
+                          "isActive": true,
+                          "componentsIdx": [
+                            6,
+                            11,
+                            13
+                          ],
+                          "siblingIndex": 0,
+                          "tag": "Untagged",
+                          "layer": 5,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Btn_B1F",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        11,
+                        12
+                      ],
+                      "siblingIndex": 1,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": [
+                        {
+                          "name": "Label",
+                          "isActive": true,
+                          "componentsIdx": [
+                            6,
+                            11,
+                            13
+                          ],
+                          "siblingIndex": 0,
+                          "tag": "Untagged",
+                          "layer": 5,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Btn_B2F",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        11,
+                        12
+                      ],
+                      "siblingIndex": 2,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": [
+                        {
+                          "name": "Label",
+                          "isActive": true,
+                          "componentsIdx": [
+                            6,
+                            11,
+                            13
+                          ],
+                          "siblingIndex": 0,
+                          "tag": "Untagged",
+                          "layer": 5,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Btn_B3F",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        11,
+                        12
+                      ],
+                      "siblingIndex": 3,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": [
+                        {
+                          "name": "Label",
+                          "isActive": true,
+                          "componentsIdx": [
+                            6,
+                            11,
+                            13
+                          ],
+                          "siblingIndex": 0,
+                          "tag": "Untagged",
+                          "layer": 5,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Btn_B4F",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        11,
+                        12
+                      ],
+                      "siblingIndex": 4,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": [
+                        {
+                          "name": "Label",
+                          "isActive": true,
+                          "componentsIdx": [
+                            6,
+                            11,
+                            13
+                          ],
+                          "siblingIndex": 0,
+                          "tag": "Untagged",
+                          "layer": 5,
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Btn_B5F",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        11,
+                        12
+                      ],
+                      "siblingIndex": 5,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": [
+                        {
+                          "name": "Label",
+                          "isActive": true,
+                          "componentsIdx": [
+                            6,
+                            11,
+                            13
+                          ],
+                          "siblingIndex": 0,
+                          "tag": "Untagged",
+                          "layer": 5,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "HUD",
+                  "isActive": true,
+                  "componentsIdx": [
+                    6,
+                    14
+                  ],
+                  "siblingIndex": 1,
+                  "tag": "Untagged",
+                  "layer": 5,
+                  "children": [
+                    {
+                      "name": "TimeLabel",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        11,
+                        13
+                      ],
+                      "siblingIndex": 0,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": []
+                    },
+                    {
+                      "name": "GoldLabel",
+                      "isActive": true,
+                      "componentsIdx": [
+                        6,
+                        13,
+                        11
+                      ],
+                      "siblingIndex": 1,
+                      "tag": "Untagged",
+                      "layer": 5,
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sceneName": "CameraModule",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 2,
+        "maxDepth": 1
+      },
+      "roots": [
+        {
+          "name": "CameraModuleScene",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHSceneTransitionAnimatorManager",
+            "CameraModuleLifetimeScope",
+            "CameraModuleScene"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "MainCamera",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Camera",
+                "SceneCamera",
+                "FreeCamera",
+                "UniversalAdditionalCameraData"
+              ],
+              "siblingIndex": 0,
+              "tag": "MainCamera",
+              "layer": 0,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sceneName": "DontDestroyOnLoad",
+      "stats": {
+        "rootCount": 5,
+        "nodeCount": 9,
+        "maxDepth": 2
+      },
+      "roots": [
+        {
+          "name": "RootLifetimeScope(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "RootLifetimeScope"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        },
+        {
+          "name": "[Debug Updater]",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "DebugUpdater"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        },
+        {
+          "name": "CanvasSceneObject(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHCanvasSceneObject"
+          ],
+          "siblingIndex": 2,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "EventSystem",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "EventSystem",
+                "InputSystemUIInputModule"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": []
+            },
+            {
+              "name": "SceneCamera",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Camera",
+                "SceneCamera",
+                "UniversalAdditionalCameraData"
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "InputBlocker(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHInputBlocker"
+          ],
+          "siblingIndex": 3,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "Canvas",
+              "isActive": true,
+              "components": [
+                "RectTransform",
+                "Canvas",
+                "CanvasScaler",
+                "GraphicRaycaster"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": [
+                {
+                  "name": "Blocker",
+                  "isActive": false,
+                  "components": [
+                    "RectTransform",
+                    "CanvasRenderer",
+                    "Image"
+                  ],
+                  "siblingIndex": 0,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ProductLifetimeScope(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "ProductLifetimeScope"
+          ],
+          "siblingIndex": 4,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

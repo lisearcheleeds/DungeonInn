@@ -1,0 +1,32 @@
+{
+  "ExportTimestamp": "2026-04-30 20:46:39",
+  "Context": {
+    "sceneType": "editor",
+    "sceneName": "Launcher",
+    "nodeCount": 1,
+    "maxDepth": 0
+  },
+  "Hierarchy": [
+    {
+      "sceneName": "Launcher",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 1,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "See_ProductEntryPoint",
+          "isActive": true,
+          "components": [
+            "Transform"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

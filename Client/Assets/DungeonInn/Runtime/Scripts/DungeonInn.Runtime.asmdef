@@ -16,7 +16,8 @@
         "VContainer",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
-        "LighthouseExtends.TextMeshPro.Runtime"
+        "LighthouseExtends.TextMeshPro.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

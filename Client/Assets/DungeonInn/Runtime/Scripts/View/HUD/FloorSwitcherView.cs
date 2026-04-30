@@ -15,7 +15,7 @@ namespace DungeonInn.Runtime.Scripts.View.HUD
 
         void Start()
         {
-            worldRenderer = Object.FindObjectOfType<WorldRenderer>();
+            worldRenderer = Object.FindFirstObjectByType<WorldRenderer>();
 
             for (int i = 0; i < floorButtons.Length; i++)
             {
