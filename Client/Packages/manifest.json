@@ -2,6 +2,7 @@
   "dependencies": {
     "com.cysharp.r3": "1.3.0",
     "com.cysharp.unitask": "2.5.10",
+    "io.github.hatayama.uloopmcp": "https://github.com/hatayama/unity-cli-loop.git?path=/Packages/src",
     "com.lisearcheleeds.lighthouse": "https://github.com/lisearcheleeds/Lighthouse.git?path=Client/Assets/Lighthouse",
     "com.lisearcheleeds.lighthouse-extends.addressable": "https://github.com/lisearcheleeds/Lighthouse.git?path=Client/Assets/LighthouseExtends/Addressable",
     "com.lisearcheleeds.lighthouse-extends.animation": "https://github.com/lisearcheleeds/Lighthouse.git?path=Client/Assets/LighthouseExtends/Animation",
