@@ -1,0 +1,25 @@
+2026-05-01 00:00 [START] プロジェクト開始・spec.md確認
+2026-05-01 00:00 [OK] シーン構成確定: Gameplay+DungeonをWorldに統合、LauncherシーンをBoot代わりに再利用、FirstScene削除方針決定
+2026-05-01 00:00 [OK] spec.md セクション7 シーン構成を更新
+2026-05-01 23:18 [OK] docs/domain-design.md 作成（Clean Architecture設計・全ドメインエンティティ・AI方針）
+2026-05-01 23:18 [OK] domain-design.md 更新: struct/class方針明記・Inn ドメイン再設計（土地購入=Room自動生成・ドア開放・ベッド所持数管理）
+2026-05-01 23:18 [OK] docs/master-data.md 作成（ConfigData/ScriptableObject 2層構造・Addressables設定・デフォルト値）
+2026-05-02 00:57 [OK] task_001 Domain/Infrastructure base implementation, uloop.cmd compile error 0 warning 0
+2026-05-02 01:10 [OK] task_002 Lighthouse scene structure updated to Launcher -> World + ScreenStack + HUD, compile error 0 warning 0
+2026-05-02 [OK] task_001 ClaudeCode review: approved (Domain/Infrastructure 全ファイル確認)
+2026-05-02 [OK] task_002 ClaudeCode review: approved (WorldScene/HudModuleScene/Launcher/SceneId/SceneGroup 確認)
+2026-05-02 08:02 [OK] task_003 Config repositories switched to IAssetManager scope cache, DI/eager load added, SO assets and Addressables entries created, compile error 0 warning 0
+2026-05-02 [OK] task_003 ClaudeCode review: approved (Repository/ProductLifetimeScope/Launcher/SO assets 全確認)
+2026-05-02 01:06 [START] task_011: UseCase実装をCodexにディスパッチ
+2026-05-02 01:06 [INFO] task_011.md, task_012.md 作成完了
+2026-05-02 01:06 [INFO] UseCase stub 6ファイル作成: Application/UseCase/
+2026-05-02 01:06 [INFO] AI shell作成: DefaultAdventurerAI.cs, IAdventurerAI.cs, IAdventurerAIState.cs
+2026-05-02 01:11 [OK] task_011: UseCase実装完了。コンパイル成功
+2026-05-02 01:11 [INFO] IAdventurerAIStateをinternalからpublicに変更(Codex)
+2026-05-02 01:11 [START] task_012: AI実装をCodexにディスパッチ
+2026-05-03 01:15 [OK] task_012: AI実装完了。コンパイル成功
+2026-05-03 09:36 [OK] docs/coding-rules.md 作成: Riderルールを包括的にmd化
+2026-05-03 09:36 [OK] .editorconfig にC#コーディングルールを追記
+2026-05-03 09:36 [OK] AGENTS.md / CLAUDE.md に coding-rules.md への参照を追加
+2026-05-03 11:47 [OK] lighthouse-patterns.md に禁止事項・シーン責務・チェックリスト・遷移シーケンスを統合
+2026-05-03 11:47 [OK] CLAUDE.md / AGENTS.md をスリム化し、docs/ への参照に統一

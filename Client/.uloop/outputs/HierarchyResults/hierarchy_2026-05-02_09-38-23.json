@@ -1,0 +1,183 @@
+{
+  "ExportTimestamp": "2026-05-02 09:38:23",
+  "Context": {
+    "sceneType": "runtime",
+    "sceneName": "Multiple(3): Launcher, World, DontDestroyOnLoad",
+    "nodeCount": 11,
+    "maxDepth": 1
+  },
+  "Hierarchy": [
+    {
+      "sceneName": "Launcher",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 1,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "RootLifetimeScope",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "RootLifetimeScope"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "sceneName": "World",
+      "stats": {
+        "rootCount": 2,
+        "nodeCount": 2,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "WorldScene",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHSceneTransitionAnimatorManager",
+            "CanvasGroup",
+            "SceneCanvasInitializer",
+            "WorldScene"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        },
+        {
+          "name": "WorldLifetimeScope",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "WorldLifetimeScope"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "sceneName": "DontDestroyOnLoad",
+      "stats": {
+        "rootCount": 5,
+        "nodeCount": 8,
+        "maxDepth": 1
+      },
+      "roots": [
+        {
+          "name": "[Debug Updater]",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "DebugUpdater"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        },
+        {
+          "name": "CanvasSceneObject(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHCanvasSceneObject"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "EventSystem",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "EventSystem",
+                "InputSystemUIInputModule"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": []
+            },
+            {
+              "name": "SceneCamera",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Camera",
+                "SceneCamera",
+                "UniversalAdditionalCameraData"
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "InputBlocker(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHInputBlocker"
+          ],
+          "siblingIndex": 2,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": [
+            {
+              "name": "Canvas",
+              "isActive": true,
+              "components": [
+                "RectTransform",
+                "Canvas",
+                "CanvasScaler",
+                "GraphicRaycaster"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "ProductLifetimeScope(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "ProductLifetimeScope"
+          ],
+          "siblingIndex": 3,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        },
+        {
+          "name": "DelayedActionManager",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "DelayedActionManager"
+          ],
+          "siblingIndex": 4,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

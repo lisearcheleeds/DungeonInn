@@ -1,6 +1,6 @@
 using System;
+using LighthouseExtends.UIComponent.Button;
 using R3;
-using UnityEngine.UI;
 
 namespace DungeonInn.Runtime.Scripts.Extensions
 {
@@ -8,7 +8,7 @@ namespace DungeonInn.Runtime.Scripts.Extensions
     {
         static readonly TimeSpan DefaultClickInterval = TimeSpan.FromMilliseconds(300);
 
-        public static IDisposable SubscribeOnClick(this Button button, Action onClick)
+        public static IDisposable SubscribeOnClick(this LHButton button, Action onClick)
         {
             return button.OnClickAsObservable()
                 .Where(_ => button != null)

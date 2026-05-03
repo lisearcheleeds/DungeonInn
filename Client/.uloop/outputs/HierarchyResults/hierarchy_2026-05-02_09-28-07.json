@@ -1,0 +1,309 @@
+{
+  "ExportTimestamp": "2026-05-02 09:28:07",
+  "Context": {
+    "sceneType": "runtime",
+    "sceneName": "Multiple(5): Launcher, World, ScreenStack, HUD, DontDestroyOnLoad",
+    "nodeCount": 17,
+    "maxDepth": 2
+  },
+  "Hierarchy": [
+    {
+      "sceneName": "Launcher",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 1,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "RootLifetimeScope",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "RootLifetimeScope"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "RootLifetimeScope",
+          "children": []
+        }
+      ]
+    },
+    {
+      "sceneName": "World",
+      "stats": {
+        "rootCount": 2,
+        "nodeCount": 2,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "WorldScene",
+          "isActive": false,
+          "components": [
+            "Transform",
+            "LHSceneTransitionAnimatorManager",
+            "CanvasGroup",
+            "SceneCanvasInitializer",
+            "WorldScene"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "WorldScene",
+          "children": []
+        },
+        {
+          "name": "WorldLifetimeScope",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "WorldLifetimeScope"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "WorldLifetimeScope",
+          "children": []
+        }
+      ]
+    },
+    {
+      "sceneName": "ScreenStack",
+      "stats": {
+        "rootCount": 2,
+        "nodeCount": 4,
+        "maxDepth": 1
+      },
+      "roots": [
+        {
+          "name": "ScreenStackScene",
+          "isActive": false,
+          "components": [
+            "Transform",
+            "LHSceneTransitionAnimatorManager",
+            "CanvasGroup",
+            "SceneCanvasInitializer",
+            "ScreenStackCanvasController",
+            "ScreenStackLifetimeScope",
+            "ScreenStackModuleScene"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "ScreenStackScene",
+          "children": [
+            {
+              "name": "Canvas",
+              "isActive": true,
+              "components": [
+                "RectTransform",
+                "Canvas",
+                "CanvasScaler",
+                "GraphicRaycaster"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 5,
+              "path": "ScreenStackScene/Canvas",
+              "children": []
+            },
+            {
+              "name": "SystemCanvas",
+              "isActive": true,
+              "components": [
+                "RectTransform",
+                "Canvas",
+                "CanvasScaler",
+                "GraphicRaycaster"
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 5,
+              "path": "ScreenStackScene/SystemCanvas",
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "ScreenStackBackgroundInputBlocker(Clone)",
+          "isActive": true,
+          "components": [
+            "RectTransform",
+            "CanvasRenderer",
+            "LHRaycastTargetObject",
+            "ScreenStackBackgroundInputBlocker"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "ScreenStackBackgroundInputBlocker(Clone)",
+          "children": []
+        }
+      ]
+    },
+    {
+      "sceneName": "HUD",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 1,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "HudModuleScene",
+          "isActive": false,
+          "components": [
+            "Transform",
+            "LHSceneTransitionAnimatorManager",
+            "CanvasGroup",
+            "SceneCanvasInitializer",
+            "HudModuleScene"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "HudModuleScene",
+          "children": []
+        }
+      ]
+    },
+    {
+      "sceneName": "DontDestroyOnLoad",
+      "stats": {
+        "rootCount": 5,
+        "nodeCount": 9,
+        "maxDepth": 2
+      },
+      "roots": [
+        {
+          "name": "[Debug Updater]",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "DebugUpdater"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "[Debug Updater]",
+          "children": []
+        },
+        {
+          "name": "CanvasSceneObject(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHCanvasSceneObject"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "CanvasSceneObject(Clone)",
+          "children": [
+            {
+              "name": "EventSystem",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "EventSystem",
+                "InputSystemUIInputModule"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "CanvasSceneObject(Clone)/EventSystem",
+              "children": []
+            },
+            {
+              "name": "SceneCamera",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Camera",
+                "SceneCamera",
+                "UniversalAdditionalCameraData"
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "CanvasSceneObject(Clone)/SceneCamera",
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "InputBlocker(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "LHInputBlocker"
+          ],
+          "siblingIndex": 2,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "InputBlocker(Clone)",
+          "children": [
+            {
+              "name": "Canvas",
+              "isActive": true,
+              "components": [
+                "RectTransform",
+                "Canvas",
+                "CanvasScaler",
+                "GraphicRaycaster"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "InputBlocker(Clone)/Canvas",
+              "children": [
+                {
+                  "name": "Blocker",
+                  "isActive": false,
+                  "components": [
+                    "RectTransform",
+                    "CanvasRenderer",
+                    "Image"
+                  ],
+                  "siblingIndex": 0,
+                  "tag": "Untagged",
+                  "layer": 0,
+                  "path": "InputBlocker(Clone)/Canvas/Blocker",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ProductLifetimeScope(Clone)",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "ProductLifetimeScope"
+          ],
+          "siblingIndex": 3,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "ProductLifetimeScope(Clone)",
+          "children": []
+        },
+        {
+          "name": "DelayedActionManager",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "DelayedActionManager"
+          ],
+          "siblingIndex": 4,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "DelayedActionManager",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

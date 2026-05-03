@@ -12,6 +12,7 @@ namespace DungeonInn.LighthouseGenerated
     {
         public static readonly ModuleSceneId None = new ModuleSceneId(1, string.Empty);
         public static readonly ModuleSceneId ScreenStack = new ModuleSceneId(2, "ScreenStack");
+        public static readonly ModuleSceneId HUD = new ModuleSceneId(3, "HUD");
 
         public static ReadOnlySpan<ModuleSceneId> All
         {
@@ -21,6 +22,7 @@ namespace DungeonInn.LighthouseGenerated
                 {
                     None,
                     ScreenStack,
+                    HUD,
                 };
             }
         }

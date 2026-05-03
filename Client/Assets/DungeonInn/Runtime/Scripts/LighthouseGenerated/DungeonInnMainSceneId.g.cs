@@ -11,7 +11,7 @@ namespace DungeonInn.LighthouseGenerated
     public static class DungeonInnMainSceneId
     {
         public static readonly MainSceneId None = new MainSceneId(1, string.Empty);
-        public static readonly MainSceneId FirstScene = new MainSceneId(2, "FirstScene");
+        public static readonly MainSceneId World = new MainSceneId(2, "World");
 
         public static ReadOnlySpan<MainSceneId> All
         {
@@ -20,7 +20,7 @@ namespace DungeonInn.LighthouseGenerated
                 return new MainSceneId[]
                 {
                     None,
-                    FirstScene,
+                    World,
                 };
             }
         }

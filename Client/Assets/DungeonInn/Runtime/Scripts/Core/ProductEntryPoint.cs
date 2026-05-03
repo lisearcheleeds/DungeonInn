@@ -42,7 +42,7 @@ namespace DungeonInn.Runtime.Scripts.Core
             mainSceneManager.SetEnqueueParentLifetimeScope(() => LifetimeScope.EnqueueParent(productLifetimeScope));
             moduleSceneManager.SetEnqueueParentLifetimeScope(() => LifetimeScope.EnqueueParent(productLifetimeScope));
 
-            await languageService.SetLanguage(ResolveInitialLanguage(Application.systemLanguage), cancellation);
+            await languageService.SetLanguage(ResolveInitialLanguage(UnityEngine.Application.systemLanguage), cancellation);
             await launcher.Launch();
         }
 
@@ -67,4 +67,3 @@ namespace DungeonInn.Runtime.Scripts.Core
         }
     }
 }
-

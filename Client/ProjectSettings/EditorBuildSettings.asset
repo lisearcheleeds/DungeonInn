@@ -9,11 +9,15 @@ EditorBuildSettings:
     path: Assets/DungeonInn/Runtime/Scene/Launcher.unity
     guid: 54370f34dae6d2b41a27fb229c33dee8
   - enabled: 1
-    path: Assets/DungeonInn/Runtime/Scene/MainScene/FirstScene.unity
-    guid: 417b1809f7d55864c9f9d3da29df8340
+    path: Assets/DungeonInn/Runtime/Scene/MainScene/World.unity
+    guid: a900e09fe83a6aa4ebf800bacb060db5
   - enabled: 1
     path: Assets/DungeonInn/Runtime/Scene/ModuleScene/ScreenStack.unity
     guid: 5afa4d0be71c43440ad57b749e93ffa2
+  - enabled: 1
+    path: Assets/DungeonInn/Runtime/Scene/ModuleScene/HUD.unity
+    guid: 7aad86d309f09ed498ddb6e3805030ce
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 1bdfcebb1abd714418469b61c2324aac, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

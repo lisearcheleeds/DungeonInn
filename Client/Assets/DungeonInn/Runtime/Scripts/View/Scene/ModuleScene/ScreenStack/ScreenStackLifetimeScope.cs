@@ -2,7 +2,7 @@ using LighthouseExtends.ScreenStack;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
-using YourProduct;
+using DungeonInn;
 
 namespace DungeonInn.Runtime.Scripts.View.Scene.ModuleScene.ScreenStack
 {
@@ -16,7 +16,9 @@ namespace DungeonInn.Runtime.Scripts.View.Scene.ModuleScene.ScreenStack
 
             builder.Register<ScreenStackEntityFactory>(Lifetime.Singleton).AsImplementedInterfaces();
 
-            builder.RegisterComponentInNewPrefab(screenStackBackgroundInputBlockerPrefab, Lifetime.Singleton).AsImplementedInterfaces();
+            builder.RegisterComponentInNewPrefab(screenStackBackgroundInputBlockerPrefab, Lifetime.Singleton)
+                .UnderTransform(transform)
+                .AsImplementedInterfaces();
         }
     }
 }

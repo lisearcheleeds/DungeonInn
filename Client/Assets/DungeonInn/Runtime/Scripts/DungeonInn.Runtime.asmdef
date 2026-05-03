@@ -10,13 +10,16 @@
         "LighthouseExtends.Animation.Runtime",
         "LighthouseExtends.ScreenStack.Runtime",
         "LighthouseExtends.UIComponent.Runtime",
+        "LighthouseExtends.Addressable.Runtime",
         "LighthouseExtends.TextTable.Runtime",
         "UniTask",
         "R3.Unity",
         "VContainer",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
-        "LighthouseExtends.TextMeshPro.Runtime"
+        "LighthouseExtends.TextMeshPro.Runtime",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

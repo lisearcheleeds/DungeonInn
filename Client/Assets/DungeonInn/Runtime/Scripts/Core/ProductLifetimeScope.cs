@@ -1,7 +1,13 @@
+using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Inn;
+using DungeonInn.Domain.World;
 using DungeonInn.Input;
+using DungeonInn.Infrastructure.Repository;
 using DungeonInn.Runtime.Scripts.Infrastructure.AssetLoader;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneCamera;
+using LighthouseExtends.Addressable;
 using LighthouseExtends.Font;
 using LighthouseExtends.InputLayer;
 using LighthouseExtends.Language;
@@ -71,6 +77,12 @@ namespace DungeonInn.Runtime.Scripts.Core
             {
                 // YourProduct
                 builder.Register<Launcher>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<AssetManager>(Lifetime.Singleton).As<IAssetManager>();
+                builder.Register<WorldConfigRepository>(Lifetime.Singleton).As<IWorldConfigRepository>();
+                builder.Register<InnConfigRepository>(Lifetime.Singleton).As<IInnConfigRepository>();
+                builder.Register<AdventurerConfigRepository>(Lifetime.Singleton).As<IAdventurerConfigRepository>();
+                builder.Register<MonsterConfigRepository>(Lifetime.Singleton).As<IMonsterConfigRepository>();
+                builder.Register<DungeonConfigRepository>(Lifetime.Singleton).As<IDungeonConfigRepository>();
 
                 {
                     // LightHouse Require
@@ -83,7 +95,9 @@ namespace DungeonInn.Runtime.Scripts.Core
                     builder.Register<InputLayerController>(Lifetime.Singleton).AsImplementedInterfaces();
                 }
 
-                builder.Register<ProductAssetLoader>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<ProductAssetLoader>(Lifetime.Singleton)
+                    .As<IScreenStackInstanceFactory>()
+                    .As<ITextTableLoader>();
             }
         }
 

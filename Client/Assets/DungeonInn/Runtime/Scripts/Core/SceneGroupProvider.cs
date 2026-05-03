@@ -11,18 +11,18 @@ namespace DungeonInn.Runtime.Scripts.Core
     {
         static readonly ModuleSceneId[] RequireSceneModuleIds =
         {
-            DungeonInnModuleSceneId.ScreenStack
+            DungeonInnModuleSceneId.ScreenStack,
         };
 
         static readonly IReadOnlyDictionary<MainSceneId, ModuleSceneId[]> SceneModuleMap =
             new Dictionary<MainSceneId, ModuleSceneId[]>
             {
-                { DungeonInnMainSceneId.FirstScene, null },
+                { DungeonInnMainSceneId.World, new[] { DungeonInnModuleSceneId.HUD } },
             };
 
         static readonly MainSceneId[][] MainSceneGroupList =
         {
-            new[] { DungeonInnMainSceneId.FirstScene },
+            new[] { DungeonInnMainSceneId.World },
         };
 
         static readonly SceneGroup[] SceneGroupList = CreateSceneGroups();
@@ -58,7 +58,10 @@ namespace DungeonInn.Runtime.Scripts.Core
             var sceneModuleDic = mainSceneKeyList.ToDictionary(
                 mainSceneKey => mainSceneKey,
                 mainSceneKey => RequireSceneModuleIds
-                    .Concat(SceneModuleMap[mainSceneKey] ?? Array.Empty<ModuleSceneId>()).ToArray());
+                    .Concat(SceneModuleMap.TryGetValue(mainSceneKey, out var modules)
+                        ? modules
+                        : Array.Empty<ModuleSceneId>())
+                    .ToArray());
 
             return new SceneGroup(sceneModuleDic);
         }

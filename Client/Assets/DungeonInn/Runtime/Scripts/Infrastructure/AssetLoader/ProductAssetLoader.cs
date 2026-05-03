@@ -4,43 +4,63 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using LighthouseExtends.Addressable;
 using LighthouseExtends.Font;
 using LighthouseExtends.ScreenStack;
 using LighthouseExtends.TextTable;
 using UnityEngine;
+using UnityEngine.Networking;
 using VContainer;
 using VContainer.Unity;
 
 namespace DungeonInn.Runtime.Scripts.Infrastructure.AssetLoader
 {
-    public sealed class ProductAssetLoader : IScreenStackInstanceFactory, ITextTableLoader
+    public sealed class ProductAssetLoader : IScreenStackInstanceFactory, ITextTableLoader, IDisposable
     {
         const string TsvSubFolder = "TextTables";
 
         readonly IObjectResolver objectResolver;
         readonly IFontService fontService;
+        readonly IAssetManager assetManager;
+
+        // prefab はダイアログが生きている間ロードされ続ける必要があるため
+        // アドレスごとにスコープを保持し、ProductAssetLoader 破棄時にまとめて解放する
+        readonly Dictionary<string, (IAssetScope scope, GameObject prefab)> prefabCache = new();
 
         [Inject]
-        public ProductAssetLoader(IObjectResolver objectResolver, IFontService fontService)
+        public ProductAssetLoader(IObjectResolver objectResolver, IFontService fontService, IAssetManager assetManager)
         {
             this.objectResolver = objectResolver;
             this.fontService = fontService;
+            this.assetManager = assetManager;
         }
 
         async UniTask<TScreenStack> IScreenStackInstanceFactory.CreateScreenStackInstance<TScreenStack>(string screenStackAddress, IScreenStackData data, CancellationToken ct)
         {
-            var request = Resources.LoadAsync<GameObject>(screenStackAddress);
-            await request.ToUniTask(cancellationToken: ct);
-            var prefab = request.asset as GameObject;
-            var gameObject = objectResolver.Instantiate(prefab);
+            if (!prefabCache.TryGetValue(screenStackAddress, out var cached))
+            {
+                var scope = assetManager.CreateScope();
+                var handle = await scope.LoadAsync<GameObject>(screenStackAddress);
+                cached = (scope, handle.Asset);
+                prefabCache[screenStackAddress] = cached;
+            }
+
+            var gameObject = objectResolver.Instantiate(cached.prefab);
             return gameObject.GetComponents<MonoBehaviour>().OfType<TScreenStack>().First();
+        }
+
+        public void Dispose()
+        {
+            foreach (var (scope, _) in prefabCache.Values)
+                scope.Dispose();
+            prefabCache.Clear();
         }
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         async UniTask<IReadOnlyDictionary<string, string>> ITextTableLoader.LoadAsync(string languageCode, CancellationToken cancellationToken)
         {
             var result = new Dictionary<string, string>();
-            var folderUrl = $"{Application.streamingAssetsPath}/{TsvSubFolder}";
+            var folderUrl = $"{UnityEngine.Application.streamingAssetsPath}/{TsvSubFolder}";
 
             // Load domain list to enumerate TSV files (Directory.GetFiles is unavailable on WebGL)
             var manifestUrl = $"{folderUrl}/TextTableDomains.txt";
@@ -94,7 +114,7 @@ namespace DungeonInn.Runtime.Scripts.Infrastructure.AssetLoader
         UniTask<IReadOnlyDictionary<string, string>> ITextTableLoader.LoadAsync(string languageCode, CancellationToken cancellationToken)
         {
             var result = new Dictionary<string, string>();
-            var folderPath = Path.Combine(Application.streamingAssetsPath, TsvSubFolder);
+            var folderPath = Path.Combine(UnityEngine.Application.streamingAssetsPath, TsvSubFolder);
 
             if (!Directory.Exists(folderPath))
             {

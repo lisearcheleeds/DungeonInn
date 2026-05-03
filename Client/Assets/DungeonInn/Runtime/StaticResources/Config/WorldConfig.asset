@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fba6913bdd30d7428b952c92251868e, type: 3}
+  m_Name: WorldConfig
+  m_EditorClassIdentifier: DungeonInn.Runtime::DungeonInn.Infrastructure.Repository.WorldConfigSO
+  SizeX: 1000
+  SizeY: 1000
+  SizeZ: 1000
+  DungeonFloorCount: 5
+  DungeonFloorHeight: 20
