@@ -40,7 +40,7 @@ namespace DungeonInn.Infrastructure.AssetLoader
         async UniTask<IReadOnlyDictionary<string, string>> ITextTableLoader.LoadAsync(string languageCode, CancellationToken cancellationToken)
         {
             var result = new Dictionary<string, string>();
-            var folderUrl = $"{Application.streamingAssetsPath}/{TsvSubFolder}";
+            var folderUrl = $"{UnityEngine.Application.streamingAssetsPath}/{TsvSubFolder}";
 
             // Load domain list to enumerate TSV files (Directory.GetFiles is unavailable on WebGL)
             var manifestUrl = $"{folderUrl}/TextTableDomains.txt";
@@ -94,7 +94,7 @@ namespace DungeonInn.Infrastructure.AssetLoader
         UniTask<IReadOnlyDictionary<string, string>> ITextTableLoader.LoadAsync(string languageCode, CancellationToken cancellationToken)
         {
             var result = new Dictionary<string, string>();
-            var folderPath = Path.Combine(Application.streamingAssetsPath, TsvSubFolder);
+            var folderPath = Path.Combine(UnityEngine.Application.streamingAssetsPath, TsvSubFolder);
 
             if (!Directory.Exists(folderPath))
             {
