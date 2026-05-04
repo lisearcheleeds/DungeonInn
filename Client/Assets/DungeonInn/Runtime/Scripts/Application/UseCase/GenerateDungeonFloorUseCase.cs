@@ -9,12 +9,12 @@ using DungeonInn.Domain.Map;
 namespace DungeonInn.Application.UseCase
 {
     /// <summary>
-    /// 指定階層のダンジョンフロアを決定的な仮生成ロジックで作成するユースケース。
+    /// 指定階層のダンジョンフロアを Section 経路式の決定的な生成ロジックで作成するユースケース。
     /// </summary>
     public sealed class GenerateDungeonFloorUseCase
     {
         /// <summary>
-        /// 外周壁、内部通路、仮部屋、上下階段を持つフロアを生成してダンジョンへ追加する。
+        /// Section 経路、通路、部屋、上下階段を持つフロアを生成してダンジョンへ追加する。
         /// </summary>
         public UniTask<DungeonFloor> ExecuteAsync(
             Dungeon dungeon,
@@ -32,10 +32,11 @@ namespace DungeonInn.Application.UseCase
                 GameConstants.DungeonFloorWidth,
                 GameConstants.DungeonFloorDepth,
                 GameConstants.MapCellSizeMeters);
-            var cells = CreateBaseCells(layer);
             var random = new Random(dungeon.Seed + floorIndex * GameConstants.DungeonFloorSeedMultiplier);
-            var upStair = new DungeonStair(DungeonStairType.Up, FindWalkablePosition(layer, cells, random));
-            var downStair = new DungeonStair(DungeonStairType.Down, FindWalkablePosition(layer, cells, random));
+            var blueprint = CreateBlueprint(layer, settings, random);
+            var cells = CreateCells(layer, blueprint);
+            var upStair = new DungeonStair(DungeonStairType.Up, blueprint.UpStairPosition);
+            var downStair = new DungeonStair(DungeonStairType.Down, blueprint.DownStairPosition);
             var floor = new DungeonFloor(
                 floorIndex,
                 layer,
@@ -72,7 +73,48 @@ namespace DungeonInn.Application.UseCase
                 themeId: floorIndex / GameConstants.DungeonThemeFloorsPerTheme);
         }
 
-        static DungeonCell[] CreateBaseCells(MapLayer layer)
+        static DungeonFloorBlueprint CreateBlueprint(
+            MapLayer layer,
+            DungeonFloorGenerationSettings settings,
+            Random random)
+        {
+            var sectionWidth = layer.Width / GameConstants.DungeonSectionSizeCells;
+            var sectionDepth = layer.Depth / GameConstants.DungeonSectionSizeCells;
+            var startSection = GetRandomEdgeSection(sectionWidth, sectionDepth, random);
+            var endSection = GetRandomEdgeSection(sectionWidth, sectionDepth, random);
+            var sectionCount = sectionWidth * sectionDepth;
+
+            if (startSection == endSection)
+            {
+                endSection = (endSection + 1) % sectionCount;
+            }
+
+            var sectionPath = CreateFastSectionPath(startSection, endSection, sectionWidth, sectionDepth);
+            sectionPath = DistortSectionPath(
+                sectionPath,
+                sectionWidth,
+                sectionDepth,
+                GameConstants.DungeonPathDistortBaseStrength + settings.RoomCount,
+                random);
+
+            var referencePointsBySection = CreateReferencePointsBySection(
+                sectionPath,
+                sectionWidth,
+                random);
+            var carvedCells = new HashSet<GridPosition>();
+            var roomCells = new HashSet<GridPosition>();
+
+            CarveMainRoute(referencePointsBySection, carvedCells, random);
+            CarveRooms(referencePointsBySection, carvedCells, roomCells, settings, random);
+
+            return new DungeonFloorBlueprint(
+                carvedCells,
+                roomCells,
+                referencePointsBySection[0][0],
+                referencePointsBySection[referencePointsBySection.Count - 1][0]);
+        }
+
+        static DungeonCell[] CreateCells(MapLayer layer, DungeonFloorBlueprint blueprint)
         {
             var cells = new DungeonCell[layer.Width * layer.Depth];
             for (var z = 0; z < layer.Depth; z++)
@@ -80,63 +122,361 @@ namespace DungeonInn.Application.UseCase
                 for (var x = 0; x < layer.Width; x++)
                 {
                     var position = new GridPosition(x, z);
-                    var type = IsOuterWall(layer, position) ? DungeonCellType.Wall : DungeonCellType.Corridor;
+                    var type = ResolveCellType(blueprint, position);
                     cells[ToIndex(layer, position)] = new DungeonCell(position, type);
                 }
             }
 
-            FillRoom(
-                cells,
-                layer,
-                layer.Width / 2 - GameConstants.DungeonPlaceholderCenterRoomSizeCells / 2,
-                layer.Depth / 2 - GameConstants.DungeonPlaceholderCenterRoomSizeCells / 2,
-                GameConstants.DungeonPlaceholderCenterRoomSizeCells,
-                GameConstants.DungeonPlaceholderCenterRoomSizeCells);
             return cells;
         }
 
-        static bool IsOuterWall(MapLayer layer, GridPosition position)
+        static DungeonCellType ResolveCellType(DungeonFloorBlueprint blueprint, GridPosition position)
         {
-            return position.X == 0
-                || position.Z == 0
-                || position.X == layer.Width - 1
-                || position.Z == layer.Depth - 1;
+            if (blueprint.RoomCells.Contains(position))
+            {
+                return DungeonCellType.Room;
+            }
+
+            if (blueprint.CarvedCells.Contains(position))
+            {
+                return DungeonCellType.Corridor;
+            }
+
+            return DungeonCellType.Wall;
         }
 
-        static void FillRoom(DungeonCell[] cells, MapLayer layer, int originX, int originZ, int width, int depth)
+        static int GetRandomEdgeSection(int sectionWidth, int sectionDepth, Random random)
         {
-            for (var z = originZ; z < originZ + depth; z++)
+            var edgeCount = sectionWidth * 2 + sectionDepth * 2 - 4;
+            var edgeIndex = random.Next(0, edgeCount);
+
+            if (edgeIndex < sectionWidth)
             {
-                for (var x = originX; x < originX + width; x++)
+                return edgeIndex;
+            }
+
+            if (edgeIndex < sectionWidth * 2)
+            {
+                return sectionWidth * (sectionDepth - 1) + edgeIndex - sectionWidth;
+            }
+
+            var sideIndex = edgeIndex - sectionWidth * 2;
+            if (sideIndex < sectionDepth - 2)
+            {
+                return sectionWidth * (sideIndex + 1);
+            }
+
+            sideIndex -= sectionDepth - 2;
+            return sectionWidth * (sideIndex + 1) + sectionWidth - 1;
+        }
+
+        static List<int> CreateFastSectionPath(int start, int end, int sectionWidth, int sectionDepth)
+        {
+            var result = new List<int> { start };
+            var endPosition = ToSectionPosition(end, sectionWidth);
+
+            while (result[result.Count - 1] != end)
+            {
+                var current = result[result.Count - 1];
+                var currentPosition = ToSectionPosition(current, sectionWidth);
+                var xDistance = Math.Abs(currentPosition.X - endPosition.X);
+                var zDistance = Math.Abs(currentPosition.Z - endPosition.Z);
+
+                if (zDistance < xDistance)
                 {
-                    var position = new GridPosition(x, z);
-                    if (layer.Contains(position))
+                    result.Add(currentPosition.X < endPosition.X
+                        ? MoveRightSection(current, sectionWidth, sectionDepth).Value
+                        : MoveLeftSection(current, sectionWidth, sectionDepth).Value);
+                    continue;
+                }
+
+                result.Add(currentPosition.Z < endPosition.Z
+                    ? MoveDownSection(current, sectionWidth, sectionDepth).Value
+                    : MoveUpSection(current, sectionWidth, sectionDepth).Value);
+            }
+
+            return result;
+        }
+
+        static List<int> DistortSectionPath(
+            List<int> path,
+            int sectionWidth,
+            int sectionDepth,
+            int strength,
+            Random random)
+        {
+            var result = new List<int>(path);
+
+            for (var strengthCount = 0; strengthCount < strength; strengthCount++)
+            {
+                for (var i = 0; i < result.Count - 1; i++)
+                {
+                    var current = result[i];
+                    var next = result[i + 1];
+                    var insertSections = CreateDistortion(current, next, result, sectionWidth, sectionDepth, random);
+                    if (insertSections == null)
                     {
-                        cells[ToIndex(layer, position)].ChangeType(DungeonCellType.Room);
+                        continue;
+                    }
+
+                    result.InsertRange(i + 1, insertSections);
+                    i += insertSections.Count;
+                }
+            }
+
+            return result;
+        }
+
+        static List<int> CreateDistortion(
+            int current,
+            int next,
+            List<int> path,
+            int sectionWidth,
+            int sectionDepth,
+            Random random)
+        {
+            var currentPosition = ToSectionPosition(current, sectionWidth);
+            var nextPosition = ToSectionPosition(next, sectionWidth);
+            var dx = nextPosition.X - currentPosition.X;
+            var dz = nextPosition.Z - currentPosition.Z;
+
+            if (dx == 0 && dz == -1)
+            {
+                return random.Next(0, 2) == 0
+                    ? TryCreateDistortion(path, current, next, MoveRightSection, MoveUpSection, MoveLeftSection, sectionWidth, sectionDepth)
+                    : TryCreateDistortion(path, current, next, MoveLeftSection, MoveUpSection, MoveRightSection, sectionWidth, sectionDepth);
+            }
+
+            if (dx == 0 && dz == 1)
+            {
+                return random.Next(0, 2) == 0
+                    ? TryCreateDistortion(path, current, next, MoveLeftSection, MoveDownSection, MoveRightSection, sectionWidth, sectionDepth)
+                    : TryCreateDistortion(path, current, next, MoveRightSection, MoveDownSection, MoveLeftSection, sectionWidth, sectionDepth);
+            }
+
+            if (dx == 1 && dz == 0)
+            {
+                return random.Next(0, 2) == 0
+                    ? TryCreateDistortion(path, current, next, MoveDownSection, MoveRightSection, MoveUpSection, sectionWidth, sectionDepth)
+                    : TryCreateDistortion(path, current, next, MoveUpSection, MoveRightSection, MoveDownSection, sectionWidth, sectionDepth);
+            }
+
+            if (dx == -1 && dz == 0)
+            {
+                return random.Next(0, 2) == 0
+                    ? TryCreateDistortion(path, current, next, MoveUpSection, MoveLeftSection, MoveDownSection, sectionWidth, sectionDepth)
+                    : TryCreateDistortion(path, current, next, MoveDownSection, MoveLeftSection, MoveUpSection, sectionWidth, sectionDepth);
+            }
+
+            return null;
+        }
+
+        static List<int> TryCreateDistortion(
+            List<int> path,
+            int current,
+            int next,
+            Func<int, int, int, int?> move1,
+            Func<int, int, int, int?> move2,
+            Func<int, int, int, int?> move3,
+            int sectionWidth,
+            int sectionDepth)
+        {
+            var first = move1(current, sectionWidth, sectionDepth);
+            if (!first.HasValue || path.Contains(first.Value))
+            {
+                return null;
+            }
+
+            var second = move2(first.Value, sectionWidth, sectionDepth);
+            if (!second.HasValue || path.Contains(second.Value))
+            {
+                return null;
+            }
+
+            var third = move3(second.Value, sectionWidth, sectionDepth);
+            if (!third.HasValue || third.Value != next)
+            {
+                return null;
+            }
+
+            return new List<int> { first.Value, second.Value };
+        }
+
+        static List<List<GridPosition>> CreateReferencePointsBySection(
+            List<int> sectionPath,
+            int sectionWidth,
+            Random random)
+        {
+            var result = new List<List<GridPosition>>();
+
+            foreach (var sectionIndex in sectionPath)
+            {
+                var referencePointCount = 1 + random.Next(0, GameConstants.DungeonExtraReferencePointMaxCount + 1);
+                var points = new List<GridPosition>();
+                var sectionPosition = ToSectionPosition(sectionIndex, sectionWidth);
+
+                for (var i = 0; i < referencePointCount; i++)
+                {
+                    points.Add(CreateReferencePoint(sectionPosition, random));
+                }
+
+                result.Add(points);
+            }
+
+            return result;
+        }
+
+        static GridPosition CreateReferencePoint(GridPosition sectionPosition, Random random)
+        {
+            var min = GameConstants.DungeonSectionMarginCells;
+            var max = GameConstants.DungeonSectionSizeCells - GameConstants.DungeonSectionMarginCells;
+            return new GridPosition(
+                sectionPosition.X * GameConstants.DungeonSectionSizeCells + random.Next(min, max),
+                sectionPosition.Z * GameConstants.DungeonSectionSizeCells + random.Next(min, max));
+        }
+
+        static void CarveMainRoute(List<List<GridPosition>> referencePointsBySection, HashSet<GridPosition> carvedCells, Random random)
+        {
+            for (var i = 0; i < referencePointsBySection.Count - 1; i++)
+            {
+                CarveElbowPath(
+                    referencePointsBySection[i][0],
+                    referencePointsBySection[i + 1][0],
+                    random.Next(0, 2) == 0,
+                    carvedCells);
+
+                for (var t = 0; t < referencePointsBySection[i].Count - 1; t++)
+                {
+                    CarveElbowPath(
+                        referencePointsBySection[i][t],
+                        referencePointsBySection[i][t + 1],
+                        random.Next(0, 2) == 0,
+                        carvedCells);
+                }
+            }
+        }
+
+        static void CarveRooms(
+            List<List<GridPosition>> referencePointsBySection,
+            HashSet<GridPosition> carvedCells,
+            HashSet<GridPosition> roomCells,
+            DungeonFloorGenerationSettings settings,
+            Random random)
+        {
+            var referencePoints = referencePointsBySection.SelectMany(x => x).ToList();
+            var roomCount = Math.Min(settings.RoomCount, referencePoints.Count);
+
+            for (var i = 0; i < roomCount; i++)
+            {
+                var center = referencePoints[random.Next(0, referencePoints.Count)];
+                var width = random.Next(GameConstants.DungeonRoomMinSizeCells, GameConstants.DungeonRoomMaxSizeCells + 1);
+                var depth = random.Next(GameConstants.DungeonRoomMinSizeCells, GameConstants.DungeonRoomMaxSizeCells + 1);
+
+                for (var z = center.Z - depth / 2; z <= center.Z + depth / 2; z++)
+                {
+                    for (var x = center.X - width / 2; x <= center.X + width / 2; x++)
+                    {
+                        if (x < 1 || GameConstants.DungeonFloorWidth - 1 <= x || z < 1 || GameConstants.DungeonFloorDepth - 1 <= z)
+                        {
+                            continue;
+                        }
+
+                        var position = new GridPosition(x, z);
+                        carvedCells.Add(position);
+                        roomCells.Add(position);
                     }
                 }
             }
         }
 
-        static GridPosition FindWalkablePosition(MapLayer layer, DungeonCell[] cells, Random random)
+        static void CarveElbowPath(
+            GridPosition from,
+            GridPosition to,
+            bool horizontalFirst,
+            HashSet<GridPosition> carvedCells)
         {
-            for (var attempt = 0; attempt < GameConstants.DungeonStairPlacementMaxAttempts; attempt++)
+            var current = from;
+            carvedCells.Add(current);
+
+            if (horizontalFirst)
             {
-                var position = new GridPosition(
-                    random.Next(1, layer.Width - 1),
-                    random.Next(1, layer.Depth - 1));
-                if (cells[ToIndex(layer, position)].IsWalkable)
-                {
-                    return position;
-                }
+                CarveHorizontal(ref current, to.X, carvedCells);
+                CarveVertical(ref current, to.Z, carvedCells);
+                return;
             }
 
-            return new GridPosition(layer.Width / 2, layer.Depth / 2);
+            CarveVertical(ref current, to.Z, carvedCells);
+            CarveHorizontal(ref current, to.X, carvedCells);
+        }
+
+        static void CarveHorizontal(ref GridPosition current, int targetX, HashSet<GridPosition> carvedCells)
+        {
+            var step = current.X < targetX ? 1 : -1;
+            while (current.X != targetX)
+            {
+                current = new GridPosition(current.X + step, current.Z);
+                carvedCells.Add(current);
+            }
+        }
+
+        static void CarveVertical(ref GridPosition current, int targetZ, HashSet<GridPosition> carvedCells)
+        {
+            var step = current.Z < targetZ ? 1 : -1;
+            while (current.Z != targetZ)
+            {
+                current = new GridPosition(current.X, current.Z + step);
+                carvedCells.Add(current);
+            }
+        }
+
+        static GridPosition ToSectionPosition(int sectionIndex, int sectionWidth)
+        {
+            return new GridPosition(sectionIndex % sectionWidth, sectionIndex / sectionWidth);
+        }
+
+        static int? MoveUpSection(int index, int sectionWidth, int sectionDepth)
+        {
+            return 0 <= index - sectionWidth ? index - sectionWidth : null;
+        }
+
+        static int? MoveDownSection(int index, int sectionWidth, int sectionDepth)
+        {
+            return index + sectionWidth < sectionWidth * sectionDepth ? index + sectionWidth : null;
+        }
+
+        static int? MoveRightSection(int index, int sectionWidth, int sectionDepth)
+        {
+            return (index + 1) % sectionWidth != 0 ? index + 1 : null;
+        }
+
+        static int? MoveLeftSection(int index, int sectionWidth, int sectionDepth)
+        {
+            return index % sectionWidth != 0 ? index - 1 : null;
         }
 
         static int ToIndex(MapLayer layer, GridPosition position)
         {
             return position.Z * layer.Width + position.X;
+        }
+
+        sealed class DungeonFloorBlueprint
+        {
+            public HashSet<GridPosition> CarvedCells { get; }
+            public HashSet<GridPosition> RoomCells { get; }
+            public GridPosition UpStairPosition { get; }
+            public GridPosition DownStairPosition { get; }
+
+            public DungeonFloorBlueprint(
+                HashSet<GridPosition> carvedCells,
+                HashSet<GridPosition> roomCells,
+                GridPosition upStairPosition,
+                GridPosition downStairPosition)
+            {
+                CarvedCells = carvedCells ?? throw new ArgumentNullException(nameof(carvedCells));
+                RoomCells = roomCells ?? throw new ArgumentNullException(nameof(roomCells));
+                UpStairPosition = upStairPosition;
+                DownStairPosition = downStairPosition;
+            }
         }
     }
 }

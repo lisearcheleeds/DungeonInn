@@ -42,14 +42,20 @@ Domain / Application は UnityEngine、GameObject、NavMesh に依存しない�
   - `CanMoveOnMapLayerUseCase`
   - `UseDungeonStairUseCase`
 
-ダンジョン生成は仮実装である。
+ダンジョン生成は、旧 DungeonMaker のコンセプトだけを採用した DungeonInn 向けの再設計実装である。
 
-- 外周を壁にする。
-- 内部を通路にする。
-- 中央に仮部屋を置く。
-- 上下階段を決定的な乱数で配置する。
+- フロアを Section に分割する。
+- Edge 上の開始 Section と終了 Section を決定的な乱数で選ぶ。
+- 開始 Section から終了 Section までの Section 経路を作る。
+- Section 経路をランダムに歪ませる。
+- 各 Section 内に参照点を置く。
+- 参照点同士を L 字通路で接続する。
+- 参照点周辺に部屋を配置する。
+- 開始参照点を上層階段、終了参照点を下層階段にする。
 
-迷路生成アルゴリズム、部屋生成、トラップ、宝箱、モンスター、アセットテーマ適用は後続で実装する。
+旧 DungeonMaker のコードは直接移植していない。`UnityEngine.Vector2Int`、`UnityEngine.Random`、`Debug.Log` には依存せず、`GridPosition` と `System.Random` で実装している。
+
+トラップ、宝箱、モンスター、アセットテーマ適用は後続で実装する。
 
 ## 空間表現
 
@@ -278,6 +284,8 @@ public sealed class DungeonStair
 迷路生成に使う乱数シードはゲーム開始時に決定する。
 
 各フロアの生成は、ゲーム開始時シードとフロア階層から決定的に再現できるようにする。
+
+現在の実装では、`dungeon.Seed + floorIndex * GameConstants.DungeonFloorSeedMultiplier` をフロア生成用 seed として使う。
 
 ## 階層ごとの設定
 

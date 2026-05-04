@@ -20,6 +20,11 @@ namespace DungeonInn.Domain.Common
         public const int DungeonDefaultMaxCorridorLengthBase = 12;
         public const int DungeonMaxCorridorLengthFloorsPerIncrement = 10;
         public const int DungeonThemeFloorsPerTheme = 10;
-        public const int DungeonPlaceholderCenterRoomSizeCells = 10;
+        public const int DungeonSectionSizeCells = 20;
+        public const int DungeonSectionMarginCells = 2;
+        public const int DungeonPathDistortBaseStrength = 4;
+        public const int DungeonExtraReferencePointMaxCount = 2;
+        public const int DungeonRoomMinSizeCells = 5;
+        public const int DungeonRoomMaxSizeCells = 11;
     }
 }
