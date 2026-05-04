@@ -107,7 +107,11 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
     - タスクの状態の記載(ClaudeCodeが記載)
       - タスクの状態遷移は 設計待ち -> 設計レビュー待ち -> 実装待ち -> 実装レビュー待ち -> 完了 の5段階とする
     - タスクの目的の記載(ClaudeCodeが記載)
-    - タスクの内容の記載(ClaudeCodeが記載)
+    - 利用するLighthouseパターンの記載（ClaudeCodeが記載）
+      - 実装に必要なLighthouseパターンを `docs/lighthouse-patterns.md` のラベル（P1〜P10）で列挙する
+      - 例: `[P5] アセット非同期ロード（IAssetScope）`, `[P6] Config Repository`, `[P8] LifetimeScope`
+      - コードの記載は不要。パターン名と用途を端的に記載
+      - Codexはここに列挙されたパターンを実装前に必ず `docs/lighthouse-patterns.md` で確認すること
     - 作業ログの記載（ClaudeCode, Codexが記載）
     - レビューログの記載（ClaudeCodeが記載）
 
