@@ -11,7 +11,7 @@ using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
-namespace DungeonInn.Runtime.Scripts.Infrastructure.AssetLoader
+namespace DungeonInn.Infrastructure.AssetLoader
 {
     public sealed class ProductAssetLoader : IScreenStackInstanceFactory, ITextTableLoader
     {

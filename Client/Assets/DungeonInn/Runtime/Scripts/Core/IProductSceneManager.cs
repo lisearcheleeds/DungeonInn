@@ -1,7 +1,7 @@
 using Cysharp.Threading.Tasks;
 using Lighthouse.Scene;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     public interface IProductSceneManager
     {

@@ -1,9 +1,8 @@
 using System;
-using DungeonInn.Input;
 using LighthouseExtends.InputLayer;
 using UnityEngine.InputSystem;
 
-namespace DungeonInn.Runtime.Scripts.Input.Layer
+namespace DungeonInn.Input.Layer
 {
     public class DefaultSceneInputLayer : IInputLayer
     {

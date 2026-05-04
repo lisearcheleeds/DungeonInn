@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using VContainer;
 
-namespace DungeonInn.Runtime.Scripts.View.Base
+namespace DungeonInn.View.Base
 {
     public class ProductScreenStackBase : ScreenStackBase
     {

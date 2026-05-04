@@ -1,10 +1,10 @@
 using Cysharp.Threading.Tasks;
-using DungeonInn.Runtime.Scripts.View.Scene.MainScene.QuickFirst;
+using DungeonInn.View.Scene.MainScene.QuickFirst;
 using Lighthouse.Scene;
 using UnityEngine;
 using VContainer;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     public sealed class Launcher : ILauncher
     {

@@ -1,6 +1,6 @@
 using Cysharp.Threading.Tasks;
 
-namespace DungeonInn.Runtime.Scripts.View.Scene.MainScene.QuickFirst
+namespace DungeonInn.View.Scene.MainScene.QuickFirst
 {
     public interface IQuickFirstPresenter
     {

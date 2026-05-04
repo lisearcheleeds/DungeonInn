@@ -1,9 +1,9 @@
 using Cysharp.Threading.Tasks;
-using DungeonInn.Runtime.Scripts.Core;
+using DungeonInn.Core;
 using Lighthouse;
 using VContainer;
 
-namespace DungeonInn.Runtime.Scripts.View.Scene.MainScene.QuickFirst
+namespace DungeonInn.View.Scene.MainScene.QuickFirst
 {
     public class FirstScenePresenter : IQuickFirstPresenter
     {

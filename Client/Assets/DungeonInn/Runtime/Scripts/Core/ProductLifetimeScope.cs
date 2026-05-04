@@ -1,5 +1,5 @@
+using DungeonInn.Infrastructure.AssetLoader;
 using DungeonInn.Input;
-using DungeonInn.Runtime.Scripts.Infrastructure.AssetLoader;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneCamera;
 using LighthouseExtends.Font;
@@ -15,7 +15,7 @@ using UnityEngine.InputSystem;
 using VContainer;
 using VContainer.Unity;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     public class ProductLifetimeScope : LifetimeScope
     {

@@ -1,4 +1,4 @@
-namespace DungeonInn.Runtime.Scripts.View.Base
+namespace DungeonInn.View.Base
 {
     public abstract class StandardDialogBase : ProductScreenStackBase
     {

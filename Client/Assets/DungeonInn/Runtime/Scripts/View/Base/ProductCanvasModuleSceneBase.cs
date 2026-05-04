@@ -4,7 +4,7 @@ using Lighthouse.Scene.SceneBase;
 using LighthouseExtends.Animation;
 using UnityEngine;
 
-namespace DungeonInn.Runtime.Scripts.View.Base
+namespace DungeonInn.View.Base
 {
     [RequireComponent(typeof(LHSceneTransitionAnimatorManager))]
     public abstract class ProductCanvasModuleSceneBase : CanvasModuleSceneBase

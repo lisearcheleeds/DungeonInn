@@ -1,6 +1,6 @@
 using Cysharp.Threading.Tasks;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     public interface ILauncher
     {

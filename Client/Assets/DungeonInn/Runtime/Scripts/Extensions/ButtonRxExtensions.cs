@@ -2,7 +2,7 @@ using System;
 using R3;
 using UnityEngine.UI;
 
-namespace DungeonInn.Runtime.Scripts.Extensions
+namespace DungeonInn.Extensions
 {
     public static class ButtonRxExtensions
     {

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     [CreateAssetMenu(fileName = "RootLifetimeScopeSettings", menuName = "Scriptable Objects/RootLifetimeScopeSettings")]
     public class RootLifetimeScopeSettings : ScriptableObject

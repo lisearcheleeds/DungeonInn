@@ -1,7 +1,7 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Core;
 using DungeonInn.Input;
-using DungeonInn.Runtime.Scripts.Core;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneBase;
 using LighthouseExtends.Animation;
@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using VContainer;
 
-namespace DungeonInn.Runtime.Scripts.View.Base
+namespace DungeonInn.View.Base
 {
     [RequireComponent(typeof(LHSceneTransitionAnimatorManager))]
     public abstract class ProductCanvasMainSceneBase<TTransitionData> : CanvasMainSceneBase<TTransitionData> where TTransitionData : ProductTransitionDataBase

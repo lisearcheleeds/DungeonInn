@@ -1,10 +1,10 @@
 using Cysharp.Threading.Tasks;
 using DungeonInn.LighthouseGenerated;
-using DungeonInn.Runtime.Scripts.View.Base;
+using DungeonInn.View.Base;
 using Lighthouse.Scene;
 using VContainer;
 
-namespace DungeonInn.Runtime.Scripts.View.Scene.MainScene.QuickFirst
+namespace DungeonInn.View.Scene.MainScene.QuickFirst
 {
     public class FirstSceneScene : ProductCanvasMainSceneBase<FirstSceneScene.QuickFirstTransitionData>
     {

@@ -4,7 +4,7 @@ using Lighthouse.Scene;
 using UnityEngine;
 using VContainer;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     /// <summary>
     /// Wraps Lighthouse's SceneManager and catches unhandled transition exceptions.

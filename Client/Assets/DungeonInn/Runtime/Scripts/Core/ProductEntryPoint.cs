@@ -6,7 +6,7 @@ using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     public class ProductEntryPoint : IAsyncStartable
     {

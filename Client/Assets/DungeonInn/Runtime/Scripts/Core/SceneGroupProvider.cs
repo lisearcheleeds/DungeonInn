@@ -5,7 +5,7 @@ using System.Linq;
 using DungeonInn.LighthouseGenerated;
 using Lighthouse.Scene;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     public sealed class SceneGroupProvider : ISceneGroupProvider
     {

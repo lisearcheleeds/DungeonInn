@@ -2,7 +2,7 @@ using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
-namespace DungeonInn.Runtime.Scripts.Core
+namespace DungeonInn.Core
 {
     public class RootLifetimeScope : VContainer.Unity.LifetimeScope
     {

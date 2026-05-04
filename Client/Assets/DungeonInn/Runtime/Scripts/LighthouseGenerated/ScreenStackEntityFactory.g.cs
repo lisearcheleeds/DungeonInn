@@ -9,7 +9,7 @@ using Cysharp.Threading.Tasks;
 using LighthouseExtends.ScreenStack;
 using VContainer;
 
-namespace YourProduct
+namespace DungeonInn
 {
     public sealed class ScreenStackEntityFactory : IScreenStackEntityFactory
     {
@@ -26,6 +26,7 @@ namespace YourProduct
         {
             return data switch
             {
+
                 _ => throw new ArgumentOutOfRangeException(nameof(data), data.GetType().FullName, "Unknown screenStack data type")
             };
         }

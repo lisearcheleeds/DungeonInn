@@ -2,9 +2,8 @@ using LighthouseExtends.ScreenStack;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
-using YourProduct;
 
-namespace DungeonInn.Runtime.Scripts.View.Scene.ModuleScene.ScreenStack
+namespace DungeonInn.View.Scene.ModuleScene.ScreenStack
 {
     public sealed class ScreenStackLifetimeScope : ScreenStackLifetimeScopeBase
     {
