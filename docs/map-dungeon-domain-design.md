@@ -25,6 +25,7 @@ Domain / Application は UnityEngine、GameObject、NavMesh に依存しない�
   - `DungeonFloor`
   - `DungeonCell`
   - `DungeonCellType`
+  - `DungeonRoom`
   - `DungeonStair`
   - `DungeonStairType`
   - `DungeonFloorGenerationSettings`
@@ -52,6 +53,7 @@ Domain / Application は UnityEngine、GameObject、NavMesh に依存しない�
 - 参照点同士を L 字通路で接続する。
 - 参照点周辺に部屋を配置する。
 - 開始参照点を上層階段、終了参照点を下層階段にする。
+- 部屋は `DungeonRoom` として保持し、中心、サイズ、セル一覧、`RouteDepth` を持つ。
 
 旧 DungeonMaker のコードは直接移植していない。`UnityEngine.Vector2Int`、`UnityEngine.Random`、`Debug.Log` には依存せず、`GridPosition` と `System.Random` で実装している。
 
@@ -187,6 +189,30 @@ public enum DungeonCellType
 - `Room`: 移動可能な部屋。
 
 トラップや宝箱は将来追加する。セル種別に混ぜるのではなく、セル上に配置される要素として追加する方針とする。
+
+## ダンジョン部屋
+
+`DungeonRoom` は、複数の `Room` セルで構成される部屋単位を表す。
+
+`DungeonRoom` は以下を持つ。
+
+- ID
+- 中心座標
+- 幅
+- 奥行き
+- 主経路上の深さ `RouteDepth`
+- 部屋を構成するセル一覧
+
+`RouteDepth` は、主経路上で入口側から出口側へどの程度進んだ位置の部屋かを表す。
+
+想定用途:
+
+- Room ごとのモンスタースポーン管理
+- Room ごとの宝箱やイベント配置
+- 冒険者が迷わず次の階層へ向かうための経路判断
+- 入口側 / 出口側で敵レベルや報酬を変える調整
+
+例えば Room ごとに 1 体だけモンスターをスポーンしたい場合、`DungeonFloor.Rooms` を走査して、各 `DungeonRoom` の中心またはセル一覧からスポーン位置を選ぶ。
 
 ## 地上セル
 
@@ -429,6 +455,7 @@ NavMesh は表示中の高品質経路であり、ゲーム進行に必須では
 - `GroundCellType`
 - `Dungeon`
 - `DungeonFloor`
+- `DungeonRoom`
 - `DungeonCell`
 - `DungeonCellType`
 - `DungeonStair`

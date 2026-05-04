@@ -43,6 +43,7 @@ namespace DungeonInn.Application.UseCase
                 cells,
                 upStair,
                 downStair,
+                blueprint.Rooms,
                 settings);
 
             dungeon.AddFloor(floor);
@@ -103,13 +104,15 @@ namespace DungeonInn.Application.UseCase
                 random);
             var carvedCells = new HashSet<GridPosition>();
             var roomCells = new HashSet<GridPosition>();
+            var rooms = new List<DungeonRoom>();
 
             CarveMainRoute(referencePointsBySection, carvedCells, random);
-            CarveRooms(referencePointsBySection, carvedCells, roomCells, settings, random);
+            CarveRooms(referencePointsBySection, carvedCells, roomCells, rooms, settings, random);
 
             return new DungeonFloorBlueprint(
                 carvedCells,
                 roomCells,
+                rooms,
                 referencePointsBySection[0][0],
                 referencePointsBySection[referencePointsBySection.Count - 1][0]);
         }
@@ -360,17 +363,22 @@ namespace DungeonInn.Application.UseCase
             List<List<GridPosition>> referencePointsBySection,
             HashSet<GridPosition> carvedCells,
             HashSet<GridPosition> roomCells,
+            List<DungeonRoom> rooms,
             DungeonFloorGenerationSettings settings,
             Random random)
         {
-            var referencePoints = referencePointsBySection.SelectMany(x => x).ToList();
+            var referencePoints = referencePointsBySection
+                .SelectMany((points, routeDepth) => points.Select(point => new ReferencePoint(point, routeDepth)))
+                .ToList();
             var roomCount = Math.Min(settings.RoomCount, referencePoints.Count);
 
             for (var i = 0; i < roomCount; i++)
             {
-                var center = referencePoints[random.Next(0, referencePoints.Count)];
+                var referencePoint = referencePoints[random.Next(0, referencePoints.Count)];
+                var center = referencePoint.Position;
                 var width = random.Next(GameConstants.DungeonRoomMinSizeCells, GameConstants.DungeonRoomMaxSizeCells + 1);
                 var depth = random.Next(GameConstants.DungeonRoomMinSizeCells, GameConstants.DungeonRoomMaxSizeCells + 1);
+                var cells = new List<GridPosition>();
 
                 for (var z = center.Z - depth / 2; z <= center.Z + depth / 2; z++)
                 {
@@ -384,8 +392,18 @@ namespace DungeonInn.Application.UseCase
                         var position = new GridPosition(x, z);
                         carvedCells.Add(position);
                         roomCells.Add(position);
+                        cells.Add(position);
                     }
                 }
+
+                rooms.Add(
+                    new DungeonRoom(
+                        i,
+                        center,
+                        width,
+                        depth,
+                        referencePoint.RouteDepth,
+                        cells));
             }
         }
 
@@ -463,19 +481,34 @@ namespace DungeonInn.Application.UseCase
         {
             public HashSet<GridPosition> CarvedCells { get; }
             public HashSet<GridPosition> RoomCells { get; }
+            public IReadOnlyList<DungeonRoom> Rooms { get; }
             public GridPosition UpStairPosition { get; }
             public GridPosition DownStairPosition { get; }
 
             public DungeonFloorBlueprint(
                 HashSet<GridPosition> carvedCells,
                 HashSet<GridPosition> roomCells,
+                IReadOnlyList<DungeonRoom> rooms,
                 GridPosition upStairPosition,
                 GridPosition downStairPosition)
             {
                 CarvedCells = carvedCells ?? throw new ArgumentNullException(nameof(carvedCells));
                 RoomCells = roomCells ?? throw new ArgumentNullException(nameof(roomCells));
+                Rooms = rooms ?? throw new ArgumentNullException(nameof(rooms));
                 UpStairPosition = upStairPosition;
                 DownStairPosition = downStairPosition;
+            }
+        }
+
+        readonly struct ReferencePoint
+        {
+            public GridPosition Position { get; }
+            public int RouteDepth { get; }
+
+            public ReferencePoint(GridPosition position, int routeDepth)
+            {
+                Position = position;
+                RouteDepth = routeDepth;
             }
         }
     }

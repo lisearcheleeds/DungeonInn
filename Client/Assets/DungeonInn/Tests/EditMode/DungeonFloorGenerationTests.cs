@@ -29,6 +29,22 @@ namespace DungeonInn.Tests.EditMode
                     IsConnected(floor, floor.UpStair.Position, floor.DownStair.Position),
                     Is.True,
                     $"Generated dungeon floor is disconnected. seed:{seed}");
+                Assert.That(
+                    floor.Rooms,
+                    Is.Not.Empty,
+                    $"Generated dungeon floor has no rooms. seed:{seed}");
+
+                foreach (var room in floor.Rooms)
+                {
+                    Assert.That(
+                        floor.IsWalkable(room.Center),
+                        Is.True,
+                        $"Generated room center is not walkable. seed:{seed} room:{room.Id}");
+                    Assert.That(
+                        room.Cells,
+                        Is.Not.Empty,
+                        $"Generated room has no cells. seed:{seed} room:{room.Id}");
+                }
             }
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Domain.Dungeon
@@ -11,6 +12,7 @@ namespace DungeonInn.Domain.Dungeon
         public MapLayer Layer { get; }
         public DungeonStair UpStair { get; }
         public DungeonStair DownStair { get; }
+        public IReadOnlyList<DungeonRoom> Rooms { get; }
         public DungeonFloorGenerationSettings GenerationSettings { get; }
 
         public DungeonFloor(
@@ -19,6 +21,7 @@ namespace DungeonInn.Domain.Dungeon
             DungeonCell[] cells,
             DungeonStair upStair,
             DungeonStair downStair,
+            IReadOnlyList<DungeonRoom> rooms,
             DungeonFloorGenerationSettings generationSettings)
         {
             if (floorIndex < 1)
@@ -31,6 +34,7 @@ namespace DungeonInn.Domain.Dungeon
             this.cells = cells ?? throw new ArgumentNullException(nameof(cells));
             UpStair = upStair ?? throw new ArgumentNullException(nameof(upStair));
             DownStair = downStair ?? throw new ArgumentNullException(nameof(downStair));
+            Rooms = rooms ?? throw new ArgumentNullException(nameof(rooms));
             GenerationSettings = generationSettings ?? throw new ArgumentNullException(nameof(generationSettings));
 
             if (cells.Length != layer.Width * layer.Depth)
