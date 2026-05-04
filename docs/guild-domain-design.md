@@ -26,6 +26,20 @@ Application 層は Domain を組み合わせてユースケースを実行する
 
 View 層は表示、カメラ、ポップアップ、アニメーション、Unity 座標変換を担当する。
 
+## 現在の実装状態
+
+2026-05-04 時点では、`Client/Assets/DungeonInn/Runtime/Scripts/Domain` と `Application/UseCase` に初期実装がある。
+
+実装は設計の概念を一部統合している。
+
+- `CharacterId` / `FacilityId` / `TransactionId` は個別型ではなく `Guid` で扱う。
+- 所持金は `int` ではなく、`Inventory` 内の `ItemStack` として扱う。通貨アイテムは `SpecialItemIds.Money = 1`。
+- `AdventurerProfile` と `StaffProfile` は独立クラスではなく、現状は `Character` と `CharacterStats` に統合されている。
+- `InnFacility` / `TavernFacility` / `GeneralStoreFacility` / `EquipmentShopFacility` は独立クラスではなく、`Facility` + `FacilityType` で表現している。
+- `GuildTransaction` / `TransactionType` は未実装で、現状は `ExchangeTransaction` によって「こちらが渡すもの」「相手が渡すもの」を記録する。
+- Application/AI はまだ未実装。現状の Application は UseCase のみ。
+- `EntityIdentity` / `EntityIdentityRegistry` が追加されており、表示名、種別、有効/削除状態を Domain 側で管理できる。
+
 ## 中心となる Domain
 
 ### Character
@@ -34,12 +48,15 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 
 キャラクターは以下を持つ。
 
-- `CharacterId`
+- `Guid Id`
 - 名前
 - 現在の役割
-- 冒険者としてのプロフィール
-- ギルドスタッフとしてのプロフィール
-- 所持金
+- 基礎能力値 `CharacterStats`
+- レベル / 経験値
+- HP / MP / 疲労 / ストレス / 負傷度
+- 嗜好・行動傾向に使う `PreferenceSeed`
+- スカウト費用 `ScoutCost`
+- 給与 `IReadOnlyList<ItemStack>`
 - 所持品
 - 状態
 
@@ -65,6 +82,20 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 
 冒険者の行動はプレイヤーが直接決めない。施設利用、購入、売却、休息、食事などは Application/AI が判断する。
 
+現状の実装では独立した `AdventurerProfile` は存在しない。冒険者として必要な値は `Character` と `CharacterStats` に統合されている。
+
+`Character` は以下の計算メソッドを持つ。
+
+- 最大 HP
+- 最大 MP
+- 移動速度
+- 負傷耐性
+- ストレス耐性
+- 剣攻撃力
+- 弓攻撃力
+- 探索能力
+- 装備適性
+
 ### StaffProfile
 
 ギルドスタッフとしての能力を表す。
@@ -77,6 +108,15 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - 給与
 
 スタッフ能力は施設ポイントに変換され、施設の品質やキャパシティ、品揃えに影響する。
+
+現状の実装では独立した `StaffProfile` は存在しない。スタッフ能力は `CharacterStats` から `Character.CalculateFacilityPoint(FacilityType)` で算出する。
+
+施設種別ごとの施設ポイント計算は以下の能力値を使う。
+
+- 宿屋: 体力、知恵、魅力
+- 酒場食堂: 魅力、知恵、器用さ
+- アイテム雑貨屋: 知力、魅力、知恵
+- 装備屋: 筋力、器用さ、知力
 
 ### AdventurerGuild
 
@@ -94,9 +134,41 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - 取引履歴の記録
 - 支出の記録
 
+現状の実装では、資金は `Inventory` 内の通貨アイテムとして扱う。ギルドは以下を保持する。
+
+- `Guid Id`
+- ギルド在庫 `Inventory`
+- 施設一覧 `IReadOnlyList<Facility>`
+- スタッフ配置一覧 `IReadOnlyList<GuildStaffAssignment>`
+- 取引履歴 `IReadOnlyList<ExchangeTransaction>`
+
+スタッフ配置は `GuildStaffAssignment` として、スタッフキャラクター ID と施設 ID の対応を持つ。
+
 ## 施設 Domain
 
 施設はギルドが運営する収益源であり、スタッフによる施設ポイントで自動的に強化される。
+
+現状の実装では、施設種別ごとのクラスは作らず、共通の `Facility` クラスで扱う。
+
+`Facility` は以下を持つ。
+
+- `Guid Id`
+- `FacilityType`
+- 名前
+- 基本価格
+- スタッフポイント
+- レベル
+- 品質
+- キャパシティ
+
+スタッフポイントは `Facility.ApplyStaffPoint(int)` によって適用される。現在の式は `100` ポイントごとに 1 レベル上昇し、品質とキャパシティもレベルに連動する。
+
+施設利用は `FacilityUsageRequest` と `FacilityUsageType` で表現する。
+
+- `Rest`
+- `Meal`
+- `BuyItem`
+- `BuyEquipment`
 
 ### Inn
 
@@ -196,6 +268,12 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - 個数
 - 個別装備インスタンスが必要な場合はインスタンス ID
 
+現状の実装では、個別装備インスタンス ID は未実装。`Inventory` は `Dictionary<int, int>` によるアイテム ID と個数の管理のみを行う。
+
+`ItemStack` は `ItemId` と `Count` を持つ値型として実装されている。
+
+`SpecialItemIds.Money = 1` を通貨として扱う。
+
 ## Commerce Domain
 
 ギルド経済は探索結果ではなく取引で動く。
@@ -239,6 +317,24 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - `ScoutFee`
 - `RookieSupplyCost`
 
+現状の実装では `GuildTransaction` と `TransactionType` はまだ存在しない。代わりに `ExchangeTransaction` を使う。
+
+`ExchangeTransaction` は以下を持つ。
+
+- `Guid Id`
+- `OurId`
+- `TheirId`
+- `OurGives`
+- `TheirGives`
+- `OccurredAtTick`
+
+取引種別は列挙せず、交換したアイテムの向きで記録する。取引種別が必要になった時点で `TransactionType` を追加する。
+
+価格計算は `PricePolicy` が担当する。
+
+- 販売価格: アイテム基本価格合計に施設レベルを掛ける。
+- 買取価格: アイテム基本価格合計の半額。ただし最低 1 通貨。
+
 ## Recruitment Domain
 
 ギルドスタッフは外部から自由に雇用できない。やってきた冒険者をスカウトする。
@@ -250,6 +346,34 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - スカウトされたキャラクターはギルドスタッフになる。
 - スタッフ化したキャラクターの扱いは、冒険者から完全に外れるか兼任可能にするかを別途決める。
 - スカウト可否には本人の能力、評判、所持金、関係性などを後から追加できる。
+
+現状の実装では `Character.CanBeScouted` が `Adventurer` または `RecruitCandidate` の場合に true となる。
+
+スカウト費用は `ScoutCost` として `ItemStack` の一覧を持つ。`RecruitStaffUseCase` はギルド在庫からスカウト費用を支払い、キャラクターを `GuildStaff` に変更し、`ExchangeTransaction` を記録する。
+
+スタッフ化したキャラクターは現状 `GuildStaff` 単一ロールになり、冒険者との兼任は未実装。
+
+## EntityIdentity Domain
+
+実装では、ゲーム内エンティティの表示・有効状態を管理するために `EntityIdentity` が追加されている。
+
+`EntityIdentity` は以下を持つ。
+
+- `Guid Id`
+- `EntityKind`
+- 表示名
+- 有効状態
+- 削除 tick
+
+`EntityKind` は以下を持つ。
+
+- `Guild`
+- `Adventurer`
+- `Staff`
+- `Facility`
+- `Merchant`
+
+`EntityIdentityRegistry` は ID から `EntityIdentity` を登録・解決し、削除状態を記録する。
 
 ## Application/AI の役割
 
@@ -297,43 +421,44 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 
 ```text
 Domain/
-├── Characters/
+├── Character/
 │   ├── Character
-│   ├── AdventurerProfile
-│   ├── StaffProfile
+│   ├── CharacterStats
+│   ├── ScoutCost
 │   └── CharacterRole
 ├── Guild/
 │   ├── AdventurerGuild
-│   ├── GuildFinance
-│   ├── GuildStaffAssignment
-│   └── Recruitment
-├── Facilities/
+│   └── GuildStaffAssignment
+├── Facility/
 │   ├── Facility
-│   ├── InnFacility
-│   ├── TavernFacility
-│   ├── GeneralStoreFacility
-│   └── EquipmentShopFacility
-├── Items/
+│   ├── FacilityType
+│   ├── FacilityUsageRequest
+│   └── FacilityUsageType
+├── Item/
 │   ├── ItemDefinition
 │   ├── ItemCategory
 │   ├── EquipmentSpec
-│   └── Inventory
-└── Commerce/
-    ├── GuildTransaction
-    ├── TransactionType
-    └── PricePolicy
+│   ├── EquipmentSlot
+│   ├── Inventory
+│   ├── ItemStack
+│   └── SpecialItemIds
+├── Commerce/
+│   ├── ExchangeTransaction
+│   └── PricePolicy
+├── Common/
+│   └── DomainMath
+└── EntityIdentity/
+    ├── EntityIdentity
+    ├── EntityIdentityRegistry
+    └── EntityKind
 
 Application/
-├── UseCase/
-│   ├── RecruitStaffUseCase
-│   ├── AssignStaffUseCase
-│   ├── ProcessFacilityUsageUseCase
-│   ├── ProcessGuildTransactionUseCase
-│   └── UpgradeFacilitiesUseCase
-└── AI/
-    ├── IAdventurerAI
-    ├── AdventurerActionDecision
-    └── DefaultAdventurerAI
+└── UseCase/
+    ├── RecruitStaffUseCase
+    ├── AssignStaffUseCase
+    ├── ProcessFacilityUsageUseCase
+    ├── ProcessAdventurerSaleUseCase
+    └── PayStaffSalaryUseCase
 ```
 
 ## 先に実装できる UseCase 候補
