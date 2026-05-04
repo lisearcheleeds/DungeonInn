@@ -23,6 +23,7 @@ namespace DungeonInn.Domain.Character
         public int PreferenceSeed { get; }
         public ScoutCost ScoutCost { get; }
         public IReadOnlyList<ItemStack> Salary { get; }
+        public AdventurerLifecycleState LifecycleState { get; private set; }
 
         public Character(
             Guid id,
@@ -40,6 +41,43 @@ namespace DungeonInn.Domain.Character
             int preferenceSeed,
             ScoutCost scoutCost,
             IReadOnlyList<ItemStack> salary)
+            : this(
+                id,
+                name,
+                role,
+                stats,
+                inventory,
+                level,
+                experience,
+                hp,
+                mp,
+                fatigue,
+                stress,
+                injurySeverity,
+                preferenceSeed,
+                scoutCost,
+                salary,
+                AdventurerLifecycleState.Arrived)
+        {
+        }
+
+        public Character(
+            Guid id,
+            string name,
+            CharacterRole role,
+            CharacterStats stats,
+            Inventory inventory,
+            int level,
+            int experience,
+            int hp,
+            int mp,
+            int fatigue,
+            int stress,
+            int injurySeverity,
+            int preferenceSeed,
+            ScoutCost scoutCost,
+            IReadOnlyList<ItemStack> salary,
+            AdventurerLifecycleState lifecycleState)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -66,6 +104,7 @@ namespace DungeonInn.Domain.Character
             PreferenceSeed = preferenceSeed;
             ScoutCost = scoutCost ?? throw new ArgumentNullException(nameof(scoutCost));
             Salary = salary ?? throw new ArgumentNullException(nameof(salary));
+            LifecycleState = lifecycleState;
         }
 
         public bool CanBeScouted => Role == CharacterRole.Adventurer || Role == CharacterRole.RecruitCandidate;
@@ -145,6 +184,46 @@ namespace DungeonInn.Domain.Character
         public void GainExperience(int amount)
         {
             Experience += Math.Max(0, amount);
+        }
+
+        public void ChangeLifecycleState(AdventurerLifecycleState lifecycleState)
+        {
+            LifecycleState = lifecycleState;
+        }
+
+        public void MarkResident()
+        {
+            LifecycleState = AdventurerLifecycleState.Resident;
+        }
+
+        public void MarkPreparing()
+        {
+            LifecycleState = AdventurerLifecycleState.Preparing;
+        }
+
+        public void MarkExploring()
+        {
+            LifecycleState = AdventurerLifecycleState.Exploring;
+        }
+
+        public void MarkRecovering()
+        {
+            LifecycleState = AdventurerLifecycleState.Recovering;
+        }
+
+        public void MarkReadyToLeave()
+        {
+            if (Level < 5)
+            {
+                throw new InvalidOperationException("Character cannot leave before level 5.");
+            }
+
+            LifecycleState = AdventurerLifecycleState.ReadyToLeave;
+        }
+
+        public void MarkDead()
+        {
+            LifecycleState = AdventurerLifecycleState.Dead;
         }
 
         public void RecruitAsStaff()

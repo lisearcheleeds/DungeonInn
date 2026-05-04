@@ -8,8 +8,14 @@ using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Application.UseCase
 {
+    /// <summary>
+    /// 冒険者による施設利用の支払い、効果適用、取引記録を処理するユースケース。
+    /// </summary>
     public sealed class ProcessFacilityUsageUseCase
     {
+        /// <summary>
+        /// 施設利用リクエストを処理し、冒険者とギルドの状態を更新する。
+        /// </summary>
         public UniTask ExecuteAsync(
             AdventurerGuild guild,
             Character adventurer,

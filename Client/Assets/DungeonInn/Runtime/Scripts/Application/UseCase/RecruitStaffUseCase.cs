@@ -7,8 +7,14 @@ using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Application.UseCase
 {
+    /// <summary>
+    /// 冒険者またはスカウト候補をギルドスタッフとして雇用するユースケース。
+    /// </summary>
     public sealed class RecruitStaffUseCase
     {
+        /// <summary>
+        /// スカウト費用を支払い、候補者の役割変更と取引履歴の記録を行う。
+        /// </summary>
         public UniTask ExecuteAsync(AdventurerGuild guild, Character candidate, int occurredAtTick)
         {
             if (!candidate.CanBeScouted)

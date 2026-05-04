@@ -7,8 +7,14 @@ using DungeonInn.Domain.Guild;
 
 namespace DungeonInn.Application.UseCase
 {
+    /// <summary>
+    /// ギルドスタッフを施設に配置し、施設ポイントを再計算するユースケース。
+    /// </summary>
     public sealed class AssignStaffUseCase
     {
+        /// <summary>
+        /// 指定したスタッフを施設へ割り当て、全施設のスタッフポイントを更新する。
+        /// </summary>
         public UniTask ExecuteAsync(
             AdventurerGuild guild,
             Character staff,

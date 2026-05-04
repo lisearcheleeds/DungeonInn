@@ -8,10 +8,16 @@ using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Application.UseCase
 {
+    /// <summary>
+    /// 冒険者がアイテムや装備をギルド施設へ売却する処理を行うユースケース。
+    /// </summary>
     public sealed class ProcessAdventurerSaleUseCase
     {
         readonly PricePolicy pricePolicy = new();
 
+        /// <summary>
+        /// 売却品の買取価格を計算し、冒険者とギルドの在庫交換と取引履歴を更新する。
+        /// </summary>
         public UniTask ExecuteAsync(
             AdventurerGuild guild,
             Character adventurer,

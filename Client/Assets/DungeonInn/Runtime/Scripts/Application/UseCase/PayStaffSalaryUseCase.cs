@@ -9,8 +9,14 @@ using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Application.UseCase
 {
+    /// <summary>
+    /// ギルドスタッフへの給与支払いを処理するユースケース。
+    /// </summary>
     public sealed class PayStaffSalaryUseCase
     {
+        /// <summary>
+        /// 雇用中スタッフの給与をギルド在庫から支払い、取引履歴を記録する。
+        /// </summary>
         public UniTask<IReadOnlyList<ItemStack>> ExecuteAsync(AdventurerGuild guild, IEnumerable<Character> staffMembers, int occurredAtTick)
         {
             var paidItems = new List<ItemStack>();
