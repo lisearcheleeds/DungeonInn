@@ -19,6 +19,11 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
             builder.Register<GameWorldState>(Lifetime.Scoped).As<IGameWorldState>();
+            builder.Register<InitializeWorldMapUseCase>(Lifetime.Scoped);
+            builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Scoped);
+            builder.Register<EnsureDungeonFloorGeneratedUseCase>(Lifetime.Scoped);
+            builder.Register<InitializeDungeonUseCase>(Lifetime.Scoped);
+            builder.Register<InitializeGameWorldUseCase>(Lifetime.Scoped);
             builder.Register<GameLoopUseCase>(Lifetime.Scoped).As<IGameLoopUseCase>();
             builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
 

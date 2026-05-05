@@ -3,6 +3,8 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Dungeon;
 using UnityEngine;
 using VContainer;
 
@@ -12,31 +14,50 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         IGameLoopUseCase gameLoopUseCase;
         IGameWorldState gameWorldState;
+        InitializeGameWorldUseCase initializeGameWorldUseCase;
 
         bool isExecuting;
+        bool isInitialized;
 
         [Inject]
         public void Construct(
             IGameLoopUseCase gameLoopUseCase,
-            IGameWorldState gameWorldState)
+            IGameWorldState gameWorldState,
+            InitializeGameWorldUseCase initializeGameWorldUseCase)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
+            this.initializeGameWorldUseCase = initializeGameWorldUseCase ?? throw new ArgumentNullException(nameof(initializeGameWorldUseCase));
         }
 
         void Start()
         {
             Debug.Log("[WorldGameLoop] EntryPoint started.");
+            InitializeAsync().Forget();
         }
 
         void Update()
         {
-            if (isExecuting || gameLoopUseCase == null)
+            if (!isInitialized || isExecuting || gameLoopUseCase == null)
             {
                 return;
             }
 
             TickAsync().Forget();
+        }
+
+        async UniTask InitializeAsync()
+        {
+            await initializeGameWorldUseCase.ExecuteAsync(
+                new InitializeGameWorldRequest(
+                    GameConstants.InitialDungeonSeed,
+                    Array.Empty<DungeonDepthBandConfig>()));
+            isInitialized = true;
+            Debug.Log(
+                $"[World] GameWorldState initialized. " +
+                $"Facilities={gameWorldState.Guild.Facilities.Count} " +
+                $"DungeonFloors={gameWorldState.Dungeon.Floors.Count} " +
+                $"Actors={gameWorldState.Actors.Count}");
         }
 
         async UniTask TickAsync()

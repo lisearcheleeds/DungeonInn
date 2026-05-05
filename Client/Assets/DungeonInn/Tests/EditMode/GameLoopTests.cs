@@ -1,5 +1,9 @@
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Facility;
+using DungeonInn.Domain.Item;
 using NUnit.Framework;
 
 namespace DungeonInn.Tests.EditMode
@@ -48,6 +52,34 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(result.GameDateChanged, Is.False);
             Assert.That(result.ElapsedRealTimeSeconds, Is.EqualTo(0.5f));
             Assert.That(result.ElapsedGameTimeSeconds, Is.EqualTo(0.5f));
+        }
+
+        [Test]
+        public void InitializeGameWorldCreatesGroundDungeonGuildAndInn()
+        {
+            var worldState = new GameWorldState();
+            var useCase = new InitializeGameWorldUseCase(
+                worldState,
+                new InitializeWorldMapUseCase(),
+                new InitializeDungeonUseCase(
+                    new EnsureDungeonFloorGeneratedUseCase(
+                        new GenerateDungeonFloorUseCase())));
+
+            var result = useCase.ExecuteAsync(
+                    new InitializeGameWorldRequest(
+                        GameConstants.InitialDungeonSeed,
+                        System.Array.Empty<DungeonDepthBandConfig>()))
+                .GetAwaiter()
+                .GetResult();
+
+            Assert.That(result.IsInitialized, Is.True);
+            Assert.That(result.GroundMap, Is.Not.Null);
+            Assert.That(result.Dungeon, Is.Not.Null);
+            Assert.That(result.Dungeon.HasFloor(1), Is.True);
+            Assert.That(result.Guild, Is.Not.Null);
+            Assert.That(result.Guild.Facilities.Count, Is.EqualTo(1));
+            Assert.That(result.Guild.Facilities[0].Type, Is.EqualTo(FacilityType.Inn));
+            Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold) }), Is.True);
         }
     }
 }
