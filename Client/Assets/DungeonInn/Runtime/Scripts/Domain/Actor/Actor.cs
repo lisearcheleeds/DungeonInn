@@ -26,6 +26,9 @@ namespace DungeonInn.Domain.Actor
         public IActorBehavior Behavior { get; private set; }
         public IWeaponCalculator WeaponCalculator { get; private set; }
         public int WeaponAttack { get; private set; }
+        public ActorGoal CurrentGoal { get; private set; }
+        public ActorPlan CurrentPlan { get; private set; }
+        public ActorAction CurrentAction { get; private set; }
 
         public Actor(
             Guid id,
@@ -68,6 +71,9 @@ namespace DungeonInn.Domain.Actor
             Position = position;
             Faction = faction ?? throw new ArgumentNullException(nameof(faction));
             Behavior = behavior ?? throw new ArgumentNullException(nameof(behavior));
+            CurrentGoal = ActorGoal.None();
+            CurrentPlan = ActorPlan.None();
+            CurrentAction = ActorAction.None();
             RefreshWeaponCalculator();
             RefreshParams();
         }
@@ -117,6 +123,41 @@ namespace DungeonInn.Domain.Actor
             Behavior = behavior ?? throw new ArgumentNullException(nameof(behavior));
             RefreshWeaponCalculator();
             RefreshParams();
+        }
+
+        public void ChangeGoal(ActorGoal goal)
+        {
+            CurrentGoal = goal ?? throw new ArgumentNullException(nameof(goal));
+        }
+
+        public void ChangePlan(ActorPlan plan)
+        {
+            CurrentPlan = plan ?? throw new ArgumentNullException(nameof(plan));
+        }
+
+        public void ChangeAction(ActorAction action)
+        {
+            CurrentAction = action ?? throw new ArgumentNullException(nameof(action));
+        }
+
+        public void StartCurrentAction()
+        {
+            CurrentAction.Start();
+        }
+
+        public void CompleteCurrentAction()
+        {
+            CurrentAction.Complete();
+        }
+
+        public void FailCurrentAction()
+        {
+            CurrentAction.Fail();
+        }
+
+        public void CancelCurrentAction()
+        {
+            CurrentAction.Cancel();
         }
 
         public void Equip(EquipmentSpec equipmentSpec)
