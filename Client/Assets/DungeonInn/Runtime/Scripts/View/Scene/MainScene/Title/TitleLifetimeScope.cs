@@ -11,7 +11,7 @@ namespace DungeonInn.View.Scene.MainScene.Title
         protected override void Configure(IContainerBuilder builder)
         {
             builder.RegisterComponent(titleScene);
-            builder.Register<TitlePresenter>(Lifetime.Singleton).AsImplementedInterfaces();
+            builder.Register<TitlePresenter>(Lifetime.Scoped).AsImplementedInterfaces();
         }
     }
 }

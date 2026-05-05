@@ -7,6 +7,7 @@ using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -17,6 +18,7 @@ namespace DungeonInn.Application.UseCase
     {
         readonly Random random;
 
+        [Inject]
         public SelectDungeonExplorationGoalUseCase()
         {
             random = new Random();

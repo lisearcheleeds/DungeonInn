@@ -1,3 +1,6 @@
+using DungeonInn.Application.AI;
+using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.UseCase;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -11,7 +14,20 @@ namespace DungeonInn.View.Scene.MainScene.World
         protected override void Configure(IContainerBuilder builder)
         {
             builder.RegisterComponent(worldScene);
-            builder.Register<WorldPresenter>(Lifetime.Singleton).AsImplementedInterfaces();
+            builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
+
+            builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
+            builder.Register<GameWorldState>(Lifetime.Scoped).As<IGameWorldState>();
+            builder.Register<GameLoopUseCase>(Lifetime.Scoped).As<IGameLoopUseCase>();
+            builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
+
+            builder.Register<ActorDecisionScheduler>(Lifetime.Scoped);
+            builder.Register<ApplyActorAiDecisionUseCase>(Lifetime.Scoped);
+            builder.Register<AdvanceActorAiUseCase>(Lifetime.Scoped);
+            builder.Register<AdventurerAiPolicy>(Lifetime.Scoped);
+            builder.Register<MonsterAiPolicy>(Lifetime.Scoped);
+            builder.Register<PetAiPolicy>(Lifetime.Scoped);
+            builder.Register<GuildStaffAiPolicy>(Lifetime.Scoped);
         }
     }
 }

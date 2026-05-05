@@ -5,6 +5,7 @@ using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -13,7 +14,13 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class RecruitStaffUseCase
     {
-        readonly CalculateScoutCostUseCase calculateScoutCostUseCase = new();
+        readonly CalculateScoutCostUseCase calculateScoutCostUseCase;
+
+        [Inject]
+        public RecruitStaffUseCase(CalculateScoutCostUseCase calculateScoutCostUseCase)
+        {
+            this.calculateScoutCostUseCase = calculateScoutCostUseCase ?? throw new ArgumentNullException(nameof(calculateScoutCostUseCase));
+        }
 
         /// <summary>
         /// スカウト費用を支払い、候補者の役割変更と取引履歴の記録を行う。

@@ -4,6 +4,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.AI;
 using DungeonInn.Domain.Actor;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -13,17 +14,24 @@ namespace DungeonInn.Application.UseCase
         readonly IReadOnlyList<IActorAiPolicy> policies;
         readonly ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase;
 
-        public AdvanceActorAiUseCase()
+        [Inject]
+        public AdvanceActorAiUseCase(
+            ActorDecisionScheduler scheduler,
+            AdventurerAiPolicy adventurerAiPolicy,
+            MonsterAiPolicy monsterAiPolicy,
+            PetAiPolicy petAiPolicy,
+            GuildStaffAiPolicy guildStaffAiPolicy,
+            ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase)
             : this(
-                new ActorDecisionScheduler(),
+                scheduler,
                 new IActorAiPolicy[]
                 {
-                    new AdventurerAiPolicy(),
-                    new MonsterAiPolicy(),
-                    new PetAiPolicy(),
-                    new GuildStaffAiPolicy()
+                    adventurerAiPolicy ?? throw new ArgumentNullException(nameof(adventurerAiPolicy)),
+                    monsterAiPolicy ?? throw new ArgumentNullException(nameof(monsterAiPolicy)),
+                    petAiPolicy ?? throw new ArgumentNullException(nameof(petAiPolicy)),
+                    guildStaffAiPolicy ?? throw new ArgumentNullException(nameof(guildStaffAiPolicy))
                 },
-                new ApplyActorAiDecisionUseCase())
+                applyActorAiDecisionUseCase)
         {
         }
 
@@ -43,20 +51,24 @@ namespace DungeonInn.Application.UseCase
             return UniTask.CompletedTask;
         }
 
-        public async UniTask<bool> ExecuteAsync(IEnumerable<Actor> actors, int currentTick, int cooldownTicks)
+        public async UniTask<bool> ExecuteAsync(
+            IEnumerable<Actor> actors,
+            float currentTimeSeconds,
+            int evaluationFrameId,
+            float cooldownSeconds)
         {
             if (actors == null)
             {
                 throw new ArgumentNullException(nameof(actors));
             }
 
-            if (!scheduler.TryGetEvaluationTarget(actors, currentTick, out var actor, out var runtimeState))
+            if (!scheduler.TryGetEvaluationTarget(actors, currentTimeSeconds, evaluationFrameId, out var actor, out var runtimeState))
             {
                 return false;
             }
 
             var policy = ResolvePolicy(actor);
-            var context = new ActorAiContext(actor, currentTick, runtimeState);
+            var context = new ActorAiContext(actor, currentTimeSeconds, runtimeState);
             var dirty = runtimeState.GetHighestDirty();
             try
             {
@@ -64,12 +76,12 @@ namespace DungeonInn.Application.UseCase
                 await applyActorAiDecisionUseCase.ExecuteAsync(actor, decision);
                 runtimeState.ClearDirty(dirty);
                 runtimeState.MarkDirty(decision.AdditionalDirtyFlags);
-                runtimeState.MarkEvaluated(currentTick, cooldownTicks);
+                runtimeState.MarkEvaluated(currentTimeSeconds, evaluationFrameId, cooldownSeconds);
                 return true;
             }
             catch
             {
-                runtimeState.MarkEvaluated(currentTick, cooldownTicks);
+                runtimeState.MarkEvaluated(currentTimeSeconds, evaluationFrameId, cooldownSeconds);
                 throw;
             }
         }

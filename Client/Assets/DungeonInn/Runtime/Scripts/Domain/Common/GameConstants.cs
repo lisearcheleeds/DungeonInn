@@ -2,6 +2,8 @@ namespace DungeonInn.Domain.Common
 {
     public static class GameConstants
     {
+        public const int GameScheduleTicksPerDay = 1200;
+
         public const float MapCellSizeMeters = 5f;
 
         public const int GroundMapWidth = 100;

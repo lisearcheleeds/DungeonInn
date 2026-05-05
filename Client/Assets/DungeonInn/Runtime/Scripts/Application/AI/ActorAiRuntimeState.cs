@@ -6,17 +6,17 @@ namespace DungeonInn.Application.AI
     {
         public Guid ActorId { get; }
         public ActorAiDirtyFlags DirtyFlags { get; private set; }
-        public int LastEvaluatedTick { get; private set; }
-        public int CooldownUntilTick { get; private set; }
-        public int EvaluatedTick { get; private set; }
+        public float LastEvaluatedTimeSeconds { get; private set; }
+        public float CooldownUntilTimeSeconds { get; private set; }
+        public int EvaluatedFrameId { get; private set; }
 
         public ActorAiRuntimeState(Guid actorId)
         {
             ActorId = actorId;
             DirtyFlags = ActorAiDirtyFlags.LongTerm | ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm;
-            LastEvaluatedTick = -1;
-            CooldownUntilTick = 0;
-            EvaluatedTick = -1;
+            LastEvaluatedTimeSeconds = -1f;
+            CooldownUntilTimeSeconds = 0f;
+            EvaluatedFrameId = -1;
         }
 
         public bool HasDirty()
@@ -24,9 +24,9 @@ namespace DungeonInn.Application.AI
             return DirtyFlags != ActorAiDirtyFlags.None;
         }
 
-        public bool CanEvaluate(int currentTick)
+        public bool CanEvaluate(float currentTimeSeconds, int evaluationFrameId)
         {
-            return HasDirty() && EvaluatedTick != currentTick && CooldownUntilTick <= currentTick;
+            return HasDirty() && EvaluatedFrameId != evaluationFrameId && CooldownUntilTimeSeconds <= currentTimeSeconds;
         }
 
         public void MarkDirty(ActorAiDirtyFlags dirtyFlags)
@@ -39,11 +39,11 @@ namespace DungeonInn.Application.AI
             DirtyFlags &= ~dirtyFlags;
         }
 
-        public void MarkEvaluated(int currentTick, int cooldownTicks)
+        public void MarkEvaluated(float currentTimeSeconds, int evaluationFrameId, float cooldownSeconds)
         {
-            LastEvaluatedTick = currentTick;
-            EvaluatedTick = currentTick;
-            CooldownUntilTick = currentTick + Math.Max(0, cooldownTicks);
+            LastEvaluatedTimeSeconds = currentTimeSeconds;
+            EvaluatedFrameId = evaluationFrameId;
+            CooldownUntilTimeSeconds = currentTimeSeconds + Math.Max(0f, cooldownSeconds);
         }
 
         public ActorAiDirtyFlags GetHighestDirty()

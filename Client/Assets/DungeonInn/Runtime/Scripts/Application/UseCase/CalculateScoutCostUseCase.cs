@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -10,7 +11,13 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class CalculateScoutCostUseCase
     {
-        readonly ScoutCostPolicy scoutCostPolicy = new();
+        readonly ScoutCostPolicy scoutCostPolicy;
+
+        [Inject]
+        public CalculateScoutCostUseCase(ScoutCostPolicy scoutCostPolicy)
+        {
+            this.scoutCostPolicy = scoutCostPolicy ?? throw new System.ArgumentNullException(nameof(scoutCostPolicy));
+        }
 
         /// <summary>
         /// Actor のレベルや能力値を使い、表示・実行時点のスカウト費用を返す。

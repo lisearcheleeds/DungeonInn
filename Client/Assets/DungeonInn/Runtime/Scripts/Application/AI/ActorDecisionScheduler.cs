@@ -31,12 +31,17 @@ namespace DungeonInn.Application.AI
             MarkDirty(actorId, dirtyMapper.Map(eventType));
         }
 
-        public bool TryGetEvaluationTarget(IEnumerable<Actor> actors, int currentTick, out Actor actor, out ActorAiRuntimeState runtimeState)
+        public bool TryGetEvaluationTarget(
+            IEnumerable<Actor> actors,
+            float currentTimeSeconds,
+            int evaluationFrameId,
+            out Actor actor,
+            out ActorAiRuntimeState runtimeState)
         {
             foreach (var candidate in actors)
             {
                 var state = GetOrCreateState(candidate.Id);
-                if (!state.CanEvaluate(currentTick))
+                if (!state.CanEvaluate(currentTimeSeconds, evaluationFrameId))
                 {
                     continue;
                 }

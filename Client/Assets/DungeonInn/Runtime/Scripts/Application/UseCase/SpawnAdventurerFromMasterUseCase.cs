@@ -7,6 +7,7 @@ using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -19,6 +20,7 @@ namespace DungeonInn.Application.UseCase
         readonly IMasterRepository masterRepository;
         readonly SpawnAdventurerUseCase spawnAdventurerUseCase;
 
+        [Inject]
         public SpawnAdventurerFromMasterUseCase(
             IAdventurerFactory adventurerFactory,
             IMasterRepository masterRepository,

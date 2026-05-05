@@ -1,6 +1,7 @@
 using System;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
+using VContainer;
 
 namespace DungeonInn.Application.Factory
 {
@@ -8,6 +9,7 @@ namespace DungeonInn.Application.Factory
     {
         readonly IMasterRepository masterRepository;
 
+        [Inject]
         public AdventurerFactory(IMasterRepository masterRepository)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));

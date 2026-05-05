@@ -6,13 +6,13 @@ namespace DungeonInn.Application.AI
     public sealed class ActorAiContext
     {
         public Actor Actor { get; }
-        public int CurrentTick { get; }
+        public float CurrentTimeSeconds { get; }
         public ActorAiRuntimeState RuntimeState { get; }
 
-        public ActorAiContext(Actor actor, int currentTick, ActorAiRuntimeState runtimeState)
+        public ActorAiContext(Actor actor, float currentTimeSeconds, ActorAiRuntimeState runtimeState)
         {
             Actor = actor ?? throw new ArgumentNullException(nameof(actor));
-            CurrentTick = currentTick;
+            CurrentTimeSeconds = currentTimeSeconds;
             RuntimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
         }
     }

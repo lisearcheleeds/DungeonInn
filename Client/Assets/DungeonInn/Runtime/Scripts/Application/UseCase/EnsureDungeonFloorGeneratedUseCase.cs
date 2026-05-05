@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Dungeon;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -9,7 +10,13 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class EnsureDungeonFloorGeneratedUseCase
     {
-        readonly GenerateDungeonFloorUseCase generateDungeonFloorUseCase = new();
+        readonly GenerateDungeonFloorUseCase generateDungeonFloorUseCase;
+
+        [Inject]
+        public EnsureDungeonFloorGeneratedUseCase(GenerateDungeonFloorUseCase generateDungeonFloorUseCase)
+        {
+            this.generateDungeonFloorUseCase = generateDungeonFloorUseCase ?? throw new System.ArgumentNullException(nameof(generateDungeonFloorUseCase));
+        }
 
         /// <summary>
         /// 生成済みフロアを返し、未生成の場合はフロア生成を行ってから返す。

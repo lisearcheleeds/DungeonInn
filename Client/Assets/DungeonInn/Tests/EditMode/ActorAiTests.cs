@@ -12,30 +12,30 @@ namespace DungeonInn.Tests.EditMode
     public sealed class ActorAiTests
     {
         [Test]
-        public void AdvanceActorAiEvaluatesHighestDirtyLayerOncePerTick()
+        public void AdvanceActorAiEvaluatesHighestDirtyLayerOncePerFrame()
         {
             var actor = CreateAdventurer();
-            var useCase = new AdvanceActorAiUseCase();
+            var useCase = CreateUseCase();
 
             Assert.That(
-                useCase.ExecuteAsync(new[] { actor }, 0, 0).GetAwaiter().GetResult(),
+                useCase.ExecuteAsync(new[] { actor }, 0f, 0, 0f).GetAwaiter().GetResult(),
                 Is.True);
             Assert.That(actor.CurrentGoal.Type, Is.EqualTo(ActorGoalType.LevelUp));
             Assert.That(actor.CurrentPlan.Type, Is.EqualTo(ActorPlanType.None));
             Assert.That(actor.CurrentAction.Type, Is.EqualTo(ActorActionType.None));
 
             Assert.That(
-                useCase.ExecuteAsync(new[] { actor }, 0, 0).GetAwaiter().GetResult(),
+                useCase.ExecuteAsync(new[] { actor }, 0.01f, 0, 0f).GetAwaiter().GetResult(),
                 Is.False);
 
             Assert.That(
-                useCase.ExecuteAsync(new[] { actor }, 1, 0).GetAwaiter().GetResult(),
+                useCase.ExecuteAsync(new[] { actor }, 0.01f, 1, 0f).GetAwaiter().GetResult(),
                 Is.True);
             Assert.That(actor.CurrentPlan.Type, Is.EqualTo(ActorPlanType.Prepare));
             Assert.That(actor.CurrentAction.Type, Is.EqualTo(ActorActionType.None));
 
             Assert.That(
-                useCase.ExecuteAsync(new[] { actor }, 2, 0).GetAwaiter().GetResult(),
+                useCase.ExecuteAsync(new[] { actor }, 0.02f, 2, 0f).GetAwaiter().GetResult(),
                 Is.True);
             Assert.That(actor.CurrentAction.Type, Is.EqualTo(ActorActionType.Wait));
         }
@@ -45,12 +45,12 @@ namespace DungeonInn.Tests.EditMode
         {
             var state = new ActorAiRuntimeState(Guid.NewGuid());
 
-            Assert.That(state.CanEvaluate(10), Is.True);
-            state.MarkEvaluated(10, 5);
+            Assert.That(state.CanEvaluate(10f, 1), Is.True);
+            state.MarkEvaluated(10f, 1, 0.5f);
 
-            Assert.That(state.CanEvaluate(10), Is.False);
-            Assert.That(state.CanEvaluate(14), Is.False);
-            Assert.That(state.CanEvaluate(15), Is.True);
+            Assert.That(state.CanEvaluate(10.1f, 1), Is.False);
+            Assert.That(state.CanEvaluate(10.4f, 2), Is.False);
+            Assert.That(state.CanEvaluate(10.5f, 2), Is.True);
         }
 
         [Test]
@@ -76,15 +76,15 @@ namespace DungeonInn.Tests.EditMode
                 new ApplyActorAiDecisionUseCase());
 
             Assert.Throws<InvalidOperationException>(() =>
-                useCase.ExecuteAsync(new[] { actor }, 1, 5).GetAwaiter().GetResult());
+                useCase.ExecuteAsync(new[] { actor }, 1f, 1, 0.5f).GetAwaiter().GetResult());
             Assert.That(
-                useCase.ExecuteAsync(new[] { actor }, 1, 5).GetAwaiter().GetResult(),
+                useCase.ExecuteAsync(new[] { actor }, 1.1f, 1, 0.5f).GetAwaiter().GetResult(),
                 Is.False);
             Assert.That(
-                useCase.ExecuteAsync(new[] { actor }, 5, 5).GetAwaiter().GetResult(),
+                useCase.ExecuteAsync(new[] { actor }, 1.4f, 2, 0.5f).GetAwaiter().GetResult(),
                 Is.False);
             Assert.Throws<InvalidOperationException>(() =>
-                useCase.ExecuteAsync(new[] { actor }, 6, 5).GetAwaiter().GetResult());
+                useCase.ExecuteAsync(new[] { actor }, 1.5f, 2, 0.5f).GetAwaiter().GetResult());
         }
 
         static Actor CreateAdventurer()
@@ -104,6 +104,20 @@ namespace DungeonInn.Tests.EditMode
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Adventurer"),
                 new AdventurerBehavior(0));
+        }
+
+        static AdvanceActorAiUseCase CreateUseCase()
+        {
+            return new AdvanceActorAiUseCase(
+                new ActorDecisionScheduler(),
+                new IActorAiPolicy[]
+                {
+                    new AdventurerAiPolicy(),
+                    new MonsterAiPolicy(),
+                    new PetAiPolicy(),
+                    new GuildStaffAiPolicy()
+                },
+                new ApplyActorAiDecisionUseCase());
         }
 
         sealed class ThrowingActorAiPolicy : IActorAiPolicy

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Dungeon;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -9,7 +10,13 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class InitializeDungeonUseCase
     {
-        readonly EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase = new();
+        readonly EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase;
+
+        [Inject]
+        public InitializeDungeonUseCase(EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase)
+        {
+            this.ensureDungeonFloorGeneratedUseCase = ensureDungeonFloorGeneratedUseCase ?? throw new System.ArgumentNullException(nameof(ensureDungeonFloorGeneratedUseCase));
+        }
 
         /// <summary>
         /// ゲーム開始時シードを持つダンジョンを作成し、初期フロアとして地下 1 階を生成する。

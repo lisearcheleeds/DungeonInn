@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -11,7 +12,13 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class UseDungeonStairUseCase
     {
-        readonly EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase = new();
+        readonly EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase;
+
+        [Inject]
+        public UseDungeonStairUseCase(EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase)
+        {
+            this.ensureDungeonFloorGeneratedUseCase = ensureDungeonFloorGeneratedUseCase ?? throw new ArgumentNullException(nameof(ensureDungeonFloorGeneratedUseCase));
+        }
 
         /// <summary>
         /// 現在位置が階段上であることを確認し、移動先レイヤーの対応階段付近へワープする。

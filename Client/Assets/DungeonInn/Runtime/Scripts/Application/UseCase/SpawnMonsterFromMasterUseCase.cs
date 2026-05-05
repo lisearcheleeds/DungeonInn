@@ -2,6 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Factory;
 using DungeonInn.Domain.Actor;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -12,6 +13,7 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IMonsterFactory monsterFactory;
 
+        [Inject]
         public SpawnMonsterFromMasterUseCase(IMonsterFactory monsterFactory)
         {
             this.monsterFactory = monsterFactory ?? throw new ArgumentNullException(nameof(monsterFactory));
