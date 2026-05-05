@@ -18,6 +18,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         InitializeGameWorldUseCase initializeGameWorldUseCase;
         SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase;
         SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase;
+        AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase;
 
         bool isExecuting;
         bool isInitialized;
@@ -28,13 +29,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             IGameWorldState gameWorldState,
             InitializeGameWorldUseCase initializeGameWorldUseCase,
             SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase,
-            SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase)
+            SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase,
+            AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.initializeGameWorldUseCase = initializeGameWorldUseCase ?? throw new ArgumentNullException(nameof(initializeGameWorldUseCase));
             this.spawnScheduledAdventurerUseCase = spawnScheduledAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledAdventurerUseCase));
             this.spawnScheduledMonsterUseCase = spawnScheduledMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledMonsterUseCase));
+            this.advanceActorSimpleLifecycleUseCase = advanceActorSimpleLifecycleUseCase ?? throw new ArgumentNullException(nameof(advanceActorSimpleLifecycleUseCase));
         }
 
         void Start()
@@ -89,6 +92,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 {
                     Debug.Log($"[Spawn] Monster {spawnedMonster.Name} spawned at Floor 1");
                 }
+
+                await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState.Actors);
 
                 LogActorSummaries(result);
             }

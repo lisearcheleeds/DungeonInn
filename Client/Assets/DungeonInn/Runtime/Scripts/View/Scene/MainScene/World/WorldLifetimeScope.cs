@@ -28,6 +28,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledMonsterUseCase>(Lifetime.Scoped);
+            builder.Register<AdvanceActorSimpleLifecycleUseCase>(Lifetime.Scoped);
 
             builder.Register<ActorDecisionScheduler>(Lifetime.Scoped);
             builder.Register<ApplyActorAiDecisionUseCase>(Lifetime.Scoped);
