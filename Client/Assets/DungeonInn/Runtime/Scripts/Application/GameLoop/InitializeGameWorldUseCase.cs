@@ -78,8 +78,8 @@ namespace DungeonInn.Application.GameLoop
             return new[]
             {
                 new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold),
-                new ItemStack(3001, GameConstants.InitialRookieSwordCount),
-                new ItemStack(3003, GameConstants.InitialRookieArmorCount)
+                new ItemStack(GameConstants.InitialRookieSwordItemId, GameConstants.InitialRookieSwordCount),
+                new ItemStack(GameConstants.InitialRookieArmorItemId, GameConstants.InitialRookieArmorCount)
             };
         }
     }

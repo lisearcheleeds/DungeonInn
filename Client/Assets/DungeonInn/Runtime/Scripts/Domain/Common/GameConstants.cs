@@ -5,7 +5,9 @@ namespace DungeonInn.Domain.Common
         public const int GameScheduleTicksPerDay = 1200;
         public const int InitialDungeonSeed = 12345;
         public const int InitialGuildGold = 10000;
+        public const int InitialRookieSwordItemId = 3001;
         public const int InitialRookieSwordCount = 20;
+        public const int InitialRookieArmorItemId = 3003;
         public const int InitialRookieArmorCount = 20;
         public const int InitialInnBasePrice = 10;
         public const int InitialInnCapacity = 8;

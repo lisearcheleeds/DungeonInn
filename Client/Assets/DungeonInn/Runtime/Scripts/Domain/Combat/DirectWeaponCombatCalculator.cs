@@ -1,7 +1,5 @@
 using System;
-using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
-using ActorEntity = DungeonInn.Domain.Actor.Actor;
 
 namespace DungeonInn.Domain.Combat
 {
@@ -16,14 +14,14 @@ namespace DungeonInn.Domain.Combat
             this.attackIntervalSeconds = Math.Max(0, attackIntervalSeconds);
         }
 
-        public WeaponCombatParams Calculate(ActorEntity actor, WeaponMaster weaponMaster)
+        public WeaponCombatParams Calculate(IWeaponCombatSource source, WeaponMaster weaponMaster)
         {
-            if (actor == null)
+            if (source == null)
             {
-                throw new ArgumentNullException(nameof(actor));
+                throw new ArgumentNullException(nameof(source));
             }
 
-            var attackPower = actor.WeaponAttack;
+            var attackPower = source.WeaponAttack;
             var attackSpec = CreateDirectAttackSpec(attackPower);
             var resolvedRangeMeters = weaponMaster == null ? rangeMeters : weaponMaster.RangeMeters;
             var resolvedAttackIntervalSeconds = weaponMaster == null ? attackIntervalSeconds : weaponMaster.AttackIntervalSeconds;

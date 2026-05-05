@@ -8,7 +8,7 @@ using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Actor
 {
-    public sealed class Actor
+    public sealed class Actor : DungeonInn.Domain.Combat.IWeaponCombatSource
     {
         public Guid Id { get; }
         public string Name { get; }
@@ -223,6 +223,7 @@ namespace DungeonInn.Domain.Actor
             RefreshWeaponCombatParams();
         }
 
+        // Intentionally public: UseCase can trigger cache refresh when needed (e.g., after applying buffs/debuffs externally).
         public void RefreshParams()
         {
             Params = new ActorParamCalculator().Calculate(Stats, Equipment.All, Behavior, Level);

@@ -131,7 +131,6 @@ namespace DungeonInn.Domain.Guild
                 occurredAtTick);
 
             innReservations.Add(reservation);
-            adventurer.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Resident);
             return reservation;
         }
 

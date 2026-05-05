@@ -60,13 +60,6 @@ namespace DungeonInn.Application.UseCase
                     request.PreferenceSeed));
             var rookieEquipment = isRookie ? ToItemStacks(archetypeMaster.InitialEquipmentItemIds) : Array.Empty<ItemStack>();
             await spawnAdventurerUseCase.ExecuteAsync(guild, actor, rookieEquipment, occurredAtTick);
-            if (isRookie)
-            {
-                AddInitialInventory(actor, archetypeMaster.InitialInventoryItemIds);
-                EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
-                return actor;
-            }
-
             AddInitialInventory(actor, archetypeMaster.InitialInventoryItemIds);
             EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
             return actor;
