@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-16"?>
+<test-run id="2" testcasecount="24" result="Failed" total="24" passed="23" failed="1" skipped="0" start-time="2026-05-05 04:32:53" end-time="2026-05-05 04:32:56" duration="2.622">
+  <test-suite type="TestSuite" name="Client" fullname="Client" result="Failed" start-time="2026-05-05 04:32:53" end-time="2026-05-05 04:32:56" duration="2.622" total="24" passed="23" failed="1" skipped="0">
+    <test-suite type="TestSuite" name="DungeonInn.Tests.EditMode.dll" fullname="C:/Users/Lise/Documents/UnityProjects/DungeonInn/Client/Library/ScriptAssemblies/DungeonInn.Tests.EditMode.dll" result="Failed" start-time="2026-05-05 04:32:53" end-time="2026-05-05 04:32:56" duration="2.516" total="24" passed="23" failed="1" skipped="0">
+      <test-suite type="TestSuite" name="DungeonInn" fullname="DungeonInn" result="Failed" start-time="2026-05-05 04:32:53" end-time="2026-05-05 04:32:56" duration="2.425" total="24" passed="23" failed="1" skipped="0">
+        <test-suite type="TestSuite" name="Tests" fullname="DungeonInn.Tests" result="Failed" start-time="2026-05-05 04:32:53" end-time="2026-05-05 04:32:56" duration="2.316" total="24" passed="23" failed="1" skipped="0">
+          <test-suite type="TestSuite" name="EditMode" fullname="DungeonInn.Tests.EditMode" result="Failed" start-time="2026-05-05 04:32:53" end-time="2026-05-05 04:32:56" duration="2.208" total="24" passed="23" failed="1" skipped="0">
+            <test-suite type="DungeonInn.Tests.EditMode.ActorAiTests" name="ActorAiTests" fullname="DungeonInn.Tests.EditMode.ActorAiTests" result="Passed" start-time="2026-05-05 04:32:53" end-time="2026-05-05 04:32:54" duration="0.241" total="3" passed="3" failed="0" skipped="0">
+              <test-case name="AdvanceActorAiEvaluatesHighestDirtyLayerOncePerTick" fullname="DungeonInn.Tests.EditMode.ActorAiTests.AdvanceActorAiEvaluatesHighestDirtyLayerOncePerTick" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.113" />
+              <test-case name="EventDirtyMapperMapsMeaningEventsToLayerDirty" fullname="DungeonInn.Tests.EditMode.ActorAiTests.EventDirtyMapperMapsMeaningEventsToLayerDirty" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.001" />
+              <test-case name="RuntimeStateRespectsCooldown" fullname="DungeonInn.Tests.EditMode.ActorAiTests.RuntimeStateRespectsCooldown" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.000" />
+            </test-suite>
+            <test-suite type="DungeonInn.Tests.EditMode.CombatEffectGraphTests" name="CombatEffectGraphTests" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests" result="Failed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.034" total="8" passed="7" failed="1" skipped="0">
+              <test-case name="ValidatorAcceptsComplexProjectileAreaDirectGraph" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorAcceptsComplexProjectileAreaDirectGraph" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.009" />
+              <test-case name="ValidatorAcceptsOnTickFromDurationArea" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorAcceptsOnTickFromDurationArea" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.001" />
+              <test-case name="ValidatorRejectsCombatEffectCycles" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsCombatEffectCycles" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.007" />
+              <test-case name="ValidatorRejectsDisconnectedCombatEffectCycles" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsDisconnectedCombatEffectCycles" result="Failed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.010">
+                <failure>
+                  <message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</message>
+                  <stack-trace>at DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsDisconnectedCombatEffectCycles () [0x0009e] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\CombatEffectGraphTests.cs:163
+</stack-trace>
+                </failure>
+              </test-case>
+              <test-case name="ValidatorRejectsDuplicatedNodeIds" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsDuplicatedNodeIds" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.001" />
+              <test-case name="ValidatorRejectsMissingLinkTargetNode" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsMissingLinkTargetNode" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.001" />
+              <test-case name="ValidatorRejectsMissingRootNode" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsMissingRootNode" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.001" />
+              <test-case name="ValidatorRejectsOnTickFromInstantArea" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsOnTickFromInstantArea" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:54" duration="0.001" />
+            </test-suite>
+            <test-suite type="DungeonInn.Tests.EditMode.DungeonFloorGenerationTests" name="DungeonFloorGenerationTests" fullname="DungeonInn.Tests.EditMode.DungeonFloorGenerationTests" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:55" duration="1.691" total="1" passed="1" failed="0" skipped="0">
+              <test-case name="GeneratedFloorsConnectUpStairToDownStair" fullname="DungeonInn.Tests.EditMode.DungeonFloorGenerationTests.GeneratedFloorsConnectUpStairToDownStair" result="Passed" start-time="2026-05-05 04:32:54" end-time="2026-05-05 04:32:55" duration="1.609" />
+            </test-suite>
+            <test-suite type="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests" name="WeaponCombatCalculatorTests" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests" result="Passed" start-time="2026-05-05 04:32:55" end-time="2026-05-05 04:32:56" duration="0.130" total="12" passed="12" failed="0" skipped="0">
+              <test-case name="ActorStartsWithFistDirectCombatParams" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.ActorStartsWithFistDirectCombatParams" result="Passed" start-time="2026-05-05 04:32:55" end-time="2026-05-05 04:32:55" duration="0.008" />
+              <test-suite type="TestSuite" name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition" result="Passed" start-time="2026-05-05 04:32:55" end-time="2026-05-05 04:32:56" duration="0.107" total="7" passed="7" failed="0" skipped="0">
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Sword)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Sword)" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.007" />
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Bow)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Bow)" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.001" />
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Axe)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Axe)" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.001" />
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Scythe)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Scythe)" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.001" />
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fist)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fist)" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.000" />
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Claws)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Claws)" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.001" />
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fangs)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fangs)" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.001" />
+              </test-suite>
+              <test-case name="EquippingArmorDoesNotChangeCurrentWeaponCombatRange" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.EquippingArmorDoesNotChangeCurrentWeaponCombatRange" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.001" />
+              <test-case name="EquippingDifferentWeaponTypeRefreshesCombatRangeAndAttackInterval" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.EquippingDifferentWeaponTypeRefreshesCombatRangeAndAttackInterval" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.001" />
+              <test-case name="IncreasingStatsRefreshesDirectDamageAmount" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.IncreasingStatsRefreshesDirectDamageAmount" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.005" />
+              <test-case name="UnequippingWeaponReturnsToFistCombatParams" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.UnequippingWeaponReturnsToFistCombatParams" result="Passed" start-time="2026-05-05 04:32:56" end-time="2026-05-05 04:32:56" duration="0.003" />
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -58,13 +58,20 @@ namespace DungeonInn.Application.UseCase
             var policy = ResolvePolicy(actor);
             var context = new ActorAiContext(actor, currentTick, runtimeState);
             var dirty = runtimeState.GetHighestDirty();
-            var decision = Evaluate(policy, context, dirty);
-
-            await applyActorAiDecisionUseCase.ExecuteAsync(actor, decision);
-            runtimeState.ClearDirty(dirty);
-            runtimeState.MarkDirty(decision.AdditionalDirtyFlags);
-            runtimeState.MarkEvaluated(currentTick, cooldownTicks);
-            return true;
+            try
+            {
+                var decision = Evaluate(policy, context, dirty);
+                await applyActorAiDecisionUseCase.ExecuteAsync(actor, decision);
+                runtimeState.ClearDirty(dirty);
+                runtimeState.MarkDirty(decision.AdditionalDirtyFlags);
+                runtimeState.MarkEvaluated(currentTick, cooldownTicks);
+                return true;
+            }
+            catch
+            {
+                runtimeState.MarkEvaluated(currentTick, cooldownTicks);
+                throw;
+            }
         }
 
         IActorAiPolicy ResolvePolicy(Actor actor)

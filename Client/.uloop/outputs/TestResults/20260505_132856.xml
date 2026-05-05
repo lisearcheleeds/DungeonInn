@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-16"?>
+<test-run id="2" testcasecount="14" result="Failed" total="14" passed="7" failed="7" skipped="0" start-time="2026-05-05 04:28:54" end-time="2026-05-05 04:28:56" duration="1.947">
+  <test-suite type="TestSuite" name="Client" fullname="Client" result="Failed" start-time="2026-05-05 04:28:54" end-time="2026-05-05 04:28:56" duration="1.947" total="14" passed="7" failed="7" skipped="0">
+    <test-suite type="TestSuite" name="DungeonInn.Tests.EditMode.dll" fullname="C:/Users/Lise/Documents/UnityProjects/DungeonInn/Client/Library/ScriptAssemblies/DungeonInn.Tests.EditMode.dll" result="Failed" start-time="2026-05-05 04:28:54" end-time="2026-05-05 04:28:56" duration="1.837" total="14" passed="7" failed="7" skipped="0">
+      <test-suite type="TestSuite" name="DungeonInn" fullname="DungeonInn" result="Failed" start-time="2026-05-05 04:28:54" end-time="2026-05-05 04:28:56" duration="1.735" total="14" passed="7" failed="7" skipped="0">
+        <test-suite type="TestSuite" name="Tests" fullname="DungeonInn.Tests" result="Failed" start-time="2026-05-05 04:28:54" end-time="2026-05-05 04:28:56" duration="1.626" total="14" passed="7" failed="7" skipped="0">
+          <test-suite type="TestSuite" name="EditMode" fullname="DungeonInn.Tests.EditMode" result="Failed" start-time="2026-05-05 04:28:54" end-time="2026-05-05 04:28:56" duration="1.517" total="14" passed="7" failed="7" skipped="0">
+            <test-suite type="DungeonInn.Tests.EditMode.ActorAiTests" name="ActorAiTests" fullname="DungeonInn.Tests.EditMode.ActorAiTests" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.172" total="3" passed="3" failed="0" skipped="0">
+              <test-case name="AdvanceActorAiEvaluatesHighestDirtyLayerOncePerTick" fullname="DungeonInn.Tests.EditMode.ActorAiTests.AdvanceActorAiEvaluatesHighestDirtyLayerOncePerTick" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.053" />
+              <test-case name="EventDirtyMapperMapsMeaningEventsToLayerDirty" fullname="DungeonInn.Tests.EditMode.ActorAiTests.EventDirtyMapperMapsMeaningEventsToLayerDirty" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.001" />
+              <test-case name="RuntimeStateRespectsCooldown" fullname="DungeonInn.Tests.EditMode.ActorAiTests.RuntimeStateRespectsCooldown" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.001" />
+            </test-suite>
+            <test-suite type="DungeonInn.Tests.EditMode.CombatEffectGraphTests" name="CombatEffectGraphTests" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.061" total="3" passed="3" failed="0" skipped="0">
+              <test-case name="ValidatorAcceptsComplexProjectileAreaDirectGraph" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorAcceptsComplexProjectileAreaDirectGraph" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.008" />
+              <test-case name="ValidatorRejectsCombatEffectCycles" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsCombatEffectCycles" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.007" />
+              <test-case name="ValidatorRejectsOnTickFromInstantArea" fullname="DungeonInn.Tests.EditMode.CombatEffectGraphTests.ValidatorRejectsOnTickFromInstantArea" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:55" duration="0.000" />
+            </test-suite>
+            <test-suite type="DungeonInn.Tests.EditMode.DungeonFloorGenerationTests" name="DungeonFloorGenerationTests" fullname="DungeonInn.Tests.EditMode.DungeonFloorGenerationTests" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:56" duration="1.046" total="1" passed="1" failed="0" skipped="0">
+              <test-case name="GeneratedFloorsConnectUpStairToDownStair" fullname="DungeonInn.Tests.EditMode.DungeonFloorGenerationTests.GeneratedFloorsConnectUpStairToDownStair" result="Passed" start-time="2026-05-05 04:28:55" end-time="2026-05-05 04:28:56" duration="0.953" />
+            </test-suite>
+            <test-suite type="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests" name="WeaponCombatCalculatorTests" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.127" total="7" passed="0" failed="7" skipped="0">
+              <test-suite type="TestSuite" name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.126" total="7" passed="0" failed="7" skipped="0">
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Sword)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Sword)" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.009">
+                  <failure>
+                    <message>System.ArgumentException : Property Count was not found
+Parameter name: name</message>
+                    <stack-trace>  at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo (System.Object actual) [0x0004a] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression, System.String message, System.Object[] args) [0x0000b] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression) [0x00000] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition (DungeonInn.Domain.Item.WeaponType weaponType) [0x0002c] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\WeaponCombatCalculatorTests.cs:24 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&amp;)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in &lt;41d29b352f6a475ab1bf7c6628b82790&gt;:0 </stack-trace>
+                  </failure>
+                </test-case>
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Bow)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Bow)" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.001">
+                  <failure>
+                    <message>System.ArgumentException : Property Count was not found
+Parameter name: name</message>
+                    <stack-trace>  at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo (System.Object actual) [0x0004a] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression, System.String message, System.Object[] args) [0x0000b] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression) [0x00000] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition (DungeonInn.Domain.Item.WeaponType weaponType) [0x0002c] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\WeaponCombatCalculatorTests.cs:24 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&amp;)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in &lt;41d29b352f6a475ab1bf7c6628b82790&gt;:0 </stack-trace>
+                  </failure>
+                </test-case>
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Axe)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Axe)" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.000">
+                  <failure>
+                    <message>System.ArgumentException : Property Count was not found
+Parameter name: name</message>
+                    <stack-trace>  at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo (System.Object actual) [0x0004a] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression, System.String message, System.Object[] args) [0x0000b] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression) [0x00000] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition (DungeonInn.Domain.Item.WeaponType weaponType) [0x0002c] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\WeaponCombatCalculatorTests.cs:24 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&amp;)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in &lt;41d29b352f6a475ab1bf7c6628b82790&gt;:0 </stack-trace>
+                  </failure>
+                </test-case>
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Scythe)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Scythe)" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.000">
+                  <failure>
+                    <message>System.ArgumentException : Property Count was not found
+Parameter name: name</message>
+                    <stack-trace>  at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo (System.Object actual) [0x0004a] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression, System.String message, System.Object[] args) [0x0000b] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression) [0x00000] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition (DungeonInn.Domain.Item.WeaponType weaponType) [0x0002c] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\WeaponCombatCalculatorTests.cs:24 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&amp;)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in &lt;41d29b352f6a475ab1bf7c6628b82790&gt;:0 </stack-trace>
+                  </failure>
+                </test-case>
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fist)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fist)" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.000">
+                  <failure>
+                    <message>System.ArgumentException : Property Count was not found
+Parameter name: name</message>
+                    <stack-trace>  at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo (System.Object actual) [0x0004a] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression, System.String message, System.Object[] args) [0x0000b] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression) [0x00000] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition (DungeonInn.Domain.Item.WeaponType weaponType) [0x0002c] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\WeaponCombatCalculatorTests.cs:24 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&amp;)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in &lt;41d29b352f6a475ab1bf7c6628b82790&gt;:0 </stack-trace>
+                  </failure>
+                </test-case>
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Claws)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Claws)" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.000">
+                  <failure>
+                    <message>System.ArgumentException : Property Count was not found
+Parameter name: name</message>
+                    <stack-trace>  at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo (System.Object actual) [0x0004a] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression, System.String message, System.Object[] args) [0x0000b] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression) [0x00000] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition (DungeonInn.Domain.Item.WeaponType weaponType) [0x0002c] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\WeaponCombatCalculatorTests.cs:24 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&amp;)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in &lt;41d29b352f6a475ab1bf7c6628b82790&gt;:0 </stack-trace>
+                  </failure>
+                </test-case>
+                <test-case name="AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fangs)" fullname="DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition(Fangs)" result="Failed" start-time="2026-05-05 04:28:56" end-time="2026-05-05 04:28:56" duration="0.000">
+                  <failure>
+                    <message>System.ArgumentException : Property Count was not found
+Parameter name: name</message>
+                    <stack-trace>  at NUnit.Framework.Constraints.PropertyConstraint.ApplyTo (System.Object actual) [0x0004a] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression, System.String message, System.Object[] args) [0x0000b] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at NUnit.Framework.Assert.That[TActual] (TActual actual, NUnit.Framework.Constraints.IResolveConstraint expression) [0x00000] in &lt;f577cd9686154d6ab10efd7e65e64366&gt;:0 
+  at DungeonInn.Tests.EditMode.WeaponCombatCalculatorTests.AllWeaponTypesCurrentlyUseDirectDamageAttackDefinition (DungeonInn.Domain.Item.WeaponType weaponType) [0x0002c] in C:\Users\Lise\Documents\UnityProjects\DungeonInn\Client\Assets\DungeonInn\Tests\EditMode\WeaponCombatCalculatorTests.cs:24 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&amp;)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in &lt;41d29b352f6a475ab1bf7c6628b82790&gt;:0 </stack-trace>
+                  </failure>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

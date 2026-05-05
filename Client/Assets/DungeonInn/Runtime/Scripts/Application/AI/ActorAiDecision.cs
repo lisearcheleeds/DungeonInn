@@ -4,6 +4,8 @@ namespace DungeonInn.Application.AI
 {
     public sealed class ActorAiDecision
     {
+        static readonly ActorAiDirtyRules DirtyRules = new();
+
         public ActorGoal NextGoal { get; }
         public ActorPlan NextPlan { get; }
         public ActorAction NextAction { get; }
@@ -14,7 +16,7 @@ namespace DungeonInn.Application.AI
             NextGoal = nextGoal;
             NextPlan = nextPlan;
             NextAction = nextAction;
-            AdditionalDirtyFlags = new ActorAiDirtyRules().CalculateAdditionalDirtyFlags(nextGoal, nextPlan, nextAction);
+            AdditionalDirtyFlags = DirtyRules.CalculateAdditionalDirtyFlags(nextGoal, nextPlan, nextAction);
         }
 
         public static ActorAiDecision None()

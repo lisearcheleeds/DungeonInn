@@ -66,6 +66,27 @@ namespace DungeonInn.Tests.EditMode
                 Is.EqualTo(ActorAiDirtyFlags.LongTerm | ActorAiDirtyFlags.MidTerm));
         }
 
+        [Test]
+        public void AdvanceActorAiMarksEvaluatedWhenPolicyThrows()
+        {
+            var actor = CreateAdventurer();
+            var useCase = new AdvanceActorAiUseCase(
+                new ActorDecisionScheduler(),
+                new IActorAiPolicy[] { new ThrowingActorAiPolicy() },
+                new ApplyActorAiDecisionUseCase());
+
+            Assert.Throws<InvalidOperationException>(() =>
+                useCase.ExecuteAsync(new[] { actor }, 1, 5).GetAwaiter().GetResult());
+            Assert.That(
+                useCase.ExecuteAsync(new[] { actor }, 1, 5).GetAwaiter().GetResult(),
+                Is.False);
+            Assert.That(
+                useCase.ExecuteAsync(new[] { actor }, 5, 5).GetAwaiter().GetResult(),
+                Is.False);
+            Assert.Throws<InvalidOperationException>(() =>
+                useCase.ExecuteAsync(new[] { actor }, 6, 5).GetAwaiter().GetResult());
+        }
+
         static Actor CreateAdventurer()
         {
             return new Actor(
@@ -83,6 +104,29 @@ namespace DungeonInn.Tests.EditMode
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Adventurer"),
                 new AdventurerBehavior(0));
+        }
+
+        sealed class ThrowingActorAiPolicy : IActorAiPolicy
+        {
+            public bool CanHandle(Actor actor)
+            {
+                return true;
+            }
+
+            public ActorAiDecision EvaluateLongTerm(ActorAiContext context)
+            {
+                throw new InvalidOperationException("AI policy failed.");
+            }
+
+            public ActorAiDecision EvaluateMidTerm(ActorAiContext context)
+            {
+                throw new InvalidOperationException("AI policy failed.");
+            }
+
+            public ActorAiDecision EvaluateShortTerm(ActorAiContext context)
+            {
+                throw new InvalidOperationException("AI policy failed.");
+            }
         }
     }
 }

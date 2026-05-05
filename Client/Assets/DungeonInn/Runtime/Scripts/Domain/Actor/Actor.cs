@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 
@@ -25,7 +26,9 @@ namespace DungeonInn.Domain.Actor
         public ActorFaction Faction { get; private set; }
         public IActorBehavior Behavior { get; private set; }
         public IWeaponCalculator WeaponCalculator { get; private set; }
+        public IWeaponCombatCalculator WeaponCombatCalculator { get; private set; }
         public int WeaponAttack { get; private set; }
+        public WeaponCombatParams WeaponCombatParams { get; private set; }
         public ActorGoal CurrentGoal { get; private set; }
         public ActorPlan CurrentPlan { get; private set; }
         public ActorAction CurrentAction { get; private set; }
@@ -188,18 +191,26 @@ namespace DungeonInn.Domain.Actor
         {
             var weaponType = Equipment.Weapon == null ? WeaponType.Fist : Equipment.Weapon.WeaponType;
             WeaponCalculator = WeaponCalculatorFactory.Create(weaponType);
+            WeaponCombatCalculator = WeaponCombatCalculatorFactory.Create(weaponType);
             RefreshWeaponAttack();
+            RefreshWeaponCombatParams();
         }
 
         public void RefreshParams()
         {
             Params = new ActorParamCalculator().Calculate(Stats, Equipment.All, Behavior, Level);
             RefreshWeaponAttack();
+            RefreshWeaponCombatParams();
         }
 
         void RefreshWeaponAttack()
         {
             WeaponAttack = WeaponCalculator.CalculateAttack(Stats, Equipment.Weapon, Behavior, Level);
+        }
+
+        void RefreshWeaponCombatParams()
+        {
+            WeaponCombatParams = WeaponCombatCalculator.Calculate(this, Equipment.Weapon);
         }
 
         public TBehavior RequireBehavior<TBehavior>() where TBehavior : class, IActorBehavior
