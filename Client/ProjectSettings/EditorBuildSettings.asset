@@ -12,6 +12,12 @@ EditorBuildSettings:
     path: Assets/DungeonInn/Runtime/Scene/MainScene/FirstScene.unity
     guid: 417b1809f7d55864c9f9d3da29df8340
   - enabled: 1
+    path: Assets/DungeonInn/Runtime/Scene/MainScene/Title.unity
+    guid: 66c2b4680f9f66548a244e4aacf71941
+  - enabled: 1
+    path: Assets/DungeonInn/Runtime/Scene/MainScene/World.unity
+    guid: 65b170eaf0429be4ebb76932f391305b
+  - enabled: 1
     path: Assets/DungeonInn/Runtime/Scene/ModuleScene/ScreenStack.unity
     guid: 5afa4d0be71c43440ad57b749e93ffa2
   m_configObjects:

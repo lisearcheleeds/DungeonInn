@@ -26,6 +26,8 @@ Application 層は Domain を組み合わせてユースケースを実行する
 
 View 層は表示、カメラ、ポップアップ、アニメーション、Unity 座標変換を担当する。
 
+LifetimeScope / DI / ゲームループの配置方針は `docs/lifetime-scope-game-loop-design.md` を参照する。
+
 ## 現在の実装状態
 
 2026-05-05 時点では、`Client/Assets/DungeonInn/Runtime/Scripts/Domain`、`Application`、`Master` に初期実装がある。

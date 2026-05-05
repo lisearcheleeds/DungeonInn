@@ -18,11 +18,15 @@ namespace DungeonInn.Core
             new Dictionary<MainSceneId, ModuleSceneId[]>
             {
                 { DungeonInnMainSceneId.FirstScene, null },
+                { DungeonInnMainSceneId.Title, null },
+                { DungeonInnMainSceneId.World, null },
             };
 
         static readonly MainSceneId[][] MainSceneGroupList =
         {
             new[] { DungeonInnMainSceneId.FirstScene },
+            new[] { DungeonInnMainSceneId.Title },
+            new[] { DungeonInnMainSceneId.World },
         };
 
         static readonly SceneGroup[] SceneGroupList = CreateSceneGroups();
