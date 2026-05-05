@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
@@ -15,6 +16,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         IGameLoopUseCase gameLoopUseCase;
         IGameWorldState gameWorldState;
         InitializeGameWorldUseCase initializeGameWorldUseCase;
+        SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase;
+        SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase;
 
         bool isExecuting;
         bool isInitialized;
@@ -23,11 +26,15 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void Construct(
             IGameLoopUseCase gameLoopUseCase,
             IGameWorldState gameWorldState,
-            InitializeGameWorldUseCase initializeGameWorldUseCase)
+            InitializeGameWorldUseCase initializeGameWorldUseCase,
+            SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase,
+            SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.initializeGameWorldUseCase = initializeGameWorldUseCase ?? throw new ArgumentNullException(nameof(initializeGameWorldUseCase));
+            this.spawnScheduledAdventurerUseCase = spawnScheduledAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledAdventurerUseCase));
+            this.spawnScheduledMonsterUseCase = spawnScheduledMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledMonsterUseCase));
         }
 
         void Start()
@@ -69,6 +76,18 @@ namespace DungeonInn.View.Scene.MainScene.World
                 if (result.AdvancedScheduleTicks <= 0)
                 {
                     return;
+                }
+
+                var spawnedAdventurer = await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+                if (spawnedAdventurer != null)
+                {
+                    Debug.Log($"[Spawn] Adventurer {spawnedAdventurer.Name} spawned");
+                }
+
+                var spawnedMonster = await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+                if (spawnedMonster != null)
+                {
+                    Debug.Log($"[Spawn] Monster {spawnedMonster.Name} spawned at Floor 1");
                 }
 
                 LogActorSummaries(result);

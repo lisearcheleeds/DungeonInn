@@ -17,6 +17,7 @@ namespace DungeonInn.Application.GameLoop
         public GroundMap GroundMap { get; private set; }
         public Dungeon Dungeon { get; private set; }
         public IReadOnlyList<Actor> Actors => actors;
+        public SpawnScheduleState SpawnSchedule { get; } = new();
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)
         {

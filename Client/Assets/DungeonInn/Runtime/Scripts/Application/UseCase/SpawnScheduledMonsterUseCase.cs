@@ -1,0 +1,71 @@
+using System;
+using System.Linq;
+using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Factory;
+using DungeonInn.Application.GameLoop;
+using DungeonInn.Domain.Actor;
+using DungeonInn.Master;
+using VContainer;
+
+namespace DungeonInn.Application.UseCase
+{
+    public sealed class SpawnScheduledMonsterUseCase
+    {
+        readonly SpawnMonsterFromMasterUseCase spawnMonsterFromMasterUseCase;
+        readonly IMasterRepository masterRepository;
+
+        [Inject]
+        public SpawnScheduledMonsterUseCase(
+            SpawnMonsterFromMasterUseCase spawnMonsterFromMasterUseCase,
+            IMasterRepository masterRepository)
+        {
+            this.spawnMonsterFromMasterUseCase = spawnMonsterFromMasterUseCase ?? throw new ArgumentNullException(nameof(spawnMonsterFromMasterUseCase));
+            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+        }
+
+        public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
+        {
+            if (worldState == null)
+            {
+                throw new ArgumentNullException(nameof(worldState));
+            }
+
+            // TODO: 間隔をSpawnTableMasterから取得する
+            if (currentScheduleTick - worldState.SpawnSchedule.LastMonsterSpawnTick < 10)
+            {
+                return null;
+            }
+
+            worldState.SpawnSchedule.LastMonsterSpawnTick = currentScheduleTick;
+
+            // TODO: 上限をSpawnTableMasterから取得する
+            var monsterCount = worldState.Actors.Count(x => x.Behavior is MonsterBehavior);
+            if (monsterCount >= 5)
+            {
+                return null;
+            }
+
+            var floor = worldState.Dungeon.GetFloor(1);
+            var room = floor.Rooms[currentScheduleTick % floor.Rooms.Count];
+            var position = floor.Layer.GetCellCenter(room.Center);
+
+            // TODO: SpawnTableMasterから重み付き抽選に変更する
+            var spawnTable = masterRepository.GetSpawnTableMaster(2);
+            var entry = spawnTable.Entries[0];
+
+            // TODO: FactionをFactionMasterから取得する
+            var faction = new ActorFaction(2, "Monster");
+
+            var request = new MonsterCreateRequest(
+                entry.TargetId,
+                Guid.NewGuid(),
+                position,
+                faction,
+                new Random().Next());
+
+            var actor = await spawnMonsterFromMasterUseCase.ExecuteAsync(request);
+            worldState.RegisterActor(actor);
+            return actor;
+        }
+    }
+}
