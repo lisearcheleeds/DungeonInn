@@ -1,6 +1,7 @@
 # Actor AI Design
 
 このドキュメントは、Actor のAI設計方針をまとめる。
+
 Adventurer、Monster、Pet、GuildStaff は判断内容こそ異なるが、同じAI実行基盤に乗せる。
 
 ## 目的
@@ -10,20 +11,18 @@ Actor AI は、Actor が現在の状況を見て次の行動を自律的に決�
 AIは以下の3階層で扱う。
 
 - 長期目標: 何を達成したいか
-- 中期計画: 長期目標を達成するためにどの方針で行動するか
+- 中期計画: 長期目標を達成するために、現在どの方針で動くか
 - 短期行動: 直近で実行する具体的なAction
 
 例:
 
 - 長期目標: 薬草を10個集める
 - 中期計画: 薬草が出るフロアを探索する
-- 短期行動: 移動する、アイテムを拾う、敵と戦う、逃げる
+- 短期行動: 移動する、アイテムを拾う、敵と戦う
 
 ## 配置方針
 
 AIはUseCaseそのものではなく、Application層の意思決定サービスとして扱う。
-
-推奨構成:
 
 ```text
 Application/
@@ -39,12 +38,10 @@ Application/
     GuildStaffAiPolicy
   UseCase/
     AdvanceActorAiUseCase
-    ApplyActorActionUseCase
+    ApplyActorAiDecisionUseCase
 ```
 
-Domain は、AI判断の結果として成立する状態を持つ。
-Application/AI は、AIの評価タイミング、dirty管理、cooldown、判断ロジックを持つ。
-UseCase は、AI評価の呼び出しと、決定されたActionの適用を担当する。
+Domain は、AI判断の結果として成立する状態を持つ。Application/AI は、評価タイミング、dirty管理、cooldown、判断ロジックを持つ。UseCase は、AI評価の呼び出しと、決定されたDecisionの適用を担当する。
 
 ## Domain が持つもの
 
@@ -61,8 +58,8 @@ Domain に持たせないもの:
 
 - dirty flag
 - cooldown
-- last evaluated tick
-- 1tick内で評価済みかどうか
+- last evaluated time
+- 同一評価フレーム内で評価済みかどうか
 - 一時的なイベント蓄積キュー
 - 再評価優先度
 
@@ -72,7 +69,7 @@ Domain に持たせないもの:
 
 ### LongTermGoal
 
-長期目標は、Actor が何を達成したいかを表す。
+Actor が何を達成したいかを表す。
 
 例:
 
@@ -83,26 +80,21 @@ Domain に持たせないもの:
 - 施設勤務を継続する
 - 巡回する
 
-長期目標はセーブ対象にする。
-
 ### MidTermPlan
 
-中期計画は、長期目標を達成するための現在の方針を表す。
+長期目標を達成するための現在の方針を表す。
 
 例:
 
 - 目的アイテムが出るフロアへ向かう
 - 目的アイテムが集まるまで現在フロアを探索する
-- HPが危険なので回復可能な場所へ戻る
+- HPが少ないので回復可能な場所へ戻る
 - 勤務施設へ移動する
-- 縄張り周辺を巡回する
-
-中期計画は基本的にセーブ対象にする。
-ただし、復元が難しい一時的な探索候補リストなどは保存しない。
+- 周囲を巡回する
 
 ### ShortTermAction
 
-短期Actionは、直近で実行する具体的な行動を表す。
+直近で実行する具体的な行動を表す。
 
 例:
 
@@ -114,7 +106,7 @@ Domain に持たせないもの:
 - 施設を利用する
 - 待機する
 
-短期Actionは単なる結果値ではなく、実行状態を持つ。
+ShortTermAction は単なる結果値ではなく、実行状態を持つ。
 
 想定する実行状態:
 
@@ -124,16 +116,11 @@ Domain に持たせないもの:
 - Failed
 - Cancelled
 
-短期Actionを保存する場合は、Action種別と対象IDなど最低限に留める。
-復元時はGoal/Planから再評価してもよい。
+## 再評価
 
-## 再評価の考え方
+AIは毎フレーム常時評価しない。状態変化が起きたときにdirtyを立て、別の評価タイミングで最大1回だけ評価する。
 
-AIは1tickごとに常時評価しない。
-状態変化が起きたときに dirty を立て、別のタイミングで最大1回だけ評価する。
-
-イベント発生時に直接AI判定を行わない。
-イベントは dirty flag を立てるだけにする。
+イベント発生時に直接AI判定を行わない。イベントはdirty flagを立てるだけにする。
 
 ### Dirty Flags
 
@@ -150,70 +137,65 @@ public enum ActorAiDirtyFlags
 }
 ```
 
-処理時は、dirtyになっている最上位層から再評価する。
+評価時は、dirtyになっている最上位階層から再評価する。
 
 ```text
-LongTerm dirtyあり -> LongTerm評価 -> MidTerm再構築 -> ShortTerm決定
-MidTerm dirtyあり  -> MidTerm評価  -> ShortTerm決定
-ShortTerm dirtyあり -> ShortTerm決定
+LongTerm dirtyあり -> LongTerm評価 -> MidTerm/ShortTerm dirty追加
+MidTerm dirtyあり  -> MidTerm評価  -> ShortTerm dirty追加
+ShortTerm dirtyあり -> ShortTerm評価
 ```
 
-短期Actionの結果から中期計画の更新が必要な場合は MidTerm dirty を立てる。
-中期計画の結果から長期目標の更新が必要な場合は LongTerm dirty を立てる。
+## Event To Dirty Mapping
 
-### Event To Dirty Mapping
-
-イベントをそのままAI dirtyに変換しすぎない。
-AI用の意味イベントに集約してから dirty を立てる。
+イベントをそのままAI dirtyに変換しすぎない。AI用の意味イベントに集約してからdirtyを立てる。
 
 例:
 
 | 発生した変化 | AI用イベント | dirty |
 |---|---|---|
-HPが減った | HealthBandChanged | ShortTerm / MidTerm |
-敵と接敵した | EnemyEnteredRange | ShortTerm |
-ダンジョンに入った | EnteredDungeon | MidTerm / ShortTerm |
-アイテムを入手した | ObjectiveItemCountChanged | MidTerm / LongTerm |
-ボスを倒した | ObjectiveMonsterDefeated | LongTerm |
-ゲーム内日付が変わった | GameDateChanged | MidTerm / LongTerm |
-現在Actionが失敗した | CurrentActionFailed | ShortTerm / MidTerm |
-現在Actionが完了した | CurrentActionCompleted | ShortTerm |
+| HP帯が変わった | HealthBandChanged | ShortTerm / MidTerm |
+| 敵と接敵した | EnemyEnteredRange | ShortTerm |
+| ダンジョンに入った | EnteredDungeon | MidTerm / ShortTerm |
+| 目的アイテム数が変わった | ObjectiveItemCountChanged | MidTerm / LongTerm |
+| 目的モンスターを倒した | ObjectiveMonsterDefeated | LongTerm |
+| ゲーム内日付が変わった | GameDateChanged | MidTerm / LongTerm |
+| 現在Actionが失敗した | CurrentActionFailed | ShortTerm / MidTerm |
+| 現在Actionが完了した | CurrentActionCompleted | ShortTerm |
 
 どのイベントがどの階層をdirtyにするかは、AI設計上の重要な表として管理する。
 
-## Cooldown
+## Cooldown と時間
 
-AI評価にはcooldownを設ける。
-戦闘中など短時間に多くのイベントが発生する状況でも、一定間隔より短く再評価しない。
+AI評価にはcooldownを設ける。戦闘中など短時間に多くのイベントが発生する状況でも、一定間隔より短い再評価をしない。
 
-初期方針:
+重要な方針:
 
-- 1tick内でActorごとのAI評価は最大1回
-- dirty が立っていても、評価cooldown中は処理しない
-- 短期AIの最小評価間隔は 0.5秒相当
+- AI cooldown は `CurrentScheduleTick` で扱わない。
+- AI cooldown は `float currentTimeSeconds` で扱う。
+- 同一判定フレーム内でActorごとのAI評価は最大1回にする。
+- 同一フレームガードは `evaluationFrameId` で扱う。
+- 短期AIの最小評価間隔は 0.5秒など小数秒を扱えるようにする。
 
-AI評価cooldownは、原則として simulation time / simulation tick で扱う。
-UIや演出都合のリアル時間ではなく、ゲーム進行に同期する時間を使う。
+`CurrentScheduleTick` は日付変更やスポーン抽選など低頻度スケジュール用であり、AIの再評価精度に使わない。
 
 ## ActorAiRuntimeState
 
 Application/AI は、Actorごとの実行管理状態を持つ。
 
-想定フィールド:
+現在の主なフィールド:
 
 ```csharp
 public sealed class ActorAiRuntimeState
 {
     public Guid ActorId { get; }
     public ActorAiDirtyFlags DirtyFlags { get; private set; }
-    public int LastEvaluatedTick { get; private set; }
-    public int CooldownUntilTick { get; private set; }
-    public bool EvaluatedThisTick { get; private set; }
+    public float LastEvaluatedTimeSeconds { get; private set; }
+    public float CooldownUntilTimeSeconds { get; private set; }
+    public int EvaluatedFrameId { get; private set; }
 }
 ```
 
-このRuntimeStateは原則としてセーブ対象にしない。
-セーブ復元後は、Goal/Plan/CurrentActionから必要なdirtyを立て直す。
+このRuntimeStateは原則としてセーブ対象にしない。セーブ復元後は、Goal / Plan / CurrentAction から必要なdirtyを立て直す。
 
 ## ActorDecisionScheduler
 
@@ -221,20 +203,17 @@ ActorDecisionScheduler は、どのActorのAIをいつ評価するかを制御�
 
 責務:
 
-- イベントから dirty を立てる
-- tickごとに評価可能なActorを選ぶ
-- 1tick最大1回の制限を守る
+- イベントからdirtyを立てる
+- 評価可能なActorを選ぶ
+- 同一 `evaluationFrameId` 内で最大1回の制限を守る
 - cooldownを守る
-- dirtyの最上位層を判定する
-- 対応するAI Policyを呼び出す
+- dirtyの最上位階層を判定する
 
-ActorDecisionScheduler はDomain Entityを直接変更しすぎない。
-意思決定結果をUseCaseへ渡し、Action適用はUseCaseで行う。
+ActorDecisionScheduler はDomain Entityを直接変更しすぎない。意思決定結果をUseCaseへ渡し、Decision適用はUseCaseで行う。
 
 ## AI Policy
 
-Actor種別ごとにPolicyを分ける。
-共通基盤は共有し、判断内容は分ける。
+Actor種別ごとにPolicyを分ける。共通基盤は共有し、判断内容は分ける。
 
 共通化してよいもの:
 
@@ -252,7 +231,7 @@ Actor種別ごとにPolicyを分ける。
 - Petの追従判断
 - GuildStaffの勤務判断
 
-想定インターフェース:
+インターフェース:
 
 ```csharp
 public interface IActorAiPolicy
@@ -264,34 +243,34 @@ public interface IActorAiPolicy
 }
 ```
 
-`CanHandle` は実体型やBehaviorを見て判断する。
-Behaviorに分類用enumを重複保持しない。
+`CanHandle` は実体のBehaviorを見て判断する。Behaviorに重複した識別enumを持たせない。
 
 ## ActorAiContext
 
 AI Policyには、判断に必要な情報をContextとして渡す。
 
-想定情報:
+現在の主な情報:
 
 - Actor
-- 現在地点
-- 現在フロア
-- 周辺の敵
-- 周辺のアイテム
-- 利用可能な施設
-- 宿屋予約状況
-- 交換項目
-- 現在時刻 / 現在tick
+- `CurrentTimeSeconds`
+- `ActorAiRuntimeState`
 - 現在のGoal / Plan / Action
 
-Contextは読み取り用にする。
-Policyは直接Domainを更新せず、Decisionを返す。
+将来的に追加する候補:
+
+- 現在地点
+- 現在フロア
+- 周囲の敵
+- 周囲のアイテム
+- 利用可能な施設
+- 宿屋予約状態
+- 交換項目
+
+Contextは読み取り用にする。Policyは直接Domainを変更せず、Decisionを返す。
 
 ## ActorAiDecision
 
-AI Policy は、Domainを直接変更せず Decision を返す。
-
-例:
+AI Policy は Domain を直接変更せず、Decision を返す。
 
 ```csharp
 public sealed class ActorAiDecision
@@ -303,7 +282,7 @@ public sealed class ActorAiDecision
 }
 ```
 
-UseCase が Decision をActorやWorldへ適用する。
+UseCase が Decision を Actor / World へ適用する。
 
 ## UseCase
 
@@ -317,19 +296,28 @@ AI評価を進めるUseCase。
 - ActorAiContextを構築する
 - 対応するPolicyを呼び出す
 - Decisionを受け取る
-- 必要に応じてApplyActorActionUseCaseへ渡す
+- `ApplyActorAiDecisionUseCase` へ渡す
 
-### ApplyActorActionUseCase
+現在の呼び出しは以下の形。
+
+```csharp
+await advanceActorAiUseCase.ExecuteAsync(
+    actors,
+    currentTimeSeconds,
+    evaluationFrameId,
+    cooldownSeconds);
+```
+
+### ApplyActorAiDecisionUseCase
 
 Decisionの結果をDomainへ適用するUseCase。
 
 責務:
 
-- Goal / Plan / Actionの更新
-- Action開始
-- Action完了 / 失敗の反映
+- Goal / Plan / Action の更新
+- 必要に応じたAction状態の反映
 - Actor位置やInventoryなどDomain状態の更新
-- 取引や施設利用など既存UseCaseとの接続
+- 既存UseCaseとの接続
 
 ## 永続化方針
 
@@ -337,69 +325,24 @@ Decisionの結果をDomainへ適用するUseCase。
 
 - LongTermGoal
 - MidTermPlan
-- 必要ならCurrentActionの種類と対象ID
+- 必要なCurrentActionの種類と対象ID
 - AI判断に必要な永続的Memory / Preference
 
 保存しない:
 
 - dirty flag
 - cooldown
-- last evaluated tick
-- evaluated this tick
+- last evaluated time
+- evaluated frame id
 - 一時的な探索候補
 - イベントキュー
 
-復元時は、保存されたGoal/Plan/Actionから再評価に必要なdirtyを立て直す。
+復元時は、保存されたGoal / Plan / Actionから再評価に必要なdirtyを立て直す。
 
-## 懸念点と対策
+## 注意
 
-### DomainとApplicationの境界が曖昧になる
-
-対策:
-
-- ActorにはAIの現在意思を持たせる
-- dirty、cooldown、評価時刻はApplication/AIへ置く
-- PolicyはDecisionを返し、Domain更新はUseCaseで行う
-
-### 再評価ルールが複雑化する
-
-対策:
-
-- Event To Dirty Mapping を表として管理する
-- dirtyは階層別に持つ
-- 最上位dirtyから再評価する
-
-### DecisionとAction適用が循環する
-
-対策:
-
-- Actionに実行状態を持たせる
-- Action開始、進行中、完了、失敗を区別する
-- 位置更新など細かい変化をそのままdirtyにしない
-
-### 全Actor共通化しすぎる
-
-対策:
-
-- Schedulerと階層評価の枠組みだけ共通化する
-- 判断内容はBehavior別Policyに分ける
-
-## 初期実装スコープ
-
-最初の実装では、以下を優先する。
-
-1. Domainに `ActorGoal` / `ActorPlan` / `ActorAction` の基本型を追加する
-2. Application/AIに dirty / cooldown / runtime state を追加する
-3. Adventurer用Policyを最初に作る
-4. Monster / Pet / GuildStaff は同じインターフェースに乗せられる最小実装にする
-5. Event To Dirty Mapping は小さく始め、実装しながら拡張する
-
-## 未決定事項
-
-- 具体的な `ActorGoalType`
-- 具体的な `ActorPlanType`
-- 具体的な `ActorActionType`
-- cooldownをtick数として何tickにするか
-- 戦闘中Actionの詳細
-- 移動ActionとNavigation UseCaseの接続方法
-- セーブ対象にするCurrentActionの粒度
+- ActorにはAIの現在意思を持たせる。
+- dirty、cooldown、評価時刻はApplication/AIへ置く。
+- `CurrentScheduleTick` をAI評価間隔に使わない。
+- PolicyはDecisionを返し、Domain更新はUseCaseで行う。
+- イベントを細かくdirtyに直結させすぎない。

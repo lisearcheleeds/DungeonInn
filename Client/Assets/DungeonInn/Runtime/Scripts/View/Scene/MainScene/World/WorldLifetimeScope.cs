@@ -14,6 +14,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         protected override void Configure(IContainerBuilder builder)
         {
             builder.RegisterComponent(worldScene);
+            builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
 
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();

@@ -130,6 +130,7 @@ GameObject:
   - component: {fileID: 1636493080}
   - component: {fileID: 1636493082}
   - component: {fileID: 1636493081}
+  - component: {fileID: 1636493083}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -181,6 +182,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae85bfbb10b5d574bb05dca6f6fed19d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: DungeonInn.Runtime::DungeonInn.View.Scene.MainScene.World.WorldScene
+--- !u!114 &1636493083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1636493079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c2b5ca483e314d47878728aa5d12834, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DungeonInn.Runtime::DungeonInn.View.Scene.MainScene.World.WorldGameLoopEntryPoint
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
