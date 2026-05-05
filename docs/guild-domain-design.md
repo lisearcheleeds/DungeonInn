@@ -34,7 +34,8 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 
 - `CharacterId` / `FacilityId` / `TransactionId` は個別型ではなく `Guid` で扱う。
 - 所持金は `int` ではなく、`Inventory` 内の `ItemStack` として扱う。通貨アイテムは `SpecialItemIds.Money = 1`。
-- `AdventurerProfile` と `StaffProfile` は独立クラスではなく、現状は `Character` と `CharacterStats` に統合されている。
+- `Character` は廃止し、`Actor` + 単一 `IActorBehavior` へ再編済み。
+- `AdventurerProfile` と `StaffProfile` という分割ではなく、`AdventurerBehavior` と `GuildStaffBehavior` で振る舞いを分ける。
 - `InnFacility` / `TavernFacility` / `GeneralStoreFacility` / `EquipmentShopFacility` は独立クラスではなく、`Facility` + `FacilityType` で表現している。
 - `GuildTransaction` / `TransactionType` は未実装で、現状は `ExchangeTransaction` によって「こちらが渡すもの」「相手が渡すもの」を記録する。
 - Application/AI はまだ未実装。現状の Application は UseCase のみ。
@@ -43,61 +44,111 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 
 ## 中心となる Domain
 
-### Character
+### Actor
 
-`Character` は冒険者にもギルドスタッフにもなり得る人物を表す。
+`Actor` は、ゲーム世界で移動し、戦闘し、アイテムを持つ存在を表す。
 
-キャラクターは以下を持つ。
+冒険者、ギルドスタッフ、モンスター、将来の Pet や Ruffians は、別クラス継承ではなく `Actor` が持つ単一の `IActorBehavior` によって振る舞いを表現する。
+
+`Actor` は以下を持つ。
 
 - `Guid Id`
 - 名前
-- 現在の役割
-- 基礎能力値 `CharacterStats`
+- 基礎能力値 `ActorStats`
 - レベル / 経験値
-- HP / MP / 疲労 / ストレス / 負傷度
+- HP / MP / 疲労 / 負傷度
+- 所持品 `Inventory`
+- 装備
+- 現在位置 `LayerPosition`
+- 所属勢力 `ActorFaction`
+- 現在の振る舞い `IActorBehavior`
 - 嗜好・行動傾向に使う `PreferenceSeed`
-- スカウト費用 `ScoutCost`
-- 給与 `IReadOnlyList<ItemStack>`
-- 所持品
-- 状態
 
-役割は例として以下を想定する。
+`PreferenceSeed` は個体差を安定して出すための値であり、`Actor` に保持する。
 
-- `Adventurer`
-- `GuildStaff`
-- `RecruitCandidate`
-- `Inactive`
+用途例:
 
-### AdventurerProfile
+- 好みの施設を選びやすい。
+- 酒場バフを利用しやすい。
+- 装備購入で攻撃寄り / 防御寄りになりやすい。
+- ダンジョン探索目的の抽選傾向を変える。
+- 危険を避ける / 奥へ進む傾向を変える。
+- 売買プリセットのばらつきを出す。
 
-冒険者としての能力や状態を表す。
+`PreferenceSeed` は Behavior 差し替えで失われない。Adventurer が GuildStaff になった場合や Monster が Pet になった場合でも、個体の性格・嗜好は維持される。
 
-- レベル
-- 経験値
-- HP / 疲労 / 負傷
-- 戦闘能力
-- 探索能力
-- 装備適性
-- 性格・嗜好
-- AI 判断に使う行動傾向
-
-冒険者の行動はプレイヤーが直接決めない。施設利用、購入、売却、休息、食事などは Application/AI が判断する。
-
-現状の実装では独立した `AdventurerProfile` は存在しない。冒険者として必要な値は `Character` と `CharacterStats` に統合されている。
-
-`Character` は以下の計算メソッドを持つ。
+`Actor` は以下の計算メソッドを持つ想定。
 
 - 最大 HP
 - 最大 MP
 - 移動速度
 - 負傷耐性
-- ストレス耐性
 - 剣攻撃力
 - 弓攻撃力
 - 探索能力
 - 装備適性
 
-### StaffProfile
+### ActorEquipment / WeaponCalculator
+
+武器攻撃力は `ActorParams` には含めない。
+最大HP、最大MP、移動速度、負傷耐性、探索力、装備適性のような共通パラメータは `ActorParamCalculator` が `ActorStats`、装備、`IActorBehavior`、レベルから `ActorParams` として計算する。
+一方で攻撃力は武器種ごとに式が異なるため、`IWeaponCalculator` と武器別実装で計算する。
+
+`Actor` は現在装備 `ActorEquipment`、現在の `IWeaponCalculator`、計算済みの `WeaponAttack` を持つ。
+装備変更時は武器スロットの `EquipmentSpec.WeaponType` に応じて現在の武器Calculatorを切り替える。
+装備変更は `Actor.Equip()` / `Actor.Unequip()` を通して行い、`ActorEquipment` を外部から直接変更しない。
+これにより、`ActorParams` と `WeaponAttack` のキャッシュを装備状態と同期させる。
+Behavior 変更時も現在装備に基づいて武器Calculatorを再選択する。
+
+`ActorStats` は不変値として扱う。
+成長やバフなどで基礎能力値を変更する場合は `Actor.IncreaseStats()` のような Actor 経由の処理を使い、変更後に `ActorParams` と `WeaponAttack` を再計算する。
+
+現在想定する武器Calculator:
+
+- `SwordWeaponCalculator`
+- `BowWeaponCalculator`
+- `AxeWeaponCalculator`
+- `ScytheWeaponCalculator`
+- `FistWeaponCalculator`
+- `ClawsWeaponCalculator`
+- `FangsWeaponCalculator`
+
+武器未装備時は `FistWeaponCalculator` を使う。
+
+### IActorBehavior
+
+`IActorBehavior` は、Actor が現在どのような存在として振る舞うかを表す。
+
+Behavior は単一とする。
+
+```csharp
+public interface IActorBehavior
+{
+}
+```
+
+`ActorBehaviorType` の列挙体は、保存データや外部入力から Behavior を生成するための識別値として残す。
+ただし `IActorBehavior` 自体には `ActorBehaviorType` を持たせない。Behavior の実体型と列挙値が二重表現になり、差異が発生し得るため。
+
+Behavior の切り替えによって、同じ Actor が冒険者、ギルドスタッフ、モンスター、Pet として振る舞いを変えられる。
+
+これにより、AI は `Adventurer` クラスや `Monster` クラスを直接参照せず、`Actor`、`IActorBehavior`、`ActorFaction`、周辺状況から行動を判断できる。
+
+### AdventurerBehavior
+
+冒険者としての状態を表す。
+
+`AdventurerBehavior` は以下を持つ。
+
+- 冒険者ライフサイクル状態 `AdventurerLifecycleState`
+- ストレス
+- 冒険者 AI に必要な探索傾向
+
+冒険者の行動はプレイヤーが直接決めない。施設利用、購入、売却、休息、食事、探索目的などは Application/AI が判断する。
+
+`AdventurerBehavior` には `ScoutCost` を持たせない。スカウト費用は Actor の恒久状態ではなく、その時点でスカウトする場合の計算結果である。
+
+### GuildStaffBehavior
 
 ギルドスタッフとしての能力を表す。
 
@@ -105,12 +156,11 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - 酒場食堂運営適性
 - アイテム雑貨屋運営適性
 - 装備屋運営適性
-- 採用コスト
 - 給与
 
 スタッフ能力は施設ポイントに変換され、施設の品質やキャパシティ、品揃えに影響する。
 
-現状の実装では独立した `StaffProfile` は存在しない。スタッフ能力は `CharacterStats` から `Character.CalculateFacilityPoint(FacilityType)` で算出する。
+施設ポイント計算は `GuildStaffBehavior` またはスタッフ用 Domain Service が `Actor.Stats` を使って行う。
 
 施設種別ごとの施設ポイント計算は以下の能力値を使う。
 
@@ -118,6 +168,70 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - 酒場食堂: 魅力、知恵、器用さ
 - アイテム雑貨屋: 知力、魅力、知恵
 - 装備屋: 筋力、器用さ、知力
+
+### MonsterBehavior
+
+モンスターとしての振る舞いを表す。
+
+モンスターは冒険者と同様にダンジョン内を移動し、フロア移動もできる。全モンスターはフロア移動可能だが、AI がフロア移動を行わないよう制御できる。
+
+モンスターは遭遇した冒険者と戦闘する。
+
+モンスターが倒された場合、以下をドロップする。
+
+- モンスターの `Inventory` 内の全アイテム
+- 種族固有のアイテムや素材
+
+基本的にモンスターの `Inventory` は空だが、ゴブリンなど知能のあるスカベンジャー系モンスターはアイテムを持つ可能性がある。
+
+モンスターも装備を使える。冒険者を倒した場合は経験値を獲得し、レベルアップする。
+
+`MonsterBehavior` は以下を持つ想定。
+
+- 種族 ID または種族定義 ID
+- 種族固有ドロップ
+- スカベンジャー傾向
+- モンスター AI に必要な行動傾向
+
+### PetBehavior
+
+Pet は将来追加する。
+
+Monster を Pet 化する場合、Actor 自体は維持し、`MonsterBehavior` を `PetBehavior` に差し替える。
+
+これにより、ID、レベル、経験値、装備、Inventory、現在位置、PreferenceSeed を失わずに所属や AI だけを変えられる。
+
+### ActorFaction
+
+`ActorFaction` は Actor の所属勢力を表す。
+
+bool で敵味方を持つのではなく、勢力クラスと勢力関係を持つ。
+
+初期状態では以下の勢力を想定する。
+
+- Adventurer
+- Monster
+
+将来的には以下を追加できる。
+
+- Ruffians
+- TamedMonster
+- Merchant
+- Guild
+- 特定種族名勢力
+
+勢力同士の関係は `FactionRelation` で表現する。
+
+```csharp
+public enum FactionRelationType
+{
+    Neutral,
+    Hostile,
+    Allied
+}
+```
+
+AI や戦闘判定は、Actor のクラス名ではなく Faction 関係を見て敵対判定する。
 
 ### AdventurerGuild
 
@@ -256,10 +370,17 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 カテゴリが `Equipment` のアイテムに紐づく追加仕様。
 
 - 装備スロット
+- 武器種 `WeaponType`
 - 攻撃力
 - 防御力
 - 補正値
 - 推奨レベル
+
+`WeaponType` は武器スロットの装備のみ意味を持つ。
+現在の想定値は `None`、`Sword`、`Bow`、`Axe`、`Scythe`、`Fist`、`Claws`、`Fangs`。
+`Sword`、`Bow`、`Axe`、`Scythe` は主に冒険者向け装備、`Claws`、`Fangs`、`Fist` はモンスターや素手攻撃にも使う。
+`EquipmentSlot.Weapon` の装備では `WeaponType.None` を禁止する。
+武器以外の装備では `WeaponType` は常に `None` として扱う。
 
 ### Inventory
 
@@ -350,9 +471,21 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 
 現状の実装では `Character.CanBeScouted` が `Adventurer` または `RecruitCandidate` の場合に true となる。
 
-スカウト費用は `ScoutCost` として `ItemStack` の一覧を持つ。`RecruitStaffUseCase` はギルド在庫からスカウト費用を支払い、キャラクターを `GuildStaff` に変更し、`ExchangeTransaction` を記録する。
+`CharacterRole` と `ScoutCost` は廃止する。
 
-スタッフ化したキャラクターは現状 `GuildStaff` 単一ロールになり、冒険者との兼任は未実装。
+スカウト可否は `Actor.Behavior is AdventurerBehavior` など、Behavior を見て判定する。
+
+スカウト費用は Actor や Behavior の恒久状態として持たない。スカウト画面表示時、およびスカウト実行時に、Actor のレベル、能力、評判、関係性、勢力などから逐次計算する。
+
+想定 Domain / UseCase:
+
+- `ScoutCostPolicy`
+- `CalculateScoutCostUseCase`
+- `RecruitStaffUseCase`
+
+スカウト実行時は費用を再計算し、ギルド在庫から支払い、Actor の Behavior を `AdventurerBehavior` から `GuildStaffBehavior` へ差し替える。その結果を `ExchangeTransaction` に記録する。
+
+Behavior は単一のため、スタッフ化した Actor は冒険者ではなくなる。
 
 ## EntityIdentity Domain
 
@@ -561,12 +694,23 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 
 ```text
 Domain/
-├── Character/
-│   ├── Character
-│   ├── CharacterStats
-│   ├── ScoutCost
-│   ├── AdventurerLifecycleState
-│   └── CharacterRole
+├── Actor/
+│   ├── Actor
+│   ├── IActorBehavior
+│   ├── ActorBehaviorType
+│   ├── AdventurerBehavior
+│   ├── GuildStaffBehavior
+│   ├── MonsterBehavior
+│   ├── ActorFaction
+│   ├── FactionRelation
+│   ├── FactionRelationType
+│   ├── ActorEquipment
+│   ├── IWeaponCalculator
+│   ├── WeaponCalculators
+│   ├── ActorStats
+│   ├── ActorParams
+│   ├── ActorParamCalculator
+│   └── AdventurerLifecycleState
 ├── Guild/
 │   ├── AdventurerGuild
 │   └── GuildStaffAssignment
@@ -581,6 +725,7 @@ Domain/
 │   ├── ItemCategory
 │   ├── EquipmentSpec
 │   ├── EquipmentSlot
+│   ├── WeaponType
 │   ├── Inventory
 │   ├── ItemStack
 │   └── SpecialItemIds
@@ -592,7 +737,8 @@ Domain/
 │   ├── DungeonExplorationGoal
 │   └── DungeonExplorationGoalType
 ├── Common/
-│   └── DomainMath
+│   ├── DomainMath
+│   └── GameConstants
 └── EntityIdentity/
     ├── EntityIdentity
     ├── EntityIdentityRegistry
@@ -605,6 +751,7 @@ Application/
     ├── ProcessFacilityUsageUseCase
     ├── ProcessAdventurerSaleUseCase
     ├── ProcessExchangeOfferUseCase
+    ├── CalculateScoutCostUseCase
     ├── PayStaffSalaryUseCase
     ├── SpawnAdventurerUseCase
     ├── ReserveInnUseCase

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Facility;
@@ -32,7 +32,7 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public UniTask<DungeonExplorationGoal> ExecuteAsync(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             int targetFloorId)
         {
             var candidates = new List<DungeonExplorationGoal>

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
@@ -17,12 +17,12 @@ namespace DungeonInn.Application.UseCase
         /// <summary>
         /// 雇用中スタッフの給与をギルド在庫から支払い、取引履歴を記録する。
         /// </summary>
-        public UniTask<IReadOnlyList<ItemStack>> ExecuteAsync(AdventurerGuild guild, IEnumerable<Character> staffMembers, int occurredAtTick)
+        public UniTask<IReadOnlyList<ItemStack>> ExecuteAsync(AdventurerGuild guild, IEnumerable<Actor> staffMembers, int occurredAtTick)
         {
             var paidItems = new List<ItemStack>();
             var salaries = staffMembers
-                .Where(staff => staff.IsGuildStaff)
-                .Select(staff => staff.Salary)
+                .Where(staff => staff.Behavior is GuildStaffBehavior)
+                .Select(staff => staff.RequireBehavior<GuildStaffBehavior>().Salary)
                 .ToArray();
             var requiredItems = salaries.SelectMany(salary => salary).ToArray();
 
@@ -33,12 +33,12 @@ namespace DungeonInn.Application.UseCase
 
             foreach (var staff in staffMembers)
             {
-                if (!staff.IsGuildStaff)
+                if (staff.Behavior is not GuildStaffBehavior)
                 {
                     continue;
                 }
 
-                var salary = staff.Salary;
+                var salary = staff.RequireBehavior<GuildStaffBehavior>().Salary;
                 guild.Inventory.RemoveRange(salary);
                 staff.Inventory.AddRange(salary);
                 paidItems.AddRange(salary);

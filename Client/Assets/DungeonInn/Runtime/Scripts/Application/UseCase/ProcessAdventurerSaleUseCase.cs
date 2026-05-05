@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
@@ -20,7 +20,7 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public UniTask ExecuteAsync(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             Guid facilityId,
             IReadOnlyList<ItemStack> soldItems,
             IReadOnlyDictionary<int, ItemDefinition> definitions,

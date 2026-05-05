@@ -1,4 +1,4 @@
-namespace DungeonInn.Domain.Character
+namespace DungeonInn.Domain.Actor
 {
     public enum AdventurerLifecycleState
     {

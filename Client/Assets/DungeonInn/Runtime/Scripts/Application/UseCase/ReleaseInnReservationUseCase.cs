@@ -1,5 +1,5 @@
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Guild;
 
 namespace DungeonInn.Application.UseCase
@@ -12,13 +12,14 @@ namespace DungeonInn.Application.UseCase
         /// <summary>
         /// 有効な宿屋予約を解除し、死亡していない冒険者を来訪状態へ戻す。
         /// </summary>
-        public UniTask ExecuteAsync(AdventurerGuild guild, Character adventurer, int occurredAtTick)
+        public UniTask ExecuteAsync(AdventurerGuild guild, Actor adventurer, int occurredAtTick)
         {
             guild.ReleaseInnReservation(adventurer.Id, occurredAtTick);
+            var behavior = adventurer.RequireBehavior<AdventurerBehavior>();
 
-            if (adventurer.LifecycleState != AdventurerLifecycleState.Dead)
+            if (behavior.LifecycleState != AdventurerLifecycleState.Dead)
             {
-                adventurer.ChangeLifecycleState(AdventurerLifecycleState.Arrived);
+                behavior.ChangeLifecycleState(AdventurerLifecycleState.Arrived);
             }
 
             return UniTask.CompletedTask;

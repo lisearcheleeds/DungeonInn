@@ -1,6 +1,6 @@
 using System;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
@@ -18,7 +18,7 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public UniTask ExecuteAsync(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             Guid facilityId,
             FacilityUsageRequest request,
             int occurredAtTick)
@@ -45,7 +45,7 @@ namespace DungeonInn.Application.UseCase
 
         static void ApplyFacilityEffect(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             Facility facility,
             FacilityUsageRequest request)
         {
@@ -79,7 +79,7 @@ namespace DungeonInn.Application.UseCase
 
         static void RecordTransaction(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             Guid facilityId,
             FacilityUsageRequest request,
             ItemStack price,

@@ -1,6 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
@@ -12,34 +13,36 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class RecruitStaffUseCase
     {
+        readonly CalculateScoutCostUseCase calculateScoutCostUseCase = new();
+
         /// <summary>
         /// スカウト費用を支払い、候補者の役割変更と取引履歴の記録を行う。
         /// </summary>
-        public UniTask ExecuteAsync(AdventurerGuild guild, Character candidate, int occurredAtTick)
+        public async UniTask ExecuteAsync(AdventurerGuild guild, Actor candidate, IReadOnlyList<ItemStack> staffSalary, int occurredAtTick)
         {
-            if (!candidate.CanBeScouted)
+            if (candidate.Behavior is not AdventurerBehavior)
             {
                 throw new InvalidOperationException("Candidate cannot be scouted.");
             }
 
-            var scoutCost = candidate.ScoutCost;
-            if (!guild.Inventory.HasAll(scoutCost.Items))
+            var scoutCost = await calculateScoutCostUseCase.ExecuteAsync(candidate);
+            if (!guild.Inventory.HasAll(scoutCost))
             {
                 throw new InvalidOperationException("Guild does not have scout cost items.");
             }
 
-            guild.Inventory.RemoveRange(scoutCost.Items);
-            candidate.RecruitAsStaff();
+            guild.Inventory.RemoveRange(scoutCost);
+            candidate.ChangeBehavior(new GuildStaffBehavior(staffSalary));
             guild.RecordTransaction(
                 new ExchangeTransaction(
                     Guid.NewGuid(),
                     guild.Id,
                     candidate.Id,
-                    scoutCost.Items,
+                    scoutCost,
                     Array.Empty<ItemStack>(),
                     occurredAtTick));
 
-            return UniTask.CompletedTask;
+            return;
         }
     }
 }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
@@ -18,14 +18,14 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public UniTask ExecuteAsync(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             IReadOnlyList<ItemStack> rookieEquipment,
             int occurredAtTick)
         {
             if (adventurer.Level == 1)
             {
                 ProvideRookieEquipment(guild, adventurer, rookieEquipment, occurredAtTick);
-                adventurer.ChangeLifecycleState(AdventurerLifecycleState.Arrived);
+                adventurer.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
                 return UniTask.CompletedTask;
             }
 
@@ -34,13 +34,13 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Only level 1 or level 5 and higher adventurers can spawn.");
             }
 
-            adventurer.ChangeLifecycleState(AdventurerLifecycleState.Arrived);
+            adventurer.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
             return UniTask.CompletedTask;
         }
 
         static void ProvideRookieEquipment(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             IReadOnlyList<ItemStack> rookieEquipment,
             int occurredAtTick)
         {

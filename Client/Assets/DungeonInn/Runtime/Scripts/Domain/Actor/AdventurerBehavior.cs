@@ -1,0 +1,31 @@
+using System;
+
+namespace DungeonInn.Domain.Actor
+{
+    public sealed class AdventurerBehavior : IActorBehavior
+    {
+        public AdventurerLifecycleState LifecycleState { get; private set; }
+        public int Stress { get; private set; }
+
+        public AdventurerBehavior(int stress)
+            : this(stress, AdventurerLifecycleState.Arrived)
+        {
+        }
+
+        public AdventurerBehavior(int stress, AdventurerLifecycleState lifecycleState)
+        {
+            Stress = Math.Max(0, stress);
+            LifecycleState = lifecycleState;
+        }
+
+        public void ChangeLifecycleState(AdventurerLifecycleState lifecycleState)
+        {
+            LifecycleState = lifecycleState;
+        }
+
+        public void ReduceStress(int amount)
+        {
+            Stress = Math.Max(0, Stress - Math.Max(0, amount));
+        }
+    }
+}

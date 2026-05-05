@@ -1,6 +1,6 @@
 using System;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 
@@ -16,7 +16,7 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public UniTask<InnReservation> ExecuteAsync(
             AdventurerGuild guild,
-            Character adventurer,
+            Actor adventurer,
             Guid innFacilityId,
             int occurredAtTick)
         {

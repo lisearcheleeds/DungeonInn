@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 
@@ -17,9 +17,9 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public UniTask ExecuteAsync(
             AdventurerGuild guild,
-            Character staff,
+            Actor staff,
             Guid facilityId,
-            IReadOnlyDictionary<Guid, Character> staffById)
+            IReadOnlyDictionary<Guid, Actor> staffById)
         {
             guild.AssignStaff(staff, facilityId);
             guild.RecalculateFacilityPoints(staffById);

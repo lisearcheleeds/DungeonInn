@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
+using ActorEntity = DungeonInn.Domain.Actor.Actor;
 
 namespace DungeonInn.Domain.Guild
 {
@@ -43,11 +44,11 @@ namespace DungeonInn.Domain.Guild
             return facility;
         }
 
-        public void AssignStaff(Character.Character staff, Guid facilityId)
+        public void AssignStaff(ActorEntity staff, Guid facilityId)
         {
-            if (!staff.IsGuildStaff)
+            if (staff.Behavior is not GuildStaffBehavior)
             {
-                throw new InvalidOperationException("Character is not guild staff.");
+                throw new InvalidOperationException("Actor is not guild staff.");
             }
 
             GetFacility(facilityId);
@@ -61,13 +62,18 @@ namespace DungeonInn.Domain.Guild
             assignment.Reassign(facilityId);
         }
 
-        public void RecalculateFacilityPoints(IReadOnlyDictionary<Guid, Character.Character> staffById)
+        public void RecalculateFacilityPoints(IReadOnlyDictionary<Guid, ActorEntity> staffById)
         {
             foreach (var facility in facilities)
             {
                 var point = staffAssignments
                     .Where(x => x.FacilityId.Equals(facility.Id))
-                    .Select(x => staffById[x.StaffId].CalculateFacilityPoint(facility.Type))
+                    .Select(x =>
+                    {
+                        var staff = staffById[x.StaffId];
+                        var behavior = staff.RequireBehavior<GuildStaffBehavior>();
+                        return behavior.CalculateFacilityPoint(staff, facility.Type);
+                    })
                     .Sum();
 
                 facility.ApplyStaffPoint(point);
@@ -95,7 +101,7 @@ namespace DungeonInn.Domain.Guild
             return CountActiveInnReservations(innFacilityId) < facility.Capacity;
         }
 
-        public InnReservation ReserveInn(Guid reservationId, Character.Character adventurer, Guid innFacilityId, int occurredAtTick)
+        public InnReservation ReserveInn(Guid reservationId, ActorEntity adventurer, Guid innFacilityId, int occurredAtTick)
         {
             if (adventurer == null)
             {
@@ -125,7 +131,7 @@ namespace DungeonInn.Domain.Guild
                 occurredAtTick);
 
             innReservations.Add(reservation);
-            adventurer.MarkResident();
+            adventurer.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Resident);
             return reservation;
         }
 

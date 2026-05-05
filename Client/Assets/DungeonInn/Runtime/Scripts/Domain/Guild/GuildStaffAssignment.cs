@@ -1,6 +1,3 @@
-using DungeonInn.Domain.Character;
-using DungeonInn.Domain.Facility;
-
 using System;
 
 namespace DungeonInn.Domain.Guild

@@ -1,17 +1,17 @@
 using System;
 
-namespace DungeonInn.Domain.Character
+namespace DungeonInn.Domain.Actor
 {
-    public sealed class CharacterStats
+    public sealed class ActorStats
     {
-        public int Strength { get; private set; }
-        public int Dexterity { get; private set; }
-        public int Constitution { get; private set; }
-        public int Intelligence { get; private set; }
-        public int Wisdom { get; private set; }
-        public int Charisma { get; private set; }
+        public int Strength { get; }
+        public int Dexterity { get; }
+        public int Constitution { get; }
+        public int Intelligence { get; }
+        public int Wisdom { get; }
+        public int Charisma { get; }
 
-        public CharacterStats(
+        public ActorStats(
             int strength,
             int dexterity,
             int constitution,
@@ -27,7 +27,7 @@ namespace DungeonInn.Domain.Character
             Charisma = ValidateStat(charisma, nameof(charisma));
         }
 
-        public void Increase(
+        public ActorStats Increase(
             int strength,
             int dexterity,
             int constitution,
@@ -35,12 +35,13 @@ namespace DungeonInn.Domain.Character
             int wisdom,
             int charisma)
         {
-            Strength += Math.Max(0, strength);
-            Dexterity += Math.Max(0, dexterity);
-            Constitution += Math.Max(0, constitution);
-            Intelligence += Math.Max(0, intelligence);
-            Wisdom += Math.Max(0, wisdom);
-            Charisma += Math.Max(0, charisma);
+            return new ActorStats(
+                Strength + Math.Max(0, strength),
+                Dexterity + Math.Max(0, dexterity),
+                Constitution + Math.Max(0, constitution),
+                Intelligence + Math.Max(0, intelligence),
+                Wisdom + Math.Max(0, wisdom),
+                Charisma + Math.Max(0, charisma));
         }
 
         static int ValidateStat(int value, string parameterName)

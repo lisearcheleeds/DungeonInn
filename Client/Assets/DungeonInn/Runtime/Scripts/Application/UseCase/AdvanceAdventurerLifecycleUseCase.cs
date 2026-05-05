@@ -1,5 +1,5 @@
 using Cysharp.Threading.Tasks;
-using DungeonInn.Domain.Character;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Guild;
 
 namespace DungeonInn.Application.UseCase
@@ -12,9 +12,10 @@ namespace DungeonInn.Application.UseCase
         /// <summary>
         /// 死亡、居住中、来訪中の条件に応じて冒険者の状態を進める。
         /// </summary>
-        public UniTask ExecuteAsync(AdventurerGuild guild, Character adventurer)
+        public UniTask ExecuteAsync(AdventurerGuild guild, Actor adventurer)
         {
-            if (adventurer.LifecycleState == AdventurerLifecycleState.Dead)
+            var behavior = adventurer.RequireBehavior<AdventurerBehavior>();
+            if (behavior.LifecycleState == AdventurerLifecycleState.Dead)
             {
                 guild.ReleaseInnReservation(adventurer.Id, 0);
                 return UniTask.CompletedTask;
@@ -22,34 +23,34 @@ namespace DungeonInn.Application.UseCase
 
             if (guild.HasActiveInnReservation(adventurer.Id))
             {
-                AdvanceResident(adventurer);
+                AdvanceResident(adventurer, behavior);
                 return UniTask.CompletedTask;
             }
 
-            AdvanceVisitor(adventurer);
+            AdvanceVisitor(adventurer, behavior);
             return UniTask.CompletedTask;
         }
 
-        static void AdvanceResident(Character adventurer)
+        static void AdvanceResident(Actor adventurer, AdventurerBehavior behavior)
         {
-            if (adventurer.Hp < adventurer.CalculateMaxHp())
+            if (adventurer.Hp < adventurer.Params.MaxHp)
             {
-                adventurer.MarkRecovering();
+                behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
                 return;
             }
 
-            adventurer.MarkPreparing();
+            behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
         }
 
-        static void AdvanceVisitor(Character adventurer)
+        static void AdvanceVisitor(Actor adventurer, AdventurerBehavior behavior)
         {
             if (5 <= adventurer.Level)
             {
-                adventurer.MarkReadyToLeave();
+                behavior.ChangeLifecycleState(AdventurerLifecycleState.ReadyToLeave);
                 return;
             }
 
-            adventurer.MarkPreparing();
+            behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
         }
     }
 }
