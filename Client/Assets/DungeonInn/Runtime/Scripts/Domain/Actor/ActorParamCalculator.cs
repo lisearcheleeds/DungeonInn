@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DungeonInn.Domain.Item;
+using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Actor
 {
@@ -30,7 +30,6 @@ namespace DungeonInn.Domain.Actor
 
             var equipment = equipmentMasters ?? Array.Empty<EquipmentMaster>();
             var equipmentDefense = equipment.Sum(x => x.Defense);
-            var equipmentModifier = equipment.Sum(x => x.Modifier);
 
             return new ActorParams(
                 stats.Constitution * 10 + stats.Strength * 2 + level * 5 + equipmentDefense,
@@ -38,7 +37,7 @@ namespace DungeonInn.Domain.Actor
                 100 + stats.Dexterity * 2,
                 stats.Constitution * 3 + stats.Wisdom + equipmentDefense,
                 stats.Dexterity * 2 + stats.Wisdom * 2 + stats.Intelligence + level,
-                stats.Strength + stats.Dexterity + stats.Intelligence + Math.Max(0, equipmentModifier));
+                stats.Strength + stats.Dexterity + stats.Intelligence);
         }
     }
 }

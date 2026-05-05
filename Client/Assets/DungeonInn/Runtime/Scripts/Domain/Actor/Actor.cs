@@ -4,6 +4,7 @@ using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Actor
 {
@@ -27,6 +28,7 @@ namespace DungeonInn.Domain.Actor
         public IActorBehavior Behavior { get; private set; }
         public IWeaponCalculator WeaponCalculator { get; private set; }
         public IWeaponCombatCalculator WeaponCombatCalculator { get; private set; }
+        public WeaponType NaturalWeaponType { get; private set; }
         public int WeaponAttack { get; private set; }
         public WeaponCombatParams WeaponCombatParams { get; private set; }
         public ActorGoal CurrentGoal { get; private set; }
@@ -74,6 +76,7 @@ namespace DungeonInn.Domain.Actor
             Position = position;
             Faction = faction ?? throw new ArgumentNullException(nameof(faction));
             Behavior = behavior ?? throw new ArgumentNullException(nameof(behavior));
+            NaturalWeaponType = WeaponType.Fist;
             CurrentGoal = ActorGoal.None();
             CurrentPlan = ActorPlan.None();
             CurrentAction = ActorAction.None();
@@ -128,6 +131,18 @@ namespace DungeonInn.Domain.Actor
             RefreshParams();
         }
 
+        public void ChangeNaturalWeaponType(WeaponType weaponType)
+        {
+            if (weaponType == WeaponType.None)
+            {
+                throw new ArgumentException("Natural weapon type is required.", nameof(weaponType));
+            }
+
+            NaturalWeaponType = weaponType;
+            RefreshWeaponCalculator();
+            RefreshParams();
+        }
+
         public void ChangeGoal(ActorGoal goal)
         {
             CurrentGoal = goal ?? throw new ArgumentNullException(nameof(goal));
@@ -175,6 +190,18 @@ namespace DungeonInn.Domain.Actor
             RefreshParams();
         }
 
+        public void Equip(EquipmentMaster equipmentMaster, WeaponMaster weaponMaster)
+        {
+            Equipment.Equip(equipmentMaster, weaponMaster);
+
+            if (equipmentMaster.Slot == EquipmentSlot.Weapon)
+            {
+                RefreshWeaponCalculator();
+            }
+
+            RefreshParams();
+        }
+
         public void Unequip(EquipmentSlot slot)
         {
             Equipment.Unequip(slot);
@@ -189,7 +216,7 @@ namespace DungeonInn.Domain.Actor
 
         void RefreshWeaponCalculator()
         {
-            var weaponType = Equipment.Weapon == null ? WeaponType.Fist : Equipment.Weapon.WeaponType;
+            var weaponType = Equipment.Weapon == null ? NaturalWeaponType : Equipment.Weapon.WeaponType;
             WeaponCalculator = WeaponCalculatorFactory.Create(weaponType);
             WeaponCombatCalculator = WeaponCombatCalculatorFactory.Create(weaponType);
             RefreshWeaponAttack();
@@ -205,7 +232,7 @@ namespace DungeonInn.Domain.Actor
 
         void RefreshWeaponAttack()
         {
-            WeaponAttack = WeaponCalculator.CalculateAttack(Stats, Equipment.Weapon, Behavior, Level);
+            WeaponAttack = WeaponCalculator.CalculateAttack(Stats, Equipment.Weapon, Equipment.WeaponEquipment, Behavior, Level);
         }
 
         void RefreshWeaponCombatParams()

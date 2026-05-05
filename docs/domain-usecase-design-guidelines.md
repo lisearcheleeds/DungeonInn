@@ -55,9 +55,11 @@ public sealed class WeaponAttackSpec
 
 ### DungeonInn Example
 
-DungeonInn では `ItemMaster`、`EquipmentMaster` をマスタデータ相当として扱う。
+DungeonInn では `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArchetypeMaster`、`MonsterSpeciesMaster` をマスタデータ相当として扱う。
 一方、`WeaponAttackSpec`、`CombatEffectNodeSpec`、`CombatEffectLinkSpec`、`DamageSpec`、`AttackAreaSpec`、`ProjectileSpec` は戦闘処理で参照する不変仕様として扱う。
-将来的に `WeaponMaster`、`ActorArchetypeMaster`、`MonsterSpeciesMaster` を追加する場合も、マスタ1行に対応する型は `Master`、複数マスタを束ねた実行時仕様は `Spec` に寄せる。
+将来的に `ConsumableMaster` などを追加する場合も、マスタ1行に対応する型は `Master`、複数マスタを束ねた実行時仕様は `Spec` に寄せる。
+DungeonInn のようにマスタが Domain Entity ではなく参照データである場合、`Domain/` ではなく `Master/` などの専用フォルダ・名前空間に置き、Repository から UseCase / オーケストレーションへ供給する。
+MasterMemory 導入前は、`HardcodedMasterRepository` のような仮 Repository で同じ読み取り契約を満たす。
 
 ## 1. Entity は分類ではなく状態と振る舞いを持つ
 
@@ -196,7 +198,12 @@ public sealed class ActorParamCalculator
 
 public interface IWeaponCalculator
 {
-    int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level);
+    int CalculateAttack(
+        ActorStats stats,
+        WeaponMaster weaponMaster,
+        EquipmentMaster weaponEquipmentMaster,
+        IActorBehavior behavior,
+        int level);
 }
 ```
 
@@ -248,7 +255,7 @@ Domain に判断を入れすぎると、将来のゲームデザイン変更や�
 ```csharp
 public void Equip(EquipmentMaster equipment)
 {
-    if (Level < equipment.RecommendedLevel)
+    if (equipment.ItemId == RareSwordId && Level < 10)
     {
         throw new InvalidOperationException();
     }
@@ -262,18 +269,19 @@ AI が避けるだけでよい場合、Domain Validation に入れると表現�
 
 ```csharp
 public EquipmentMaster(
-    EquipmentSlot slot,
-    WeaponType weaponType)
+    int itemId,
+    EquipmentSlot slot)
 {
-    if (slot == EquipmentSlot.Weapon && weaponType == WeaponType.None)
+    if (slot == EquipmentSlot.None)
     {
-        throw new ArgumentException("Weapon type is required.", nameof(weaponType));
+        throw new ArgumentException("Equipment slot is required.", nameof(slot));
     }
 }
 ```
 
-武器なのに武器種がない、という構造上の不正は Domain で禁止する。
+装備なのに装備スロットがない、という構造上の不正は Domain で禁止する。
 どの武器を選ぶか、推奨レベルを守るかは UseCase / AI 側で判断する。
+武器種や攻撃力のような武器固有情報は `WeaponMaster` に分離する。
 
 ### DungeonInn Example
 
@@ -310,7 +318,12 @@ Entity が種類ごとの式を知りすぎている。
 ```csharp
 public sealed class SwordWeaponCalculator : IWeaponCalculator
 {
-    public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+    public int CalculateAttack(
+        ActorStats stats,
+        WeaponMaster weaponMaster,
+        EquipmentMaster weaponEquipmentMaster,
+        IActorBehavior behavior,
+        int level)
     {
         return stats.Strength * 3 + stats.Dexterity + level + weaponMaster.Attack;
     }

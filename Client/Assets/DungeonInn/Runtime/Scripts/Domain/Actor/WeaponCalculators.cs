@@ -1,61 +1,62 @@
 using System;
 using DungeonInn.Domain.Item;
+using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Actor
 {
     public sealed class SwordWeaponCalculator : IWeaponCalculator
     {
-        public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+        public int CalculateAttack(ActorStats stats, WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster, IActorBehavior behavior, int level)
         {
-            return WeaponCalculatorMath.ClampAttack(stats.Strength * 3 + stats.Dexterity + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster));
+            return WeaponCalculatorMath.ClampAttack(stats.Strength * 3 + stats.Dexterity + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
         }
     }
 
     public sealed class BowWeaponCalculator : IWeaponCalculator
     {
-        public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+        public int CalculateAttack(ActorStats stats, WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster, IActorBehavior behavior, int level)
         {
-            return WeaponCalculatorMath.ClampAttack(stats.Dexterity * 3 + stats.Strength + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster));
+            return WeaponCalculatorMath.ClampAttack(stats.Dexterity * 3 + stats.Strength + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
         }
     }
 
     public sealed class AxeWeaponCalculator : IWeaponCalculator
     {
-        public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+        public int CalculateAttack(ActorStats stats, WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster, IActorBehavior behavior, int level)
         {
-            return WeaponCalculatorMath.ClampAttack(stats.Strength * 4 + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster));
+            return WeaponCalculatorMath.ClampAttack(stats.Strength * 4 + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
         }
     }
 
     public sealed class ScytheWeaponCalculator : IWeaponCalculator
     {
-        public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+        public int CalculateAttack(ActorStats stats, WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster, IActorBehavior behavior, int level)
         {
-            return WeaponCalculatorMath.ClampAttack(stats.Strength * 2 + stats.Dexterity * 2 + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster));
+            return WeaponCalculatorMath.ClampAttack(stats.Strength * 2 + stats.Dexterity * 2 + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
         }
     }
 
     public sealed class FistWeaponCalculator : IWeaponCalculator
     {
-        public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+        public int CalculateAttack(ActorStats stats, WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster, IActorBehavior behavior, int level)
         {
-            return WeaponCalculatorMath.ClampAttack(stats.Strength * 2 + stats.Dexterity + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster));
+            return WeaponCalculatorMath.ClampAttack(stats.Strength * 2 + stats.Dexterity + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
         }
     }
 
     public sealed class ClawsWeaponCalculator : IWeaponCalculator
     {
-        public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+        public int CalculateAttack(ActorStats stats, WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster, IActorBehavior behavior, int level)
         {
-            return WeaponCalculatorMath.ClampAttack(stats.Dexterity * 3 + stats.Strength * 2 + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster));
+            return WeaponCalculatorMath.ClampAttack(stats.Dexterity * 3 + stats.Strength * 2 + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
         }
     }
 
     public sealed class FangsWeaponCalculator : IWeaponCalculator
     {
-        public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
+        public int CalculateAttack(ActorStats stats, WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster, IActorBehavior behavior, int level)
         {
-            return WeaponCalculatorMath.ClampAttack(stats.Strength * 3 + stats.Constitution + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster));
+            return WeaponCalculatorMath.ClampAttack(stats.Strength * 3 + stats.Constitution + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
         }
     }
 
@@ -88,9 +89,9 @@ namespace DungeonInn.Domain.Actor
 
     static class WeaponCalculatorMath
     {
-        public static int GetWeaponAttack(EquipmentMaster weaponMaster)
+        public static int GetWeaponAttack(WeaponMaster weaponMaster, EquipmentMaster weaponEquipmentMaster)
         {
-            return weaponMaster == null ? 0 : weaponMaster.Attack + weaponMaster.Modifier;
+            return weaponMaster == null ? 0 : weaponMaster.Attack;
         }
 
         public static int ClampAttack(int value)

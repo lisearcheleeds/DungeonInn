@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
+using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Commerce
 {

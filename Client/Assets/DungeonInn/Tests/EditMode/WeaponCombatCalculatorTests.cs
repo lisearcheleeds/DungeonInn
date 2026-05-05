@@ -3,6 +3,7 @@ using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 
 namespace DungeonInn.Tests.EditMode
@@ -19,7 +20,7 @@ namespace DungeonInn.Tests.EditMode
         public void AllWeaponTypesCurrentlyUseDirectDamageAttackSpec(WeaponType weaponType)
         {
             var actor = CreateActor();
-            actor.Equip(new EquipmentMaster(100 + (int)weaponType, EquipmentSlot.Weapon, weaponType, 10, 0, 0, 1));
+            EquipWeapon(actor, 100 + (int)weaponType, weaponType, 10, 2, 1);
 
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes.Count, Is.EqualTo(1));
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].Type, Is.EqualTo(CombatEffectNodeType.DirectDamage));
@@ -32,6 +33,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateActor();
 
+            Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes.Count, Is.EqualTo(1));
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].Type, Is.EqualTo(CombatEffectNodeType.DirectDamage));
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount, Is.EqualTo(actor.WeaponAttack));
@@ -40,15 +42,27 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void NaturalWeaponTypeIsUsedWhenNoWeaponIsEquipped()
+        {
+            var actor = CreateActor();
+
+            actor.ChangeNaturalWeaponType(WeaponType.Claws);
+
+            Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(1.5f));
+            Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(0.9f));
+            Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount, Is.EqualTo(actor.WeaponAttack));
+        }
+
+        [Test]
         public void EquippingDifferentWeaponTypeRefreshesCombatRangeAndAttackInterval()
         {
             var actor = CreateActor();
 
-            actor.Equip(new EquipmentMaster(101, EquipmentSlot.Weapon, WeaponType.Sword, 10, 0, 0, 1));
+            EquipWeapon(actor, 101, WeaponType.Sword, 10, 2, 1.2f);
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(2.0f));
             Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(1.2f));
 
-            actor.Equip(new EquipmentMaster(102, EquipmentSlot.Weapon, WeaponType.Bow, 10, 0, 0, 1));
+            EquipWeapon(actor, 102, WeaponType.Bow, 10, 20, 1.5f);
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(20.0f));
             Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(1.5f));
         }
@@ -57,7 +71,7 @@ namespace DungeonInn.Tests.EditMode
         public void IncreasingStatsRefreshesDirectDamageAmount()
         {
             var actor = CreateActor();
-            actor.Equip(new EquipmentMaster(101, EquipmentSlot.Weapon, WeaponType.Sword, 10, 0, 0, 1));
+            EquipWeapon(actor, 101, WeaponType.Sword, 10, 2, 1.2f);
             var previousAttack = actor.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount;
 
             actor.IncreaseStats(3, 0, 0, 0, 0, 0);
@@ -71,7 +85,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateActor();
 
-            actor.Equip(new EquipmentMaster(102, EquipmentSlot.Weapon, WeaponType.Bow, 10, 0, 0, 1));
+            EquipWeapon(actor, 102, WeaponType.Bow, 10, 20, 1.5f);
             actor.Unequip(EquipmentSlot.Weapon);
 
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(1.5f));
@@ -84,9 +98,9 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateActor();
 
-            actor.Equip(new EquipmentMaster(101, EquipmentSlot.Weapon, WeaponType.Sword, 10, 0, 0, 1));
+            EquipWeapon(actor, 101, WeaponType.Sword, 10, 2, 1.2f);
             var weaponRange = actor.WeaponCombatParams.RangeMeters;
-            actor.Equip(new EquipmentMaster(201, EquipmentSlot.Armor, 0, 5, 0, 1));
+            actor.Equip(new EquipmentMaster(201, EquipmentSlot.Armor, 5));
 
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(weaponRange));
         }
@@ -108,6 +122,19 @@ namespace DungeonInn.Tests.EditMode
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Test"),
                 new AdventurerBehavior(0));
+        }
+
+        static void EquipWeapon(
+            Actor actor,
+            int itemId,
+            WeaponType weaponType,
+            int attack,
+            float rangeMeters,
+            float attackIntervalSeconds)
+        {
+            actor.Equip(
+                new EquipmentMaster(itemId, EquipmentSlot.Weapon, 0),
+                new WeaponMaster(itemId, weaponType, attack, rangeMeters, attackIntervalSeconds));
         }
     }
 }

@@ -1,5 +1,6 @@
 using DungeonInn.Infrastructure.AssetLoader;
 using DungeonInn.Input;
+using DungeonInn.Master;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneCamera;
 using LighthouseExtends.Font;
@@ -84,6 +85,7 @@ namespace DungeonInn.Core
                 }
 
                 builder.Register<ProductAssetLoader>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<HardcodedMasterRepository>(Lifetime.Singleton).As<IMasterRepository>();
             }
         }
 

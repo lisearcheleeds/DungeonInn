@@ -5,6 +5,7 @@ using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
+using DungeonInn.Master;
 
 namespace DungeonInn.Application.UseCase
 {

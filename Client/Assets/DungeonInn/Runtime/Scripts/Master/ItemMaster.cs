@@ -1,6 +1,7 @@
 using System;
+using DungeonInn.Domain.Item;
 
-namespace DungeonInn.Domain.Item
+namespace DungeonInn.Master
 {
     public sealed class ItemMaster
     {

@@ -11,8 +11,8 @@
 
 ## フォルダ方針
 
-現在、武器Calculator系の一部は `Domain/Actor` に置かれている。
-戦闘実装では、武器の戦闘性能や攻撃定義は `Domain/Combat` に分離する。
+現在、武器攻撃力Calculatorは `Domain/Actor`、武器戦闘性能と攻撃定義は `Domain/Combat` に置く。
+装備武器の射程・攻撃速度・攻撃力の基礎値は `Master/WeaponMaster` から供給される。
 
 想定構成:
 
@@ -49,8 +49,8 @@ Application/
     CombatTraceRecorder
 ```
 
-`IWeaponCalculator` が現在担っている攻撃力計算は、将来的に `IWeaponCombatCalculator` または同等の名前へ移す。
-既存の `IWeaponCalculator` は段階的に移行してよい。
+`IWeaponCalculator` は攻撃力計算、`IWeaponCombatCalculator` は射程・攻撃速度・攻撃定義の取得を担う。
+攻撃力と戦闘性能は責務が異なるため、現状では分離したまま扱う。
 
 ## 戦闘開始条件
 
@@ -104,6 +104,7 @@ Unity Collider は攻撃判定には使わない。
 
 攻撃力は既存の `WeaponAttack` 計算を利用する。
 射程、攻撃速度、攻撃定義は `IWeaponCombatCalculator` から取得する。
+装備武器の場合は `WeaponMaster`、武器未装備の場合は `Actor.NaturalWeaponType` に基づく既定値を使う。
 
 想定:
 

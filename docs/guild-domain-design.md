@@ -28,7 +28,7 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 
 ## 現在の実装状態
 
-2026-05-04 時点では、`Client/Assets/DungeonInn/Runtime/Scripts/Domain` と `Application/UseCase` に初期実装がある。
+2026-05-05 時点では、`Client/Assets/DungeonInn/Runtime/Scripts/Domain`、`Application`、`Master` に初期実装がある。
 
 実装は設計の概念を一部統合している。
 
@@ -38,9 +38,10 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 - `AdventurerProfile` と `StaffProfile` という分割ではなく、`AdventurerBehavior` と `GuildStaffBehavior` で振る舞いを分ける。
 - `InnFacility` / `TavernFacility` / `GeneralStoreFacility` / `EquipmentShopFacility` は独立クラスではなく、`Facility` + `FacilityType` で表現している。
 - `GuildTransaction` / `TransactionType` は未実装で、現状は `ExchangeTransaction` によって「こちらが渡すもの」「相手が渡すもの」を記録する。
-- Application/AI はまだ未実装。現状の Application は UseCase のみ。
+- Application/AI は初期実装済み。短期・中期・長期の AI 判断状態と Dirty 制御を持つ。
 - `EntityIdentity` / `EntityIdentityRegistry` が追加されており、表示名、種別、有効/削除状態を Domain 側で管理できる。
 - 冒険者ライフサイクル、宿屋居住権、探索目的、交換項目は初期 Domain/UseCase として実装済み。
+- `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArchetypeMaster`、`MonsterSpeciesMaster`、`SpawnTableMaster` は `Master/` に分離済み。
 
 ## 中心となる Domain
 
@@ -77,14 +78,15 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 
 `PreferenceSeed` は Behavior 差し替えで失われない。Adventurer が GuildStaff になった場合や Monster が Pet になった場合でも、個体の性格・嗜好は維持される。
 
-`Actor` は以下の計算メソッドを持つ想定。
+`Actor` は以下の計算済みパラメータを持つ。
+計算式そのものは `ActorParamCalculator`、`IWeaponCalculator`、`IWeaponCombatCalculator` に分離する。
 
 - 最大 HP
 - 最大 MP
 - 移動速度
 - 負傷耐性
-- 剣攻撃力
-- 弓攻撃力
+- 武器攻撃力
+- 武器戦闘性能
 - 探索能力
 - 装備適性
 
@@ -95,7 +97,9 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 一方で攻撃力は武器種ごとに式が異なるため、`IWeaponCalculator` と武器別実装で計算する。
 
 `Actor` は現在装備 `ActorEquipment`、現在の `IWeaponCalculator`、計算済みの `WeaponAttack` を持つ。
-装備変更時は武器スロットの `EquipmentMaster.WeaponType` に応じて現在の武器Calculatorを切り替える。
+装備変更時は武器スロットに対応する `WeaponMaster.WeaponType` に応じて現在の武器Calculatorを切り替える。
+武器を装備していない場合は `Actor.NaturalWeaponType` を使う。
+通常の冒険者は `Fist`、モンスターは種族マスタの `DefaultWeaponType` を初期値として使う。
 装備変更は `Actor.Equip()` / `Actor.Unequip()` を通して行い、`ActorEquipment` を外部から直接変更しない。
 これにより、`ActorParams` と `WeaponAttack` のキャッシュを装備状態と同期させる。
 Behavior 変更時も現在装備に基づいて武器Calculatorを再選択する。
@@ -114,6 +118,7 @@ Behavior 変更時も現在装備に基づいて武器Calculatorを再選択す�
 - `FangsWeaponCalculator`
 
 武器未装備時は `FistWeaponCalculator` を使う。
+ただし、モンスターなどは種族マスタの `DefaultWeaponType` により `Claws` / `Fangs` などを自然武器として使える。
 
 ### IActorBehavior
 
@@ -347,6 +352,9 @@ AI や戦闘判定は、Actor のクラス名ではなく Faction 関係を見�
 ## Item Domain
 
 装備は Item の一種として扱う。
+マスタデータは Domain Entity ではなく、`Master/` フォルダの `DungeonInn.Master` 名前空間で管理する。
+Domain は `ItemStack`、`Inventory`、`EquipmentSlot`、`WeaponType` のような値・分類を持ち、`ItemMaster` / `EquipmentMaster` / `WeaponMaster` は外部から渡された参照データとして扱う。
+MasterMemory 導入前は `IMasterRepository` / `HardcodedMasterRepository` がハードコードされたマスタ一覧を提供する。
 
 ### ItemMaster
 
@@ -368,19 +376,51 @@ AI や戦闘判定は、Actor のクラス名ではなく Faction 関係を見�
 ### EquipmentMaster
 
 カテゴリが `Equipment` のアイテムに紐づく追加仕様。
+`ItemMaster.Id` と同じ `ItemId` を主キーとして持つ。
+武器固有の攻撃力・射程・攻撃速度は `WeaponMaster` に分離する。
 
 - 装備スロット
+- 防御力
+
+### WeaponMaster
+
+武器として振る舞う装備アイテムに紐づく追加仕様。
+`ItemMaster.Id` / `EquipmentMaster.ItemId` と同じ `ItemId` を主キーとして持つ。
+`Fist`、`Claws`、`Fangs` のような自然武器は、必ずしも装備アイテムとして `WeaponMaster` を持つ必要はない。
+
 - 武器種 `WeaponType`
 - 攻撃力
-- 防御力
-- 補正値
-- 推奨レベル
+- 射程
+- 攻撃速度
 
-`WeaponType` は武器スロットの装備のみ意味を持つ。
+### ConsumableMaster
+
+将来追加する消費アイテム用マスタ。
+`ItemMaster.Id` と同じ `ItemId` を主キーとして持つ。
+現状の `Potion` は `ItemCategory.Consumable` として分類されているだけで、使用効果はまだ持たない。
+
+想定項目:
+
+- 使用対象
+- 回復量
+- バフ種類
+- バフ効果量
+- 持続時間
+- 使用条件
+
+### ActorArchetypeMaster / MonsterSpeciesMaster / SpawnTableMaster
+
+Actor の基本プロファイル、モンスター種族、スポーンテーブルは Master として扱う。
+`ActorArchetypeMaster` は Adventurer / GuildStaff / Monster といった振る舞いの初期生成元であり、`MonsterSpeciesMaster` は種族固有ドロップやスカベンジャー性質を持つ。
+`MonsterSpeciesMaster` は `DefaultWeaponType` を持ち、ゴブリンの爪や獣の牙のような自然武器を装備アイテムなしで表現する。
+`SpawnTableMaster` はスポーン対象と重みを保持し、UseCase / AI / オーケストレーションが抽選に利用する。
+
+`WeaponType` は装備武器または自然武器の種類を表す。
 現在の想定値は `None`、`Sword`、`Bow`、`Axe`、`Scythe`、`Fist`、`Claws`、`Fangs`。
 `Sword`、`Bow`、`Axe`、`Scythe` は主に冒険者向け装備、`Claws`、`Fangs`、`Fist` はモンスターや素手攻撃にも使う。
-`EquipmentSlot.Weapon` の装備では `WeaponType.None` を禁止する。
-武器以外の装備では `WeaponType` は常に `None` として扱う。
+装備武器の場合は `WeaponMaster.WeaponType` を参照する。
+自然武器の場合は `Actor.NaturalWeaponType` または `MonsterSpeciesMaster.DefaultWeaponType` を参照する。
+`WeaponMaster` では `WeaponType.None` を禁止する。
 
 ### Inventory
 
@@ -721,9 +761,7 @@ Domain/
 │   ├── FacilityUsageType
 │   └── InnReservation
 ├── Item/
-│   ├── ItemMaster
 │   ├── ItemCategory
-│   ├── EquipmentMaster
 │   ├── EquipmentSlot
 │   ├── WeaponType
 │   ├── Inventory
@@ -743,6 +781,18 @@ Domain/
     ├── EntityIdentity
     ├── EntityIdentityRegistry
     └── EntityKind
+
+Master/
+├── ItemMaster
+├── EquipmentMaster
+├── WeaponMaster
+├── ConsumableMaster
+├── ActorArchetypeMaster
+├── MonsterSpeciesMaster
+├── SpawnTableMaster
+├── SpawnTableEntryMaster
+├── IMasterRepository
+└── HardcodedMasterRepository
 
 Application/
 └── UseCase/
