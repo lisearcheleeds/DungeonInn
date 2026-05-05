@@ -7,25 +7,25 @@ namespace DungeonInn.Domain.Actor
 {
     public sealed class ActorEquipment
     {
-        readonly Dictionary<EquipmentSlot, EquipmentSpec> equippedSpecs = new();
+        readonly Dictionary<EquipmentSlot, EquipmentMaster> equippedMasters = new();
 
-        public IReadOnlyDictionary<EquipmentSlot, EquipmentSpec> EquippedSpecs => equippedSpecs;
-        public EquipmentSpec Weapon => equippedSpecs.TryGetValue(EquipmentSlot.Weapon, out var weapon) ? weapon : null;
-        public IReadOnlyList<EquipmentSpec> All => equippedSpecs.Values.ToArray();
+        public IReadOnlyDictionary<EquipmentSlot, EquipmentMaster> EquippedMasters => equippedMasters;
+        public EquipmentMaster Weapon => equippedMasters.TryGetValue(EquipmentSlot.Weapon, out var weapon) ? weapon : null;
+        public IReadOnlyList<EquipmentMaster> All => equippedMasters.Values.ToArray();
 
-        internal void Equip(EquipmentSpec equipmentSpec)
+        internal void Equip(EquipmentMaster equipmentMaster)
         {
-            if (equipmentSpec == null)
+            if (equipmentMaster == null)
             {
-                throw new ArgumentNullException(nameof(equipmentSpec));
+                throw new ArgumentNullException(nameof(equipmentMaster));
             }
 
-            if (equipmentSpec.Slot == EquipmentSlot.None)
+            if (equipmentMaster.Slot == EquipmentSlot.None)
             {
                 throw new InvalidOperationException("Equipment slot is required.");
             }
 
-            equippedSpecs[equipmentSpec.Slot] = equipmentSpec;
+            equippedMasters[equipmentMaster.Slot] = equipmentMaster;
         }
 
         internal void Unequip(EquipmentSlot slot)
@@ -35,7 +35,7 @@ namespace DungeonInn.Domain.Actor
                 return;
             }
 
-            equippedSpecs.Remove(slot);
+            equippedMasters.Remove(slot);
         }
     }
 }

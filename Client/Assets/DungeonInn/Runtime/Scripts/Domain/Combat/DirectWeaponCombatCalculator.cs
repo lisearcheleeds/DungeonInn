@@ -16,7 +16,7 @@ namespace DungeonInn.Domain.Combat
             this.attackIntervalSeconds = Math.Max(0, attackIntervalSeconds);
         }
 
-        public WeaponCombatParams Calculate(ActorEntity actor, EquipmentSpec weaponSpec)
+        public WeaponCombatParams Calculate(ActorEntity actor, EquipmentMaster weaponMaster)
         {
             if (actor == null)
             {
@@ -24,21 +24,21 @@ namespace DungeonInn.Domain.Combat
             }
 
             var attackPower = actor.WeaponAttack;
-            var attackDefinition = CreateDirectAttackDefinition(attackPower);
-            return new WeaponCombatParams(attackPower, rangeMeters, attackIntervalSeconds, attackDefinition);
+            var attackSpec = CreateDirectAttackSpec(attackPower);
+            return new WeaponCombatParams(attackPower, rangeMeters, attackIntervalSeconds, attackSpec);
         }
 
-        static WeaponAttackDefinition CreateDirectAttackDefinition(int attackPower)
+        static WeaponAttackSpec CreateDirectAttackSpec(int attackPower)
         {
-            var directDamageNode = new CombatEffectNode(
+            var directDamageNode = new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.DirectDamage,
                 new DamageSpec(attackPower),
                 null,
                 null,
-                Array.Empty<CombatEffectLink>());
+                Array.Empty<CombatEffectLinkSpec>());
 
-            return new WeaponAttackDefinition(
+            return new WeaponAttackSpec(
                 1,
                 new[] { directDamageNode.Id },
                 new[] { directDamageNode },

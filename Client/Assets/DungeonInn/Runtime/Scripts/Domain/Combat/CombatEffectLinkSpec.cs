@@ -1,11 +1,11 @@
 namespace DungeonInn.Domain.Combat
 {
-    public sealed class CombatEffectLink
+    public sealed class CombatEffectLinkSpec
     {
         public CombatEffectTriggerType TriggerType { get; }
         public int TargetNodeId { get; }
 
-        public CombatEffectLink(CombatEffectTriggerType triggerType, int targetNodeId)
+        public CombatEffectLinkSpec(CombatEffectTriggerType triggerType, int targetNodeId)
         {
             TriggerType = triggerType;
             TargetNodeId = targetNodeId;

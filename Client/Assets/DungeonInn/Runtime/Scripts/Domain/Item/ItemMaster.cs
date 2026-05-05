@@ -1,7 +1,8 @@
 using System;
+
 namespace DungeonInn.Domain.Item
 {
-    public sealed class ItemDefinition
+    public sealed class ItemMaster
     {
         public int Id { get; }
         public string Name { get; }
@@ -10,7 +11,7 @@ namespace DungeonInn.Domain.Item
         public int Quality { get; }
         public bool CanTrade { get; }
 
-        public ItemDefinition(
+        public ItemMaster(
             int id,
             string name,
             ItemCategory category,

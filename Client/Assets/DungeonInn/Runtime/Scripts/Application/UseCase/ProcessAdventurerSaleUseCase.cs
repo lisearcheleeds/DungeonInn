@@ -23,7 +23,7 @@ namespace DungeonInn.Application.UseCase
             Actor adventurer,
             Guid facilityId,
             IReadOnlyList<ItemStack> soldItems,
-            IReadOnlyDictionary<int, ItemDefinition> definitions,
+            IReadOnlyDictionary<int, ItemMaster> itemMasters,
             int occurredAtTick)
         {
             if (!adventurer.Inventory.HasAll(soldItems))
@@ -31,7 +31,7 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Adventurer does not have sold items.");
             }
 
-            var price = pricePolicy.CalculatePurchasePrice(soldItems, definitions);
+            var price = pricePolicy.CalculatePurchasePrice(soldItems, itemMasters);
             if (!guild.Inventory.Has(price))
             {
                 throw new InvalidOperationException("Guild does not have enough payment item.");

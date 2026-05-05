@@ -6,6 +6,6 @@ namespace DungeonInn.Domain.Combat
 {
     public interface IWeaponCombatCalculator
     {
-        WeaponCombatParams Calculate(ActorEntity actor, EquipmentSpec weaponSpec);
+        WeaponCombatParams Calculate(ActorEntity actor, EquipmentMaster weaponMaster);
     }
 }

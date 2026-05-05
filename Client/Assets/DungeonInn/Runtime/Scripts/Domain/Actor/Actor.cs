@@ -163,11 +163,11 @@ namespace DungeonInn.Domain.Actor
             CurrentAction.Cancel();
         }
 
-        public void Equip(EquipmentSpec equipmentSpec)
+        public void Equip(EquipmentMaster equipmentMaster)
         {
-            Equipment.Equip(equipmentSpec);
+            Equipment.Equip(equipmentMaster);
 
-            if (equipmentSpec.Slot == EquipmentSlot.Weapon)
+            if (equipmentMaster.Slot == EquipmentSlot.Weapon)
             {
                 RefreshWeaponCalculator();
             }

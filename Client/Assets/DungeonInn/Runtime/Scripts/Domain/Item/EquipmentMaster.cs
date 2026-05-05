@@ -2,7 +2,7 @@ using System;
 
 namespace DungeonInn.Domain.Item
 {
-    public sealed class EquipmentSpec
+    public sealed class EquipmentMaster
     {
         public int ItemId { get; }
         public EquipmentSlot Slot { get; }
@@ -12,7 +12,7 @@ namespace DungeonInn.Domain.Item
         public int Modifier { get; }
         public int RecommendedLevel { get; }
 
-        public EquipmentSpec(
+        public EquipmentMaster(
             int itemId,
             EquipmentSlot slot,
             int attack,
@@ -23,7 +23,7 @@ namespace DungeonInn.Domain.Item
         {
         }
 
-        public EquipmentSpec(
+        public EquipmentMaster(
             int itemId,
             EquipmentSlot slot,
             WeaponType weaponType,

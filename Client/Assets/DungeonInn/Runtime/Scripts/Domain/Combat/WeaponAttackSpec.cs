@@ -4,17 +4,17 @@ using System.Linq;
 
 namespace DungeonInn.Domain.Combat
 {
-    public sealed class WeaponAttackDefinition
+    public sealed class WeaponAttackSpec
     {
         public int Id { get; }
         public IReadOnlyList<int> RootNodeIds { get; }
-        public IReadOnlyList<CombatEffectNode> Nodes { get; }
+        public IReadOnlyList<CombatEffectNodeSpec> Nodes { get; }
         public int MaxGenerationDepth { get; }
 
-        public WeaponAttackDefinition(
+        public WeaponAttackSpec(
             int id,
             IReadOnlyList<int> rootNodeIds,
-            IReadOnlyList<CombatEffectNode> nodes,
+            IReadOnlyList<CombatEffectNodeSpec> nodes,
             int maxGenerationDepth)
         {
             if (id < 1)
@@ -24,12 +24,12 @@ namespace DungeonInn.Domain.Combat
 
             if (rootNodeIds == null || rootNodeIds.Count == 0)
             {
-                throw new ArgumentException("Weapon attack definition requires root nodes.", nameof(rootNodeIds));
+                throw new ArgumentException("Weapon attack spec requires root nodes.", nameof(rootNodeIds));
             }
 
             if (nodes == null || nodes.Count == 0)
             {
-                throw new ArgumentException("Weapon attack definition requires nodes.", nameof(nodes));
+                throw new ArgumentException("Weapon attack spec requires nodes.", nameof(nodes));
             }
 
             if (maxGenerationDepth < 1)

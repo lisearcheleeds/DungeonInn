@@ -3,22 +3,22 @@ using System.Collections.Generic;
 
 namespace DungeonInn.Domain.Combat
 {
-    public sealed class CombatEffectNode
+    public sealed class CombatEffectNodeSpec
     {
         public int Id { get; }
         public CombatEffectNodeType Type { get; }
         public DamageSpec DamageSpec { get; }
         public AttackAreaSpec AreaSpec { get; }
         public ProjectileSpec ProjectileSpec { get; }
-        public IReadOnlyList<CombatEffectLink> Links { get; }
+        public IReadOnlyList<CombatEffectLinkSpec> Links { get; }
 
-        public CombatEffectNode(
+        public CombatEffectNodeSpec(
             int id,
             CombatEffectNodeType type,
             DamageSpec damageSpec,
             AttackAreaSpec areaSpec,
             ProjectileSpec projectileSpec,
-            IReadOnlyList<CombatEffectLink> links)
+            IReadOnlyList<CombatEffectLinkSpec> links)
         {
             if (id < 1)
             {
@@ -30,7 +30,7 @@ namespace DungeonInn.Domain.Combat
             DamageSpec = damageSpec;
             AreaSpec = areaSpec;
             ProjectileSpec = projectileSpec;
-            Links = links ?? Array.Empty<CombatEffectLink>();
+            Links = links ?? Array.Empty<CombatEffectLinkSpec>();
             ValidateSpec();
         }
 

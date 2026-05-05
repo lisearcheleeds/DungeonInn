@@ -13,6 +13,52 @@ Application UseCase は、Domain を組み合わせてユースケースの手�
 Domain は View、Infrastructure、Framework、外部SDKに依存しない。
 UseCase も原則として Domain の組み合わせに留め、表示都合や永続化都合を Domain Entity に持ち込まない。
 
+## 命名規約: Master / Spec / Params / State
+
+マスタデータと、それを組み合わせて生成される実行時用の値は名前で役割を分ける。
+特に MasterMemory のようなマスタ管理基盤を使う場合、テーブルの行と1対1で対応する型と、複数のマスタや文脈から構築される型を混同しない。
+
+- `Master`: マスタデータの1レコードと1対1で対応する型。保存・ロード・参照の単位であり、原則として不変に扱う。
+- `Spec`: Master、固定値、文脈を束ねて作る不変の仕様値。グラフ、攻撃効果、生成設定など、実行時に参照する構造化済みデータに使う。
+- `Params`: Stats、Equipment、Behavior、Buff などから計算された現在値。キャッシュしてよいが、更新経路を明確にする。
+- `State`: HP、位置、予約状態、AI Dirty など、時間経過や行動で変化する実行時状態。
+- `Policy` / `Calculator`: 種類や文脈ごとの判断・計算式。Entity に式や分岐を集めないために使う。
+
+### Before
+
+```csharp
+public sealed class ItemDefinition
+{
+}
+
+public sealed class WeaponAttackDefinition
+{
+}
+```
+
+`Definition` は意味が広く、マスタデータそのものなのか、複数のマスタから構築された実行時仕様なのかが名前から判断しにくい。
+
+### After
+
+```csharp
+public sealed class ItemMaster
+{
+}
+
+public sealed class WeaponAttackSpec
+{
+}
+```
+
+`ItemMaster` はアイテムマスタの1行、`WeaponAttackSpec` は武器や攻撃効果ノードから構築された攻撃仕様を表す。
+この境界を名前で固定すると、MasterMemory への移行時もデータロード層と Domain の責務を分けやすい。
+
+### DungeonInn Example
+
+DungeonInn では `ItemMaster`、`EquipmentMaster` をマスタデータ相当として扱う。
+一方、`WeaponAttackSpec`、`CombatEffectNodeSpec`、`CombatEffectLinkSpec`、`DamageSpec`、`AttackAreaSpec`、`ProjectileSpec` は戦闘処理で参照する不変仕様として扱う。
+将来的に `WeaponMaster`、`ActorArchetypeMaster`、`MonsterSpeciesMaster` を追加する場合も、マスタ1行に対応する型は `Master`、複数マスタを束ねた実行時仕様は `Spec` に寄せる。
+
 ## 1. Entity は分類ではなく状態と振る舞いを持つ
 
 同じ個体が時間経過や操作によって役割を変える可能性がある場合、継承で役割を固定しない。
@@ -140,7 +186,7 @@ public sealed class ActorParamCalculator
 {
     public ActorParams Calculate(
         ActorStats stats,
-        IReadOnlyList<EquipmentSpec> equipmentSpecs,
+        IReadOnlyList<EquipmentMaster> equipmentMasters,
         IActorBehavior behavior,
         int level)
     {
@@ -150,7 +196,7 @@ public sealed class ActorParamCalculator
 
 public interface IWeaponCalculator
 {
-    int CalculateAttack(ActorStats stats, EquipmentSpec weaponSpec, IActorBehavior behavior, int level);
+    int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level);
 }
 ```
 
@@ -200,7 +246,7 @@ Domain に判断を入れすぎると、将来のゲームデザイン変更や�
 ### Before
 
 ```csharp
-public void Equip(EquipmentSpec equipment)
+public void Equip(EquipmentMaster equipment)
 {
     if (Level < equipment.RecommendedLevel)
     {
@@ -215,7 +261,7 @@ AI が避けるだけでよい場合、Domain Validation に入れると表現�
 ### After
 
 ```csharp
-public EquipmentSpec(
+public EquipmentMaster(
     EquipmentSlot slot,
     WeaponType weaponType)
 {
@@ -264,9 +310,9 @@ Entity が種類ごとの式を知りすぎている。
 ```csharp
 public sealed class SwordWeaponCalculator : IWeaponCalculator
 {
-    public int CalculateAttack(ActorStats stats, EquipmentSpec weaponSpec, IActorBehavior behavior, int level)
+    public int CalculateAttack(ActorStats stats, EquipmentMaster weaponMaster, IActorBehavior behavior, int level)
     {
-        return stats.Strength * 3 + stats.Dexterity + level + weaponSpec.Attack;
+        return stats.Strength * 3 + stats.Dexterity + level + weaponMaster.Attack;
     }
 }
 ```
@@ -342,7 +388,7 @@ Factory は最低限の生成に留め、文脈依存の判断は UseCase / Poli
 ## 9. 将来の拡張点を名前や継承で固定しない
 
 将来、種別追加、状態追加、役割変更、外部連携追加が想定される概念は、クラス名や継承で固定しすぎない。
-Behavior、Faction、Type Definition、Policy、Calculator などへ分解し、差し替え可能にする。
+Behavior、Faction、Master、Spec、Policy、Calculator などへ分解し、差し替え可能にする。
 
 ### Before
 

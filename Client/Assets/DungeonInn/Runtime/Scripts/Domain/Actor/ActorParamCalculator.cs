@@ -9,7 +9,7 @@ namespace DungeonInn.Domain.Actor
     {
         public ActorParams Calculate(
             ActorStats stats,
-            IReadOnlyList<EquipmentSpec> equipmentSpecs,
+            IReadOnlyList<EquipmentMaster> equipmentMasters,
             IActorBehavior behavior,
             int level)
         {
@@ -28,7 +28,7 @@ namespace DungeonInn.Domain.Actor
                 throw new ArgumentOutOfRangeException(nameof(level));
             }
 
-            var equipment = equipmentSpecs ?? Array.Empty<EquipmentSpec>();
+            var equipment = equipmentMasters ?? Array.Empty<EquipmentMaster>();
             var equipmentDefense = equipment.Sum(x => x.Defense);
             var equipmentModifier = equipment.Sum(x => x.Modifier);
 

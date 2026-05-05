@@ -6,24 +6,24 @@ namespace DungeonInn.Domain.Combat
 {
     public sealed class CombatEffectGraphValidator
     {
-        public void Validate(WeaponAttackDefinition definition)
+        public void Validate(WeaponAttackSpec attackSpec)
         {
-            if (definition == null)
+            if (attackSpec == null)
             {
-                throw new ArgumentNullException(nameof(definition));
+                throw new ArgumentNullException(nameof(attackSpec));
             }
 
-            var nodesById = BuildNodeMap(definition);
-            ValidateRootNodes(definition, nodesById);
-            ValidateLinks(definition, nodesById);
+            var nodesById = BuildNodeMap(attackSpec);
+            ValidateRootNodes(attackSpec, nodesById);
+            ValidateLinks(attackSpec, nodesById);
             ValidateOnTickLinks(nodesById.Values);
-            ValidateNoCycles(definition, nodesById);
+            ValidateNoCycles(attackSpec, nodesById);
         }
 
-        static Dictionary<int, CombatEffectNode> BuildNodeMap(WeaponAttackDefinition definition)
+        static Dictionary<int, CombatEffectNodeSpec> BuildNodeMap(WeaponAttackSpec attackSpec)
         {
-            var nodesById = new Dictionary<int, CombatEffectNode>();
-            foreach (var node in definition.Nodes)
+            var nodesById = new Dictionary<int, CombatEffectNodeSpec>();
+            foreach (var node in attackSpec.Nodes)
             {
                 if (nodesById.ContainsKey(node.Id))
                 {
@@ -36,9 +36,9 @@ namespace DungeonInn.Domain.Combat
             return nodesById;
         }
 
-        static void ValidateRootNodes(WeaponAttackDefinition definition, IReadOnlyDictionary<int, CombatEffectNode> nodesById)
+        static void ValidateRootNodes(WeaponAttackSpec attackSpec, IReadOnlyDictionary<int, CombatEffectNodeSpec> nodesById)
         {
-            foreach (var rootNodeId in definition.RootNodeIds)
+            foreach (var rootNodeId in attackSpec.RootNodeIds)
             {
                 if (!nodesById.ContainsKey(rootNodeId))
                 {
@@ -47,9 +47,9 @@ namespace DungeonInn.Domain.Combat
             }
         }
 
-        static void ValidateLinks(WeaponAttackDefinition definition, IReadOnlyDictionary<int, CombatEffectNode> nodesById)
+        static void ValidateLinks(WeaponAttackSpec attackSpec, IReadOnlyDictionary<int, CombatEffectNodeSpec> nodesById)
         {
-            foreach (var node in definition.Nodes)
+            foreach (var node in attackSpec.Nodes)
             {
                 foreach (var link in node.Links)
                 {
@@ -61,7 +61,7 @@ namespace DungeonInn.Domain.Combat
             }
         }
 
-        static void ValidateOnTickLinks(IEnumerable<CombatEffectNode> nodes)
+        static void ValidateOnTickLinks(IEnumerable<CombatEffectNodeSpec> nodes)
         {
             foreach (var node in nodes)
             {
@@ -80,12 +80,12 @@ namespace DungeonInn.Domain.Combat
             }
         }
 
-        static void ValidateNoCycles(WeaponAttackDefinition definition, IReadOnlyDictionary<int, CombatEffectNode> nodesById)
+        static void ValidateNoCycles(WeaponAttackSpec attackSpec, IReadOnlyDictionary<int, CombatEffectNodeSpec> nodesById)
         {
             var visited = new HashSet<int>();
             var visiting = new HashSet<int>();
 
-            foreach (var node in definition.Nodes)
+            foreach (var node in attackSpec.Nodes)
             {
                 Visit(node.Id, nodesById, visited, visiting);
             }
@@ -93,7 +93,7 @@ namespace DungeonInn.Domain.Combat
 
         static void Visit(
             int nodeId,
-            IReadOnlyDictionary<int, CombatEffectNode> nodesById,
+            IReadOnlyDictionary<int, CombatEffectNodeSpec> nodesById,
             ISet<int> visited,
             ISet<int> visiting)
         {

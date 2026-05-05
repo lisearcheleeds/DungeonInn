@@ -20,11 +20,11 @@
 Domain/
   Combat/
     WeaponCombatParams
-    WeaponAttackDefinition
-    CombatEffectNode
+    WeaponAttackSpec
+    CombatEffectNodeSpec
     CombatEffectNodeType
     CombatEffectTriggerType
-    CombatEffectLink
+    CombatEffectLinkSpec
     DamageSpec
     AttackAreaSpec
     AttackAreaShape
@@ -100,7 +100,7 @@ Unity Collider は攻撃判定には使わない。
 - 攻撃力
 - 射程
 - 攻撃速度
-- 攻撃定義 `WeaponAttackDefinition`
+- 攻撃定義 `WeaponAttackSpec`
 
 攻撃力は既存の `WeaponAttack` 計算を利用する。
 射程、攻撃速度、攻撃定義は `IWeaponCombatCalculator` から取得する。
@@ -113,17 +113,17 @@ public sealed class WeaponCombatParams
     public int AttackPower { get; }
     public float RangeMeters { get; }
     public float AttackIntervalSeconds { get; }
-    public WeaponAttackDefinition AttackDefinition { get; }
+    public WeaponAttackSpec AttackSpec { get; }
 }
 ```
 
 ## Combat Effect Node
 
-攻撃は `WeaponAttackDefinition` が持つ Combat Effect Node の木またはDAGとして表現する。
+攻撃は `WeaponAttackSpec` が持つ Combat Effect Node の木またはDAGとして表現する。
 
 Direct、Area、Projectile は攻撃タイプではなく、攻撃を構成するNodeである。
 
-### WeaponAttackDefinition
+### WeaponAttackSpec
 
 武器攻撃の定義。
 
@@ -134,7 +134,7 @@ Direct、Area、Projectile は攻撃タイプではなく、攻撃を構成す�
 - Node一覧
 - 最大生成深度
 
-### CombatEffectNode
+### CombatEffectNodeSpec
 
 攻撃要素の1単位。
 
@@ -168,7 +168,7 @@ Nodeから別Nodeを発火するイベント。
 - OnTick
 - OnCompleted
 
-### CombatEffectLink
+### CombatEffectLinkSpec
 
 あるNodeのイベントから別Nodeを発火するリンク。
 
@@ -265,7 +265,7 @@ Root:
 ### Sword
 
 ```text
-WeaponAttackDefinition: SwordSlash
+WeaponAttackSpec: SwordSlash
 Root:
   Area
     shape: Fan
@@ -277,7 +277,7 @@ Root:
 ### Bow
 
 ```text
-WeaponAttackDefinition: ArrowShot
+WeaponAttackSpec: ArrowShot
 Root:
   Projectile
     movement: Direction
@@ -288,7 +288,7 @@ Root:
 ### Grenade Launcher
 
 ```text
-WeaponAttackDefinition: GrenadeLauncher
+WeaponAttackSpec: GrenadeLauncher
 Root:
   Projectile
     movement: TargetPoint
@@ -309,7 +309,7 @@ Root:
 ### Poison Field
 
 ```text
-WeaponAttackDefinition: PoisonField
+WeaponAttackSpec: PoisonField
 Root:
   Area
     shape: Circle

@@ -95,7 +95,7 @@ View 層は表示、カメラ、ポップアップ、アニメーション、Uni
 一方で攻撃力は武器種ごとに式が異なるため、`IWeaponCalculator` と武器別実装で計算する。
 
 `Actor` は現在装備 `ActorEquipment`、現在の `IWeaponCalculator`、計算済みの `WeaponAttack` を持つ。
-装備変更時は武器スロットの `EquipmentSpec.WeaponType` に応じて現在の武器Calculatorを切り替える。
+装備変更時は武器スロットの `EquipmentMaster.WeaponType` に応じて現在の武器Calculatorを切り替える。
 装備変更は `Actor.Equip()` / `Actor.Unequip()` を通して行い、`ActorEquipment` を外部から直接変更しない。
 これにより、`ActorParams` と `WeaponAttack` のキャッシュを装備状態と同期させる。
 Behavior 変更時も現在装備に基づいて武器Calculatorを再選択する。
@@ -348,7 +348,7 @@ AI や戦闘判定は、Actor のクラス名ではなく Faction 関係を見�
 
 装備は Item の一種として扱う。
 
-### ItemDefinition
+### ItemMaster
 
 アイテム種別の定義。
 
@@ -365,7 +365,7 @@ AI や戦闘判定は、Actor のクラス名ではなく Faction 関係を見�
 - `Consumable`
 - `Equipment`
 
-### EquipmentSpec
+### EquipmentMaster
 
 カテゴリが `Equipment` のアイテムに紐づく追加仕様。
 
@@ -721,9 +721,9 @@ Domain/
 │   ├── FacilityUsageType
 │   └── InnReservation
 ├── Item/
-│   ├── ItemDefinition
+│   ├── ItemMaster
 │   ├── ItemCategory
-│   ├── EquipmentSpec
+│   ├── EquipmentMaster
 │   ├── EquipmentSlot
 │   ├── WeaponType
 │   ├── Inventory

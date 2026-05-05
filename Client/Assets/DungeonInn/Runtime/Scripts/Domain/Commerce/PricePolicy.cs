@@ -7,34 +7,34 @@ namespace DungeonInn.Domain.Commerce
 {
     public sealed class PricePolicy
     {
-        public ItemStack CalculateSalePrice(DungeonInn.Domain.Facility.Facility facility, IEnumerable<ItemStack> items, IReadOnlyDictionary<int, ItemDefinition> definitions)
+        public ItemStack CalculateSalePrice(DungeonInn.Domain.Facility.Facility facility, IEnumerable<ItemStack> items, IReadOnlyDictionary<int, ItemMaster> itemMasters)
         {
-            return new ItemStack(SpecialItemIds.Money, CalculateItemTotal(items, definitions, facility.Level));
+            return new ItemStack(SpecialItemIds.Money, CalculateItemTotal(items, itemMasters, facility.Level));
         }
 
-        public ItemStack CalculatePurchasePrice(IEnumerable<ItemStack> items, IReadOnlyDictionary<int, ItemDefinition> definitions)
+        public ItemStack CalculatePurchasePrice(IEnumerable<ItemStack> items, IReadOnlyDictionary<int, ItemMaster> itemMasters)
         {
-            var total = CalculateItemTotal(items, definitions, 1);
+            var total = CalculateItemTotal(items, itemMasters, 1);
             return new ItemStack(SpecialItemIds.Money, Math.Max(1, total / 2));
         }
 
-        int CalculateItemTotal(IEnumerable<ItemStack> items, IReadOnlyDictionary<int, ItemDefinition> definitions, int multiplier)
+        int CalculateItemTotal(IEnumerable<ItemStack> items, IReadOnlyDictionary<int, ItemMaster> itemMasters, int multiplier)
         {
             var total = 0;
 
             foreach (var item in items)
             {
-                if (!definitions.TryGetValue(item.ItemId, out var definition))
+                if (!itemMasters.TryGetValue(item.ItemId, out var itemMaster))
                 {
-                    throw new InvalidOperationException("Item definition does not exist.");
+                    throw new InvalidOperationException("Item master does not exist.");
                 }
 
-                if (!definition.CanTrade)
+                if (!itemMaster.CanTrade)
                 {
                     throw new InvalidOperationException("Item cannot be traded.");
                 }
 
-                total += definition.BasePrice * item.Count * Math.Max(1, multiplier);
+                total += itemMaster.BasePrice * item.Count * Math.Max(1, multiplier);
             }
 
             return total;

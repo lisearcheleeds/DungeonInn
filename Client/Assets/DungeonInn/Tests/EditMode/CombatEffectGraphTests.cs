@@ -9,14 +9,14 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ValidatorAcceptsComplexProjectileAreaDirectGraph()
         {
-            var directDamage = new CombatEffectNode(
+            var directDamage = new CombatEffectNodeSpec(
                 3,
                 CombatEffectNodeType.DirectDamage,
                 new DamageSpec(10),
                 null,
                 null,
-                Array.Empty<CombatEffectLink>());
-            var area = new CombatEffectNode(
+                Array.Empty<CombatEffectLinkSpec>());
+            var area = new CombatEffectNodeSpec(
                 2,
                 CombatEffectNodeType.Area,
                 null,
@@ -30,8 +30,8 @@ namespace DungeonInn.Tests.EditMode
                     0,
                     0),
                 null,
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnHit, directDamage.Id) });
-            var projectile = new CombatEffectNode(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, directDamage.Id) });
+            var projectile = new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.Projectile,
                 null,
@@ -44,23 +44,23 @@ namespace DungeonInn.Tests.EditMode
                     null),
                 new[]
                 {
-                    new CombatEffectLink(CombatEffectTriggerType.OnHit, area.Id),
-                    new CombatEffectLink(CombatEffectTriggerType.OnExpired, area.Id)
+                    new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, area.Id),
+                    new CombatEffectLinkSpec(CombatEffectTriggerType.OnExpired, area.Id)
                 });
-            var definition = new WeaponAttackDefinition(
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { projectile.Id },
                 new[] { projectile, area, directDamage },
                 4);
 
-            Assert.DoesNotThrow(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.DoesNotThrow(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
         public void ValidatorAcceptsOnTickFromDurationArea()
         {
             var directDamage = CreateDirectDamageNode(2);
-            var area = new CombatEffectNode(
+            var area = new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.Area,
                 null,
@@ -74,20 +74,20 @@ namespace DungeonInn.Tests.EditMode
                     0,
                     60),
                 null,
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnTick, directDamage.Id) });
-            var definition = new WeaponAttackDefinition(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnTick, directDamage.Id) });
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { area.Id },
                 new[] { area, directDamage },
                 4);
 
-            Assert.DoesNotThrow(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.DoesNotThrow(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
         public void ValidatorRejectsCombatEffectCycles()
         {
-            var first = new CombatEffectNode(
+            var first = new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.Projectile,
                 null,
@@ -98,8 +98,8 @@ namespace DungeonInn.Tests.EditMode
                     10,
                     20,
                     null),
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnHit, 2) });
-            var second = new CombatEffectNode(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, 2) });
+            var second = new CombatEffectNodeSpec(
                 2,
                 CombatEffectNodeType.Area,
                 null,
@@ -113,21 +113,21 @@ namespace DungeonInn.Tests.EditMode
                     0,
                     0),
                 null,
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnCompleted, 1) });
-            var definition = new WeaponAttackDefinition(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnCompleted, 1) });
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { first.Id },
                 new[] { first, second },
                 4);
 
-            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
         public void ValidatorRejectsDisconnectedCombatEffectCycles()
         {
             var root = CreateDirectDamageNode(1);
-            var cycleStart = new CombatEffectNode(
+            var cycleStart = new CombatEffectNodeSpec(
                 2,
                 CombatEffectNodeType.Projectile,
                 null,
@@ -138,8 +138,8 @@ namespace DungeonInn.Tests.EditMode
                     10,
                     20,
                     null),
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnHit, 3) });
-            var cycleEnd = new CombatEffectNode(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, 3) });
+            var cycleEnd = new CombatEffectNodeSpec(
                 3,
                 CombatEffectNodeType.Area,
                 null,
@@ -153,14 +153,14 @@ namespace DungeonInn.Tests.EditMode
                     0,
                     0),
                 null,
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnCompleted, 2) });
-            var definition = new WeaponAttackDefinition(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnCompleted, 2) });
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { root.Id },
                 new[] { root, cycleStart, cycleEnd },
                 4);
 
-            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
@@ -168,32 +168,32 @@ namespace DungeonInn.Tests.EditMode
         {
             var first = CreateDirectDamageNode(1);
             var second = CreateDirectDamageNode(1);
-            var definition = new WeaponAttackDefinition(
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { first.Id },
                 new[] { first, second },
                 4);
 
-            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
         public void ValidatorRejectsMissingRootNode()
         {
             var node = CreateDirectDamageNode(1);
-            var definition = new WeaponAttackDefinition(
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { 999 },
                 new[] { node },
                 4);
 
-            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
         public void ValidatorRejectsMissingLinkTargetNode()
         {
-            var node = new CombatEffectNode(
+            var node = new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.Projectile,
                 null,
@@ -204,21 +204,21 @@ namespace DungeonInn.Tests.EditMode
                     10,
                     20,
                     null),
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnHit, 999) });
-            var definition = new WeaponAttackDefinition(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, 999) });
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { node.Id },
                 new[] { node },
                 4);
 
-            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
         public void ValidatorRejectsOnTickFromInstantArea()
         {
             var directDamage = CreateDirectDamageNode(2);
-            var area = new CombatEffectNode(
+            var area = new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.Area,
                 null,
@@ -232,63 +232,63 @@ namespace DungeonInn.Tests.EditMode
                     0,
                     0),
                 null,
-                new[] { new CombatEffectLink(CombatEffectTriggerType.OnTick, directDamage.Id) });
-            var definition = new WeaponAttackDefinition(
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnTick, directDamage.Id) });
+            var attackSpec = new WeaponAttackSpec(
                 1,
                 new[] { area.Id },
                 new[] { area, directDamage },
                 4);
 
-            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(definition));
+            Assert.Throws<InvalidOperationException>(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]
-        public void CombatEffectNodeRequiresSpecForNodeType()
+        public void CombatEffectNodeSpecRequiresSpecForNodeType()
         {
-            Assert.Throws<ArgumentException>(() => new CombatEffectNode(
+            Assert.Throws<ArgumentException>(() => new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.DirectDamage,
                 null,
                 null,
                 null,
-                Array.Empty<CombatEffectLink>()));
-            Assert.Throws<ArgumentException>(() => new CombatEffectNode(
+                Array.Empty<CombatEffectLinkSpec>()));
+            Assert.Throws<ArgumentException>(() => new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.Area,
                 null,
                 null,
                 null,
-                Array.Empty<CombatEffectLink>()));
-            Assert.Throws<ArgumentException>(() => new CombatEffectNode(
+                Array.Empty<CombatEffectLinkSpec>()));
+            Assert.Throws<ArgumentException>(() => new CombatEffectNodeSpec(
                 1,
                 CombatEffectNodeType.Projectile,
                 null,
                 null,
                 null,
-                Array.Empty<CombatEffectLink>()));
+                Array.Empty<CombatEffectLinkSpec>()));
         }
 
         [Test]
-        public void WeaponAttackDefinitionRejectsInvalidMaxGenerationDepth()
+        public void WeaponAttackSpecRejectsInvalidMaxGenerationDepth()
         {
             var node = CreateDirectDamageNode(1);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new WeaponAttackDefinition(
+            Assert.Throws<ArgumentOutOfRangeException>(() => new WeaponAttackSpec(
                 1,
                 new[] { node.Id },
                 new[] { node },
                 0));
         }
 
-        static CombatEffectNode CreateDirectDamageNode(int id)
+        static CombatEffectNodeSpec CreateDirectDamageNode(int id)
         {
-            return new CombatEffectNode(
+            return new CombatEffectNodeSpec(
                 id,
                 CombatEffectNodeType.DirectDamage,
                 new DamageSpec(10),
                 null,
                 null,
-                Array.Empty<CombatEffectLink>());
+                Array.Empty<CombatEffectLinkSpec>());
         }
     }
 }
