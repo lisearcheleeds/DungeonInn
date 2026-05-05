@@ -1,0 +1,41 @@
+using System;
+using DungeonInn.Domain.Actor;
+using DungeonInn.Master;
+
+namespace DungeonInn.Application.Factory
+{
+    public sealed class MonsterFactory : IMonsterFactory
+    {
+        readonly IMasterRepository masterRepository;
+
+        public MonsterFactory(IMasterRepository masterRepository)
+        {
+            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+        }
+
+        public Actor Create(MonsterCreateRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var speciesMaster = masterRepository.GetMonsterSpeciesMaster(request.SpeciesId);
+            var archetypeMaster = masterRepository.GetActorArchetypeMaster(speciesMaster.ActorArchetypeId);
+            if (archetypeMaster.BehaviorType != ActorBehaviorType.Monster)
+            {
+                throw new InvalidOperationException("Monster factory requires monster actor archetype.");
+            }
+
+            var actor = ActorFactoryCore.CreateActor(
+                request.ActorId,
+                archetypeMaster,
+                request.Position,
+                request.Faction,
+                request.PreferenceSeed,
+                new MonsterBehavior(speciesMaster.Id, speciesMaster.CanScavenge, speciesMaster.SpeciesDrops));
+            actor.ChangeNaturalWeaponType(speciesMaster.DefaultWeaponType);
+            return actor;
+        }
+    }
+}

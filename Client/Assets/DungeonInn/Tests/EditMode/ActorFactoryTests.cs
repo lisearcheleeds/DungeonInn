@@ -13,11 +13,11 @@ namespace DungeonInn.Tests.EditMode
     public sealed class ActorFactoryTests
     {
         [Test]
-        public void CreateActorBuildsAdventurerFromArchetypeMaster()
+        public void AdventurerFactoryBuildsBareAdventurerFromArchetypeMaster()
         {
-            var factory = new MasterActorFactory(new HardcodedMasterRepository());
+            var factory = new AdventurerFactory(new HardcodedMasterRepository());
 
-            var actor = factory.CreateActor(new ActorCreateRequest(
+            var actor = factory.Create(new AdventurerCreateRequest(
                 1,
                 Guid.NewGuid(),
                 new LayerPosition(MapLayerId.Ground, 0, 0),
@@ -26,37 +26,19 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(actor.Name, Is.EqualTo("Novice Adventurer"));
             Assert.That(actor.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
-            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
-            Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.True);
-            Assert.That(actor.Equipment.Weapon.WeaponType, Is.EqualTo(WeaponType.Sword));
+            Assert.That(actor.Inventory.ItemCounts, Is.Empty);
+            Assert.That(actor.Equipment.Weapon, Is.Null);
+            Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));
             Assert.That(actor.Hp, Is.EqualTo(actor.Params.MaxHp));
             Assert.That(actor.Mp, Is.EqualTo(actor.Params.MaxMp));
         }
 
         [Test]
-        public void CreateActorCanSkipInitialItemsForSpawnUseCase()
-        {
-            var factory = new MasterActorFactory(new HardcodedMasterRepository());
-
-            var actor = factory.CreateActor(new ActorCreateRequest(
-                1,
-                Guid.NewGuid(),
-                new LayerPosition(MapLayerId.Ground, 0, 0),
-                new ActorFaction(1, "Adventurer"),
-                123,
-                false));
-
-            Assert.That(actor.Inventory.ItemCounts, Is.Empty);
-            Assert.That(actor.Equipment.Weapon, Is.Null);
-            Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));
-        }
-
-        [Test]
         public void CreateMonsterBuildsMonsterFromSpeciesMaster()
         {
-            var factory = new MasterActorFactory(new HardcodedMasterRepository());
+            var factory = new MonsterFactory(new HardcodedMasterRepository());
 
-            var actor = factory.CreateMonster(new MonsterCreateRequest(
+            var actor = factory.Create(new MonsterCreateRequest(
                 1,
                 Guid.NewGuid(),
                 new LayerPosition(MapLayerId.DungeonFloor(1), 10, 10),
@@ -76,7 +58,10 @@ namespace DungeonInn.Tests.EditMode
         public void SpawnAdventurerFromMasterUsesGuildInventoryForRookieEquipment()
         {
             var repository = new HardcodedMasterRepository();
-            var useCase = new SpawnAdventurerFromMasterUseCase(new MasterActorFactory(repository), repository);
+            var useCase = new SpawnAdventurerFromMasterUseCase(
+                new AdventurerFactory(repository),
+                repository,
+                new SpawnAdventurerUseCase());
             var guildInventory = new Inventory();
             guildInventory.Add(new ItemStack(3001, 1));
             guildInventory.Add(new ItemStack(3003, 1));
@@ -84,7 +69,7 @@ namespace DungeonInn.Tests.EditMode
 
             var actor = useCase.ExecuteAsync(
                 guild,
-                new ActorCreateRequest(
+                new AdventurerCreateRequest(
                     1,
                     Guid.NewGuid(),
                     new LayerPosition(MapLayerId.Ground, 0, 0),

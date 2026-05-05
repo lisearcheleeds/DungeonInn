@@ -15,16 +15,18 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class SpawnAdventurerFromMasterUseCase
     {
-        readonly IActorFactory actorFactory;
+        readonly IAdventurerFactory adventurerFactory;
         readonly IMasterRepository masterRepository;
-        readonly SpawnAdventurerUseCase spawnAdventurerUseCase = new();
+        readonly SpawnAdventurerUseCase spawnAdventurerUseCase;
 
         public SpawnAdventurerFromMasterUseCase(
-            IActorFactory actorFactory,
-            IMasterRepository masterRepository)
+            IAdventurerFactory adventurerFactory,
+            IMasterRepository masterRepository,
+            SpawnAdventurerUseCase spawnAdventurerUseCase)
         {
-            this.actorFactory = actorFactory ?? throw new ArgumentNullException(nameof(actorFactory));
+            this.adventurerFactory = adventurerFactory ?? throw new ArgumentNullException(nameof(adventurerFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.spawnAdventurerUseCase = spawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerUseCase));
         }
 
         /// <summary>
@@ -32,7 +34,7 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public async UniTask<Actor> ExecuteAsync(
             AdventurerGuild guild,
-            ActorCreateRequest request,
+            AdventurerCreateRequest request,
             int occurredAtTick)
         {
             if (request == null)
@@ -47,22 +49,24 @@ namespace DungeonInn.Application.UseCase
             }
 
             var isRookie = archetypeMaster.InitialLevel == 1;
-            var actor = actorFactory.CreateActor(
-                new ActorCreateRequest(
+            var actor = adventurerFactory.Create(
+                new AdventurerCreateRequest(
                     request.ArchetypeId,
                     request.ActorId,
                     request.Position,
                     request.Faction,
-                    request.PreferenceSeed,
-                    !isRookie));
+                    request.PreferenceSeed));
             var rookieEquipment = isRookie ? ToItemStacks(archetypeMaster.InitialEquipmentItemIds) : Array.Empty<ItemStack>();
             await spawnAdventurerUseCase.ExecuteAsync(guild, actor, rookieEquipment, occurredAtTick);
             if (isRookie)
             {
                 AddInitialInventory(actor, archetypeMaster.InitialInventoryItemIds);
                 EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
+                return actor;
             }
 
+            AddInitialInventory(actor, archetypeMaster.InitialInventoryItemIds);
+            EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
             return actor;
         }
 

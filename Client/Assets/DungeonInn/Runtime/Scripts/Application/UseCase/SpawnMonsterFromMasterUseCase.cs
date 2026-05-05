@@ -10,11 +10,11 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class SpawnMonsterFromMasterUseCase
     {
-        readonly IActorFactory actorFactory;
+        readonly IMonsterFactory monsterFactory;
 
-        public SpawnMonsterFromMasterUseCase(IActorFactory actorFactory)
+        public SpawnMonsterFromMasterUseCase(IMonsterFactory monsterFactory)
         {
-            this.actorFactory = actorFactory ?? throw new ArgumentNullException(nameof(actorFactory));
+            this.monsterFactory = monsterFactory ?? throw new ArgumentNullException(nameof(monsterFactory));
         }
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace DungeonInn.Application.UseCase
         /// </summary>
         public UniTask<Actor> ExecuteAsync(MonsterCreateRequest request)
         {
-            return UniTask.FromResult(actorFactory.CreateMonster(request));
+            return UniTask.FromResult(monsterFactory.Create(request));
         }
     }
 }

@@ -420,16 +420,16 @@ Actor の基本プロファイル、モンスター種族、スポーンテー�
 MasterMemory 導入前は `HardcodedMasterRepository` がマスタ一覧をハードコードで提供する。
 読み取り契約は `IMasterRepository` に寄せ、MasterMemory 導入後も呼び出し側の契約を変えない。
 
-マスタから `Actor` を生成する処理は `MasterActorFactory` が担当する。
+マスタから `Actor` を生成する処理は、生成対象ごとの Factory が担当する。
+現在は `AdventurerFactory` と `MonsterFactory` に分ける。
 Factory は以下を行う。
 
-- `ActorArchetypeMaster` から基礎能力、初期レベル、名前、Behavior を決定する。
-- 初期 Inventory を作る。
-- 初期装備 ID から `EquipmentMaster` / `WeaponMaster` を解決し、`Actor.Equip()` 経由で装備する。
-- `MonsterSpeciesMaster` から `MonsterBehavior`、種族固有ドロップ、`DefaultWeaponType` を反映する。
+- `ActorArchetypeMaster` から基礎能力、初期レベル、名前を決定する。
+- Factory の種類に応じて Behavior を決定する。
+- `MonsterFactory` は `MonsterSpeciesMaster` から `MonsterBehavior`、種族固有ドロップ、`DefaultWeaponType` を反映する。
 - 作成直後の HP / MP を最大値まで回復する。
 
-ただし、ギルド在庫からの支給、取引履歴、スポーン可否、抽選は Factory では行わない。
+ただし、ギルド在庫からの支給、初期装備の装備反映、取引履歴、スポーン可否、抽選は Factory では行わない。
 これらは UseCase / AI / オーケストレーションの責務とする。
 
 現在の接続 UseCase:
@@ -823,9 +823,11 @@ Master/
 
 Application/
 ├── Factory/
-│   ├── IActorFactory
-│   ├── MasterActorFactory
-│   ├── ActorCreateRequest
+│   ├── IAdventurerFactory
+│   ├── AdventurerFactory
+│   ├── AdventurerCreateRequest
+│   ├── IMonsterFactory
+│   ├── MonsterFactory
 │   └── MonsterCreateRequest
 └── UseCase/
     ├── RecruitStaffUseCase

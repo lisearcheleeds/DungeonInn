@@ -1,6 +1,7 @@
 using DungeonInn.Infrastructure.AssetLoader;
 using DungeonInn.Input;
 using DungeonInn.Application.Factory;
+using DungeonInn.Application.UseCase;
 using DungeonInn.Master;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneCamera;
@@ -87,7 +88,11 @@ namespace DungeonInn.Core
 
                 builder.Register<ProductAssetLoader>(Lifetime.Singleton).AsImplementedInterfaces();
                 builder.Register<HardcodedMasterRepository>(Lifetime.Singleton).As<IMasterRepository>();
-                builder.Register<MasterActorFactory>(Lifetime.Singleton).As<IActorFactory>();
+                builder.Register<AdventurerFactory>(Lifetime.Singleton).As<IAdventurerFactory>();
+                builder.Register<MonsterFactory>(Lifetime.Singleton).As<IMonsterFactory>();
+                builder.Register<SpawnAdventurerUseCase>(Lifetime.Singleton);
+                builder.Register<SpawnAdventurerFromMasterUseCase>(Lifetime.Singleton);
+                builder.Register<SpawnMonsterFromMasterUseCase>(Lifetime.Singleton);
             }
         }
 
