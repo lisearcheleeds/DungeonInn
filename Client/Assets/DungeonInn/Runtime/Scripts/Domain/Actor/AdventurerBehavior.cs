@@ -23,6 +23,18 @@ namespace DungeonInn.Domain.Actor
             LifecycleState = lifecycleState;
         }
 
+        public float ExploringTimeSeconds { get; private set; }
+
+        public void AccumulateExploringTime(float deltaSeconds)
+        {
+            ExploringTimeSeconds += Math.Max(0f, deltaSeconds);
+        }
+
+        public void ResetExploringTime()
+        {
+            ExploringTimeSeconds = 0f;
+        }
+
         public void ReduceStress(int amount)
         {
             Stress = Math.Max(0, Stress - Math.Max(0, amount));
