@@ -1,4 +1,5 @@
 using DungeonInn.Application.AI;
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Common;
@@ -20,6 +21,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
+            builder.Register<ActorCombatService>(Lifetime.Scoped).As<IActorCombatService>();
 
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
             builder.Register<GameWorldState>(Lifetime.Scoped).As<IGameWorldState>();
@@ -35,6 +37,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Scoped);
             builder.Register<UseDungeonStairUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorSimpleLifecycleUseCase>(Lifetime.Scoped);
+            builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
 
             builder.Register<ActorDecisionScheduler>(Lifetime.Scoped);
             builder.Register<ApplyActorAiDecisionUseCase>(Lifetime.Scoped);

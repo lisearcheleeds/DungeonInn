@@ -1,9 +1,13 @@
+using System;
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
+using DungeonInn.Domain.Map;
 using NUnit.Framework;
 
 namespace DungeonInn.Tests.EditMode
@@ -80,6 +84,74 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(result.Guild.Facilities.Count, Is.EqualTo(1));
             Assert.That(result.Guild.Facilities[0].Type, Is.EqualTo(FacilityType.Inn));
             Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold) }), Is.True);
+        }
+
+        [Test]
+        public void ExploringAdventurerMovesTowardRandomDungeonRoom()
+        {
+            var worldState = CreateInitializedWorldState();
+            var floor = worldState.Dungeon.GetFloor(1);
+            var actor = CreateExploringAdventurer(floor.GetArrivalPosition(DungeonStairType.Up));
+            worldState.RegisterActor(actor);
+
+            var navigationService = new ActorNavigationService();
+            var useCase = new AdvanceActorSimpleLifecycleUseCase(
+                new MoveActorTowardDestinationUseCase(navigationService),
+                new UseDungeonStairUseCase(
+                    new EnsureDungeonFloorGeneratedUseCase(
+                        new GenerateDungeonFloorUseCase())),
+                navigationService,
+                new ActorCombatService(),
+                new GameRandom(10));
+            var before = actor.Position;
+
+            for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
+            {
+                useCase.ExecuteAsync(worldState, 1f).GetAwaiter().GetResult();
+            }
+
+            Assert.That(actor.Behavior, Is.TypeOf<AdventurerBehavior>());
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Exploring));
+            Assert.That(actor.Position.DistanceSquaredTo(before), Is.GreaterThan(0f));
+        }
+
+        static GameWorldState CreateInitializedWorldState()
+        {
+            var worldState = new GameWorldState();
+            var useCase = new InitializeGameWorldUseCase(
+                worldState,
+                new InitializeWorldMapUseCase(),
+                new InitializeDungeonUseCase(
+                    new EnsureDungeonFloorGeneratedUseCase(
+                        new GenerateDungeonFloorUseCase())));
+
+            useCase.ExecuteAsync(
+                    new InitializeGameWorldRequest(
+                        GameConstants.InitialDungeonSeed,
+                        Array.Empty<DungeonDepthBandConfig>()))
+                .GetAwaiter()
+                .GetResult();
+
+            return worldState;
+        }
+
+        static Actor CreateExploringAdventurer(LayerPosition position)
+        {
+            return new Actor(
+                Guid.NewGuid(),
+                "Exploring Adventurer",
+                new ActorStats(5, 5, 5, 5, 5, 5),
+                new Inventory(),
+                1,
+                0,
+                50,
+                10,
+                0,
+                0,
+                1,
+                position,
+                new ActorFaction(1, "Adventurer"),
+                new AdventurerBehavior(0, AdventurerLifecycleState.Exploring));
         }
     }
 }

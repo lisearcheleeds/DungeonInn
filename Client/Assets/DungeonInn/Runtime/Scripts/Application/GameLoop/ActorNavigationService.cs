@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Application.Pathfinding;
 using DungeonInn.Domain.Map;
-using UnityEngine;
 
 namespace DungeonInn.Application.GameLoop
 {
@@ -23,11 +22,6 @@ namespace DungeonInn.Application.GameLoop
                 pathStates[actorId] = state;
             }
 
-            if (state.HasFailed)
-            {
-                return state;
-            }
-
             if (!state.NeedsRecalculation(goalGrid))
             {
                 return state;
@@ -37,7 +31,6 @@ namespace DungeonInn.Application.GameLoop
             if (path == null)
             {
                 state.MarkFailed();
-                Debug.LogWarning($"[Navigation] A* pathfinding failed for actor {actorId}: {startGrid.X},{startGrid.Z} -> {goalGrid.X},{goalGrid.Z}");
             }
             else
             {

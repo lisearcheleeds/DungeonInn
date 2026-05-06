@@ -19,6 +19,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase;
         SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase;
         AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase;
+        DetectCombatEncounterUseCase detectCombatEncounterUseCase;
 
         bool isExecuting;
         bool isInitialized;
@@ -30,7 +31,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             InitializeGameWorldUseCase initializeGameWorldUseCase,
             SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase,
             SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase,
-            AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase)
+            AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase,
+            DetectCombatEncounterUseCase detectCombatEncounterUseCase)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
@@ -38,6 +40,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.spawnScheduledAdventurerUseCase = spawnScheduledAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledAdventurerUseCase));
             this.spawnScheduledMonsterUseCase = spawnScheduledMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledMonsterUseCase));
             this.advanceActorSimpleLifecycleUseCase = advanceActorSimpleLifecycleUseCase ?? throw new ArgumentNullException(nameof(advanceActorSimpleLifecycleUseCase));
+            this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
         }
 
         void Start()
@@ -95,6 +98,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
                 var deltaGameSeconds = result.AdvancedScheduleTicks * result.TimeScale;
                 await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, deltaGameSeconds);
+                await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
 
                 LogActorSummaries(result);
             }

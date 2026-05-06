@@ -1,27 +1,32 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
-using UnityEngine;
 using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
     public sealed class AdvanceActorSimpleLifecycleUseCase
     {
+        readonly Dictionary<Guid, LayerPosition> exploringDestinations = new();
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
         readonly UseDungeonStairUseCase useDungeonStairUseCase;
         readonly IActorNavigationService navigationService;
+        readonly IActorCombatService actorCombatService;
+        readonly IGameRandom gameRandom;
 
         [Inject]
         public AdvanceActorSimpleLifecycleUseCase(
             MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase,
             UseDungeonStairUseCase useDungeonStairUseCase,
-            IActorNavigationService navigationService)
+            IActorNavigationService navigationService,
+            IActorCombatService actorCombatService,
+            IGameRandom gameRandom)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -29,6 +34,10 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(useDungeonStairUseCase));
             this.navigationService = navigationService
                 ?? throw new ArgumentNullException(nameof(navigationService));
+            this.actorCombatService = actorCombatService
+                ?? throw new ArgumentNullException(nameof(actorCombatService));
+            this.gameRandom = gameRandom
+                ?? throw new ArgumentNullException(nameof(gameRandom));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -53,9 +62,7 @@ namespace DungeonInn.Application.UseCase
             {
                 case AdventurerLifecycleState.Arrived:
                 case AdventurerLifecycleState.Preparing:
-                    var before = behavior.LifecycleState;
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.GoingToDungeon);
-                    Debug.Log($"[Actor] {actor.Name} lifecycle {before} -> GoingToDungeon");
                     break;
 
                 case AdventurerLifecycleState.GoingToDungeon:
@@ -63,7 +70,7 @@ namespace DungeonInn.Application.UseCase
                     break;
 
                 case AdventurerLifecycleState.Exploring:
-                    AdvanceExploring(actor, behavior, deltaGameSeconds);
+                    AdvanceExploring(actor, behavior, worldState, deltaGameSeconds);
                     break;
 
                 case AdventurerLifecycleState.Returning:
@@ -82,7 +89,6 @@ namespace DungeonInn.Application.UseCase
             var groundMap = worldState.GroundMap;
             var destination = groundMap.Layer.GetCellCenter(groundMap.DungeonEntrancePosition);
 
-            // TODO: 移動速度をマスタから取得する
             var arrived = moveActorTowardDestinationUseCase.Execute(
                 actor,
                 destination,
@@ -93,7 +99,6 @@ namespace DungeonInn.Application.UseCase
 
             if (arrived)
             {
-                // TODO: DepthBandConfigsをGameWorldStateから取得する
                 var arrivalPosition = await useDungeonStairUseCase.ExecuteAsync(
                     worldState.Dungeon,
                     groundMap,
@@ -105,26 +110,58 @@ namespace DungeonInn.Application.UseCase
                 navigationService.InvalidatePath(actor.Id);
                 behavior.ResetExploringTime();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
-                Debug.Log($"[Actor] {actor.Name} entered dungeon floor 1");
-            }
-            else
-            {
-                Debug.Log($"[Move] {actor.Name} moved toward dungeon entrance");
             }
         }
 
-        static void AdvanceExploring(Actor actor, AdventurerBehavior behavior, float deltaGameSeconds)
+        void AdvanceExploring(
+            Actor actor,
+            AdventurerBehavior behavior,
+            IGameWorldState worldState,
+            float deltaGameSeconds)
         {
             if (actor.Position.LayerId.Equals(MapLayerId.Ground))
             {
                 return;
             }
 
-            behavior.AccumulateExploringTime(deltaGameSeconds);
-            if (behavior.ExploringTimeSeconds >= GameConstants.AdventurerExploringDurationSeconds)
+            if (actorCombatService.HasTarget(actor.Id))
             {
+                return;
+            }
+
+            behavior.AccumulateExploringTime(deltaGameSeconds);
+            if (GameConstants.AdventurerExploringDurationSeconds <= behavior.ExploringTimeSeconds)
+            {
+                exploringDestinations.Remove(actor.Id);
+                navigationService.InvalidatePath(actor.Id);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
-                Debug.Log($"[Actor] {actor.Name} lifecycle Exploring -> Returning");
+                return;
+            }
+
+            var floor = worldState.Dungeon.GetFloor(actor.Position.LayerId.Value);
+            if (!exploringDestinations.TryGetValue(actor.Id, out var destination)
+                || !destination.LayerId.Equals(actor.Position.LayerId))
+            {
+                if (!TryPickRoomDestination(floor, actor.Position, out destination))
+                {
+                    return;
+                }
+
+                exploringDestinations[actor.Id] = destination;
+            }
+
+            var arrived = moveActorTowardDestinationUseCase.Execute(
+                actor,
+                destination,
+                floor.Layer,
+                pos => floor.IsWalkable(pos),
+                5.0f,
+                deltaGameSeconds);
+
+            if (arrived)
+            {
+                exploringDestinations.Remove(actor.Id);
+                navigationService.InvalidatePath(actor.Id);
             }
         }
 
@@ -149,9 +186,6 @@ namespace DungeonInn.Application.UseCase
 
             if (arrived)
             {
-                Debug.Log($"[Move] {actor.Name} arrived at up stair");
-
-                // TODO: DepthBandConfigsをGameWorldStateから取得する
                 var returnPosition = await useDungeonStairUseCase.ExecuteAsync(
                     worldState.Dungeon,
                     worldState.GroundMap,
@@ -162,12 +196,69 @@ namespace DungeonInn.Application.UseCase
                 actor.MoveTo(returnPosition);
                 navigationService.InvalidatePath(actor.Id);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                Debug.Log($"[Actor] {actor.Name} returned to ground");
             }
-            else
+        }
+
+        bool TryPickRoomDestination(
+            DungeonFloor floor,
+            LayerPosition actorPosition,
+            out LayerPosition destination)
+        {
+            if (floor.Rooms.Count == 0)
             {
-                Debug.Log($"[Move] {actor.Name} moved toward up stair");
+                destination = default;
+                return false;
             }
+
+            var currentGrid = floor.Layer.ToGridPosition(actorPosition);
+            for (var i = 0; i < floor.Rooms.Count; i++)
+            {
+                var room = floor.Rooms[gameRandom.Next(floor.Rooms.Count)];
+                if (floor.Rooms.Count == 1 || !Contains(room, currentGrid))
+                {
+                    destination = PickRoomCell(floor, room);
+                    return true;
+                }
+            }
+
+            destination = PickRoomCell(floor, floor.Rooms[gameRandom.Next(floor.Rooms.Count)]);
+            return true;
+        }
+
+        LayerPosition PickRoomCell(DungeonFloor floor, DungeonRoom room)
+        {
+            if (floor.IsWalkable(room.Center))
+            {
+                return floor.Layer.GetCellCenter(room.Center);
+            }
+
+            if (0 < room.Cells.Count)
+            {
+                var startIndex = gameRandom.Next(room.Cells.Count);
+                for (var i = 0; i < room.Cells.Count; i++)
+                {
+                    var cell = room.Cells[(startIndex + i) % room.Cells.Count];
+                    if (floor.IsWalkable(cell))
+                    {
+                        return floor.Layer.GetCellCenter(cell);
+                    }
+                }
+            }
+
+            return floor.Layer.GetCellCenter(room.Center);
+        }
+
+        static bool Contains(DungeonRoom room, GridPosition position)
+        {
+            for (var i = 0; i < room.Cells.Count; i++)
+            {
+                if (room.Cells[i].Equals(position))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
