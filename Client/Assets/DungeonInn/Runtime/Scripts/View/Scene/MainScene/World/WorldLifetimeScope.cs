@@ -1,6 +1,7 @@
 using DungeonInn.Application.AI;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
+using DungeonInn.Domain.Common;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -16,6 +17,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterComponent(worldScene);
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
+
+            builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
+            builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
 
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
             builder.Register<GameWorldState>(Lifetime.Scoped).As<IGameWorldState>();

@@ -1,7 +1,8 @@
 using System;
-using DungeonInn.Application.Pathfinding;
+using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Map;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -9,6 +10,15 @@ namespace DungeonInn.Application.UseCase
     {
         // TODO: 到着距離・移動速度をマスタから取得する
         const float ArrivalDistanceMeters = 2.5f;
+
+        readonly IActorNavigationService navigationService;
+
+        [Inject]
+        public MoveActorTowardDestinationUseCase(IActorNavigationService navigationService)
+        {
+            this.navigationService = navigationService
+                ?? throw new ArgumentNullException(nameof(navigationService));
+        }
 
         public bool Execute(
             Actor actor,
@@ -29,28 +39,31 @@ namespace DungeonInn.Application.UseCase
                 return true;
             }
 
-            var currentGrid = layer.ToGridPosition(actor.Position);
+            var startGrid = layer.ToGridPosition(actor.Position);
             var goalGrid = layer.ToGridPosition(destination);
-            var path = AStarPathfinder.FindPath(layer, isWalkable, currentGrid, goalGrid);
 
-            if (path == null)
+            var pathState = navigationService.GetOrComputePathState(
+                actor.Id, layer, isWalkable, startGrid, goalGrid);
+
+            if (pathState.HasFailed)
             {
                 return false;
             }
 
-            if (path.Count == 0)
+            if (!pathState.TryGetCurrentWaypoint(out var nextWaypointGrid))
             {
                 actor.MoveTo(destination);
                 return true;
             }
 
-            var nextWaypoint = layer.GetCellCenter(path[0]);
+            var nextWaypoint = layer.GetCellCenter(nextWaypointGrid);
             var waypointDistSq = actor.Position.DistanceSquaredTo(nextWaypoint);
             var step = speedMetersPerSecond * deltaGameSeconds;
 
             if (step * step >= waypointDistSq)
             {
                 actor.MoveTo(nextWaypoint);
+                pathState.AdvanceWaypoint();
             }
             else
             {

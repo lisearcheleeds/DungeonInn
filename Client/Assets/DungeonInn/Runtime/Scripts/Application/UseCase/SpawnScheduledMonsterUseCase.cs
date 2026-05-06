@@ -14,14 +14,17 @@ namespace DungeonInn.Application.UseCase
     {
         readonly SpawnMonsterFromMasterUseCase spawnMonsterFromMasterUseCase;
         readonly IMasterRepository masterRepository;
+        readonly IGameRandom gameRandom;
 
         [Inject]
         public SpawnScheduledMonsterUseCase(
             SpawnMonsterFromMasterUseCase spawnMonsterFromMasterUseCase,
-            IMasterRepository masterRepository)
+            IMasterRepository masterRepository,
+            IGameRandom gameRandom)
         {
             this.spawnMonsterFromMasterUseCase = spawnMonsterFromMasterUseCase ?? throw new ArgumentNullException(nameof(spawnMonsterFromMasterUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -62,7 +65,7 @@ namespace DungeonInn.Application.UseCase
                 Guid.NewGuid(),
                 position,
                 faction,
-                new Random().Next());
+                gameRandom.Next());
 
             var actor = await spawnMonsterFromMasterUseCase.ExecuteAsync(request);
             worldState.RegisterActor(actor);

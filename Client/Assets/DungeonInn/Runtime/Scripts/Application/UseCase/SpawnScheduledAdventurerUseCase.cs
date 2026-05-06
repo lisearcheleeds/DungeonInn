@@ -15,14 +15,17 @@ namespace DungeonInn.Application.UseCase
     {
         readonly SpawnAdventurerFromMasterUseCase spawnAdventurerFromMasterUseCase;
         readonly IMasterRepository masterRepository;
+        readonly IGameRandom gameRandom;
 
         [Inject]
         public SpawnScheduledAdventurerUseCase(
             SpawnAdventurerFromMasterUseCase spawnAdventurerFromMasterUseCase,
-            IMasterRepository masterRepository)
+            IMasterRepository masterRepository,
+            IGameRandom gameRandom)
         {
             this.spawnAdventurerFromMasterUseCase = spawnAdventurerFromMasterUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerFromMasterUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -61,7 +64,7 @@ namespace DungeonInn.Application.UseCase
                 Guid.NewGuid(),
                 position,
                 faction,
-                new Random().Next());
+                gameRandom.Next());
 
             var actor = await spawnAdventurerFromMasterUseCase.ExecuteAsync(
                 worldState.Guild,
@@ -72,15 +75,14 @@ namespace DungeonInn.Application.UseCase
             return actor;
         }
 
-        static GridPosition PickRandomEdgePosition()
+        GridPosition PickRandomEdgePosition()
         {
-            var rng = new Random();
-            return rng.Next(4) switch
+            return gameRandom.Next(4) switch
             {
-                0 => new GridPosition(rng.Next(GameConstants.GroundMapWidth), 0),
-                1 => new GridPosition(rng.Next(GameConstants.GroundMapWidth), GameConstants.GroundMapDepth - 1),
-                2 => new GridPosition(0, rng.Next(GameConstants.GroundMapDepth)),
-                _ => new GridPosition(GameConstants.GroundMapWidth - 1, rng.Next(GameConstants.GroundMapDepth)),
+                0 => new GridPosition(gameRandom.Next(GameConstants.GroundMapWidth), 0),
+                1 => new GridPosition(gameRandom.Next(GameConstants.GroundMapWidth), GameConstants.GroundMapDepth - 1),
+                2 => new GridPosition(0, gameRandom.Next(GameConstants.GroundMapDepth)),
+                _ => new GridPosition(GameConstants.GroundMapWidth - 1, gameRandom.Next(GameConstants.GroundMapDepth)),
             };
         }
     }

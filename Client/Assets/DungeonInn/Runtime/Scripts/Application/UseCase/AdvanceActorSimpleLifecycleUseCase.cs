@@ -15,16 +15,20 @@ namespace DungeonInn.Application.UseCase
     {
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
         readonly UseDungeonStairUseCase useDungeonStairUseCase;
+        readonly IActorNavigationService navigationService;
 
         [Inject]
         public AdvanceActorSimpleLifecycleUseCase(
             MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase,
-            UseDungeonStairUseCase useDungeonStairUseCase)
+            UseDungeonStairUseCase useDungeonStairUseCase,
+            IActorNavigationService navigationService)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
             this.useDungeonStairUseCase = useDungeonStairUseCase
                 ?? throw new ArgumentNullException(nameof(useDungeonStairUseCase));
+            this.navigationService = navigationService
+                ?? throw new ArgumentNullException(nameof(navigationService));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -98,6 +102,7 @@ namespace DungeonInn.Application.UseCase
                     Array.Empty<DungeonDepthBandConfig>());
 
                 actor.MoveTo(arrivalPosition);
+                navigationService.InvalidatePath(actor.Id);
                 behavior.ResetExploringTime();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
                 Debug.Log($"[Actor] {actor.Name} entered dungeon floor 1");
@@ -155,6 +160,7 @@ namespace DungeonInn.Application.UseCase
                     Array.Empty<DungeonDepthBandConfig>());
 
                 actor.MoveTo(returnPosition);
+                navigationService.InvalidatePath(actor.Id);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
                 Debug.Log($"[Actor] {actor.Name} returned to ground");
             }

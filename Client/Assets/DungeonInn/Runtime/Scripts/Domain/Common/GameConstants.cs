@@ -3,6 +3,7 @@ namespace DungeonInn.Domain.Common
     public static class GameConstants
     {
         public const int GameScheduleTicksPerDay = 1200;
+        public const int InitialGameRandomSeed = 42195;
         public const int InitialDungeonSeed = 12345;
         public const int InitialGuildGold = 10000;
 
