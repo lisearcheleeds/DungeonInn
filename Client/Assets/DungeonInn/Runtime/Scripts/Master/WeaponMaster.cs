@@ -7,16 +7,34 @@ namespace DungeonInn.Master
     {
         public int ItemId { get; }
         public WeaponType WeaponType { get; }
+        public WeaponTypeCombatMaster WeaponTypeCombatMaster { get; }
         public int Attack { get; }
-        public float RangeMeters { get; }
-        public float AttackIntervalSeconds { get; }
+        public float RangeModifierMeters { get; }
+        public float AttackIntervalModifierSeconds { get; }
 
         public WeaponMaster(
             int itemId,
             WeaponType weaponType,
             int attack,
-            float rangeMeters,
-            float attackIntervalSeconds)
+            float rangeModifierMeters,
+            float attackIntervalModifierSeconds)
+            : this(
+                itemId,
+                weaponType,
+                WeaponTypeCombatMasterCatalog.Get(weaponType),
+                attack,
+                rangeModifierMeters,
+                attackIntervalModifierSeconds)
+        {
+        }
+
+        public WeaponMaster(
+            int itemId,
+            WeaponType weaponType,
+            WeaponTypeCombatMaster weaponTypeCombatMaster,
+            int attack,
+            float rangeModifierMeters,
+            float attackIntervalModifierSeconds)
         {
             if (itemId < 1)
             {
@@ -30,9 +48,10 @@ namespace DungeonInn.Master
 
             ItemId = itemId;
             WeaponType = weaponType;
+            WeaponTypeCombatMaster = weaponTypeCombatMaster ?? throw new ArgumentNullException(nameof(weaponTypeCombatMaster));
             Attack = Math.Max(0, attack);
-            RangeMeters = Math.Max(0, rangeMeters);
-            AttackIntervalSeconds = Math.Max(0, attackIntervalSeconds);
+            RangeModifierMeters = rangeModifierMeters;
+            AttackIntervalModifierSeconds = attackIntervalModifierSeconds;
         }
     }
 }

@@ -5,13 +5,12 @@ namespace DungeonInn.Domain.Combat
 {
     public sealed class DirectWeaponCombatCalculator : IWeaponCombatCalculator
     {
-        readonly float rangeMeters;
-        readonly float attackIntervalSeconds;
+        readonly WeaponTypeCombatMaster weaponTypeCombatMaster;
 
-        public DirectWeaponCombatCalculator(float rangeMeters, float attackIntervalSeconds)
+        public DirectWeaponCombatCalculator(WeaponTypeCombatMaster weaponTypeCombatMaster)
         {
-            this.rangeMeters = Math.Max(0, rangeMeters);
-            this.attackIntervalSeconds = Math.Max(0, attackIntervalSeconds);
+            this.weaponTypeCombatMaster = weaponTypeCombatMaster
+                ?? throw new ArgumentNullException(nameof(weaponTypeCombatMaster));
         }
 
         public WeaponCombatParams Calculate(IWeaponCombatSource source, WeaponMaster weaponMaster)
@@ -23,8 +22,10 @@ namespace DungeonInn.Domain.Combat
 
             var attackPower = source.WeaponAttack;
             var attackSpec = CreateDirectAttackSpec(attackPower);
-            var resolvedRangeMeters = weaponMaster == null ? rangeMeters : weaponMaster.RangeMeters;
-            var resolvedAttackIntervalSeconds = weaponMaster == null ? attackIntervalSeconds : weaponMaster.AttackIntervalSeconds;
+            var resolvedRangeMeters = weaponTypeCombatMaster.BaseRangeMeters
+                + (weaponMaster == null ? 0f : weaponMaster.RangeModifierMeters);
+            var resolvedAttackIntervalSeconds = weaponTypeCombatMaster.BaseAttackIntervalSeconds
+                + (weaponMaster == null ? 0f : weaponMaster.AttackIntervalModifierSeconds);
             return new WeaponCombatParams(attackPower, resolvedRangeMeters, resolvedAttackIntervalSeconds, attackSpec);
         }
 

@@ -11,6 +11,7 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, ItemMaster> itemMasters;
         readonly IReadOnlyDictionary<int, EquipmentMaster> equipmentMasters;
         readonly IReadOnlyDictionary<int, WeaponMaster> weaponMasters;
+        readonly IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> weaponTypeCombatMasters;
         readonly IReadOnlyDictionary<int, ActorArchetypeMaster> actorArchetypeMasters;
         readonly IReadOnlyDictionary<int, MonsterSpeciesMaster> monsterSpeciesMasters;
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
@@ -18,6 +19,7 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, ItemMaster> ItemMasters => itemMasters;
         public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => equipmentMasters;
         public IReadOnlyDictionary<int, WeaponMaster> WeaponMasters => weaponMasters;
+        public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => weaponTypeCombatMasters;
         public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => actorArchetypeMasters;
         public IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters => monsterSpeciesMasters;
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
@@ -26,6 +28,7 @@ namespace DungeonInn.Master
         {
             itemMasters = CreateItemMasters();
             equipmentMasters = CreateEquipmentMasters();
+            weaponTypeCombatMasters = WeaponTypeCombatMasterCatalog.CreateAll();
             weaponMasters = CreateWeaponMasters();
             actorArchetypeMasters = CreateActorArchetypeMasters();
             monsterSpeciesMasters = CreateMonsterSpeciesMasters();
@@ -46,6 +49,11 @@ namespace DungeonInn.Master
         public WeaponMaster GetWeaponMaster(int itemId)
         {
             return GetRequired(weaponMasters, itemId, nameof(WeaponMaster));
+        }
+
+        public WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType)
+        {
+            return GetRequired(weaponTypeCombatMasters, weaponType, nameof(WeaponTypeCombatMaster));
         }
 
         public ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId)
@@ -91,8 +99,8 @@ namespace DungeonInn.Master
         {
             return new[]
             {
-                new WeaponMaster(3001, WeaponType.Sword, 8, 2, 1.2f),
-                new WeaponMaster(3002, WeaponType.Bow, 7, 12, 1.5f)
+                new WeaponMaster(3001, WeaponType.Sword, 8, 0, 0),
+                new WeaponMaster(3002, WeaponType.Bow, 7, 0, 0)
             }.ToDictionary(x => x.ItemId);
         }
 
@@ -161,6 +169,7 @@ namespace DungeonInn.Master
             foreach (var weaponMaster in weaponMasters.Values)
             {
                 RequireItem(weaponMaster.ItemId);
+                GetWeaponTypeCombatMaster(weaponMaster.WeaponType);
                 if (!equipmentMasters.TryGetValue(weaponMaster.ItemId, out var equipmentMaster) ||
                     equipmentMaster.Slot != EquipmentSlot.Weapon)
                 {
@@ -177,6 +186,7 @@ namespace DungeonInn.Master
             foreach (var speciesMaster in monsterSpeciesMasters.Values)
             {
                 GetActorArchetypeMaster(speciesMaster.ActorArchetypeId);
+                GetWeaponTypeCombatMaster(speciesMaster.DefaultWeaponType);
                 foreach (var drop in speciesMaster.SpeciesDrops)
                 {
                     RequireItem(drop.ItemId);
@@ -228,6 +238,14 @@ namespace DungeonInn.Master
         static TMaster GetRequired<TMaster>(
             IReadOnlyDictionary<int, TMaster> masters,
             int id,
+            string masterName)
+        {
+            return GetRequired<int, TMaster>(masters, id, masterName);
+        }
+
+        static TMaster GetRequired<TKey, TMaster>(
+            IReadOnlyDictionary<TKey, TMaster> masters,
+            TKey id,
             string masterName)
         {
             if (masters.TryGetValue(id, out var master))

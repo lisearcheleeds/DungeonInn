@@ -36,7 +36,7 @@ namespace DungeonInn.Application.Factory
                 request.Faction,
                 request.PreferenceSeed,
                 new MonsterBehavior(speciesMaster.Id, speciesMaster.CanScavenge, speciesMaster.SpeciesDrops));
-            actor.ChangeNaturalWeaponType(speciesMaster.DefaultWeaponType);
+            actor.ChangeNaturalWeaponType(masterRepository.GetWeaponTypeCombatMaster(speciesMaster.DefaultWeaponType));
             return actor;
         }
     }

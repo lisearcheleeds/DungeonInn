@@ -14,6 +14,7 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(repository.ItemMasters, Is.Not.Empty);
             Assert.That(repository.EquipmentMasters, Is.Not.Empty);
             Assert.That(repository.WeaponMasters, Is.Not.Empty);
+            Assert.That(repository.WeaponTypeCombatMasters, Is.Not.Empty);
             Assert.That(repository.ActorArchetypeMasters, Is.Not.Empty);
             Assert.That(repository.MonsterSpeciesMasters, Is.Not.Empty);
             Assert.That(repository.SpawnTableMasters, Is.Not.Empty);
@@ -50,6 +51,17 @@ namespace DungeonInn.Tests.EditMode
             var monsterSpeciesMaster = repository.GetMonsterSpeciesMaster(1);
 
             Assert.That(monsterSpeciesMaster.DefaultWeaponType, Is.EqualTo(WeaponType.Claws));
+            Assert.That(repository.GetWeaponTypeCombatMaster(monsterSpeciesMaster.DefaultWeaponType), Is.Not.Null);
+        }
+
+        [Test]
+        public void WeaponTypeCombatMasterDefinesNaturalWeaponCombatBaseValues()
+        {
+            var repository = new HardcodedMasterRepository();
+            var claws = repository.GetWeaponTypeCombatMaster(WeaponType.Claws);
+
+            Assert.That(claws.BaseRangeMeters, Is.EqualTo(1.5f));
+            Assert.That(claws.BaseAttackIntervalSeconds, Is.EqualTo(0.9f));
         }
     }
 }

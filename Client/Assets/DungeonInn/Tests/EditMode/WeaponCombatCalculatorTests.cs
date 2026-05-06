@@ -20,7 +20,7 @@ namespace DungeonInn.Tests.EditMode
         public void AllWeaponTypesCurrentlyUseDirectDamageAttackSpec(WeaponType weaponType)
         {
             var actor = CreateActor();
-            EquipWeapon(actor, 100 + (int)weaponType, weaponType, 10, 2, 1);
+            EquipWeapon(actor, 100 + (int)weaponType, weaponType, 10, 0, 0);
 
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes.Count, Is.EqualTo(1));
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].Type, Is.EqualTo(CombatEffectNodeType.DirectDamage));
@@ -58,20 +58,31 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateActor();
 
-            EquipWeapon(actor, 101, WeaponType.Sword, 10, 2, 1.2f);
+            EquipWeapon(actor, 101, WeaponType.Sword, 10, 0, 0);
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(2.0f));
             Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(1.2f));
 
-            EquipWeapon(actor, 102, WeaponType.Bow, 10, 20, 1.5f);
+            EquipWeapon(actor, 102, WeaponType.Bow, 10, 0, 0);
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(20.0f));
             Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(1.5f));
+        }
+
+        [Test]
+        public void WeaponMasterModifiersAreAppliedToWeaponTypeCombatBaseValues()
+        {
+            var actor = CreateActor();
+
+            EquipWeapon(actor, 101, WeaponType.Sword, 10, 0.5f, -0.2f);
+
+            Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(2.5f));
+            Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(1.0f));
         }
 
         [Test]
         public void IncreasingStatsRefreshesDirectDamageAmount()
         {
             var actor = CreateActor();
-            EquipWeapon(actor, 101, WeaponType.Sword, 10, 2, 1.2f);
+            EquipWeapon(actor, 101, WeaponType.Sword, 10, 0, 0);
             var previousAttack = actor.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount;
 
             actor.IncreaseStats(3, 0, 0, 0, 0, 0);
@@ -85,7 +96,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateActor();
 
-            EquipWeapon(actor, 102, WeaponType.Bow, 10, 20, 1.5f);
+            EquipWeapon(actor, 102, WeaponType.Bow, 10, 0, 0);
             actor.Unequip(EquipmentSlot.Weapon);
 
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(1.5f));
@@ -98,7 +109,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateActor();
 
-            EquipWeapon(actor, 101, WeaponType.Sword, 10, 2, 1.2f);
+            EquipWeapon(actor, 101, WeaponType.Sword, 10, 0, 0);
             var weaponRange = actor.WeaponCombatParams.RangeMeters;
             actor.Equip(new EquipmentMaster(201, EquipmentSlot.Armor, 5));
 
@@ -129,12 +140,12 @@ namespace DungeonInn.Tests.EditMode
             int itemId,
             WeaponType weaponType,
             int attack,
-            float rangeMeters,
-            float attackIntervalSeconds)
+            float rangeModifierMeters,
+            float attackIntervalModifierSeconds)
         {
             actor.Equip(
                 new EquipmentMaster(itemId, EquipmentSlot.Weapon, 0),
-                new WeaponMaster(itemId, weaponType, attack, rangeMeters, attackIntervalSeconds));
+                new WeaponMaster(itemId, weaponType, attack, rangeModifierMeters, attackIntervalModifierSeconds));
         }
     }
 }

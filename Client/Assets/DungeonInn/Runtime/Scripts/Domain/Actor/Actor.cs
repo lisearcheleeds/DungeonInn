@@ -29,6 +29,7 @@ namespace DungeonInn.Domain.Actor
         public IWeaponCalculator WeaponCalculator { get; private set; }
         public IWeaponCombatCalculator WeaponCombatCalculator { get; private set; }
         public WeaponType NaturalWeaponType { get; private set; }
+        public WeaponTypeCombatMaster NaturalWeaponTypeCombatMaster { get; private set; }
         public int WeaponAttack { get; private set; }
         public WeaponCombatParams WeaponCombatParams { get; private set; }
         public ActorGoal CurrentGoal { get; private set; }
@@ -77,6 +78,7 @@ namespace DungeonInn.Domain.Actor
             Faction = faction ?? throw new ArgumentNullException(nameof(faction));
             Behavior = behavior ?? throw new ArgumentNullException(nameof(behavior));
             NaturalWeaponType = WeaponType.Fist;
+            NaturalWeaponTypeCombatMaster = WeaponTypeCombatMasterCatalog.Get(NaturalWeaponType);
             CurrentGoal = ActorGoal.None();
             CurrentPlan = ActorPlan.None();
             CurrentAction = ActorAction.None();
@@ -133,12 +135,18 @@ namespace DungeonInn.Domain.Actor
 
         public void ChangeNaturalWeaponType(WeaponType weaponType)
         {
-            if (weaponType == WeaponType.None)
+            ChangeNaturalWeaponType(WeaponTypeCombatMasterCatalog.Get(weaponType));
+        }
+
+        public void ChangeNaturalWeaponType(WeaponTypeCombatMaster weaponTypeCombatMaster)
+        {
+            if (weaponTypeCombatMaster == null)
             {
-                throw new ArgumentException("Natural weapon type is required.", nameof(weaponType));
+                throw new ArgumentNullException(nameof(weaponTypeCombatMaster));
             }
 
-            NaturalWeaponType = weaponType;
+            NaturalWeaponType = weaponTypeCombatMaster.WeaponType;
+            NaturalWeaponTypeCombatMaster = weaponTypeCombatMaster;
             RefreshWeaponCalculator();
             RefreshParams();
         }
@@ -217,8 +225,11 @@ namespace DungeonInn.Domain.Actor
         void RefreshWeaponCalculator()
         {
             var weaponType = Equipment.Weapon == null ? NaturalWeaponType : Equipment.Weapon.WeaponType;
+            var weaponTypeCombatMaster = Equipment.Weapon == null
+                ? NaturalWeaponTypeCombatMaster
+                : Equipment.Weapon.WeaponTypeCombatMaster;
             WeaponCalculator = WeaponCalculatorFactory.Create(weaponType);
-            WeaponCombatCalculator = WeaponCombatCalculatorFactory.Create(weaponType);
+            WeaponCombatCalculator = WeaponCombatCalculatorFactory.Create(weaponTypeCombatMaster);
             RefreshWeaponAttack();
             RefreshWeaponCombatParams();
         }
