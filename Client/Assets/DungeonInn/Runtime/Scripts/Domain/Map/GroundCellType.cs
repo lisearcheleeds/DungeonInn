@@ -4,6 +4,7 @@ namespace DungeonInn.Domain.Map
     {
         Open,
         Building,
+        TownWall,
         DungeonEntrance,
         FacilityEntrance,
         Road

@@ -7,6 +7,8 @@ namespace DungeonInn.Domain.Common
         public const int InitialGuildGold = 10000;
 
         public const int AdventurerSpawnIntervalTicks = 5;
+        public const int InitialMaxAdventurerCount = 6;
+        public const int InitialMaxMonsterCount = 20;
         public const int InitialRookieSwordItemId = 3001;
         public const int InitialRookieSwordCount = 20;
         public const int InitialRookieArmorItemId = 3003;

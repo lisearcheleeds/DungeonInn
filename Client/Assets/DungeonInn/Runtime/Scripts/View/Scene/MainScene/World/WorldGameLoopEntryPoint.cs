@@ -93,7 +93,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                     Debug.Log($"[Spawn] Monster {spawnedMonster.Name} spawned at Floor 1");
                 }
 
-                await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState.Actors);
+                var deltaGameSeconds = result.AdvancedScheduleTicks * result.TimeScale;
+                await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, deltaGameSeconds);
 
                 LogActorSummaries(result);
             }

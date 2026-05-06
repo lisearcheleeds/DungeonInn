@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
 using DungeonInn.Master;
 using VContainer;
 
@@ -40,7 +41,7 @@ namespace DungeonInn.Application.UseCase
 
             // TODO: 上限をSpawnTableMasterから取得する
             var monsterCount = worldState.Actors.Count(x => x.Behavior is MonsterBehavior);
-            if (monsterCount >= 5)
+            if (monsterCount >= GameConstants.InitialMaxMonsterCount)
             {
                 return null;
             }

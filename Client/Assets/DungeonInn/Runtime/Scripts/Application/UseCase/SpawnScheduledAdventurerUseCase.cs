@@ -1,9 +1,11 @@
 using System;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using VContainer;
 
@@ -37,11 +39,19 @@ namespace DungeonInn.Application.UseCase
 
             worldState.SpawnSchedule.LastAdventurerSpawnTick = currentScheduleTick;
 
+            // TODO: 上限をギルドレベルから取得する
+            var adventurerCount = worldState.Actors.Count(x => x.Behavior is AdventurerBehavior);
+            if (adventurerCount >= GameConstants.InitialMaxAdventurerCount)
+            {
+                return null;
+            }
+
             // TODO: SpawnTableMasterから重み付き抽選に変更する
             var spawnTable = masterRepository.GetSpawnTableMaster(1);
             var entry = spawnTable.Entries[0];
 
-            var position = worldState.GroundMap.Layer.GetCellCenter(worldState.GroundMap.DungeonEntrancePosition);
+            // TODO: スポーン地点をマスタから取得する
+            var position = worldState.GroundMap.Layer.GetCellCenter(PickRandomEdgePosition());
 
             // TODO: FactionをFactionMasterから取得する
             var faction = new ActorFaction(1, "Adventurer");
@@ -60,6 +70,18 @@ namespace DungeonInn.Application.UseCase
 
             worldState.RegisterActor(actor);
             return actor;
+        }
+
+        static GridPosition PickRandomEdgePosition()
+        {
+            var rng = new Random();
+            return rng.Next(4) switch
+            {
+                0 => new GridPosition(rng.Next(GameConstants.GroundMapWidth), 0),
+                1 => new GridPosition(rng.Next(GameConstants.GroundMapWidth), GameConstants.GroundMapDepth - 1),
+                2 => new GridPosition(0, rng.Next(GameConstants.GroundMapDepth)),
+                _ => new GridPosition(GameConstants.GroundMapWidth - 1, rng.Next(GameConstants.GroundMapDepth)),
+            };
         }
     }
 }

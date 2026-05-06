@@ -66,7 +66,35 @@ namespace DungeonInn.Application.UseCase
                 GroundCellType.Building,
                 MapCellBlockType.Blocked);
 
+            BuildTownWalls(cells, layer);
+
             return UniTask.FromResult(new GroundMap(layer, dungeonEntrance, cells));
+        }
+
+        // Town wall 3 cells from each edge, 2-cell-wide openings at center of each side.
+        static void BuildTownWalls(GroundCell[] cells, MapLayer layer)
+        {
+            const int wallOffset = 3;
+            const int openingHalf = 1;
+            var cx = layer.Width / 2;
+            var cz = layer.Depth / 2;
+            var wallS = wallOffset;
+            var wallN = layer.Depth - 1 - wallOffset;
+            var wallW = wallOffset;
+            var wallE = layer.Width - 1 - wallOffset;
+
+            // South wall (z = wallS): x = wallW..cx-openingHalf-1 and cx+openingHalf..wallE
+            FillRectangle(cells, layer, wallW, wallS, cx - openingHalf - wallW, 1, GroundCellType.TownWall, MapCellBlockType.Blocked);
+            FillRectangle(cells, layer, cx + openingHalf, wallS, wallE - (cx + openingHalf) + 1, 1, GroundCellType.TownWall, MapCellBlockType.Blocked);
+            // North wall (z = wallN)
+            FillRectangle(cells, layer, wallW, wallN, cx - openingHalf - wallW, 1, GroundCellType.TownWall, MapCellBlockType.Blocked);
+            FillRectangle(cells, layer, cx + openingHalf, wallN, wallE - (cx + openingHalf) + 1, 1, GroundCellType.TownWall, MapCellBlockType.Blocked);
+            // West wall (x = wallW): z = wallS+1..cz-openingHalf-1 and cz+openingHalf..wallN-1
+            FillRectangle(cells, layer, wallW, wallS + 1, 1, cz - openingHalf - (wallS + 1), GroundCellType.TownWall, MapCellBlockType.Blocked);
+            FillRectangle(cells, layer, wallW, cz + openingHalf, 1, wallN - (cz + openingHalf), GroundCellType.TownWall, MapCellBlockType.Blocked);
+            // East wall (x = wallE)
+            FillRectangle(cells, layer, wallE, wallS + 1, 1, cz - openingHalf - (wallS + 1), GroundCellType.TownWall, MapCellBlockType.Blocked);
+            FillRectangle(cells, layer, wallE, cz + openingHalf, 1, wallN - (cz + openingHalf), GroundCellType.TownWall, MapCellBlockType.Blocked);
         }
 
         static GroundCell[] CreateOpenCells(MapLayer layer)
