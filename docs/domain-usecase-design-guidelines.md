@@ -430,6 +430,47 @@ public sealed class Faction
 種族、勢力、振る舞いを分けて表現する。
 Entity 本体は個体として維持する。
 
+## 10. UseCase はトランザクション境界であり、イベントは事後通知である
+
+1つの UseCase 実行は1つのトランザクションである。
+「読み取る → ルールを適用する → 状態を変える → 通知する」の一連を完結させる責務を持つ。
+
+状態変化をイベントで連鎖させない。
+「攻撃イベントを受け取ってダメージを計算し、ダメージイベントを発行してHP減算する」という設計は
+処理の順序や整合性がイベント購読順に依存してしまう。
+
+### Before（イベント連鎖）
+
+```text
+AttackUseCase → Publish(AttackEvent)
+  ↓ subscribe
+DamageUseCase → Publish(DamageEvent)
+  ↓ subscribe
+HpReduceUseCase → HP減算
+```
+
+購読順がゲームロジックの正しさを決める。整合性の保証がない。
+
+### After（UseCase内で完結）
+
+```text
+AdvanceCombatUseCase
+  ├─ ダメージ計算
+  ├─ HP減算                ← 状態変化はここで完結
+  ├─ Publish(AttackOccurred)  ← 事後通知
+  └─ Publish(ActorDefeated)   ← 事後通知
+```
+
+イベントバスへの Publish は UseCase の処理が完了した後の通知専用とする。
+購読者はゲームの状態を変更しない。
+
+### DungeonInn Example
+
+`AdvanceCombatUseCase` がダメージ計算・HP減算・死亡判定をすべて完結させ、
+完了後に `CombatAttackOccurred` / `ActorDefeated` を `IGameEventBus` に Publish する。
+`AdventurerBattleRecord`（戦績記録）や `CombatLogPresenter`（UI表示）はこれを購読するが、
+どちらもゲームの状態（Actor の HP 等）を変更しない。
+
 ## レビュー用チェックリスト
 
 - Entity に `IsXxx` のような分類 bool が増えていないか
@@ -438,6 +479,8 @@ Entity 本体は個体として維持する。
 - キャッシュを持つ場合、キャッシュに影響する変更経路が Entity 経由に集約されているか
 - Domain Validation が「不変条件」ではなく「AI判断」や「業務判断」まで禁止していないか
 - UseCase が Domain の内部状態を迂回して変更していないか
+- イベントバスへの Publish が UseCase の処理完了後に行われているか（事前・途中でないか）
+- 購読者がゲームの状態を変更していないか
 - Factory が文脈依存の判断まで抱え込みすぎていないか
 - 将来の Behavior / Faction / Species / Policy 追加で既存クラス名が破綻しないか
 - View / Infrastructure / Framework の都合が Domain に入り込んでいないか

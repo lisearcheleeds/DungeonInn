@@ -30,5 +30,21 @@ namespace DungeonInn.Application.Combat
                 state.ClearTarget();
             }
         }
+
+        public void ClearTargetsReferencing(Guid targetActorId)
+        {
+            foreach (var state in states.Values)
+            {
+                if (state.TargetActorId.HasValue && state.TargetActorId.Value.Equals(targetActorId))
+                {
+                    state.ClearTarget();
+                }
+            }
+        }
+
+        public void RemoveState(Guid actorId)
+        {
+            states.Remove(actorId);
+        }
     }
 }

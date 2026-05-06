@@ -155,6 +155,7 @@ ShortTerm dirtyあり -> ShortTerm評価
 |---|---|---|
 | HP帯が変わった | HealthBandChanged | ShortTerm / MidTerm |
 | 敵と接敵した | EnemyEnteredRange | ShortTerm |
+| 攻撃を実行した | AttackExecuted | ShortTerm |
 | ダンジョンに入った | EnteredDungeon | MidTerm / ShortTerm |
 | 目的アイテム数が変わった | ObjectiveItemCountChanged | MidTerm / LongTerm |
 | 目的モンスターを倒した | ObjectiveMonsterDefeated | LongTerm |

@@ -7,5 +7,7 @@ namespace DungeonInn.Application.Combat
         ActorCombatState GetOrCreateCombatState(Guid actorId);
         bool HasTarget(Guid actorId);
         void ClearTarget(Guid actorId);
+        void ClearTargetsReferencing(Guid targetActorId);
+        void RemoveState(Guid actorId);
     }
 }

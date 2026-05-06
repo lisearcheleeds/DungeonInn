@@ -12,7 +12,7 @@
 ## フォルダ方針
 
 現在、武器攻撃力Calculatorは `Domain/Actor`、武器戦闘性能と攻撃定義は `Domain/Combat` に置く。
-装備武器の射程・攻撃速度・攻撃力の基礎値は `Master/WeaponMaster` から供給される。
+武器種別の基礎射程・攻撃速度は `Master/WeaponTypeCombatMaster` が持ち、装備固有の modifier は `Master/WeaponMaster` が持つ。
 
 想定構成:
 
@@ -40,13 +40,22 @@ Domain/
 
 Application/
   Combat/
-    CombatEncounterDetector
-    CombatLineOfSightService
+    IActorCombatService       ← 実装済み
+    ActorCombatService        ← 実装済み
+    ActorCombatState          ← 実装済み
+    AdvanceCombatResult       ← 実装済み
+    CombatAttackEvent         ← 実装済み
+    CombatDeathEvent          ← 実装済み
     CombatActionSelector
     CombatEffectExecutor
     AttackAreaTargetResolver
     ProjectileSimulator
     CombatTraceRecorder
+    TacticalPositionEvaluator ← 遠距離戦闘用、将来実装
+
+Master/
+  WeaponTypeCombatMaster      ← 実装済み（武器種別の基礎射程・攻撃速度）
+  WeaponTypeCombatMasterCatalog ← 実装済み
 ```
 
 `IWeaponCalculator` は攻撃力計算、`IWeaponCombatCalculator` は射程・攻撃速度・攻撃定義の取得を担う。
@@ -61,8 +70,9 @@ Actor同士は、以下をすべて満たすと戦闘状態に入る。
 - 同じLayer / Floor上にいる
 - 視線が壁で遮られていない
 
-戦闘開始判定は Application/Combat の `CombatEncounterDetector` が担当する。
-視線判定は `CombatLineOfSightService` がMap/Dungeonの遮蔽情報を使って行う。
+戦闘開始判定は `DetectCombatEncounterUseCase` が担当する（毎フレーム実行）。
+視線判定は同UseCase内の `HasLineOfSight` として実装済み。Map/Dungeonのセル情報で壁を判定する。
+将来的に視線判定が複雑化した場合は `Application/Combat/CombatLineOfSightService` として独立させる。
 
 Domainは以下を表す。
 
@@ -104,7 +114,12 @@ Unity Collider は攻撃判定には使わない。
 
 攻撃力は既存の `WeaponAttack` 計算を利用する。
 射程、攻撃速度、攻撃定義は `IWeaponCombatCalculator` から取得する。
-装備武器の場合は `WeaponMaster`、武器未装備の場合は `Actor.NaturalWeaponType` に基づく既定値を使う。
+
+射程と攻撃速度の解決ルール:
+
+- 基礎値は `WeaponTypeCombatMaster`（武器種別ごとの固定値）が持つ
+- 装備武器がある場合は `WeaponMaster.RangeModifierMeters` / `AttackIntervalModifierSeconds` を加算する
+- 武器未装備の場合は `Actor.NaturalWeaponTypeCombatMaster` の基礎値のみ使う
 
 想定:
 
@@ -359,6 +374,46 @@ CombatEffectExecutionId
 - テスト時に発生順や原因を検証しやすくする
 
 Application/Combat に `CombatTraceRecorder` を置き、必要に応じて実行ログを記録する。
+
+## 戦闘中の移動方針
+
+### 近接戦闘（接近型）
+
+武器射程が短いActor（剣士、格闘家など）は、ターゲットへ直線接近する。
+視線確認済みの近距離での直線移動を `AdvanceCombatUseCase` 内で実行する。
+A*は不要（LOSが確認済みの近距離のため）。
+
+### 遠距離戦闘（距離維持型）
+
+弓使いなど射程が長いActorは、ターゲットと距離を保ちながら攻撃する。
+単純な後退ではなく、**戦術的ポジション選択**を行う。
+
+#### 戦術ポジションのスコアリング
+
+現在地周辺のグリッドセルを候補として以下をスコアリングし、最高点のセルへA*移動する。
+
+| 評価項目 | 意味 |
+|---|---|
+| LOSが通る | ターゲットへ攻撃できる |
+| 敵との距離が射程に近い | 近すぎず遠すぎない位置 |
+| 周囲の歩行可能セル数 | 多いほど逃げ道が広い（コーナー忌避） |
+
+「後ろに壁がある」などで逃げ道が少ない場合は、一時的に敵に近づく方向のセルでも
+「逃げ道が多いセル」が選ばれることで、自然に安全な立ち位置へ移動する。
+
+#### ポジション再評価タイミング
+
+以下のタイミングで戦術ポジションを再評価する。キャッシュはA*と同様に再評価まで保持する。
+
+- ターゲット変更時
+- 選択ポジションへの移動完了時
+- 攻撃実行後
+- 戦闘終了時（キャッシュ破棄）
+
+#### 実装上の置き場
+
+戦術ポジション評価は `Application/Combat` に `TacticalPositionEvaluator` として置く。
+`AdvanceCombatUseCase` は移動タイプ（近接/遠距離）に応じて直線接近か戦術移動かを切り替える。
 
 ## AIとの接続
 

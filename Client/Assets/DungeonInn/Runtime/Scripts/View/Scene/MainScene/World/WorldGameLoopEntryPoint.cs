@@ -20,6 +20,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase;
         AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase;
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
+        AdvanceCombatUseCase advanceCombatUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
 
         bool isExecuting;
@@ -34,6 +35,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase,
             AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase,
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
+            AdvanceCombatUseCase advanceCombatUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
@@ -43,6 +45,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.spawnScheduledMonsterUseCase = spawnScheduledMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledMonsterUseCase));
             this.advanceActorSimpleLifecycleUseCase = advanceActorSimpleLifecycleUseCase ?? throw new ArgumentNullException(nameof(advanceActorSimpleLifecycleUseCase));
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
+            this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
         }
 
@@ -88,29 +91,31 @@ namespace DungeonInn.View.Scene.MainScene.World
             isExecuting = true;
             try
             {
-                var result = await gameLoopUseCase.ExecuteAsync(new GameLoopTickRequest(Time.unscaledDeltaTime));
-                if (result.AdvancedScheduleTicks <= 0)
+                var unscaledDeltaTime = Time.unscaledDeltaTime;
+                var result = await gameLoopUseCase.ExecuteAsync(new GameLoopTickRequest(unscaledDeltaTime));
+                var frameDeltaGameSeconds = unscaledDeltaTime * result.TimeScale;
+
+                if (0 < result.AdvancedScheduleTicks)
                 {
-                    return;
+                    var spawnedAdventurer = await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+                    if (spawnedAdventurer != null)
+                    {
+                        Debug.Log($"[Spawn] Adventurer {spawnedAdventurer.Name} spawned");
+                    }
+
+                    var spawnedMonster = await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+                    if (spawnedMonster != null)
+                    {
+                        Debug.Log($"[Spawn] Monster {spawnedMonster.Name} spawned at Floor 1");
+                    }
+
+                    var scheduleDeltaGameSeconds = result.AdvancedScheduleTicks;
+                    await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, scheduleDeltaGameSeconds);
                 }
 
-                var spawnedAdventurer = await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
-                if (spawnedAdventurer != null)
-                {
-                    Debug.Log($"[Spawn] Adventurer {spawnedAdventurer.Name} spawned");
-                }
-
-                var spawnedMonster = await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
-                if (spawnedMonster != null)
-                {
-                    Debug.Log($"[Spawn] Monster {spawnedMonster.Name} spawned at Floor 1");
-                }
-
-                var deltaGameSeconds = result.AdvancedScheduleTicks * result.TimeScale;
-                await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, deltaGameSeconds);
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
-
-                LogActorSummaries(result);
+                var combatResult = await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                LogCombatEvents(combatResult);
             }
             finally
             {
@@ -118,31 +123,19 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
         }
 
-        void LogActorSummaries(GameLoopTickResult result)
+        void LogCombatEvents(DungeonInn.Application.Combat.AdvanceCombatResult result)
         {
-            var firstScheduleTick = result.CurrentScheduleTick - result.AdvancedScheduleTicks + 1;
-            for (var i = 0; i < result.AdvancedScheduleTicks; i++)
+            foreach (var attack in result.Attacks)
             {
-                LogActorSummary(result, firstScheduleTick + i);
+                Debug.Log(
+                    $"[Combat] {attack.AttackerName} attacked {attack.TargetName} " +
+                    $"Damage={attack.Damage} TargetHp={attack.TargetRemainingHp}");
             }
-        }
 
-        void LogActorSummary(GameLoopTickResult result, int scheduleTick)
-        {
-            var actors = gameWorldState.Actors;
-            var adventurerCount = actors.Count(x => x.Behavior is AdventurerBehavior);
-            var monsterCount = actors.Count(x => x.Behavior is MonsterBehavior);
-            var petCount = actors.Count(x => x.Behavior is PetBehavior);
-            var guildStaffCount = actors.Count(x => x.Behavior is GuildStaffBehavior);
-            var knownCount = adventurerCount + monsterCount + petCount + guildStaffCount;
-            var otherCount = actors.Count - knownCount;
-
-            Debug.Log(
-                $"[WorldGameLoop] ScheduleTick={scheduleTick} Day={result.CurrentDay} " +
-                $"GameTime={result.ElapsedGameTimeSeconds:0.00}s " +
-                $"Scale={result.TimeScale:0.##} Actors={actors.Count} " +
-                $"Adventurers={adventurerCount} Monsters={monsterCount} Pets={petCount} " +
-                $"GuildStaff={guildStaffCount} Others={otherCount}");
+            foreach (var death in result.Deaths)
+            {
+                Debug.Log($"[Combat] {death.ActorName} defeated");
+            }
         }
     }
 }

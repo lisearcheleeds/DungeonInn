@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
 using VContainer;
 
@@ -36,7 +37,13 @@ namespace DungeonInn.Application.UseCase
                 }
 
                 var combatState = actorCombatService.GetOrCreateCombatState(actor.Id);
-                var nearest = FindNearestHostile(actor, actors);
+                if (actor.Hp <= 0)
+                {
+                    combatState.ClearTarget();
+                    continue;
+                }
+
+                var nearest = FindNearestHostile(worldState.Dungeon, actor, actors);
 
                 if (nearest != null)
                 {
@@ -51,7 +58,7 @@ namespace DungeonInn.Application.UseCase
             return UniTask.CompletedTask;
         }
 
-        static Actor FindNearestHostile(Actor actor, IReadOnlyList<Actor> actors)
+        static Actor FindNearestHostile(Dungeon dungeon, Actor actor, IReadOnlyList<Actor> actors)
         {
             Actor nearest = null;
             var nearestDistSq = EncounterRangeMeters * EncounterRangeMeters;
@@ -59,6 +66,11 @@ namespace DungeonInn.Application.UseCase
             foreach (var candidate in actors)
             {
                 if (candidate.Id == actor.Id)
+                {
+                    continue;
+                }
+
+                if (candidate.Hp <= 0)
                 {
                     continue;
                 }
@@ -76,6 +88,11 @@ namespace DungeonInn.Application.UseCase
                 var distSq = actor.Position.DistanceSquaredTo(candidate.Position);
                 if (distSq <= nearestDistSq)
                 {
+                    if (!HasLineOfSight(dungeon, actor.Position, candidate.Position))
+                    {
+                        continue;
+                    }
+
                     nearestDistSq = distSq;
                     nearest = candidate;
                 }
@@ -84,7 +101,56 @@ namespace DungeonInn.Application.UseCase
             return nearest;
         }
 
-        // TODO: FactionMasterから取得する
+        static bool HasLineOfSight(Dungeon dungeon, LayerPosition from, LayerPosition to)
+        {
+            if (!from.LayerId.Equals(to.LayerId))
+            {
+                return false;
+            }
+
+            if (from.LayerId.Equals(MapLayerId.Ground))
+            {
+                return true;
+            }
+
+            if (!dungeon.TryGetFloor(from.LayerId.Value, out var floor))
+            {
+                return false;
+            }
+
+            var dx = to.X - from.X;
+            var dz = to.Z - from.Z;
+            var distance = (float)Math.Sqrt(dx * dx + dz * dz);
+            if (distance <= 0f)
+            {
+                return true;
+            }
+
+            var stepMeters = floor.Layer.CellSizeMeters * 0.5f;
+            var stepCount = Math.Max(1, (int)Math.Ceiling(distance / stepMeters));
+            for (var i = 0; i <= stepCount; i++)
+            {
+                var t = (float)i / stepCount;
+                var position = new LayerPosition(
+                    from.LayerId,
+                    from.X + dx * t,
+                    from.Z + dz * t);
+
+                if (!floor.Layer.Contains(position))
+                {
+                    return false;
+                }
+
+                if (!floor.IsWalkable(floor.Layer.ToGridPosition(position)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // TODO: FactionMasterから取得する。
         static bool AreHostile(ActorFaction a, ActorFaction b)
         {
             return (a.Id == 1 && b.Id == 2) || (a.Id == 2 && b.Id == 1);

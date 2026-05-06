@@ -99,6 +99,11 @@ namespace DungeonInn.Domain.Actor
             }
         }
 
+        public void ReceiveDamage(int amount)
+        {
+            Hp = DomainMath.Clamp(Hp - Math.Max(0, amount), 0, Params.MaxHp);
+        }
+
         public void GainExperience(int amount)
         {
             Experience += Math.Max(0, amount);

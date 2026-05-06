@@ -203,11 +203,7 @@ View / NavMeshなしで、Actorを目的地へ近づける。
 - 同じDungeonFloorにいる
 - 敵対Factionである
 - 20m以内
-- 視線判定は最初は省略してよい
-
-後で追加:
-
-- ダンジョン壁によるLine of Sight判定
+- ダンジョン壁によるLine of Sight判定（`DetectCombatEncounterUseCase` 内に実装済み）
 
 完了条件:
 
@@ -222,7 +218,7 @@ Direct攻撃のみで戦闘を進める。
 作るもの:
 
 - `AdvanceCombatUseCase`
-- 必要なら `CombatRuntimeState`
+- `ActorCombatState` / `ActorCombatService`（per-Actorの戦闘状態管理）
 
 初期仕様:
 
@@ -241,7 +237,32 @@ Direct攻撃のみで戦闘を進める。
 [Combat] Slime defeated
 ```
 
-## Phase 9: 帰還判断
+## Phase 9: ゲームイベントシステム
+
+Use Case の処理結果を pub/sub で通知する基盤を作り、戦闘ログと冒険者戦績の記録を実現する。
+
+作るもの:
+
+- `IGameEvent` / `IGameEventBus` / `GameEventBus`
+- 戦闘イベント: `CombatAttackOccurred`, `ActorDefeated`, `CombatEncounterStarted`, `CombatEncounterEnded`
+- `AdventurerBattleRecord`（長期保管購読者: 戦闘回数・ダメージ統計・直前戦闘サマリー）
+- `CombatLogPresenter`（揮発性購読者: ログ表示UI）
+- `AdvanceCombatUseCase` に Publish を追加し `AdvanceCombatResult` を廃止
+
+方針:
+
+- イベントは「通知」であり「命令」ではない（`docs/game-event-design.md` 参照）
+- 発行は UseCase 層のみ。Domain Entity は発行しない
+- 購読者はゲームの状態を変更しない
+
+完了条件:
+
+```text
+[Combat] Adventurer A attacked Slime for 8   ← CombatLogPresenter が表示
+[Record] Adventurer A: 3 combats, 120 total damage dealt
+```
+
+## Phase 10: 帰還判断
 
 戦闘後、冒険者を帰還へ向かわせる。
 
@@ -262,7 +283,7 @@ Direct攻撃のみで戦闘を進める。
 [Actor] Adventurer A starts returning
 ```
 
-## Phase 10: 宿屋回復
+## Phase 11: 宿屋回復
 
 地上に戻った冒険者を宿屋で回復させる。
 
@@ -317,8 +338,9 @@ Direct攻撃のみで戦闘を進める。
 6. `AdvanceActorSimpleLifecycleUseCase`
 7. `DetectCombatEncounterUseCase`
 8. `AdvanceCombatUseCase`
-9. `DecideAdventurerReturnUseCase`
-10. `RecoverAdventurerAtInnUseCase`
+9. `GameEventBus` / `AdventurerBattleRecord` / `CombatLogPresenter`
+10. `DecideAdventurerReturnUseCase`
+11. `RecoverAdventurerAtInnUseCase`
 
 この順序なら、各段階でログ確認できる。
 
