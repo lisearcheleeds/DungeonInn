@@ -108,7 +108,7 @@ namespace DungeonInn.Application.UseCase
 
                 actor.MoveTo(arrivalPosition);
                 navigationService.InvalidatePath(actor.Id);
-                behavior.ResetExploringTime();
+                behavior.ResetExplorationRoomArrivalCount();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
             }
         }
@@ -126,15 +126,6 @@ namespace DungeonInn.Application.UseCase
 
             if (actorCombatService.HasTarget(actor.Id))
             {
-                return;
-            }
-
-            behavior.AccumulateExploringTime(deltaGameSeconds);
-            if (GameConstants.AdventurerExploringDurationSeconds <= behavior.ExploringTimeSeconds)
-            {
-                exploringDestinations.Remove(actor.Id);
-                navigationService.InvalidatePath(actor.Id);
-                behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
                 return;
             }
 
@@ -160,8 +151,14 @@ namespace DungeonInn.Application.UseCase
 
             if (arrived)
             {
+                behavior.RecordExplorationRoomArrival();
                 exploringDestinations.Remove(actor.Id);
                 navigationService.InvalidatePath(actor.Id);
+
+                if (GameConstants.AdventurerExplorationRoomArrivalTarget <= behavior.ExplorationRoomArrivalCount)
+                {
+                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
+                }
             }
         }
 

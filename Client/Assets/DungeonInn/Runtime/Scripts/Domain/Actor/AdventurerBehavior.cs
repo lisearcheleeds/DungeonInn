@@ -6,6 +6,7 @@ namespace DungeonInn.Domain.Actor
     {
         public AdventurerLifecycleState LifecycleState { get; private set; }
         public int Stress { get; private set; }
+        public int ExplorationRoomArrivalCount { get; private set; }
 
         public AdventurerBehavior(int stress)
             : this(stress, AdventurerLifecycleState.Arrived)
@@ -23,16 +24,14 @@ namespace DungeonInn.Domain.Actor
             LifecycleState = lifecycleState;
         }
 
-        public float ExploringTimeSeconds { get; private set; }
-
-        public void AccumulateExploringTime(float deltaSeconds)
+        public void RecordExplorationRoomArrival()
         {
-            ExploringTimeSeconds += Math.Max(0f, deltaSeconds);
+            ExplorationRoomArrivalCount++;
         }
 
-        public void ResetExploringTime()
+        public void ResetExplorationRoomArrivalCount()
         {
-            ExploringTimeSeconds = 0f;
+            ExplorationRoomArrivalCount = 0;
         }
 
         public void ReduceStress(int amount)

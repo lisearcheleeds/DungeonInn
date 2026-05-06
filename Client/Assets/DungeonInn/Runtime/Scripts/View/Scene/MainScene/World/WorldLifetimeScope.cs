@@ -18,6 +18,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterComponent(worldScene);
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
+            builder.Register<WorldActorDebugVisualizer>(Lifetime.Scoped);
 
             builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();

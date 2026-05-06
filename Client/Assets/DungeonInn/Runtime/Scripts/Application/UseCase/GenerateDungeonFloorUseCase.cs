@@ -13,6 +13,8 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class GenerateDungeonFloorUseCase
     {
+        const int ReferencePointPlacementMaxAttempts = 32;
+
         /// <summary>
         /// Section 経路、通路、部屋、上下階段を持つフロアを生成してダンジョンへ追加する。
         /// </summary>
@@ -66,11 +68,6 @@ namespace DungeonInn.Application.UseCase
             }
 
             return new DungeonFloorGenerationSettings(
-                roomCount: GameConstants.DungeonDefaultRoomCountBase
-                    + floorIndex / GameConstants.DungeonRoomCountFloorsPerIncrement,
-                minCorridorLength: GameConstants.DungeonDefaultMinCorridorLength,
-                maxCorridorLength: GameConstants.DungeonDefaultMaxCorridorLengthBase
-                    + floorIndex / GameConstants.DungeonMaxCorridorLengthFloorsPerIncrement,
                 themeId: floorIndex / GameConstants.DungeonThemeFloorsPerTheme);
         }
 
@@ -95,7 +92,7 @@ namespace DungeonInn.Application.UseCase
                 sectionPath,
                 sectionWidth,
                 sectionDepth,
-                GameConstants.DungeonPathDistortBaseStrength + settings.RoomCount,
+                GameConstants.DungeonPathDistortBaseStrength,
                 random);
 
             var referencePointsBySection = CreateReferencePointsBySection(
@@ -107,7 +104,7 @@ namespace DungeonInn.Application.UseCase
             var rooms = new List<DungeonRoom>();
 
             CarveMainRoute(referencePointsBySection, carvedCells, random);
-            CarveRooms(referencePointsBySection, carvedCells, roomCells, rooms, settings, random);
+            CarveRooms(referencePointsBySection, carvedCells, roomCells, rooms, random);
 
             return new DungeonFloorBlueprint(
                 carvedCells,
@@ -318,9 +315,13 @@ namespace DungeonInn.Application.UseCase
                 var points = new List<GridPosition>();
                 var sectionPosition = ToSectionPosition(sectionIndex, sectionWidth);
 
-                for (var i = 0; i < referencePointCount; i++)
+                points.Add(CreateReferencePoint(sectionPosition, random));
+                for (var i = 1; i < referencePointCount; i++)
                 {
-                    points.Add(CreateReferencePoint(sectionPosition, random));
+                    if (TryCreateAdditionalReferencePoint(sectionPosition, points, random, out var point))
+                    {
+                        points.Add(point);
+                    }
                 }
 
                 result.Add(points);
@@ -338,21 +339,58 @@ namespace DungeonInn.Application.UseCase
                 sectionPosition.Z * GameConstants.DungeonSectionSizeCells + random.Next(min, max));
         }
 
+        static bool TryCreateAdditionalReferencePoint(
+            GridPosition sectionPosition,
+            IReadOnlyList<GridPosition> existingPoints,
+            Random random,
+            out GridPosition point)
+        {
+            for (var i = 0; i < ReferencePointPlacementMaxAttempts; i++)
+            {
+                var candidate = CreateReferencePoint(sectionPosition, random);
+                if (IsSeparatedFromAll(candidate, existingPoints))
+                {
+                    point = candidate;
+                    return true;
+                }
+            }
+
+            point = default;
+            return false;
+        }
+
+        static bool IsSeparatedFromAll(GridPosition candidate, IReadOnlyList<GridPosition> existingPoints)
+        {
+            for (var i = 0; i < existingPoints.Count; i++)
+            {
+                if (Math.Abs(candidate.X - existingPoints[i].X) <= 1
+                    || Math.Abs(candidate.Z - existingPoints[i].Z) <= 1)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         static void CarveMainRoute(List<List<GridPosition>> referencePointsBySection, HashSet<GridPosition> carvedCells, Random random)
         {
-            for (var i = 0; i < referencePointsBySection.Count - 1; i++)
+            for (var i = 0; i < referencePointsBySection.Count; i++)
             {
-                CarveElbowPath(
-                    referencePointsBySection[i][0],
-                    referencePointsBySection[i + 1][0],
-                    random.Next(0, 2) == 0,
-                    carvedCells);
-
                 for (var t = 0; t < referencePointsBySection[i].Count - 1; t++)
                 {
                     CarveElbowPath(
                         referencePointsBySection[i][t],
                         referencePointsBySection[i][t + 1],
+                        random.Next(0, 2) == 0,
+                        carvedCells);
+                }
+
+                if (i < referencePointsBySection.Count - 1)
+                {
+                    CarveElbowPath(
+                        referencePointsBySection[i][0],
+                        referencePointsBySection[i + 1][0],
                         random.Next(0, 2) == 0,
                         carvedCells);
                 }
@@ -364,17 +402,15 @@ namespace DungeonInn.Application.UseCase
             HashSet<GridPosition> carvedCells,
             HashSet<GridPosition> roomCells,
             List<DungeonRoom> rooms,
-            DungeonFloorGenerationSettings settings,
             Random random)
         {
             var referencePoints = referencePointsBySection
                 .SelectMany((points, routeDepth) => points.Select(point => new ReferencePoint(point, routeDepth)))
                 .ToList();
-            var roomCount = Math.Min(settings.RoomCount, referencePoints.Count);
 
-            for (var i = 0; i < roomCount; i++)
+            for (var i = 0; i < referencePoints.Count; i++)
             {
-                var referencePoint = referencePoints[random.Next(0, referencePoints.Count)];
+                var referencePoint = referencePoints[i];
                 var center = referencePoint.Position;
                 var width = random.Next(GameConstants.DungeonRoomMinSizeCells, GameConstants.DungeonRoomMaxSizeCells + 1);
                 var depth = random.Next(GameConstants.DungeonRoomMinSizeCells, GameConstants.DungeonRoomMaxSizeCells + 1);

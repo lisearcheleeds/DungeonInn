@@ -331,9 +331,6 @@ public sealed class DungeonStair
 ```csharp
 public sealed class DungeonFloorGenerationSettings
 {
-    public int RoomCount { get; }
-    public int MinCorridorLength { get; }
-    public int MaxCorridorLength { get; }
     public int ThemeId { get; }
 }
 ```

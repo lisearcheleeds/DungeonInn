@@ -30,6 +30,10 @@ namespace DungeonInn.Tests.EditMode
                     Is.True,
                     $"Generated dungeon floor is disconnected. seed:{seed}");
                 Assert.That(
+                    AreAllWalkableCellsConnected(floor, floor.UpStair.Position),
+                    Is.True,
+                    $"Generated dungeon floor has isolated walkable cells. seed:{seed}");
+                Assert.That(
                     floor.Rooms,
                     Is.Not.Empty,
                     $"Generated dungeon floor has no rooms. seed:{seed}");
@@ -76,6 +80,49 @@ namespace DungeonInn.Tests.EditMode
             }
 
             return false;
+        }
+
+        static bool AreAllWalkableCellsConnected(DungeonFloor floor, GridPosition start)
+        {
+            var visited = CreateVisitedMap(floor, start);
+            for (var z = 0; z < floor.Layer.Depth; z++)
+            {
+                for (var x = 0; x < floor.Layer.Width; x++)
+                {
+                    var position = new GridPosition(x, z);
+                    if (floor.IsWalkable(position) && !visited[x, z])
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        static bool[,] CreateVisitedMap(DungeonFloor floor, GridPosition start)
+        {
+            var visited = new bool[floor.Layer.Width, floor.Layer.Depth];
+            var queue = new Queue<GridPosition>();
+
+            if (!floor.IsWalkable(start))
+            {
+                return visited;
+            }
+
+            visited[start.X, start.Z] = true;
+            queue.Enqueue(start);
+
+            while (0 < queue.Count)
+            {
+                var current = queue.Dequeue();
+                EnqueueIfWalkable(floor, visited, queue, new GridPosition(current.X + 1, current.Z));
+                EnqueueIfWalkable(floor, visited, queue, new GridPosition(current.X - 1, current.Z));
+                EnqueueIfWalkable(floor, visited, queue, new GridPosition(current.X, current.Z + 1));
+                EnqueueIfWalkable(floor, visited, queue, new GridPosition(current.X, current.Z - 1));
+            }
+
+            return visited;
         }
 
         static void EnqueueIfWalkable(

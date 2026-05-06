@@ -115,6 +115,34 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(actor.Position.DistanceSquaredTo(before), Is.GreaterThan(0f));
         }
 
+        [Test]
+        public void ExploringAdventurerReturnsAfterArrivingAtEightRoomDestinations()
+        {
+            var worldState = CreateInitializedWorldState();
+            var floor = worldState.Dungeon.GetFloor(1);
+            var actor = CreateExploringAdventurer(floor.GetArrivalPosition(DungeonStairType.Up));
+            worldState.RegisterActor(actor);
+
+            var navigationService = new ActorNavigationService();
+            var useCase = new AdvanceActorSimpleLifecycleUseCase(
+                new MoveActorTowardDestinationUseCase(navigationService),
+                new UseDungeonStairUseCase(
+                    new EnsureDungeonFloorGeneratedUseCase(
+                        new GenerateDungeonFloorUseCase())),
+                navigationService,
+                new ActorCombatService(),
+                new GameRandom(10));
+            var behavior = actor.RequireBehavior<AdventurerBehavior>();
+
+            for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
+            {
+                useCase.ExecuteAsync(worldState, 10f).GetAwaiter().GetResult();
+            }
+
+            Assert.That(behavior.ExplorationRoomArrivalCount, Is.EqualTo(GameConstants.AdventurerExplorationRoomArrivalTarget));
+            Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
+        }
+
         static GameWorldState CreateInitializedWorldState()
         {
             var worldState = new GameWorldState();

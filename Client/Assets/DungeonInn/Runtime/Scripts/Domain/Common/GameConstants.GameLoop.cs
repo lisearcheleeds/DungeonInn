@@ -1,0 +1,23 @@
+namespace DungeonInn.Domain.Common
+{
+    public static partial class GameConstants
+    {
+        // 1ゲーム内日付を構成するスケジュールTick数。1Tickは現在1ゲーム秒として扱う。
+        public const int GameScheduleTicksPerDay = 1200;
+
+        // ゲームループ中の汎用乱数に使う初期シード。
+        public const int InitialGameRandomSeed = 42195;
+
+        // 冒険者スポーン抽選を行う間隔。単位はスケジュールTick。
+        public const int AdventurerSpawnIntervalTicks = 5;
+
+        // 冒険者が探索中に目的地Roomへ到達した回数がこの値に達すると帰還を開始する。
+        public const int AdventurerExplorationRoomArrivalTarget = 8;
+
+        // 初期ゲームループで同時に存在できる冒険者の上限。
+        public const int InitialMaxAdventurerCount = 6;
+
+        // 初期ゲームループで同時に存在できるモンスターの上限。
+        public const int InitialMaxMonsterCount = 20;
+    }
+}

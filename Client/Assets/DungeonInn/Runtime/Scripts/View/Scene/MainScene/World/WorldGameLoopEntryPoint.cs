@@ -20,6 +20,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase;
         AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase;
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
+        WorldActorDebugVisualizer worldActorDebugVisualizer;
 
         bool isExecuting;
         bool isInitialized;
@@ -32,7 +33,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase,
             SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase,
             AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase,
-            DetectCombatEncounterUseCase detectCombatEncounterUseCase)
+            DetectCombatEncounterUseCase detectCombatEncounterUseCase,
+            WorldActorDebugVisualizer worldActorDebugVisualizer)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
@@ -41,6 +43,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.spawnScheduledMonsterUseCase = spawnScheduledMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledMonsterUseCase));
             this.advanceActorSimpleLifecycleUseCase = advanceActorSimpleLifecycleUseCase ?? throw new ArgumentNullException(nameof(advanceActorSimpleLifecycleUseCase));
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
+            this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
         }
 
         void Start()
@@ -51,7 +54,14 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void Update()
         {
-            if (!isInitialized || isExecuting || gameLoopUseCase == null)
+            if (!isInitialized || gameLoopUseCase == null)
+            {
+                return;
+            }
+
+            worldActorDebugVisualizer.UpdateVisuals();
+
+            if (isExecuting)
             {
                 return;
             }
