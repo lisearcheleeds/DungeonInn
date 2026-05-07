@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.Profiles;
 using DungeonInn.Domain.Actor;
@@ -18,16 +20,19 @@ namespace DungeonInn.Application.UseCase
         readonly IAdventurerFactory adventurerFactory;
         readonly IMasterRepository masterRepository;
         readonly IActorProfileRegistry profileRegistry;
+        readonly IGameEventBus eventBus;
 
         [Inject]
         public SpawnAdventurerUseCase(
             IAdventurerFactory adventurerFactory,
             IMasterRepository masterRepository,
-            IActorProfileRegistry profileRegistry)
+            IActorProfileRegistry profileRegistry,
+            IGameEventBus eventBus)
         {
             this.adventurerFactory = adventurerFactory ?? throw new ArgumentNullException(nameof(adventurerFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
+            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public UniTask<Actor> ExecuteAsync(AdventurerGuild guild, AdventurerCreateRequest request, int occurredAtTick)
@@ -63,6 +68,7 @@ namespace DungeonInn.Application.UseCase
             AddInitialInventory(actor, archetypeMaster.InitialInventoryItemIds);
             EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
             profileRegistry.Register(actor.Id, archetypeMaster.Name);
+            eventBus.Publish(new ActorSpawned(actor.Id));
             return UniTask.FromResult(actor);
         }
 

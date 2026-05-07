@@ -1,5 +1,6 @@
 using System;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
@@ -9,6 +10,7 @@ using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using NUnit.Framework;
+using R3;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -102,7 +104,8 @@ namespace DungeonInn.Tests.EditMode
                         new GenerateDungeonFloorUseCase())),
                 navigationService,
                 new ActorCombatService(),
-                new GameRandom(10));
+                new GameRandom(10),
+                new NoOpGameEventBus());
             var before = actor.Position;
 
             for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
@@ -131,7 +134,8 @@ namespace DungeonInn.Tests.EditMode
                         new GenerateDungeonFloorUseCase())),
                 navigationService,
                 new ActorCombatService(),
-                new GameRandom(10));
+                new GameRandom(10),
+                new NoOpGameEventBus());
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
 
             for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
@@ -179,6 +183,17 @@ namespace DungeonInn.Tests.EditMode
                 position,
                 new ActorFaction(1, "Adventurer"),
                 new AdventurerBehavior(0, AdventurerLifecycleState.Exploring));
+        }
+
+        sealed class NoOpGameEventBus : IGameEventBus
+        {
+            public void Publish(IGameEvent gameEvent)
+            {
+            }
+            public Observable<T> OnEvent<T>() where T : class, IGameEvent
+            {
+                return Observable.Empty<T>();
+            }
         }
     }
 }

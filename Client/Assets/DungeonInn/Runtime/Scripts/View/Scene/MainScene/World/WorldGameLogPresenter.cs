@@ -1,8 +1,8 @@
 using System;
-using DungeonInn.Application.Profiles;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
+using DungeonInn.Application.Profiles;
 using R3;
 using UnityEngine;
 using VContainer;
@@ -10,7 +10,7 @@ using VContainer.Unity;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
-    public sealed class WorldCombatLogPresenter : IInitializable, IDisposable
+    public sealed class WorldGameLogPresenter : IInitializable, IDisposable
     {
         readonly IGameEventBus eventBus;
         readonly AdventurerBattleRecordService battleRecordService;
@@ -18,7 +18,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         DisposableBag bag;
 
         [Inject]
-        public WorldCombatLogPresenter(
+        public WorldGameLogPresenter(
             IGameEventBus eventBus,
             AdventurerBattleRecordService battleRecordService,
             IActorProfileRegistry profileRegistry)
@@ -30,6 +30,18 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void Initialize()
         {
+            eventBus.OnEvent<ActorSpawned>()
+                .Subscribe(OnActorSpawned)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<ActorEnteredDungeon>()
+                .Subscribe(OnActorEnteredDungeon)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<ActorExitedDungeon>()
+                .Subscribe(OnActorExitedDungeon)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<CombatEncounterStarted>()
                 .Subscribe(OnEncounterStarted)
                 .AddTo(ref bag);
@@ -50,6 +62,21 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void Dispose()
         {
             bag.Dispose();
+        }
+
+        void OnActorSpawned(ActorSpawned e)
+        {
+            Debug.Log($"[Event] {GetName(e.ActorId)} が現れた");
+        }
+
+        void OnActorEnteredDungeon(ActorEnteredDungeon e)
+        {
+            Debug.Log($"[Event] {GetName(e.ActorId)} がダンジョン {e.FloorIndex} 階に入った");
+        }
+
+        void OnActorExitedDungeon(ActorExitedDungeon e)
+        {
+            Debug.Log($"[Event] {GetName(e.ActorId)} がダンジョンから帰還した");
         }
 
         void OnEncounterStarted(CombatEncounterStarted e)

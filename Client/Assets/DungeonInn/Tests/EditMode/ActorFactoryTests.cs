@@ -1,4 +1,5 @@
 using System;
+using DungeonInn.Application.Event;
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.Profiles;
 using DungeonInn.Application.UseCase;
@@ -8,6 +9,7 @@ using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using NUnit.Framework;
+using R3;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -60,7 +62,8 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new SpawnAdventurerUseCase(
                 new AdventurerFactory(repository),
                 repository,
-                new NoOpActorProfileRegistry());
+                new NoOpActorProfileRegistry(),
+                new NoOpGameEventBus());
             var guildInventory = new Inventory();
             guildInventory.Add(new ItemStack(3001, 1));
             guildInventory.Add(new ItemStack(3003, 1));
@@ -94,6 +97,17 @@ namespace DungeonInn.Tests.EditMode
             {
                 profile = null;
                 return false;
+            }
+        }
+
+        sealed class NoOpGameEventBus : IGameEventBus
+        {
+            public void Publish(IGameEvent gameEvent)
+            {
+            }
+            public Observable<T> OnEvent<T>() where T : class, IGameEvent
+            {
+                return Observable.Empty<T>();
             }
         }
     }

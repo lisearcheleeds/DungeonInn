@@ -21,7 +21,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
             builder.Register<WorldActorDebugVisualizer>(Lifetime.Scoped);
-            builder.RegisterEntryPoint<WorldCombatLogPresenter>(Lifetime.Scoped);
+            builder.RegisterEntryPoint<WorldGameLogPresenter>(Lifetime.Scoped);
 
             builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();
             builder.Register<GameEventBus>(Lifetime.Scoped).As<IGameEventBus>().AsSelf();

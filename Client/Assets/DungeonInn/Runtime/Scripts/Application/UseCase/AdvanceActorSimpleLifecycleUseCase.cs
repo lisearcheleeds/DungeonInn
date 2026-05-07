@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
@@ -19,6 +21,7 @@ namespace DungeonInn.Application.UseCase
         readonly IActorNavigationService navigationService;
         readonly IActorCombatService actorCombatService;
         readonly IGameRandom gameRandom;
+        readonly IGameEventBus eventBus;
 
         [Inject]
         public AdvanceActorSimpleLifecycleUseCase(
@@ -26,7 +29,8 @@ namespace DungeonInn.Application.UseCase
             UseDungeonStairUseCase useDungeonStairUseCase,
             IActorNavigationService navigationService,
             IActorCombatService actorCombatService,
-            IGameRandom gameRandom)
+            IGameRandom gameRandom,
+            IGameEventBus eventBus)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -38,11 +42,16 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.gameRandom = gameRandom
                 ?? throw new ArgumentNullException(nameof(gameRandom));
+            this.eventBus = eventBus
+                ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
         {
-            if (worldState == null) throw new ArgumentNullException(nameof(worldState));
+            if (worldState == null)
+            {
+                throw new ArgumentNullException(nameof(worldState));
+            }
 
             var actors = new List<Actor>(worldState.Actors);
             foreach (var actor in actors)
@@ -110,6 +119,7 @@ namespace DungeonInn.Application.UseCase
                 navigationService.InvalidatePath(actor.Id);
                 behavior.ResetExplorationRoomArrivalCount();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
+                eventBus.Publish(new ActorEnteredDungeon(actor.Id, arrivalPosition.LayerId.Value));
             }
         }
 
@@ -193,6 +203,11 @@ namespace DungeonInn.Application.UseCase
                 actor.MoveTo(returnPosition);
                 navigationService.InvalidatePath(actor.Id);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
+
+                if (returnPosition.LayerId.Equals(MapLayerId.Ground))
+                {
+                    eventBus.Publish(new ActorExitedDungeon(actor.Id));
+                }
             }
         }
 
