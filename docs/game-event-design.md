@@ -146,6 +146,37 @@ public sealed class CombatLogPresenter : IInitializable, IDisposable
 }
 ```
 
+## TODO
+
+### MessagePipe への移行検討
+
+現在の `IGameEventBus` は MessagePipe に置換できる。移行タイミングはパフォーマンス計測でメッセージングがボトルネックになった時、または MessagePipe を別用途（シーン間通信・Request-Response）で導入するタイミング。
+
+置換方針の選択肢：
+
+- **案A（推奨初手）**: `IGameEventBus` インターフェースを維持し、実装だけ MessagePipe に差し替える。全呼び出し元の変更ゼロ。
+- **案B（完全移行）**: `IGameEventBus` を廃止し、`IPublisher<T>` / `ISubscriber<T>` を直接注入する。型ごとチャンネル設計の恩恵を得られるが、注入箇所が型の数だけ増える。
+
+今は導入不要。必要になったタイミングで案A → 案B の順で移行する。
+
+### 状態異常ダメージ用イベントの追加
+
+毒・燃焼などの継続ダメージは `CombatAttackOccurred` に追加せず、別イベントとして定義する。
+
+理由：
+- 攻撃者が存在しない（または `AttackerActorId` が意味を持たない）
+- 武器攻撃とは発生タイミングが異なる（ターン開始時 など）
+- `AdventurerBattleRecord` で「武器ダメージ」と「状態異常ダメージ」を別集計したい
+
+想定イベント：
+
+| イベント | 用途 |
+|---|---|
+| `StatusEffectDamageOccurred` | 毒・燃焼などの継続ダメージ発生 |
+| `ActorStunned` | 麻痺などによる行動不能 |
+| `StatusEffectApplied` | 状態異常付与 |
+| `StatusEffectExpired` | 状態異常解除 |
+
 ## フォルダ方針
 
 ```text

@@ -1,5 +1,7 @@
+using DungeonInn.Application.Profiles;
 using DungeonInn.Application.AI;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Common;
@@ -19,6 +21,11 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
             builder.Register<WorldActorDebugVisualizer>(Lifetime.Scoped);
+            builder.RegisterEntryPoint<WorldCombatLogPresenter>(Lifetime.Scoped);
+
+            builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();
+            builder.Register<GameEventBus>(Lifetime.Scoped).As<IGameEventBus>().AsSelf();
+            builder.Register<AdventurerBattleRecordService>(Lifetime.Scoped);
 
             builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
@@ -33,6 +40,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<InitializeGameWorldUseCase>(Lifetime.Scoped);
             builder.Register<GameLoopUseCase>(Lifetime.Scoped).As<IGameLoopUseCase>();
             builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
+            builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
+            builder.Register<SpawnMonsterUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledMonsterUseCase>(Lifetime.Scoped);
             builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Scoped);

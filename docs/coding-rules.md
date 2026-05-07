@@ -114,6 +114,27 @@ const int ParcelSize = 5;
 static readonly ModuleSceneId[] RequireSceneModuleIds = { ... };
 ```
 
+### 3-4. foreach の一時変数: 1文字名を使わない
+
+コレクション名から自然に導かれる単数形の名前を使う。
+例外として `i`, `t`, `x`, `y`, `z`, `w` は使用可能。
+
+```csharp
+// NG
+foreach (var a in actors) { }
+foreach (var r in rooms) { }
+foreach (var e in events) { }
+
+// OK
+foreach (var actor in actors) { }
+foreach (var room in rooms) { }
+foreach (var gameEvent in events) { }
+
+// OK（例外）
+for (var i = 0; i < count; i++) { }
+var ratio = Mathf.Lerp(0f, 1f, t);
+```
+
 ---
 
 ## 4. ローカル変数の型

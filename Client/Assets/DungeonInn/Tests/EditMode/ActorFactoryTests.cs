@@ -1,5 +1,6 @@
 using System;
 using DungeonInn.Application.Factory;
+using DungeonInn.Application.Profiles;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Guild;
@@ -24,7 +25,6 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(1, "Adventurer"),
                 123));
 
-            Assert.That(actor.Name, Is.EqualTo("Novice Adventurer"));
             Assert.That(actor.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
             Assert.That(actor.Inventory.ItemCounts, Is.Empty);
             Assert.That(actor.Equipment.Weapon, Is.Null);
@@ -47,7 +47,6 @@ namespace DungeonInn.Tests.EditMode
 
             var behavior = actor.RequireBehavior<MonsterBehavior>();
 
-            Assert.That(actor.Name, Is.EqualTo("Goblin"));
             Assert.That(behavior.SpeciesId, Is.EqualTo(1));
             Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Claws));
             Assert.That(actor.Equipment.Weapon, Is.Null);
@@ -55,13 +54,13 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void SpawnAdventurerFromMasterUsesGuildInventoryForRookieEquipment()
+        public void SpawnAdventurerUsesGuildInventoryForRookieEquipment()
         {
             var repository = new HardcodedMasterRepository();
-            var useCase = new SpawnAdventurerFromMasterUseCase(
+            var useCase = new SpawnAdventurerUseCase(
                 new AdventurerFactory(repository),
                 repository,
-                new SpawnAdventurerUseCase());
+                new NoOpActorProfileRegistry());
             var guildInventory = new Inventory();
             guildInventory.Add(new ItemStack(3001, 1));
             guildInventory.Add(new ItemStack(3003, 1));
@@ -84,6 +83,18 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
             Assert.That(actor.Equipment.Weapon.WeaponType, Is.EqualTo(WeaponType.Sword));
             Assert.That(guild.Transactions.Count, Is.EqualTo(1));
+        }
+
+        sealed class NoOpActorProfileRegistry : IActorProfileRegistry
+        {
+            public void Register(Guid actorId, string displayName)
+            {
+            }
+            public bool TryGetProfile(Guid actorId, out ActorProfile profile)
+            {
+                profile = null;
+                return false;
+            }
         }
     }
 }

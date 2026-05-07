@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using NUnit.Framework;
+using R3;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -18,18 +22,20 @@ namespace DungeonInn.Tests.EditMode
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
-            var useCase = new AdvanceCombatUseCase(combatService, clock);
+            var eventBus = new CollectingGameEventBus();
+            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
             worldState.RegisterActor(target);
             combatService.GetOrCreateCombatState(attacker.Id).SetTarget(target.Id);
 
-            var result = useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 
-            Assert.That(result.Attacks.Count, Is.EqualTo(1));
-            Assert.That(result.Attacks[0].Damage, Is.EqualTo(attacker.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount));
-            Assert.That(target.Hp, Is.EqualTo(50 - result.Attacks[0].Damage));
+            var attacks = eventBus.GetEvents<CombatAttackOccurred>();
+            Assert.That(attacks.Count, Is.EqualTo(1));
+            Assert.That(attacks[0].Damage, Is.EqualTo(attacker.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount));
+            Assert.That(target.Hp, Is.EqualTo(50 - attacks[0].Damage));
         }
 
         [Test]
@@ -38,20 +44,23 @@ namespace DungeonInn.Tests.EditMode
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
-            var useCase = new AdvanceCombatUseCase(combatService, clock);
+            var eventBus = new CollectingGameEventBus();
+            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
             worldState.RegisterActor(target);
             combatService.GetOrCreateCombatState(attacker.Id).SetTarget(target.Id);
 
-            var first = useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
             var hpAfterFirstAttack = target.Hp;
-            clock.ElapsedGameTimeSeconds = 0.1f;
-            var second = useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            eventBus.Clear();
 
-            Assert.That(first.Attacks.Count, Is.EqualTo(1));
-            Assert.That(second.Attacks.Count, Is.EqualTo(0));
+            clock.ElapsedGameTimeSeconds = 0.1f;
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            var attacksAfterCooldown = eventBus.GetEvents<CombatAttackOccurred>();
+            Assert.That(attacksAfterCooldown.Count, Is.EqualTo(0));
             Assert.That(target.Hp, Is.EqualTo(hpAfterFirstAttack));
         }
 
@@ -61,7 +70,8 @@ namespace DungeonInn.Tests.EditMode
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
-            var useCase = new AdvanceCombatUseCase(combatService, clock);
+            var eventBus = new CollectingGameEventBus();
+            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
             worldState.RegisterActor(attacker);
@@ -69,12 +79,30 @@ namespace DungeonInn.Tests.EditMode
             combatService.GetOrCreateCombatState(attacker.Id).SetTarget(target.Id);
             combatService.GetOrCreateCombatState(target.Id).SetTarget(attacker.Id);
 
-            var result = useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 
-            Assert.That(result.Deaths.Count, Is.EqualTo(1));
-            Assert.That(result.Deaths[0].ActorId, Is.EqualTo(target.Id));
+            var deaths = eventBus.GetEvents<ActorDefeated>();
+            Assert.That(deaths.Count, Is.EqualTo(1));
+            Assert.That(deaths[0].ActorId, Is.EqualTo(target.Id));
+            Assert.That(deaths[0].KillerActorId, Is.EqualTo(attacker.Id));
+            Assert.That(deaths[0].Cause, Is.EqualTo(DeathCause.Combat));
             Assert.That(worldState.Actors.Any(x => x.Id.Equals(target.Id)), Is.False);
             Assert.That(combatService.HasTarget(attacker.Id), Is.False);
+        }
+
+        sealed class CollectingGameEventBus : IGameEventBus
+        {
+            readonly List<IGameEvent> events = new();
+
+            public void Publish(IGameEvent gameEvent) => events.Add(gameEvent);
+
+            public Observable<T> OnEvent<T>() where T : class, IGameEvent
+                => throw new NotSupportedException();
+
+            public IReadOnlyList<T> GetEvents<T>() where T : class, IGameEvent
+                => events.OfType<T>().ToList();
+
+            public void Clear() => events.Clear();
         }
 
         sealed class FakeGameClock : IGameClock
@@ -93,7 +121,6 @@ namespace DungeonInn.Tests.EditMode
         {
             return new Actor(
                 Guid.NewGuid(),
-                name,
                 new ActorStats(5, 5, 5, 5, 5, 5),
                 new Inventory(),
                 1,

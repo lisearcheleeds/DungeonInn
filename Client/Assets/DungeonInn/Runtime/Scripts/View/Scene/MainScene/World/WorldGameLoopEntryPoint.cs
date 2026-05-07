@@ -1,9 +1,8 @@
 using System;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Profiles;
 using DungeonInn.Application.UseCase;
-using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using UnityEngine;
@@ -22,6 +21,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
         AdvanceCombatUseCase advanceCombatUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
+        IActorProfileRegistry profileRegistry;
 
         bool isExecuting;
         bool isInitialized;
@@ -36,7 +36,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase,
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
             AdvanceCombatUseCase advanceCombatUseCase,
-            WorldActorDebugVisualizer worldActorDebugVisualizer)
+            WorldActorDebugVisualizer worldActorDebugVisualizer,
+            IActorProfileRegistry profileRegistry)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
@@ -47,6 +48,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
             this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
+            this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
         }
 
         void Start()
@@ -100,13 +102,13 @@ namespace DungeonInn.View.Scene.MainScene.World
                     var spawnedAdventurer = await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
                     if (spawnedAdventurer != null)
                     {
-                        Debug.Log($"[Spawn] Adventurer {spawnedAdventurer.Name} spawned");
+                        Debug.Log($"[Spawn] Adventurer {GetActorDisplayName(spawnedAdventurer.Id)} spawned");
                     }
 
                     var spawnedMonster = await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
                     if (spawnedMonster != null)
                     {
-                        Debug.Log($"[Spawn] Monster {spawnedMonster.Name} spawned at Floor 1");
+                        Debug.Log($"[Spawn] Monster {GetActorDisplayName(spawnedMonster.Id)} spawned at Floor 1");
                     }
 
                     var scheduleDeltaGameSeconds = result.AdvancedScheduleTicks;
@@ -114,8 +116,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 }
 
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
-                var combatResult = await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
-                LogCombatEvents(combatResult);
+                await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
             }
             finally
             {
@@ -123,19 +124,11 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
         }
 
-        void LogCombatEvents(DungeonInn.Application.Combat.AdvanceCombatResult result)
+        string GetActorDisplayName(Guid actorId)
         {
-            foreach (var attack in result.Attacks)
-            {
-                Debug.Log(
-                    $"[Combat] {attack.AttackerName} attacked {attack.TargetName} " +
-                    $"Damage={attack.Damage} TargetHp={attack.TargetRemainingHp}");
-            }
-
-            foreach (var death in result.Deaths)
-            {
-                Debug.Log($"[Combat] {death.ActorName} defeated");
-            }
+            return profileRegistry.TryGetProfile(actorId, out var profile)
+                ? profile.DisplayName
+                : actorId.ToString("N")[..8];
         }
     }
 }

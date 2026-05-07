@@ -13,17 +13,17 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class SpawnScheduledAdventurerUseCase
     {
-        readonly SpawnAdventurerFromMasterUseCase spawnAdventurerFromMasterUseCase;
+        readonly SpawnAdventurerUseCase spawnAdventurerUseCase;
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
 
         [Inject]
         public SpawnScheduledAdventurerUseCase(
-            SpawnAdventurerFromMasterUseCase spawnAdventurerFromMasterUseCase,
+            SpawnAdventurerUseCase spawnAdventurerUseCase,
             IMasterRepository masterRepository,
             IGameRandom gameRandom)
         {
-            this.spawnAdventurerFromMasterUseCase = spawnAdventurerFromMasterUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerFromMasterUseCase));
+            this.spawnAdventurerUseCase = spawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
         }
@@ -66,11 +66,7 @@ namespace DungeonInn.Application.UseCase
                 faction,
                 gameRandom.Next());
 
-            var actor = await spawnAdventurerFromMasterUseCase.ExecuteAsync(
-                worldState.Guild,
-                request,
-                currentScheduleTick);
-
+            var actor = await spawnAdventurerUseCase.ExecuteAsync(worldState.Guild, request, currentScheduleTick);
             worldState.RegisterActor(actor);
             return actor;
         }

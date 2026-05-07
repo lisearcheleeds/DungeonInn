@@ -1,54 +1,101 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Factory;
+using DungeonInn.Application.Profiles;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
+using DungeonInn.Master;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    /// <summary>
-    /// 来訪した冒険者のスポーン時初期処理を行うユースケース。
-    /// </summary>
     public sealed class SpawnAdventurerUseCase
     {
-        /// <summary>
-        /// スポーン可能レベルを検証し、Lv1 冒険者には新米装備を支給する。
-        /// </summary>
-        public UniTask ExecuteAsync(
-            AdventurerGuild guild,
-            Actor adventurer,
-            IReadOnlyList<ItemStack> rookieEquipment,
-            int occurredAtTick)
+        readonly IAdventurerFactory adventurerFactory;
+        readonly IMasterRepository masterRepository;
+        readonly IActorProfileRegistry profileRegistry;
+
+        [Inject]
+        public SpawnAdventurerUseCase(
+            IAdventurerFactory adventurerFactory,
+            IMasterRepository masterRepository,
+            IActorProfileRegistry profileRegistry)
         {
-            if (adventurer.Level == 1)
+            this.adventurerFactory = adventurerFactory ?? throw new ArgumentNullException(nameof(adventurerFactory));
+            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
+        }
+
+        public UniTask<Actor> ExecuteAsync(AdventurerGuild guild, AdventurerCreateRequest request, int occurredAtTick)
+        {
+            if (request == null)
             {
-                ProvideRookieEquipment(guild, adventurer, rookieEquipment, occurredAtTick);
-                adventurer.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
-                return UniTask.CompletedTask;
+                throw new ArgumentNullException(nameof(request));
             }
 
-            if (adventurer.Level < 5)
+            var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
+            if (archetypeMaster.BehaviorType != ActorBehaviorType.Adventurer)
+            {
+                throw new InvalidOperationException("Spawn adventurer requires adventurer actor archetype.");
+            }
+
+            var actor = adventurerFactory.Create(request);
+
+            if (actor.Level == 1)
+            {
+                var rookieEquipment = ToItemStacks(archetypeMaster.InitialEquipmentItemIds);
+                ProvideRookieEquipment(guild, actor, rookieEquipment, occurredAtTick);
+                actor.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
+            }
+            else if (actor.Level < 5)
             {
                 throw new InvalidOperationException("Only level 1 or level 5 and higher adventurers can spawn.");
             }
+            else
+            {
+                actor.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
+            }
 
-            adventurer.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
-            return UniTask.CompletedTask;
+            AddInitialInventory(actor, archetypeMaster.InitialInventoryItemIds);
+            EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
+            profileRegistry.Register(actor.Id, archetypeMaster.Name);
+            return UniTask.FromResult(actor);
+        }
+
+        void AddInitialInventory(Actor actor, IEnumerable<int> itemIds)
+        {
+            foreach (var itemId in itemIds)
+            {
+                masterRepository.GetItemMaster(itemId);
+                actor.Inventory.Add(new ItemStack(itemId, 1));
+            }
+        }
+
+        void EquipInitialEquipment(Actor actor, IEnumerable<int> itemIds)
+        {
+            foreach (var itemId in itemIds)
+            {
+                var equipmentMaster = masterRepository.GetEquipmentMaster(itemId);
+                if (equipmentMaster.Slot == EquipmentSlot.Weapon)
+                {
+                    actor.Equip(equipmentMaster, masterRepository.GetWeaponMaster(itemId));
+                    continue;
+                }
+
+                actor.Equip(equipmentMaster);
+            }
         }
 
         static void ProvideRookieEquipment(
             AdventurerGuild guild,
-            Actor adventurer,
+            Actor actor,
             IReadOnlyList<ItemStack> rookieEquipment,
             int occurredAtTick)
         {
-            if (rookieEquipment == null)
-            {
-                throw new ArgumentNullException(nameof(rookieEquipment));
-            }
-
             if (rookieEquipment.Count == 0)
             {
                 return;
@@ -60,15 +107,23 @@ namespace DungeonInn.Application.UseCase
             }
 
             guild.Inventory.RemoveRange(rookieEquipment);
-            adventurer.Inventory.AddRange(rookieEquipment);
+            actor.Inventory.AddRange(rookieEquipment);
             guild.RecordTransaction(
                 new ExchangeTransaction(
                     Guid.NewGuid(),
                     guild.Id,
-                    adventurer.Id,
+                    actor.Id,
                     rookieEquipment,
                     Array.Empty<ItemStack>(),
                     occurredAtTick));
+        }
+
+        static IReadOnlyList<ItemStack> ToItemStacks(IEnumerable<int> itemIds)
+        {
+            return itemIds
+                .GroupBy(itemId => itemId)
+                .Select(group => new ItemStack(group.Key, group.Count()))
+                .ToArray();
         }
     }
 }

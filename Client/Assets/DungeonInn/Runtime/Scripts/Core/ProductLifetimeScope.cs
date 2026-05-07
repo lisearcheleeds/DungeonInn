@@ -114,9 +114,6 @@ namespace DungeonInn.Core
             builder.Register<ReleaseInnReservationUseCase>(Lifetime.Singleton);
             builder.Register<ReserveInnUseCase>(Lifetime.Singleton);
             builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Singleton);
-            builder.Register<SpawnAdventurerUseCase>(Lifetime.Singleton);
-            builder.Register<SpawnAdventurerFromMasterUseCase>(Lifetime.Singleton);
-            builder.Register<SpawnMonsterFromMasterUseCase>(Lifetime.Singleton);
             builder.Register<UseDungeonStairUseCase>(Lifetime.Singleton);
         }
     }

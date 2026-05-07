@@ -495,6 +495,29 @@ Unity Colliderは攻撃判定には使わない。
 10. Traceログを追加する
 11. AIのAttack Actionから `CombatActionSelector` に接続する
 
+## TODO
+
+### 防御力によるダメージ軽減
+
+`AdvanceCombatUseCase` で防御力を考慮したダメージ軽減計算を行い、最終ダメージ（軽減後）を `target.ReceiveDamage` に渡す。
+
+```csharp
+var rawDamage = CalculateRawDamage(actor.WeaponCombatParams.AttackSpec);
+var finalDamage = ApplyDefense(rawDamage, target.Stats.Defense); // TODO: 実装
+target.ReceiveDamage(finalDamage);
+```
+
+`CombatAttackOccurred` には最終ダメージを格納する（計算前の raw 値は入れない）。
+「軽減前15 → 軽減後10」のようなUI内訳表示が必要になった時点で `DamageBlocked` フィールドを追加する。
+
+### 状態異常の実装
+
+状態異常（毒・麻痺・燃焼など）の実装時は以下の方針とする。
+
+- `CombatEffectNodeType.ApplyStatus` を実装し、DirectDamage と同様に Effect Node として扱う（`combat-domain-design.md` の Combat Effect Node 設計に沿う）
+- 継続ダメージは `AdvanceCombatUseCase` と独立したターン処理で発生させ、`StatusEffectDamageOccurred` イベントを発行する
+- 状態異常ダメージのイベント詳細は `game-event-design.md` の TODO を参照
+
 ## 懸念点と対策
 
 ### IWeaponCalculatorの責務拡大

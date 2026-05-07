@@ -18,7 +18,6 @@ namespace DungeonInn.Application.Factory
         {
             var actor = new Actor(
                 actorId,
-                archetypeMaster.Name,
                 archetypeMaster.BaseStats,
                 new Inventory(),
                 archetypeMaster.InitialLevel,

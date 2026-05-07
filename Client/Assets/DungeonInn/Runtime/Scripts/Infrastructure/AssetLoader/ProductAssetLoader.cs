@@ -151,11 +151,11 @@ namespace DungeonInn.Infrastructure.AssetLoader
             var seen = new HashSet<char>();
             foreach (var value in table.Values)
             {
-                foreach (var c in value)
+                foreach (var ch in value)
                 {
-                    if (seen.Add(c))
+                    if (seen.Add(ch))
                     {
-                        uniqueChars.Append(c);
+                        uniqueChars.Append(ch);
                     }
                 }
             }

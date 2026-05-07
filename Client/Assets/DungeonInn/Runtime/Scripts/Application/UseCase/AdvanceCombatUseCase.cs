@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
@@ -16,23 +18,27 @@ namespace DungeonInn.Application.UseCase
 
         readonly IActorCombatService actorCombatService;
         readonly IGameClock gameClock;
+        readonly IGameEventBus eventBus;
 
         [Inject]
-        public AdvanceCombatUseCase(IActorCombatService actorCombatService, IGameClock gameClock)
+        public AdvanceCombatUseCase(
+            IActorCombatService actorCombatService,
+            IGameClock gameClock,
+            IGameEventBus eventBus)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.gameClock = gameClock
                 ?? throw new ArgumentNullException(nameof(gameClock));
+            this.eventBus = eventBus
+                ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
-        public UniTask<AdvanceCombatResult> ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
+        public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
         {
             if (worldState == null) throw new ArgumentNullException(nameof(worldState));
 
             var currentGameTimeSeconds = gameClock.ElapsedGameTimeSeconds;
-            var attacks = new List<CombatAttackEvent>();
-            var deaths = new List<CombatDeathEvent>();
             var actors = new List<Actor>(worldState.Actors);
 
             foreach (var actor in actors)
@@ -66,28 +72,37 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
+                // TODO: Area・Projectile 攻撃の実装時に CombatEffectExecutor.Execute(attackSpec, actor, targets) へ置き換える。
+                // 現在は WeaponAttackSpec の Node グラフを解釈せず、DirectDamage 相当の値を直接計算している暫定実装。
                 var damage = CalculateDirectDamage(actor.WeaponCombatParams.AttackSpec);
                 target.ReceiveDamage(damage);
                 combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
 
-                attacks.Add(new CombatAttackEvent(
+                eventBus.Publish(new CombatAttackOccurred(
                     actor.Id,
-                    actor.Name,
                     target.Id,
-                    target.Name,
                     damage,
                     target.Hp));
 
                 if (target.Hp <= 0)
                 {
+                    foreach (var witness in actors)
+                    {
+                        var witnessCombatState = actorCombatService.GetOrCreateCombatState(witness.Id);
+                        if (witnessCombatState.TargetActorId.HasValue && witnessCombatState.TargetActorId.Value.Equals(target.Id))
+                        {
+                            eventBus.Publish(new CombatEncounterEnded(witness.Id));
+                        }
+                    }
+
                     worldState.RemoveActor(target.Id);
                     actorCombatService.ClearTargetsReferencing(target.Id);
                     actorCombatService.RemoveState(target.Id);
-                    deaths.Add(new CombatDeathEvent(target.Id, target.Name));
+                    eventBus.Publish(new ActorDefeated(target.Id, actor.Id, DeathCause.Combat));
                 }
             }
 
-            return UniTask.FromResult(new AdvanceCombatResult(attacks, deaths));
+            return UniTask.CompletedTask;
         }
 
         static Actor FindActor(IGameWorldState worldState, Guid actorId)
@@ -138,6 +153,10 @@ namespace DungeonInn.Application.UseCase
             return actor.Position.DistanceSquaredTo(target.Position) <= range * range;
         }
 
+        // TODO: このメソッドは CombatEffectExecutor が実装されたら不要になる。
+        // Area（範囲攻撃）や Projectile（飛翔物）を実装する際、WeaponAttackSpec の Node グラフを
+        // CombatEffectExecutor が解釈・実行する設計に移行する（combat-domain-design.md 参照）。
+        // その時点でターゲット単数前提のこの呼び出し構造ごと置き換える。
         static int CalculateDirectDamage(WeaponAttackSpec attackSpec)
         {
             var damage = 0;

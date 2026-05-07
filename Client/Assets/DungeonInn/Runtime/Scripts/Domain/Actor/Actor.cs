@@ -11,7 +11,6 @@ namespace DungeonInn.Domain.Actor
     public sealed class Actor : DungeonInn.Domain.Combat.IWeaponCombatSource
     {
         public Guid Id { get; }
-        public string Name { get; }
         public ActorStats Stats { get; private set; }
         public ActorParams Params { get; private set; }
         public ActorEquipment Equipment { get; }
@@ -38,7 +37,6 @@ namespace DungeonInn.Domain.Actor
 
         public Actor(
             Guid id,
-            string name,
             ActorStats stats,
             Inventory inventory,
             int level,
@@ -52,18 +50,12 @@ namespace DungeonInn.Domain.Actor
             ActorFaction faction,
             IActorBehavior behavior)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Actor name is required.", nameof(name));
-            }
-
             if (level < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(level));
             }
 
             Id = id;
-            Name = name;
             Stats = stats ?? throw new ArgumentNullException(nameof(stats));
             Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
             Equipment = new ActorEquipment();

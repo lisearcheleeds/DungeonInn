@@ -162,7 +162,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             actorObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            actorObject.name = $"Actor_{actor.Name}_{actor.Id}";
+            actorObject.name = $"Actor_{actor.Id}";
             actorObject.transform.SetParent(actorRoot.transform, false);
             actorObject.transform.localScale = Vector3.one * ActorSphereDiameterMeters;
             RemoveCollider(actorObject);

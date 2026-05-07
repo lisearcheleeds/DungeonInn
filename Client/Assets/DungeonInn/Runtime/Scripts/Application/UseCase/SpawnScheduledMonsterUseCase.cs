@@ -12,17 +12,17 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class SpawnScheduledMonsterUseCase
     {
-        readonly SpawnMonsterFromMasterUseCase spawnMonsterFromMasterUseCase;
+        readonly SpawnMonsterUseCase spawnMonsterUseCase;
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
 
         [Inject]
         public SpawnScheduledMonsterUseCase(
-            SpawnMonsterFromMasterUseCase spawnMonsterFromMasterUseCase,
+            SpawnMonsterUseCase spawnMonsterUseCase,
             IMasterRepository masterRepository,
             IGameRandom gameRandom)
         {
-            this.spawnMonsterFromMasterUseCase = spawnMonsterFromMasterUseCase ?? throw new ArgumentNullException(nameof(spawnMonsterFromMasterUseCase));
+            this.spawnMonsterUseCase = spawnMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnMonsterUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
         }
@@ -67,7 +67,7 @@ namespace DungeonInn.Application.UseCase
                 faction,
                 gameRandom.Next());
 
-            var actor = await spawnMonsterFromMasterUseCase.ExecuteAsync(request);
+            var actor = await spawnMonsterUseCase.ExecuteAsync(request);
             worldState.RegisterActor(actor);
             return actor;
         }

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Dungeon;
@@ -15,12 +17,15 @@ namespace DungeonInn.Application.UseCase
         const float EncounterRangeMeters = 20f;
 
         readonly IActorCombatService actorCombatService;
+        readonly IGameEventBus eventBus;
 
         [Inject]
-        public DetectCombatEncounterUseCase(IActorCombatService actorCombatService)
+        public DetectCombatEncounterUseCase(IActorCombatService actorCombatService, IGameEventBus eventBus)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
+            this.eventBus = eventBus
+                ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
@@ -39,19 +44,41 @@ namespace DungeonInn.Application.UseCase
                 var combatState = actorCombatService.GetOrCreateCombatState(actor.Id);
                 if (actor.Hp <= 0)
                 {
+                    var wasTargetingOnDeath = combatState.TargetActorId.HasValue;
                     combatState.ClearTarget();
+                    if (wasTargetingOnDeath)
+                    {
+                        eventBus.Publish(new CombatEncounterEnded(actor.Id));
+                    }
+
                     continue;
                 }
 
+                var hadTarget = combatState.TargetActorId.HasValue;
                 var nearest = FindNearestHostile(worldState.Dungeon, actor, actors);
 
                 if (nearest != null)
                 {
+                    var isNewTarget = !hadTarget || !combatState.TargetActorId.Value.Equals(nearest.Id);
+                    if (hadTarget && isNewTarget)
+                    {
+                        eventBus.Publish(new CombatEncounterEnded(actor.Id));
+                    }
+
                     combatState.SetTarget(nearest.Id);
+
+                    if (!hadTarget || isNewTarget)
+                    {
+                        eventBus.Publish(new CombatEncounterStarted(actor.Id, nearest.Id));
+                    }
                 }
                 else
                 {
                     combatState.ClearTarget();
+                    if (hadTarget)
+                    {
+                        eventBus.Publish(new CombatEncounterEnded(actor.Id));
+                    }
                 }
             }
 
