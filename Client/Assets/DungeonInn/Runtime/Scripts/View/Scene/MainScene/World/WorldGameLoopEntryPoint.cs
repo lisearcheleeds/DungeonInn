@@ -20,6 +20,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
         AdvanceCombatUseCase advanceCombatUseCase;
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
+        RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
 
         bool isExecuting;
@@ -36,6 +37,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
             AdvanceCombatUseCase advanceCombatUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
+            RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
@@ -47,6 +49,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
             this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
+            this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
         }
 
@@ -108,6 +111,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
+                await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds, result.CurrentScheduleTick);
             }
             finally
             {

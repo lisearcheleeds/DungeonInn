@@ -46,6 +46,14 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .Subscribe(OnActorStartedReturning)
                 .AddTo(ref bag);
 
+            eventBus.OnEvent<ActorRecoveringAtInn>()
+                .Subscribe(OnActorRecoveringAtInn)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<ActorFullyRecovered>()
+                .Subscribe(OnActorFullyRecovered)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<CombatEncounterStarted>()
                 .Subscribe(OnEncounterStarted)
                 .AddTo(ref bag);
@@ -86,6 +94,16 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnActorStartedReturning(ActorStartedReturning e)
         {
             Debug.Log($"[Actor] {GetName(e.ActorId)} starts returning");
+        }
+
+        void OnActorRecoveringAtInn(ActorRecoveringAtInn e)
+        {
+            Debug.Log($"[Inn] {GetName(e.ActorId)} recovering HP {e.CurrentHp}/{e.MaxHp}");
+        }
+
+        void OnActorFullyRecovered(ActorFullyRecovered e)
+        {
+            Debug.Log($"[Inn] {GetName(e.ActorId)} fully recovered");
         }
 
         void OnEncounterStarted(CombatEncounterStarted e)
