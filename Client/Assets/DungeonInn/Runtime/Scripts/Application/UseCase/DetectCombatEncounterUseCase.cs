@@ -45,7 +45,7 @@ namespace DungeonInn.Application.UseCase
                 if (actor.Hp <= 0)
                 {
                     var wasTargetingOnDeath = combatState.TargetActorId.HasValue;
-                    combatState.ClearTarget();
+                    actorCombatService.ClearTarget(actor.Id);
                     if (wasTargetingOnDeath)
                     {
                         eventBus.Publish(new CombatEncounterEnded(actor.Id));
@@ -65,7 +65,7 @@ namespace DungeonInn.Application.UseCase
                         eventBus.Publish(new CombatEncounterEnded(actor.Id));
                     }
 
-                    combatState.SetTarget(nearest.Id);
+                    actorCombatService.SetTarget(actor.Id, nearest.Id);
 
                     if (!hadTarget || isNewTarget)
                     {
@@ -74,7 +74,7 @@ namespace DungeonInn.Application.UseCase
                 }
                 else
                 {
-                    combatState.ClearTarget();
+                    actorCombatService.ClearTarget(actor.Id);
                     if (hadTarget)
                     {
                         eventBus.Publish(new CombatEncounterEnded(actor.Id));

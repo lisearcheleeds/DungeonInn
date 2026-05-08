@@ -42,6 +42,10 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .Subscribe(OnActorExitedDungeon)
                 .AddTo(ref bag);
 
+            eventBus.OnEvent<ActorStartedReturning>()
+                .Subscribe(OnActorStartedReturning)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<CombatEncounterStarted>()
                 .Subscribe(OnEncounterStarted)
                 .AddTo(ref bag);
@@ -77,6 +81,11 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnActorExitedDungeon(ActorExitedDungeon e)
         {
             Debug.Log($"[Event] {GetName(e.ActorId)} がダンジョンから帰還した");
+        }
+
+        void OnActorStartedReturning(ActorStartedReturning e)
+        {
+            Debug.Log($"[Actor] {GetName(e.ActorId)} starts returning");
         }
 
         void OnEncounterStarted(CombatEncounterStarted e)

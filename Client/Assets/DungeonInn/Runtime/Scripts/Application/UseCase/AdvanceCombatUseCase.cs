@@ -57,7 +57,7 @@ namespace DungeonInn.Application.UseCase
                 var target = FindActor(worldState, combatState.TargetActorId.Value);
                 if (target == null || target.Hp <= 0)
                 {
-                    combatState.ClearTarget();
+                    actorCombatService.ClearTarget(actor.Id);
                     continue;
                 }
 
@@ -77,6 +77,8 @@ namespace DungeonInn.Application.UseCase
                 var damage = CalculateDirectDamage(actor.WeaponCombatParams.AttackSpec);
                 target.ReceiveDamage(damage);
                 combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
+                actorCombatService.MarkCombatParticipation(actor.Id);
+                actorCombatService.MarkCombatParticipation(target.Id);
 
                 eventBus.Publish(new CombatAttackOccurred(
                     actor.Id,

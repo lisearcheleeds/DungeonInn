@@ -19,6 +19,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase;
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
         AdvanceCombatUseCase advanceCombatUseCase;
+        DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
 
         bool isExecuting;
@@ -34,6 +35,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase,
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
             AdvanceCombatUseCase advanceCombatUseCase,
+            DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
@@ -44,6 +46,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.advanceActorSimpleLifecycleUseCase = advanceActorSimpleLifecycleUseCase ?? throw new ArgumentNullException(nameof(advanceActorSimpleLifecycleUseCase));
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
             this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
+            this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
         }
 
@@ -104,6 +107,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
             }
             finally
             {

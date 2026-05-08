@@ -49,6 +49,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<AdvanceActorSimpleLifecycleUseCase>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceCombatUseCase>(Lifetime.Scoped);
+            builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
 
             builder.Register<ActorDecisionScheduler>(Lifetime.Scoped);
             builder.Register<ApplyActorAiDecisionUseCase>(Lifetime.Scoped);

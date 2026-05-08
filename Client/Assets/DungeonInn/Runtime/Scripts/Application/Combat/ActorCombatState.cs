@@ -7,6 +7,7 @@ namespace DungeonInn.Application.Combat
         public Guid? TargetActorId { get; private set; }
         public bool HasTarget => TargetActorId.HasValue;
         public float NextAttackGameTimeSeconds { get; private set; }
+        public bool HasParticipatedInCombat { get; private set; }
 
         public void SetTarget(Guid targetId)
         {
@@ -33,6 +34,16 @@ namespace DungeonInn.Application.Combat
         public void RecordAttack(float currentGameTimeSeconds, float intervalSeconds)
         {
             NextAttackGameTimeSeconds = currentGameTimeSeconds + Math.Max(0f, intervalSeconds);
+        }
+
+        public void MarkCombatParticipation()
+        {
+            HasParticipatedInCombat = true;
+        }
+
+        public void ClearCombatHistory()
+        {
+            HasParticipatedInCombat = false;
         }
     }
 }

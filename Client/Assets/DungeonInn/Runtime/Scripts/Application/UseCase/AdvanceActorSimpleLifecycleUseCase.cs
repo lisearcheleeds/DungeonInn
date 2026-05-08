@@ -117,6 +117,7 @@ namespace DungeonInn.Application.UseCase
 
                 actor.MoveTo(arrivalPosition);
                 navigationService.InvalidatePath(actor.Id);
+                actorCombatService.ClearCombatHistory(actor.Id);
                 behavior.ResetExplorationRoomArrivalCount();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
                 eventBus.Publish(new ActorEnteredDungeon(actor.Id, arrivalPosition.LayerId.Value));
