@@ -30,7 +30,10 @@ namespace DungeonInn.Application.UseCase
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
         {
-            if (worldState == null) throw new ArgumentNullException(nameof(worldState));
+            if (worldState == null)
+            {
+                throw new ArgumentNullException(nameof(worldState));
+            }
 
             var actors = worldState.Actors;
 
@@ -42,18 +45,6 @@ namespace DungeonInn.Application.UseCase
                 }
 
                 var combatState = actorCombatService.GetOrCreateCombatState(actor.Id);
-                if (actor.Hp <= 0)
-                {
-                    var wasTargetingOnDeath = combatState.TargetActorId.HasValue;
-                    actorCombatService.ClearTarget(actor.Id);
-                    if (wasTargetingOnDeath)
-                    {
-                        eventBus.Publish(new CombatEncounterEnded(actor.Id));
-                    }
-
-                    continue;
-                }
-
                 var hadTarget = combatState.TargetActorId.HasValue;
                 var nearest = FindNearestHostile(worldState.Dungeon, actor, actors);
 

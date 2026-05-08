@@ -28,7 +28,7 @@ namespace DungeonInn.Tests.EditMode
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
             worldState.RegisterActor(target);
-            combatService.GetOrCreateCombatState(attacker.Id).SetTarget(target.Id);
+            combatService.SetTarget(attacker.Id, target.Id);
 
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 
@@ -50,7 +50,7 @@ namespace DungeonInn.Tests.EditMode
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
             worldState.RegisterActor(target);
-            combatService.GetOrCreateCombatState(attacker.Id).SetTarget(target.Id);
+            combatService.SetTarget(attacker.Id, target.Id);
 
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
             var hpAfterFirstAttack = target.Hp;
@@ -76,8 +76,8 @@ namespace DungeonInn.Tests.EditMode
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
             worldState.RegisterActor(attacker);
             worldState.RegisterActor(target);
-            combatService.GetOrCreateCombatState(attacker.Id).SetTarget(target.Id);
-            combatService.GetOrCreateCombatState(target.Id).SetTarget(attacker.Id);
+            combatService.SetTarget(attacker.Id, target.Id);
+            combatService.SetTarget(target.Id, attacker.Id);
 
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 

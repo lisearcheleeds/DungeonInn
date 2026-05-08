@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
@@ -31,7 +30,7 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            var actors = new List<Actor>(worldState.Actors);
+            var actors = worldState.Actors;
             foreach (var actor in actors)
             {
                 if (actor.Behavior is not AdventurerBehavior behavior)

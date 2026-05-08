@@ -7,6 +7,7 @@ using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using VContainer;
 
@@ -14,8 +15,6 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class AdvanceCombatUseCase
     {
-        const float CombatApproachSpeedMetersPerSecond = 5.0f;
-
         readonly IActorCombatService actorCombatService;
         readonly IGameClock gameClock;
         readonly IGameEventBus eventBus;
@@ -36,14 +35,17 @@ namespace DungeonInn.Application.UseCase
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
         {
-            if (worldState == null) throw new ArgumentNullException(nameof(worldState));
+            if (worldState == null)
+            {
+                throw new ArgumentNullException(nameof(worldState));
+            }
 
             var currentGameTimeSeconds = gameClock.ElapsedGameTimeSeconds;
             var actors = new List<Actor>(worldState.Actors);
 
             foreach (var actor in actors)
             {
-                if (actor.Hp <= 0 || FindActor(worldState, actor.Id) == null)
+                if (actor.Hp <= 0 || worldState.FindActor(actor.Id) == null)
                 {
                     continue;
                 }
@@ -54,7 +56,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                var target = FindActor(worldState, combatState.TargetActorId.Value);
+                var target = worldState.FindActor(combatState.TargetActorId.Value);
                 if (target == null || target.Hp <= 0)
                 {
                     actorCombatService.ClearTarget(actor.Id);
@@ -88,13 +90,9 @@ namespace DungeonInn.Application.UseCase
 
                 if (target.Hp <= 0)
                 {
-                    foreach (var witness in actors)
+                    foreach (var attackerId in actorCombatService.GetAttackers(target.Id))
                     {
-                        var witnessCombatState = actorCombatService.GetOrCreateCombatState(witness.Id);
-                        if (witnessCombatState.TargetActorId.HasValue && witnessCombatState.TargetActorId.Value.Equals(target.Id))
-                        {
-                            eventBus.Publish(new CombatEncounterEnded(witness.Id));
-                        }
+                        eventBus.Publish(new CombatEncounterEnded(attackerId));
                     }
 
                     worldState.RemoveActor(target.Id);
@@ -105,19 +103,6 @@ namespace DungeonInn.Application.UseCase
             }
 
             return UniTask.CompletedTask;
-        }
-
-        static Actor FindActor(IGameWorldState worldState, Guid actorId)
-        {
-            foreach (var actor in worldState.Actors)
-            {
-                if (actor.Id.Equals(actorId))
-                {
-                    return actor;
-                }
-            }
-
-            return null;
         }
 
         static void MoveTowardTarget(Actor actor, Actor target, float deltaGameSeconds)
@@ -136,7 +121,7 @@ namespace DungeonInn.Application.UseCase
             }
 
             var dist = (float)Math.Sqrt(distSq);
-            var step = Math.Min(dist, CombatApproachSpeedMetersPerSecond * deltaGameSeconds);
+            var step = Math.Min(dist, GameConstants.ActorMoveSpeedMetersPerSecond * deltaGameSeconds);
             var ratio = step / dist;
             actor.MoveTo(new LayerPosition(
                 actor.Position.LayerId,

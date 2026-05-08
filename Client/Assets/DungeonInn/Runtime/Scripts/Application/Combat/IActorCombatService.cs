@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace DungeonInn.Application.Combat
 {
@@ -14,5 +15,6 @@ namespace DungeonInn.Application.Combat
         bool HasParticipatedInCombat(Guid actorId);
         void ClearCombatHistory(Guid actorId);
         bool IsTargetedByAny(Guid actorId);
+        IReadOnlyCollection<Guid> GetAttackers(Guid targetId);
     }
 }

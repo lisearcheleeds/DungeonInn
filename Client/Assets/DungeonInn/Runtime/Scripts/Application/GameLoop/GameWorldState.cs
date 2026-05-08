@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Guild;
@@ -11,6 +10,7 @@ namespace DungeonInn.Application.GameLoop
     public sealed class GameWorldState : IGameWorldState
     {
         readonly List<Actor> actors = new();
+        readonly Dictionary<Guid, Actor> actorById = new();
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
@@ -39,24 +39,36 @@ namespace DungeonInn.Application.GameLoop
                 throw new ArgumentNullException(nameof(actor));
             }
 
-            if (actors.Any(x => x.Id.Equals(actor.Id)))
+            if (actorById.ContainsKey(actor.Id))
             {
                 throw new InvalidOperationException("Actor is already registered.");
             }
 
             actors.Add(actor);
+            actorById[actor.Id] = actor;
         }
 
         public bool RemoveActor(Guid actorId)
         {
-            var index = actors.FindIndex(x => x.Id.Equals(actorId));
-            if (index < 0)
+            if (!actorById.ContainsKey(actorId))
             {
                 return false;
             }
 
-            actors.RemoveAt(index);
+            actorById.Remove(actorId);
+            var index = actors.FindIndex(x => x.Id.Equals(actorId));
+            if (index >= 0)
+            {
+                actors.RemoveAt(index);
+            }
+
             return true;
+        }
+
+        public Actor FindActor(Guid actorId)
+        {
+            actorById.TryGetValue(actorId, out var actor);
+            return actor;
         }
     }
 }

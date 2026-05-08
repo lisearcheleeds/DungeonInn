@@ -19,5 +19,6 @@ namespace DungeonInn.Application.GameLoop
         void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon);
         void RegisterActor(Actor actor);
         bool RemoveActor(Guid actorId);
+        Actor FindActor(Guid actorId);
     }
 }

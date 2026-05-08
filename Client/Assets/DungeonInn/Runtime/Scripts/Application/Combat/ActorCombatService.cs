@@ -116,6 +116,16 @@ namespace DungeonInn.Application.Combat
             return targetedBy.TryGetValue(actorId, out var attackers) && attackers.Count > 0;
         }
 
+        public IReadOnlyCollection<Guid> GetAttackers(Guid targetId)
+        {
+            if (targetedBy.TryGetValue(targetId, out var attackers))
+            {
+                return attackers;
+            }
+
+            return Array.Empty<Guid>();
+        }
+
         void RemoveFromTargetedBy(Guid targetId, Guid actorId)
         {
             if (targetedBy.TryGetValue(targetId, out var attackers))

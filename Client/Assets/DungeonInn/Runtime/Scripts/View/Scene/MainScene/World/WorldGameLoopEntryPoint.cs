@@ -106,12 +106,13 @@ namespace DungeonInn.View.Scene.MainScene.World
 
                     var scheduleDeltaGameSeconds = result.AdvancedScheduleTicks;
                     await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, scheduleDeltaGameSeconds);
+                    await recoverAdventurerAtInnUseCase.EnsureReservationsAsync(gameWorldState, result.CurrentScheduleTick);
                 }
 
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
-                await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds, result.CurrentScheduleTick);
+                await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
             }
             finally
             {

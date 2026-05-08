@@ -35,7 +35,7 @@ namespace DungeonInn.Application.UseCase
             }
 
             // TODO: 間隔をSpawnTableMasterから取得する
-            if (currentScheduleTick - worldState.SpawnSchedule.LastMonsterSpawnTick < 10)
+            if (currentScheduleTick - worldState.SpawnSchedule.LastMonsterSpawnTick < GameConstants.MonsterSpawnIntervalTicks)
             {
                 return null;
             }

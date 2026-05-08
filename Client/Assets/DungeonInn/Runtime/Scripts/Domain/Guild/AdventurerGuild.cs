@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
 using ActorEntity = DungeonInn.Domain.Actor.Actor;
@@ -15,6 +14,7 @@ namespace DungeonInn.Domain.Guild
         readonly List<DungeonInn.Domain.Facility.Facility> facilities = new();
         readonly List<GuildStaffAssignment> staffAssignments = new();
         readonly List<InnReservation> innReservations = new();
+        readonly Dictionary<Guid, InnReservation> activeReservationByAdventurer = new();
         readonly List<ExchangeOffer> exchangeOffers = new();
         readonly List<ExchangeTransaction> transactions = new();
 
@@ -82,12 +82,21 @@ namespace DungeonInn.Domain.Guild
 
         public bool HasActiveInnReservation(Guid adventurerId)
         {
-            return innReservations.Any(x => x.IsActive && x.AdventurerId.Equals(adventurerId));
+            return activeReservationByAdventurer.ContainsKey(adventurerId);
         }
 
         public int CountActiveInnReservations(Guid innFacilityId)
         {
-            return innReservations.Count(x => x.IsActive && x.InnFacilityId.Equals(innFacilityId));
+            var count = 0;
+            foreach (var reservation in activeReservationByAdventurer.Values)
+            {
+                if (reservation.InnFacilityId.Equals(innFacilityId))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         public bool CanReserveInn(Guid innFacilityId)
@@ -131,18 +140,19 @@ namespace DungeonInn.Domain.Guild
                 occurredAtTick);
 
             innReservations.Add(reservation);
+            activeReservationByAdventurer[adventurer.Id] = reservation;
             return reservation;
         }
 
         public void ReleaseInnReservation(Guid adventurerId, int occurredAtTick)
         {
-            var reservation = innReservations.FirstOrDefault(x => x.IsActive && x.AdventurerId.Equals(adventurerId));
-            if (reservation == null)
+            if (!activeReservationByAdventurer.TryGetValue(adventurerId, out var reservation))
             {
                 return;
             }
 
             reservation.Release(occurredAtTick);
+            activeReservationByAdventurer.Remove(adventurerId);
         }
 
         public void AddExchangeOffer(ExchangeOffer exchangeOffer)

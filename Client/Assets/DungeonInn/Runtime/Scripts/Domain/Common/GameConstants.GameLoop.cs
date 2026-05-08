@@ -19,5 +19,11 @@ namespace DungeonInn.Domain.Common
 
         // 初期ゲームループで同時に存在できるモンスターの上限。
         public const int InitialMaxMonsterCount = 20;
+
+        // モンスタースポーン抽選を行う間隔。単位はスケジュールTick。
+        public const int MonsterSpawnIntervalTicks = 10;
+
+        // アクターの基本移動速度（メートル/秒）。
+        public const float ActorMoveSpeedMetersPerSecond = 5.0f;
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using R3;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
@@ -13,7 +14,7 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class AdvanceActorSimpleLifecycleUseCase
+    public sealed class AdvanceActorSimpleLifecycleUseCase : IDisposable
     {
         readonly Dictionary<Guid, LayerPosition> exploringDestinations = new();
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
@@ -22,6 +23,7 @@ namespace DungeonInn.Application.UseCase
         readonly IActorCombatService actorCombatService;
         readonly IGameRandom gameRandom;
         readonly IGameEventBus eventBus;
+        readonly IDisposable deathSubscription;
 
         [Inject]
         public AdvanceActorSimpleLifecycleUseCase(
@@ -44,6 +46,13 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(gameRandom));
             this.eventBus = eventBus
                 ?? throw new ArgumentNullException(nameof(eventBus));
+            deathSubscription = eventBus.OnEvent<ActorDefeated>()
+                .Subscribe(e => { exploringDestinations.Remove(e.ActorId); });
+        }
+
+        public void Dispose()
+        {
+            deathSubscription.Dispose();
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -53,7 +62,7 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            var actors = new List<Actor>(worldState.Actors);
+            var actors = worldState.Actors;
             foreach (var actor in actors)
             {
                 if (actor.Behavior is not AdventurerBehavior behavior)
@@ -103,7 +112,7 @@ namespace DungeonInn.Application.UseCase
                 destination,
                 groundMap.Layer,
                 pos => groundMap.IsWalkable(pos),
-                5.0f,
+                GameConstants.ActorMoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
             if (arrived)
@@ -157,7 +166,7 @@ namespace DungeonInn.Application.UseCase
                 destination,
                 floor.Layer,
                 pos => floor.IsWalkable(pos),
-                5.0f,
+                GameConstants.ActorMoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
             if (arrived)
@@ -189,7 +198,7 @@ namespace DungeonInn.Application.UseCase
                 upStairDestination,
                 floor.Layer,
                 pos => floor.IsWalkable(pos),
-                5.0f,
+                GameConstants.ActorMoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
             if (arrived)

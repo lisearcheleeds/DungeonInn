@@ -9,7 +9,7 @@ namespace DungeonInn.Application.Combat
         public float NextAttackGameTimeSeconds { get; private set; }
         public bool HasParticipatedInCombat { get; private set; }
 
-        public void SetTarget(Guid targetId)
+        internal void SetTarget(Guid targetId)
         {
             if (TargetActorId.HasValue && TargetActorId.Value.Equals(targetId))
             {
@@ -20,7 +20,7 @@ namespace DungeonInn.Application.Combat
             NextAttackGameTimeSeconds = 0f;
         }
 
-        public void ClearTarget()
+        internal void ClearTarget()
         {
             TargetActorId = null;
             NextAttackGameTimeSeconds = 0f;
