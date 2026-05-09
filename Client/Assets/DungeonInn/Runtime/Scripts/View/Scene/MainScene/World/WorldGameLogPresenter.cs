@@ -69,6 +69,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<CombatEncounterEnded>()
                 .Subscribe(OnEncounterEnded)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<InnFeeCharged>()
+                .Subscribe(OnInnFeeCharged)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -137,6 +141,12 @@ namespace DungeonInn.View.Scene.MainScene.World
                 $"[Record] {GetName(e.ActorId)}: " +
                 $"{record.TotalCombats} combats, " +
                 $"{record.TotalDamageDealt} total damage dealt");
+        }
+
+        void OnInnFeeCharged(InnFeeCharged e)
+        {
+            Debug.Log($"[Inn] {GetName(e.ActorId)} paid {e.FeeAmount}G for inn room (remaining: {e.ActorRemainingGold}G)");
+            Debug.Log($"[Guild] Treasury +{e.FeeAmount}G (total: {e.GuildGold}G)");
         }
 
         string GetName(Guid actorId)

@@ -28,13 +28,15 @@ namespace DungeonInn.Application.Factory
                 throw new InvalidOperationException("Adventurer factory requires adventurer actor archetype.");
             }
 
-            return ActorFactoryCore.CreateActor(
+            var actor = ActorFactoryCore.CreateActor(
                 request.ActorId,
                 archetypeMaster,
                 request.Position,
                 request.Faction,
                 request.PreferenceSeed,
                 new AdventurerBehavior(0, AdventurerLifecycleState.Arrived));
+            actor.Inventory.AddRange(archetypeMaster.InitialInventoryItemIds);
+            return actor;
         }
     }
 }

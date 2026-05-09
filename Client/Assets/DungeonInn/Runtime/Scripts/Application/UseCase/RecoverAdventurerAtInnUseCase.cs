@@ -18,14 +18,19 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IGameEventBus eventBus;
         readonly IGameClock gameClock;
+        readonly ChargeInnFeeUseCase chargeInnFeeUseCase;
         readonly Dictionary<Guid, float> accumulatedHp = new();
         readonly IDisposable deathSubscription;
 
         [Inject]
-        public RecoverAdventurerAtInnUseCase(IGameEventBus eventBus, IGameClock gameClock)
+        public RecoverAdventurerAtInnUseCase(
+            IGameEventBus eventBus,
+            IGameClock gameClock,
+            ChargeInnFeeUseCase chargeInnFeeUseCase)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
+            this.chargeInnFeeUseCase = chargeInnFeeUseCase ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
             deathSubscription = eventBus.OnEvent<ActorDefeated>()
                 .Subscribe(e => { accumulatedHp.Remove(e.ActorId); });
         }
@@ -118,6 +123,11 @@ namespace DungeonInn.Application.UseCase
                 if (!guild.CanReserveInn(facility.Id))
                 {
                     continue;
+                }
+
+                if (!chargeInnFeeUseCase.Execute(actor, guild))
+                {
+                    return;
                 }
 
                 guild.ReserveInn(Guid.NewGuid(), actor, facility.Id, currentTick);

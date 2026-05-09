@@ -65,20 +65,10 @@ namespace DungeonInn.Application.UseCase
                 actor.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
             }
 
-            AddInitialInventory(actor, archetypeMaster.InitialInventoryItemIds);
             EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
             profileRegistry.Register(actor.Id, archetypeMaster.Name);
             eventBus.Publish(new ActorSpawned(actor.Id));
             return UniTask.FromResult(actor);
-        }
-
-        void AddInitialInventory(Actor actor, IEnumerable<int> itemIds)
-        {
-            foreach (var itemId in itemIds)
-            {
-                masterRepository.GetItemMaster(itemId);
-                actor.Inventory.Add(new ItemStack(itemId, 1));
-            }
         }
 
         void EquipInitialEquipment(Actor actor, IEnumerable<int> itemIds)

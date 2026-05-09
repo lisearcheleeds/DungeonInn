@@ -115,7 +115,7 @@ namespace DungeonInn.Master
                     new ActorStats(5, 5, 5, 5, 5, 5),
                     1,
                     new[] { 3001, 3003 },
-                    new[] { 2001 }),
+                    new[] { new ItemStack(SpecialItemIds.Money, 100), new ItemStack(2001, 1) }),
                 new ActorArchetypeMaster(
                     2,
                     "Goblin",
@@ -123,7 +123,7 @@ namespace DungeonInn.Master
                     new ActorStats(4, 6, 4, 2, 2, 1),
                     1,
                     Array.Empty<int>(),
-                    Array.Empty<int>())
+                    Array.Empty<ItemStack>())
             }.ToDictionary(x => x.Id);
         }
 
@@ -180,7 +180,7 @@ namespace DungeonInn.Master
             foreach (var archetypeMaster in actorArchetypeMasters.Values)
             {
                 ValidateItemIds(archetypeMaster.InitialEquipmentItemIds);
-                ValidateItemIds(archetypeMaster.InitialInventoryItemIds);
+                ValidateItemStacks(archetypeMaster.InitialInventoryItemIds);
             }
 
             foreach (var speciesMaster in monsterSpeciesMasters.Values)
@@ -227,6 +227,14 @@ namespace DungeonInn.Master
             foreach (var itemId in itemIds)
             {
                 RequireItem(itemId);
+            }
+        }
+
+        void ValidateItemStacks(IEnumerable<ItemStack> itemStacks)
+        {
+            foreach (var stack in itemStacks)
+            {
+                RequireItem(stack.ItemId);
             }
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Master
 {
@@ -13,7 +14,7 @@ namespace DungeonInn.Master
         public ActorStats BaseStats { get; }
         public int InitialLevel { get; }
         public IReadOnlyList<int> InitialEquipmentItemIds { get; }
-        public IReadOnlyList<int> InitialInventoryItemIds { get; }
+        public IReadOnlyList<ItemStack> InitialInventoryItemIds { get; }
 
         public ActorArchetypeMaster(
             int id,
@@ -22,7 +23,7 @@ namespace DungeonInn.Master
             ActorStats baseStats,
             int initialLevel,
             IReadOnlyList<int> initialEquipmentItemIds,
-            IReadOnlyList<int> initialInventoryItemIds)
+            IReadOnlyList<ItemStack> initialInventoryItemIds)
         {
             if (id < 1)
             {
@@ -45,7 +46,7 @@ namespace DungeonInn.Master
             BaseStats = baseStats ?? throw new ArgumentNullException(nameof(baseStats));
             InitialLevel = initialLevel;
             InitialEquipmentItemIds = (initialEquipmentItemIds ?? Array.Empty<int>()).ToArray();
-            InitialInventoryItemIds = (initialInventoryItemIds ?? Array.Empty<int>()).ToArray();
+            InitialInventoryItemIds = (initialInventoryItemIds ?? Array.Empty<ItemStack>()).ToArray();
         }
     }
 }
