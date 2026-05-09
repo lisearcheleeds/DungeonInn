@@ -27,6 +27,11 @@ namespace DungeonInn.Domain.Actor
             ProgressCount = Math.Max(0, progressCount);
         }
 
+        public void AddProgress(int amount)
+        {
+            ProgressCount = Math.Max(0, ProgressCount + Math.Max(0, amount));
+        }
+
         public bool IsCompleted()
         {
             return Type == ActorGoalType.None || (0 < TargetCount && TargetCount <= ProgressCount);

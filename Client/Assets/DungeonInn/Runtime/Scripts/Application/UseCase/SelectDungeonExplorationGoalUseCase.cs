@@ -44,7 +44,7 @@ namespace DungeonInn.Application.UseCase
 
             AddCollectItemGoals(guild, candidates);
 
-            if (10 <= adventurer.Level)
+            if (1 < targetFloorId)
             {
                 candidates.Add(DungeonExplorationGoal.CreateReachFloor(targetFloorId));
             }

@@ -95,6 +95,9 @@ namespace DungeonInn.Tests.EditMode
             public void Register(Guid actorId, string displayName)
             {
             }
+            public void RegisterMonster(Guid actorId, string displayName, int monsterSpeciesId)
+            {
+            }
             public bool TryGetProfile(Guid actorId, out ActorProfile profile)
             {
                 profile = null;
@@ -114,4 +117,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

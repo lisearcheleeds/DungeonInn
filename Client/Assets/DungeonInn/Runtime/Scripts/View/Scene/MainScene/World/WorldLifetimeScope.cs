@@ -47,6 +47,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Scoped);
             builder.Register<ActorCombatPowerCalculator>(Lifetime.Scoped);
             builder.Register<UseDungeonStairUseCase>(Lifetime.Scoped);
+            builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Scoped);
             builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorSimpleLifecycleUseCase>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);

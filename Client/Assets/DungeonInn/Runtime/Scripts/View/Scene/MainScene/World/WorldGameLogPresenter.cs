@@ -50,6 +50,10 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .Subscribe(OnActorStartedReturning)
                 .AddTo(ref bag);
 
+            eventBus.OnEvent<ActorGoalCompleted>()
+                .Subscribe(OnActorGoalCompleted)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<ActorRecoveringAtInn>()
                 .Subscribe(OnActorRecoveringAtInn)
                 .AddTo(ref bag);
@@ -126,6 +130,13 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnActorStartedReturning(ActorStartedReturning gameEvent)
         {
             Debug.Log($"[Actor] {GetName(gameEvent.ActorId)} starts returning");
+        }
+
+        void OnActorGoalCompleted(ActorGoalCompleted gameEvent)
+        {
+            Debug.Log(
+                $"[Goal] {GetName(gameEvent.ActorId)} completed goal: " +
+                $"{gameEvent.GoalType} {gameEvent.ProgressCount}/{gameEvent.TargetCount}");
         }
 
         void OnActorRecoveringAtInn(ActorRecoveringAtInn gameEvent)

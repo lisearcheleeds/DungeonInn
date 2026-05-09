@@ -15,6 +15,14 @@ namespace DungeonInn.Application.Profiles
             }
         }
 
+        public void RegisterMonster(Guid actorId, string displayName, int monsterSpeciesId)
+        {
+            if (!profiles.ContainsKey(actorId))
+            {
+                profiles[actorId] = new ActorProfile(actorId, displayName, monsterSpeciesId);
+            }
+        }
+
         public bool TryGetProfile(Guid actorId, out ActorProfile profile)
         {
             return profiles.TryGetValue(actorId, out profile);

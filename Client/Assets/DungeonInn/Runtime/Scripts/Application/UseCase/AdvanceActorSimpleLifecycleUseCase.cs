@@ -20,6 +20,7 @@ namespace DungeonInn.Application.UseCase
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
         readonly UseDungeonStairUseCase useDungeonStairUseCase;
         readonly SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase;
+        readonly SelectDungeonExplorationGoalUseCase selectDungeonExplorationGoalUseCase;
         readonly IActorNavigationService navigationService;
         readonly IActorCombatService actorCombatService;
         readonly IGameRandom gameRandom;
@@ -31,6 +32,7 @@ namespace DungeonInn.Application.UseCase
             MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase,
             UseDungeonStairUseCase useDungeonStairUseCase,
             SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase,
+            SelectDungeonExplorationGoalUseCase selectDungeonExplorationGoalUseCase,
             IActorNavigationService navigationService,
             IActorCombatService actorCombatService,
             IGameRandom gameRandom,
@@ -42,6 +44,8 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(useDungeonStairUseCase));
             this.selectDungeonTargetFloorUseCase = selectDungeonTargetFloorUseCase
                 ?? throw new ArgumentNullException(nameof(selectDungeonTargetFloorUseCase));
+            this.selectDungeonExplorationGoalUseCase = selectDungeonExplorationGoalUseCase
+                ?? throw new ArgumentNullException(nameof(selectDungeonExplorationGoalUseCase));
             this.navigationService = navigationService
                 ?? throw new ArgumentNullException(nameof(navigationService));
             this.actorCombatService = actorCombatService
@@ -84,7 +88,7 @@ namespace DungeonInn.Application.UseCase
             {
                 case AdventurerLifecycleState.Arrived:
                 case AdventurerLifecycleState.Preparing:
-                    behavior.SetTargetFloorDepth(await selectDungeonTargetFloorUseCase.ExecuteAsync(actor));
+                    await PrepareExplorationAsync(actor, behavior, worldState);
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.GoingToDungeon);
                     break;
 
@@ -135,6 +139,38 @@ namespace DungeonInn.Application.UseCase
                 behavior.ResetExplorationRoomArrivalCount();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
                 eventBus.Publish(new ActorEnteredDungeon(actor.Id, arrivalPosition.LayerId.Value));
+            }
+        }
+
+        async UniTask PrepareExplorationAsync(
+            Actor actor,
+            AdventurerBehavior behavior,
+            IGameWorldState worldState)
+        {
+            var targetFloorDepth = await selectDungeonTargetFloorUseCase.ExecuteAsync(actor);
+            behavior.SetTargetFloorDepth(targetFloorDepth);
+
+            var goal = await selectDungeonExplorationGoalUseCase.ExecuteAsync(
+                worldState.Guild,
+                actor,
+                targetFloorDepth);
+            actor.ChangeGoal(ToActorGoal(goal));
+        }
+
+        static ActorGoal ToActorGoal(DungeonExplorationGoal goal)
+        {
+            switch (goal.Type)
+            {
+                case DungeonExplorationGoalType.Leveling:
+                    return new ActorGoal(ActorGoalType.LevelUp, 0, 1, 0);
+                case DungeonExplorationGoalType.CollectItem:
+                    return new ActorGoal(ActorGoalType.CollectItem, goal.TargetItemId, goal.TargetItemCount, 0);
+                case DungeonExplorationGoalType.DefeatMonster:
+                    return new ActorGoal(ActorGoalType.DefeatMonster, goal.TargetMonsterId, 1, 0);
+                case DungeonExplorationGoalType.ReachFloor:
+                    return new ActorGoal(ActorGoalType.ReachFloor, goal.TargetFloorId, 1, 0);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(goal));
             }
         }
 

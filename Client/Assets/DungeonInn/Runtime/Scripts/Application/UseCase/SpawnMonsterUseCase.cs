@@ -39,7 +39,7 @@ namespace DungeonInn.Application.UseCase
 
             var speciesMaster = masterRepository.GetMonsterSpeciesMaster(request.SpeciesId);
             var actor = monsterFactory.Create(request);
-            profileRegistry.Register(actor.Id, speciesMaster.Name);
+            profileRegistry.RegisterMonster(actor.Id, speciesMaster.Name, speciesMaster.Id);
             eventBus.Publish(new ActorSpawned(actor.Id));
             return UniTask.FromResult(actor);
         }

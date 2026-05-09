@@ -105,6 +105,7 @@ namespace DungeonInn.Tests.EditMode
                     new EnsureDungeonFloorGeneratedUseCase(
                         new GenerateDungeonFloorUseCase())),
                 CreateSelectDungeonTargetFloorUseCase(),
+                new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
@@ -136,6 +137,7 @@ namespace DungeonInn.Tests.EditMode
                     new EnsureDungeonFloorGeneratedUseCase(
                         new GenerateDungeonFloorUseCase())),
                 CreateSelectDungeonTargetFloorUseCase(),
+                new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
@@ -251,6 +253,7 @@ namespace DungeonInn.Tests.EditMode
                     new EnsureDungeonFloorGeneratedUseCase(
                         new GenerateDungeonFloorUseCase())),
                 CreateSelectDungeonTargetFloorUseCase(),
+                new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
