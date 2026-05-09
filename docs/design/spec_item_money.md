@@ -31,21 +31,58 @@ sealed class ItemInstance { Guid InstanceId; ItemStack Stack; LayerPosition Posi
 
 > **設計の意図**：アイテム自体は座標を持たない。座標は「ドロップされた状態」に固有の情報であるため、`ItemInstance` が保持する。
 
+### InventorySlot（Domain/Item）
+
+```csharp
+readonly struct InventorySlot { int ItemId; int Count; }
+```
+
+`Inventory` の内部スロット表現。`ItemStack` と同じ構造だが、`Inventory` の内部リスト専用の型として分離されている。  
+外部から `InventorySlot` を直接操作する必要はなく、外部 API は常に `ItemStack` を受け取る。
+
 ### Inventory（Domain/Item）
 
-```
-Dictionary<ItemId, Count>
-```
-
-アクターが所持するアイテムの集合。`ItemStack` 単位で Add / Remove を行う。  
-同一アイテムIDは自動的にスタックされる。
+アクターが所持するアイテムの集合。内部的に `List<InventorySlot>` でスロットを管理し、外部 API は `ItemStack` 単位で操作する。
 
 | メソッド | 説明 |
 |---|---|
 | `Add(ItemStack)` | 指定アイテムをスタックに加算 |
 | `Remove(ItemStack)` | 指定アイテムをスタックから減算（不足時は例外） |
+| `CanAdd(ItemStack)` / `CanAddAll` | スロット容量・スタック上限を考慮した事前チェック |
 | `Has(ItemStack)` | 所持確認 |
 | `AddGold(int)` / `TrySpendGold(int)` | Gold 専用の便利メソッド |
+
+#### インベントリのスロット管理
+
+インベントリは最大 `DefaultInventorySlotCapacity = 10` スロットを持つ。  
+各スロットは 1 種類のアイテムを最大 `MaxStackCount` 個まで積める。
+
+**スタック挙動**（`Add` 時）:
+1. 既存スロットに同 ItemId があり、かつ `MaxStackCount` に余裕があれば、そのスロットに積む
+2. 既存スロットが全て上限に達していれば、新規スロットを追加する
+3. `IsFull`（`UsedSlotCount >= MaxSlotCount`）の場合は `Add` が例外を投げる（事前に `CanAdd` で確認すること）
+
+**スタック上限の設計意図**：
+- `MaxStackCount = 100000`（Gold）: 実質無制限。Gold はお金なので個数制限が不自然なため
+- `MaxStackCount = 10`（素材系）: スロット節約とインベントリ管理の適度なゲーム性
+- `MaxStackCount = 1`（装備品）: 装備は同種でも別インスタンスとして扱うため
+
+> **当初想定との差異**：インベントリのスロット制・スタック制は企画書に明記されていなかったが、アイテム取得フローの実装時に必要になり導入した。ゲーム性（持てるアイテム数の制限）とデータ管理（メモリ効率）の両観点から採用。
+
+#### IItemStackLimitResolver（Domain/Item）
+
+```csharp
+interface IItemStackLimitResolver { int GetMaxStackCount(int itemId); }
+```
+
+アイテムIDごとの「1スロットに積める最大個数」を返すインターフェース。  
+`HardcodedMasterRepository`（Master 層）が実装し、VContainer 経由で解決される。
+
+**Domain 層に置く理由**：`Inventory.CanAdd` / `Add` がスタック上限を把握するために必要。インターフェースを Domain に置くことで `Inventory`（Domain エンティティ）が外部層に依存せず参照できる。
+
+**`Inventory` がリゾルバを保持する理由**：`CanAdd`・`CanAddAll`・`Add` でスタック上限チェックが必要になる。リゾルバを外部（Use Case 等）が毎回渡すと、スタック制御ロジックが `Inventory` の外に漏れる。`Inventory` コンストラクタで受け取ることで「インベントリがスタック管理の責務を持つ」設計を維持する。
+
+**生成時の流れ**：VContainer が `IItemStackLimitResolver` を解決 → `ActorFactoryCore`（Application）がコンストラクタ引数として受け取り → `new Inventory(stackLimitResolver)` で Domain エンティティを生成。Domain エンティティは VContainer では解決できないため、Application ファクトリがブリッジ役を担う。
 
 ### ItemMaster（Master）
 
@@ -58,6 +95,19 @@ Dictionary<ItemId, Count>
 | `Category` | Material / Consumable / Equipment |
 | `BasePrice` | 基本価格 |
 | `CanTrade` | 取引可能フラグ |
+| `MaxStackCount` | 1スロットに積める最大個数 |
+
+#### 現在のアイテムマスタ（HardcodedMasterRepository）
+
+| ID | 名前 | カテゴリ | BasePrice | MaxStackCount |
+|---|---|---|---|---|
+| 1 | Gold | Material | 1 | 100,000 |
+| 1001 | Herb | Material | 10 | 10 |
+| 1002 | Goblin Ear | Material | 25 | 10 |
+| 2001 | Potion | Consumable | 30 | 10 |
+| 3001 | Novice Sword | Equipment | 80 | 1 |
+| 3002 | Novice Bow | Equipment | 80 | 1 |
+| 3003 | Cloth Armor | Equipment | 60 | 1 |
 
 ---
 
@@ -104,6 +154,7 @@ actor.Behavior is IActorDropSource → 各エントリを確率ロール → パ
 ```
 
 1. `IGameRandom.Next(0, 10000) / 10000f` で確率ロール
+   - 浮動小数点の直接比較を避けるため整数（0〜9999）で乱数を引いてから float に変換
 2. `roll < entry.Probability` ならドロップ成立
 3. `MinCount == MaxCount` なら固定個数、異なれば `IGameRandom.Next(min, max+1)` で乱択
 4. `new ItemInstance(Guid.NewGuid(), new ItemStack(itemId, count), position)` を生成
@@ -129,11 +180,34 @@ actor.Behavior is IActorDropSource → 各エントリを確率ロール → パ
 
 ---
 
+## アイテムピックアップ
+
+### PickUpItemUseCase（Application/UseCase）
+
+```
+全アクターを走査 → AdventurerBehavior かつ Exploring 状態のアクターのみ対象
+  └─ ワールド上のアイテムを走査
+       1. 同一レイヤーかチェック
+       2. 距離チェック（GameConstants.AdventurerItemPickupRadiusMeters の範囲内か）
+       3. Inventory.CanAdd でスロット空き確認
+       4. Inventory.Add → WorldState.RemoveItem → ItemPickedUp イベント発行
+```
+
+- モンスターはピックアップ対象外（`AdventurerBehavior` チェックで除外）
+- インベントリが満杯の場合はそのアイテムをスキップ（例外なし）
+
 ## イベント
 
 | イベント | 発行タイミング | 主なフィールド |
 |---|---|---|
 | `ItemDropped` | アイテムがドロップされた時 | `ActorId`（ドロップ元）, `ItemInstance` |
+| `ItemPickedUp` | アイテムが拾われた時 | `ActorId`（拾ったアクター）, `ItemInstance` |
+
+### Gold ピックアップ時のウォレット表示
+
+`ItemPickedUp` イベントには所持金残高を持たせていない。  
+ログ表示（`WorldGameLogPresenter`）では Gold ピックアップ時に `worldState.FindActor()` でアクターを引いてから `actor.Inventory.Gold` を読む。  
+**理由**：ピックアップ後の残高はすでに `Inventory` に反映されているため、イベントに冗長なスナップショットを持たせるより状態を直接参照する方がシンプル。
 
 ---
 
