@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Event;
@@ -106,7 +106,7 @@ namespace DungeonInn.Tests.EditMode
         public void GoldPickupAddsGoldToInventory()
         {
             var (useCase, worldState, eventBus) = CreateContext();
-            var inventory = new Inventory();
+            var inventory = new Inventory(new FixedItemStackLimitResolver());
             inventory.AddGold(100);
             var actor = CreateAdventurer(
                 new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f),
@@ -127,6 +127,77 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(events[0].ActorId, Is.EqualTo(actor.Id));
         }
 
+        [Test]
+        public void FullInventorySkipsNewItemPickup()
+        {
+            var (useCase, worldState, eventBus) = CreateContext();
+            var inventory = CreateFullInventory();
+            var actor = CreateAdventurer(
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f),
+                AdventurerLifecycleState.Exploring,
+                inventory);
+            var item = new ItemInstance(
+                Guid.NewGuid(),
+                new ItemStack(2001, 1),
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
+            worldState.RegisterActor(actor);
+            worldState.AddItem(item);
+
+            useCase.Execute(worldState);
+
+            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.False);
+            Assert.That(worldState.Items.Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<ItemPickedUp>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void FullInventoryCanPickUpExistingStackItem()
+        {
+            var (useCase, worldState, eventBus) = CreateContext();
+            var inventory = new Inventory(1, new FixedItemStackLimitResolver(10));
+            inventory.Add(new ItemStack(1001, 8));
+            var actor = CreateAdventurer(
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f),
+                AdventurerLifecycleState.Exploring,
+                inventory);
+            var item = new ItemInstance(
+                Guid.NewGuid(),
+                new ItemStack(1001, 2),
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
+            worldState.RegisterActor(actor);
+            worldState.AddItem(item);
+
+            useCase.Execute(worldState);
+
+            Assert.That(actor.Inventory.Has(new ItemStack(1001, 10)), Is.True);
+            Assert.That(worldState.Items.Count, Is.EqualTo(0));
+            Assert.That(eventBus.GetEvents<ItemPickedUp>().Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void FullInventorySkipsExistingItemWhenStackLimitWouldRequireNewSlot()
+        {
+            var (useCase, worldState, eventBus) = CreateContext();
+            var inventory = new Inventory(1, new FixedItemStackLimitResolver(10));
+            inventory.Add(new ItemStack(1001, 10));
+            var actor = CreateAdventurer(
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f),
+                AdventurerLifecycleState.Exploring,
+                inventory);
+            var item = new ItemInstance(
+                Guid.NewGuid(),
+                new ItemStack(1001, 1),
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
+            worldState.RegisterActor(actor);
+            worldState.AddItem(item);
+
+            useCase.Execute(worldState);
+
+            Assert.That(actor.Inventory.Has(new ItemStack(1001, 11)), Is.False);
+            Assert.That(worldState.Items.Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<ItemPickedUp>().Count, Is.EqualTo(0));
+        }
+
         static (PickUpItemUseCase, GameWorldState, CollectingEventBus) CreateContext()
         {
             var eventBus = new CollectingEventBus();
@@ -135,7 +206,7 @@ namespace DungeonInn.Tests.EditMode
 
         static Actor CreateAdventurer(LayerPosition position, AdventurerLifecycleState lifecycleState)
         {
-            return CreateAdventurer(position, lifecycleState, new Inventory());
+            return CreateAdventurer(position, lifecycleState, new Inventory(new FixedItemStackLimitResolver()));
         }
 
         static Actor CreateAdventurer(
@@ -160,6 +231,17 @@ namespace DungeonInn.Tests.EditMode
                 new AdventurerBehavior(0, lifecycleState));
         }
 
+        static Inventory CreateFullInventory()
+        {
+            var inventory = new Inventory(new FixedItemStackLimitResolver());
+            for (var itemId = 1001; itemId < 1001 + inventory.MaxSlotCount; itemId++)
+            {
+                inventory.Add(new ItemStack(itemId, 1));
+            }
+
+            return inventory;
+        }
+
         sealed class CollectingEventBus : IGameEventBus
         {
             readonly List<IGameEvent> events = new();
@@ -181,3 +263,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

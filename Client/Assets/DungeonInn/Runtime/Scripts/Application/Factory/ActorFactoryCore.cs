@@ -15,14 +15,15 @@ namespace DungeonInn.Application.Factory
             LayerPosition position,
             ActorFaction faction,
             int preferenceSeed,
-            IActorBehavior behavior)
+            IActorBehavior behavior,
+            IItemStackLimitResolver stackLimitResolver)
         {
             var initialXp = levelTable.GetExperienceForLevel(archetypeMaster.InitialLevel);
             var actor = new Actor(
                 actorId,
                 archetypeMaster.Id,
                 archetypeMaster.BaseStats,
-                new Inventory(),
+                new Inventory(stackLimitResolver),
                 archetypeMaster.InitialLevel,
                 initialXp,
                 1,

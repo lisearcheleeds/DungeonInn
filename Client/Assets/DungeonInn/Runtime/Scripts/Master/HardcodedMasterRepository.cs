@@ -6,7 +6,7 @@ using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Master
 {
-    public sealed class HardcodedMasterRepository : IMasterRepository
+    public sealed class HardcodedMasterRepository : IMasterRepository, IItemStackLimitResolver
     {
         readonly IReadOnlyDictionary<int, ItemMaster> itemMasters;
         readonly IReadOnlyDictionary<int, EquipmentMaster> equipmentMasters;
@@ -79,17 +79,22 @@ namespace DungeonInn.Master
             return GetRequired(levelTables, levelTableId, nameof(LevelTable));
         }
 
+        public int GetMaxStackCount(int itemId)
+        {
+            return GetItemMaster(itemId).MaxStackCount;
+        }
+
         static IReadOnlyDictionary<int, ItemMaster> CreateItemMasters()
         {
             return new[]
             {
-                new ItemMaster(1, "Gold", ItemCategory.Material, 1, 1, false),
-                new ItemMaster(1001, "Herb", ItemCategory.Material, 10, 1, true),
-                new ItemMaster(1002, "Goblin Ear", ItemCategory.Material, 25, 1, true),
-                new ItemMaster(2001, "Potion", ItemCategory.Consumable, 30, 1, true),
-                new ItemMaster(3001, "Novice Sword", ItemCategory.Equipment, 80, 1, true),
-                new ItemMaster(3002, "Novice Bow", ItemCategory.Equipment, 80, 1, true),
-                new ItemMaster(3003, "Cloth Armor", ItemCategory.Equipment, 60, 1, true)
+                new ItemMaster(1, "Gold", ItemCategory.Material, 1, 1, false, 100000),
+                new ItemMaster(1001, "Herb", ItemCategory.Material, 10, 1, true, 10),
+                new ItemMaster(1002, "Goblin Ear", ItemCategory.Material, 25, 1, true, 10),
+                new ItemMaster(2001, "Potion", ItemCategory.Consumable, 30, 1, true, 10),
+                new ItemMaster(3001, "Novice Sword", ItemCategory.Equipment, 80, 1, true, 1),
+                new ItemMaster(3002, "Novice Bow", ItemCategory.Equipment, 80, 1, true, 1),
+                new ItemMaster(3003, "Cloth Armor", ItemCategory.Equipment, 60, 1, true, 1)
             }.ToDictionary(x => x.Id);
         }
 

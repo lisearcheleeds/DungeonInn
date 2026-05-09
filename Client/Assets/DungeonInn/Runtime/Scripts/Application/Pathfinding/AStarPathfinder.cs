@@ -68,13 +68,13 @@ namespace DungeonInn.Application.Pathfinding
         static GridPosition PopLowestF(List<GridPosition> openSet, Dictionary<GridPosition, int> fScore)
         {
             var bestIndex = 0;
-            var bestF = fScore.TryGetValue(openSet[0], out var f0) ? f0 : int.MaxValue;
+            var bestF = fScore.TryGetValue(openSet[0], out var initialScore) ? initialScore : int.MaxValue;
             for (var i = 1; i < openSet.Count; i++)
             {
-                var f = fScore.TryGetValue(openSet[i], out var fi) ? fi : int.MaxValue;
-                if (f < bestF)
+                var candidateScore = fScore.TryGetValue(openSet[i], out var score) ? score : int.MaxValue;
+                if (candidateScore < bestF)
                 {
-                    bestF = f;
+                    bestF = candidateScore;
                     bestIndex = i;
                 }
             }
@@ -98,9 +98,9 @@ namespace DungeonInn.Application.Pathfinding
             return path;
         }
 
-        static int Heuristic(GridPosition a, GridPosition b)
+        static int Heuristic(GridPosition first, GridPosition second)
         {
-            return Math.Abs(a.X - b.X) + Math.Abs(a.Z - b.Z);
+            return Math.Abs(first.X - second.X) + Math.Abs(first.Z - second.Z);
         }
     }
 }

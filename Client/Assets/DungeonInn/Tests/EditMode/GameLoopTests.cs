@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
@@ -9,6 +9,7 @@ using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 using R3;
 
@@ -69,7 +70,8 @@ namespace DungeonInn.Tests.EditMode
                 new InitializeWorldMapUseCase(),
                 new InitializeDungeonUseCase(
                     new EnsureDungeonFloorGeneratedUseCase(
-                        new GenerateDungeonFloorUseCase())));
+                        new GenerateDungeonFloorUseCase())),
+                new HardcodedMasterRepository());
 
             var result = useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
@@ -155,7 +157,8 @@ namespace DungeonInn.Tests.EditMode
                 new InitializeWorldMapUseCase(),
                 new InitializeDungeonUseCase(
                     new EnsureDungeonFloorGeneratedUseCase(
-                        new GenerateDungeonFloorUseCase())));
+                        new GenerateDungeonFloorUseCase())),
+                new HardcodedMasterRepository());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
@@ -173,7 +176,7 @@ namespace DungeonInn.Tests.EditMode
                 Guid.NewGuid(),
                 0,
                 new ActorStats(5, 5, 5, 5, 5, 5),
-                new Inventory(),
+                new Inventory(new FixedItemStackLimitResolver()),
                 1,
                 0,
                 50,
@@ -198,3 +201,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

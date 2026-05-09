@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.Profiles;
@@ -65,7 +65,7 @@ namespace DungeonInn.Tests.EditMode
                 repository,
                 new NoOpActorProfileRegistry(),
                 new NoOpGameEventBus());
-            var guildInventory = new Inventory();
+            var guildInventory = new Inventory(new FixedItemStackLimitResolver());
             guildInventory.Add(new ItemStack(3001, 1));
             guildInventory.Add(new ItemStack(3003, 1));
             var guild = new AdventurerGuild(Guid.NewGuid(), guildInventory, Array.Empty<DungeonInn.Domain.Facility.Facility>());
@@ -113,3 +113,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

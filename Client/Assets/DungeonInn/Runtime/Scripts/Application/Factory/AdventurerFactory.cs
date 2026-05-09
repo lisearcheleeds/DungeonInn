@@ -36,7 +36,8 @@ namespace DungeonInn.Application.Factory
                 request.Position,
                 request.Faction,
                 request.PreferenceSeed,
-                new AdventurerBehavior(0, AdventurerLifecycleState.Arrived));
+                new AdventurerBehavior(0, AdventurerLifecycleState.Arrived),
+                masterRepository);
             actor.Inventory.AddRange(archetypeMaster.InitialInventoryItemIds);
             return actor;
         }

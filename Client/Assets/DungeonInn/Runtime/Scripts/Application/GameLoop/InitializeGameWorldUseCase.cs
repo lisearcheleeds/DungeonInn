@@ -6,6 +6,7 @@ using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
+using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.GameLoop
@@ -18,6 +19,7 @@ namespace DungeonInn.Application.GameLoop
         readonly IGameWorldState gameWorldState;
         readonly InitializeWorldMapUseCase initializeWorldMapUseCase;
         readonly InitializeDungeonUseCase initializeDungeonUseCase;
+        readonly IItemStackLimitResolver stackLimitResolver;
 
         /// <summary>
         /// GameWorldState 初期化ユースケースを作成する。
@@ -26,11 +28,13 @@ namespace DungeonInn.Application.GameLoop
         public InitializeGameWorldUseCase(
             IGameWorldState gameWorldState,
             InitializeWorldMapUseCase initializeWorldMapUseCase,
-            InitializeDungeonUseCase initializeDungeonUseCase)
+            InitializeDungeonUseCase initializeDungeonUseCase,
+            IItemStackLimitResolver stackLimitResolver)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.initializeWorldMapUseCase = initializeWorldMapUseCase ?? throw new ArgumentNullException(nameof(initializeWorldMapUseCase));
             this.initializeDungeonUseCase = initializeDungeonUseCase ?? throw new ArgumentNullException(nameof(initializeDungeonUseCase));
+            this.stackLimitResolver = stackLimitResolver ?? throw new ArgumentNullException(nameof(stackLimitResolver));
         }
 
         /// <summary>
@@ -56,9 +60,11 @@ namespace DungeonInn.Application.GameLoop
             return gameWorldState;
         }
 
-        static AdventurerGuild CreateInitialGuild()
+        AdventurerGuild CreateInitialGuild()
         {
-            var inventory = new Inventory();
+            var inventory = new Inventory(
+                GameConstants.InitialGuildInventorySlotCapacity,
+                stackLimitResolver);
             inventory.AddRange(CreateInitialInventory());
             var facilities = new[]
             {

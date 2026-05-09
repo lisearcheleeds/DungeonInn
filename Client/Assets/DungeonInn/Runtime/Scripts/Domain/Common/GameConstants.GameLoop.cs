@@ -28,5 +28,11 @@ namespace DungeonInn.Domain.Common
 
         // 探索中の冒険者がワールド上のアイテムを自動拾得できる距離（メートル）。
         public const float AdventurerItemPickupRadiusMeters = 1.5f;
+
+        // アクターのインベントリに入るアイテム種別スロット数。
+        public const int DefaultInventorySlotCapacity = 10;
+
+        // 初期ギルドストレージのアイテムスロット数。
+        public const int InitialGuildInventorySlotCapacity = 100;
     }
 }

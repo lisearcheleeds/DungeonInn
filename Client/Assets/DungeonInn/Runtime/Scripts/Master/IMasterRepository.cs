@@ -3,7 +3,7 @@ using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Master
 {
-    public interface IMasterRepository : IItemMasterRepository
+    public interface IMasterRepository : IItemMasterRepository, IItemStackLimitResolver
     {
         IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters { get; }
         IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters { get; }

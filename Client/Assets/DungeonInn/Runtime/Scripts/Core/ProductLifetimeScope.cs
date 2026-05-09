@@ -1,6 +1,7 @@
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Item;
 using DungeonInn.Infrastructure.AssetLoader;
 using DungeonInn.Input;
 using DungeonInn.Master;
@@ -90,7 +91,8 @@ namespace DungeonInn.Core
                 builder.Register<ProductAssetLoader>(Lifetime.Singleton).AsImplementedInterfaces();
                 builder.Register<HardcodedMasterRepository>(Lifetime.Singleton)
                     .As<IMasterRepository>()
-                    .As<IItemMasterRepository>();
+                    .As<IItemMasterRepository>()
+                    .As<IItemStackLimitResolver>();
                 builder.Register<AdventurerFactory>(Lifetime.Singleton).As<IAdventurerFactory>();
                 builder.Register<MonsterFactory>(Lifetime.Singleton).As<IMonsterFactory>();
                 builder.Register<ScoutCostPolicy>(Lifetime.Singleton);

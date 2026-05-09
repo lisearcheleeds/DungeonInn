@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -124,6 +124,7 @@ namespace DungeonInn.Tests.EditMode
             public MonsterSpeciesMaster GetMonsterSpeciesMaster(int speciesId) => throw new NotSupportedException();
             public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
             public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
+            public int GetMaxStackCount(int itemId) => throw new NotSupportedException();
         }
 
         sealed class FakeGameClock : IGameClock
@@ -161,7 +162,7 @@ namespace DungeonInn.Tests.EditMode
                 Guid.NewGuid(),
                 0,
                 new ActorStats(5, 5, 5, 5, 5, 5),
-                new Inventory(),
+                new Inventory(new FixedItemStackLimitResolver()),
                 1,
                 0,
                 hp,
@@ -175,3 +176,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

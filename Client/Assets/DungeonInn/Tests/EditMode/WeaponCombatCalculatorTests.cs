@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Item;
@@ -122,7 +122,7 @@ namespace DungeonInn.Tests.EditMode
                 Guid.NewGuid(),
                 0,
                 new ActorStats(5, 5, 5, 5, 5, 5),
-                new Inventory(),
+                new Inventory(new FixedItemStackLimitResolver()),
                 1,
                 0,
                 50,
@@ -149,3 +149,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

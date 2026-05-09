@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DungeonInn.Application.AI;
 using DungeonInn.Application.UseCase;
@@ -93,7 +93,7 @@ namespace DungeonInn.Tests.EditMode
                 Guid.NewGuid(),
                 0,
                 new ActorStats(5, 5, 5, 5, 5, 5),
-                new Inventory(),
+                new Inventory(new FixedItemStackLimitResolver()),
                 1,
                 0,
                 50,
@@ -144,3 +144,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
