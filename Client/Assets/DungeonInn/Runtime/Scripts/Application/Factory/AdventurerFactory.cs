@@ -28,9 +28,11 @@ namespace DungeonInn.Application.Factory
                 throw new InvalidOperationException("Adventurer factory requires adventurer actor archetype.");
             }
 
+            var levelTable = masterRepository.GetLevelTable(archetypeMaster.LevelTableId);
             var actor = ActorFactoryCore.CreateActor(
                 request.ActorId,
                 archetypeMaster,
+                levelTable,
                 request.Position,
                 request.Faction,
                 request.PreferenceSeed,

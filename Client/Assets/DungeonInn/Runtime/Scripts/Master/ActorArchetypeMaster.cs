@@ -13,6 +13,7 @@ namespace DungeonInn.Master
         public ActorBehaviorType BehaviorType { get; }
         public ActorStats BaseStats { get; }
         public int InitialLevel { get; }
+        public int LevelTableId { get; }
         public IReadOnlyList<int> InitialEquipmentItemIds { get; }
         public IReadOnlyList<ItemStack> InitialInventoryItemIds { get; }
 
@@ -22,6 +23,7 @@ namespace DungeonInn.Master
             ActorBehaviorType behaviorType,
             ActorStats baseStats,
             int initialLevel,
+            int levelTableId,
             IReadOnlyList<int> initialEquipmentItemIds,
             IReadOnlyList<ItemStack> initialInventoryItemIds)
         {
@@ -40,11 +42,17 @@ namespace DungeonInn.Master
                 throw new ArgumentOutOfRangeException(nameof(initialLevel));
             }
 
+            if (levelTableId < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(levelTableId));
+            }
+
             Id = id;
             Name = name;
             BehaviorType = behaviorType;
             BaseStats = baseStats ?? throw new ArgumentNullException(nameof(baseStats));
             InitialLevel = initialLevel;
+            LevelTableId = levelTableId;
             InitialEquipmentItemIds = (initialEquipmentItemIds ?? Array.Empty<int>()).ToArray();
             InitialInventoryItemIds = (initialInventoryItemIds ?? Array.Empty<ItemStack>()).ToArray();
         }

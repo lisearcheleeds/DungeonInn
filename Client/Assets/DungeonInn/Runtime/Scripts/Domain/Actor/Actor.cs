@@ -11,6 +11,7 @@ namespace DungeonInn.Domain.Actor
     public sealed class Actor : DungeonInn.Domain.Combat.IWeaponCombatSource
     {
         public Guid Id { get; }
+        public int ArchetypeId { get; }
         public ActorStats Stats { get; private set; }
         public ActorParams Params { get; private set; }
         public ActorEquipment Equipment { get; }
@@ -37,6 +38,7 @@ namespace DungeonInn.Domain.Actor
 
         public Actor(
             Guid id,
+            int archetypeId,
             ActorStats stats,
             Inventory inventory,
             int level,
@@ -56,6 +58,7 @@ namespace DungeonInn.Domain.Actor
             }
 
             Id = id;
+            ArchetypeId = archetypeId;
             Stats = stats ?? throw new ArgumentNullException(nameof(stats));
             Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
             Equipment = new ActorEquipment();
@@ -99,6 +102,12 @@ namespace DungeonInn.Domain.Actor
         public void GainExperience(int amount)
         {
             Experience += Math.Max(0, amount);
+        }
+
+        public void RecalculateLevel(LevelTable levelTable)
+        {
+            Level = Math.Max(1, levelTable.GetLevel(Experience));
+            RefreshParams();
         }
 
         public void IncreaseStats(

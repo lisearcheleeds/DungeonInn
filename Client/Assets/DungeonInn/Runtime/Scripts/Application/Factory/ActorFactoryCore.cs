@@ -11,17 +11,20 @@ namespace DungeonInn.Application.Factory
         public static Actor CreateActor(
             Guid actorId,
             ActorArchetypeMaster archetypeMaster,
+            LevelTable levelTable,
             LayerPosition position,
             ActorFaction faction,
             int preferenceSeed,
             IActorBehavior behavior)
         {
+            var initialXp = levelTable.GetExperienceForLevel(archetypeMaster.InitialLevel);
             var actor = new Actor(
                 actorId,
+                archetypeMaster.Id,
                 archetypeMaster.BaseStats,
                 new Inventory(),
                 archetypeMaster.InitialLevel,
-                0,
+                initialXp,
                 1,
                 0,
                 0,
@@ -30,6 +33,7 @@ namespace DungeonInn.Application.Factory
                 position,
                 faction,
                 behavior);
+            actor.RecalculateLevel(levelTable);
             RecoverFully(actor);
             return actor;
         }

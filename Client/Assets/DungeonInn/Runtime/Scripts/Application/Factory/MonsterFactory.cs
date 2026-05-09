@@ -29,9 +29,11 @@ namespace DungeonInn.Application.Factory
                 throw new InvalidOperationException("Monster factory requires monster actor archetype.");
             }
 
+            var levelTable = masterRepository.GetLevelTable(archetypeMaster.LevelTableId);
             var actor = ActorFactoryCore.CreateActor(
                 request.ActorId,
                 archetypeMaster,
+                levelTable,
                 request.Position,
                 request.Faction,
                 request.PreferenceSeed,

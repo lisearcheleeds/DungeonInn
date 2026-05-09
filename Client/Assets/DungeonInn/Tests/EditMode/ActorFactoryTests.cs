@@ -28,7 +28,8 @@ namespace DungeonInn.Tests.EditMode
                 123));
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
-            Assert.That(actor.Inventory.ItemCounts, Is.Empty);
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(100));
+            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
             Assert.That(actor.Equipment.Weapon, Is.Null);
             Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));
             Assert.That(actor.Hp, Is.EqualTo(actor.Params.MaxHp));

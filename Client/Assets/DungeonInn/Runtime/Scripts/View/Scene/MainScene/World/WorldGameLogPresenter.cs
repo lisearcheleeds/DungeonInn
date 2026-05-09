@@ -73,6 +73,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<InnFeeCharged>()
                 .Subscribe(OnInnFeeCharged)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<ExperienceGranted>()
+                .Subscribe(OnExperienceGranted)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<ActorLeveledUp>()
+                .Subscribe(OnActorLeveledUp)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -141,6 +149,16 @@ namespace DungeonInn.View.Scene.MainScene.World
                 $"[Record] {GetName(e.ActorId)}: " +
                 $"{record.TotalCombats} combats, " +
                 $"{record.TotalDamageDealt} total damage dealt");
+        }
+
+        void OnExperienceGranted(ExperienceGranted e)
+        {
+            Debug.Log($"[Growth] {GetName(e.ActorId)} gained {e.GainedXp} EXP (total: {e.TotalXp})");
+        }
+
+        void OnActorLeveledUp(ActorLeveledUp e)
+        {
+            Debug.Log($"[Growth] {GetName(e.ActorId)} leveled up! Lv.{e.PreviousLevel} → Lv.{e.NewLevel}");
         }
 
         void OnInnFeeCharged(InnFeeCharged e)

@@ -15,6 +15,7 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, ActorArchetypeMaster> actorArchetypeMasters;
         readonly IReadOnlyDictionary<int, MonsterSpeciesMaster> monsterSpeciesMasters;
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
+        readonly IReadOnlyDictionary<int, LevelTable> levelTables;
 
         public IReadOnlyDictionary<int, ItemMaster> ItemMasters => itemMasters;
         public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => equipmentMasters;
@@ -23,6 +24,7 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => actorArchetypeMasters;
         public IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters => monsterSpeciesMasters;
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
+        public IReadOnlyDictionary<int, LevelTable> LevelTables => levelTables;
 
         public HardcodedMasterRepository()
         {
@@ -30,6 +32,7 @@ namespace DungeonInn.Master
             equipmentMasters = CreateEquipmentMasters();
             weaponTypeCombatMasters = WeaponTypeCombatMasterCatalog.CreateAll();
             weaponMasters = CreateWeaponMasters();
+            levelTables = CreateLevelTables();
             actorArchetypeMasters = CreateActorArchetypeMasters();
             monsterSpeciesMasters = CreateMonsterSpeciesMasters();
             spawnTableMasters = CreateSpawnTableMasters();
@@ -71,6 +74,11 @@ namespace DungeonInn.Master
             return GetRequired(spawnTableMasters, spawnTableId, nameof(SpawnTableMaster));
         }
 
+        public LevelTable GetLevelTable(int levelTableId)
+        {
+            return GetRequired(levelTables, levelTableId, nameof(LevelTable));
+        }
+
         static IReadOnlyDictionary<int, ItemMaster> CreateItemMasters()
         {
             return new[]
@@ -104,6 +112,23 @@ namespace DungeonInn.Master
             }.ToDictionary(x => x.ItemId);
         }
 
+        static IReadOnlyDictionary<int, LevelTable> CreateLevelTables()
+        {
+            var adventurerXp = new int[101];
+            var monsterXp = new int[101];
+            for (var n = 0; n <= 100; n++)
+            {
+                adventurerXp[n] = n * (n + 1) / 2 * 10;
+                monsterXp[n] = n * (n + 1) / 2 * 100;
+            }
+
+            return new[]
+            {
+                new LevelTable(1, adventurerXp),
+                new LevelTable(2, monsterXp)
+            }.ToDictionary(x => x.Id);
+        }
+
         static IReadOnlyDictionary<int, ActorArchetypeMaster> CreateActorArchetypeMasters()
         {
             return new[]
@@ -114,6 +139,7 @@ namespace DungeonInn.Master
                     ActorBehaviorType.Adventurer,
                     new ActorStats(5, 5, 5, 5, 5, 5),
                     1,
+                    1,
                     new[] { 3001, 3003 },
                     new[] { new ItemStack(SpecialItemIds.Money, 100), new ItemStack(2001, 1) }),
                 new ActorArchetypeMaster(
@@ -122,6 +148,7 @@ namespace DungeonInn.Master
                     ActorBehaviorType.Monster,
                     new ActorStats(4, 6, 4, 2, 2, 1),
                     1,
+                    2,
                     Array.Empty<int>(),
                     Array.Empty<ItemStack>())
             }.ToDictionary(x => x.Id);
@@ -179,6 +206,7 @@ namespace DungeonInn.Master
 
             foreach (var archetypeMaster in actorArchetypeMasters.Values)
             {
+                GetLevelTable(archetypeMaster.LevelTableId);
                 ValidateItemIds(archetypeMaster.InitialEquipmentItemIds);
                 ValidateItemStacks(archetypeMaster.InitialInventoryItemIds);
             }

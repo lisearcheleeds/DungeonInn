@@ -48,6 +48,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<UseDungeonStairUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorSimpleLifecycleUseCase>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
+            builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceCombatUseCase>(Lifetime.Scoped);
             builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
             builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);

@@ -120,6 +120,7 @@ namespace DungeonInn.Tests.EditMode
         {
             return new Actor(
                 Guid.NewGuid(),
+                0,
                 new ActorStats(5, 5, 5, 5, 5, 5),
                 new Inventory(),
                 1,
