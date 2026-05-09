@@ -76,6 +76,12 @@ namespace DungeonInn.Application.UseCase
             foreach (var itemId in itemIds)
             {
                 var equipmentMaster = masterRepository.GetEquipmentMaster(itemId);
+                var stack = new ItemStack(itemId, 1);
+                if (actor.Inventory.Has(stack))
+                {
+                    actor.Inventory.Remove(stack);
+                }
+
                 if (equipmentMaster.Slot == EquipmentSlot.Weapon)
                 {
                     actor.Equip(equipmentMaster, masterRepository.GetWeaponMaster(itemId));

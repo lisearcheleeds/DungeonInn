@@ -82,10 +82,11 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(guild.Inventory.Has(new ItemStack(3001, 1)), Is.False);
             Assert.That(guild.Inventory.Has(new ItemStack(3003, 1)), Is.False);
-            Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.True);
-            Assert.That(actor.Inventory.Has(new ItemStack(3003, 1)), Is.True);
+            Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.False);
+            Assert.That(actor.Inventory.Has(new ItemStack(3003, 1)), Is.False);
             Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
             Assert.That(actor.Equipment.Weapon.WeaponType, Is.EqualTo(WeaponType.Sword));
+            Assert.That(actor.Equipment.EquippedMasters.ContainsKey(EquipmentSlot.Armor), Is.True);
             Assert.That(guild.Transactions.Count, Is.EqualTo(1));
         }
 

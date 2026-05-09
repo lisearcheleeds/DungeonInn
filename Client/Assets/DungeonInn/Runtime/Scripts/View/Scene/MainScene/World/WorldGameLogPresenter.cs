@@ -97,6 +97,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<EquipmentChanged>()
                 .Subscribe(OnEquipmentChanged)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<ItemSold>()
+                .Subscribe(OnItemSold)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -187,6 +191,11 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} equipped item#{gameEvent.NewItemId} at {gameEvent.Slot}");
             }
+        }
+
+        void OnItemSold(ItemSold gameEvent)
+        {
+            Debug.Log($"[Shop] {GetName(gameEvent.ActorId)} sold item#{gameEvent.Stack.ItemId} x{gameEvent.Stack.Count} for {gameEvent.TotalPrice}G (wallet: {gameEvent.ActorGold}G)");
         }
 
         void OnItemDropped(ItemDropped gameEvent)

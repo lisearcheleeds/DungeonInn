@@ -21,6 +21,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         AdvanceCombatUseCase advanceCombatUseCase;
         PickUpItemUseCase pickUpItemUseCase;
         UpdateEquipmentUseCase updateEquipmentUseCase;
+        SellItemsUseCase sellItemsUseCase;
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
@@ -40,6 +41,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             AdvanceCombatUseCase advanceCombatUseCase,
             PickUpItemUseCase pickUpItemUseCase,
             UpdateEquipmentUseCase updateEquipmentUseCase,
+            SellItemsUseCase sellItemsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
@@ -54,6 +56,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
             this.pickUpItemUseCase = pickUpItemUseCase ?? throw new ArgumentNullException(nameof(pickUpItemUseCase));
             this.updateEquipmentUseCase = updateEquipmentUseCase ?? throw new ArgumentNullException(nameof(updateEquipmentUseCase));
+            this.sellItemsUseCase = sellItemsUseCase ?? throw new ArgumentNullException(nameof(sellItemsUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
@@ -119,6 +122,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 pickUpItemUseCase.Execute(gameWorldState);
                 updateEquipmentUseCase.Execute(gameWorldState);
+                sellItemsUseCase.Execute(gameWorldState);
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
                 await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
             }
