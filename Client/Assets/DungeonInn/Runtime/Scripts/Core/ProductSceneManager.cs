@@ -38,9 +38,9 @@ namespace DungeonInn.Core
             {
                 throw;
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                Debug.LogError($"[ProductSceneManager] Unhandled exception during transition. Rebooting.\n{e}");
+                Debug.LogError($"[ProductSceneManager] Unhandled exception during transition. Rebooting.\n{exception}");
                 launcher.Reboot();
             }
         }
@@ -55,9 +55,9 @@ namespace DungeonInn.Core
             {
                 throw;
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                Debug.LogError($"[ProductSceneManager] Unhandled exception during back transition. Rebooting.\n{e}");
+                Debug.LogError($"[ProductSceneManager] Unhandled exception during back transition. Rebooting.\n{exception}");
                 launcher.Reboot();
             }
         }

@@ -32,7 +32,7 @@ namespace DungeonInn.Application.UseCase
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.chargeInnFeeUseCase = chargeInnFeeUseCase ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
             deathSubscription = eventBus.OnEvent<ActorDefeated>()
-                .Subscribe(e => { accumulatedHp.Remove(e.ActorId); });
+                .Subscribe(gameEvent => { accumulatedHp.Remove(gameEvent.ActorId); });
         }
 
         public void Dispose()

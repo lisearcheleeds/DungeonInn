@@ -25,5 +25,8 @@ namespace DungeonInn.Domain.Common
 
         // アクターの基本移動速度（メートル/秒）。
         public const float ActorMoveSpeedMetersPerSecond = 5.0f;
+
+        // 探索中の冒険者がワールド上のアイテムを自動拾得できる距離（メートル）。
+        public const float AdventurerItemPickupRadiusMeters = 1.5f;
     }
 }

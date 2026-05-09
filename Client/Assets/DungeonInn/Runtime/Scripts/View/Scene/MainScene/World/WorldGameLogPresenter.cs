@@ -2,6 +2,7 @@ using System;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
+using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Profiles;
 using R3;
 using UnityEngine;
@@ -13,6 +14,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldGameLogPresenter : IInitializable, IDisposable
     {
         readonly IGameEventBus eventBus;
+        readonly IGameWorldState worldState;
         readonly AdventurerBattleRecordService battleRecordService;
         readonly IActorProfileRegistry profileRegistry;
         DisposableBag bag;
@@ -20,10 +22,12 @@ namespace DungeonInn.View.Scene.MainScene.World
         [Inject]
         public WorldGameLogPresenter(
             IGameEventBus eventBus,
+            IGameWorldState worldState,
             AdventurerBattleRecordService battleRecordService,
             IActorProfileRegistry profileRegistry)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
             this.battleRecordService = battleRecordService ?? throw new ArgumentNullException(nameof(battleRecordService));
             this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
         }
@@ -85,6 +89,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<ItemDropped>()
                 .Subscribe(OnItemDropped)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<ItemPickedUp>()
+                .Subscribe(OnItemPickedUp)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -92,88 +100,101 @@ namespace DungeonInn.View.Scene.MainScene.World
             bag.Dispose();
         }
 
-        void OnActorSpawned(ActorSpawned e)
+        void OnActorSpawned(ActorSpawned gameEvent)
         {
-            Debug.Log($"[Event] {GetName(e.ActorId)} が現れた");
+            Debug.Log($"[Event] {GetName(gameEvent.ActorId)} が現れた");
         }
 
-        void OnActorEnteredDungeon(ActorEnteredDungeon e)
+        void OnActorEnteredDungeon(ActorEnteredDungeon gameEvent)
         {
-            Debug.Log($"[Event] {GetName(e.ActorId)} がダンジョン {e.FloorIndex} 階に入った");
+            Debug.Log($"[Event] {GetName(gameEvent.ActorId)} がダンジョン {gameEvent.FloorIndex} 階に入った");
         }
 
-        void OnActorExitedDungeon(ActorExitedDungeon e)
+        void OnActorExitedDungeon(ActorExitedDungeon gameEvent)
         {
-            Debug.Log($"[Event] {GetName(e.ActorId)} がダンジョンから帰還した");
+            Debug.Log($"[Event] {GetName(gameEvent.ActorId)} がダンジョンから帰還した");
         }
 
-        void OnActorStartedReturning(ActorStartedReturning e)
+        void OnActorStartedReturning(ActorStartedReturning gameEvent)
         {
-            Debug.Log($"[Actor] {GetName(e.ActorId)} starts returning");
+            Debug.Log($"[Actor] {GetName(gameEvent.ActorId)} starts returning");
         }
 
-        void OnActorRecoveringAtInn(ActorRecoveringAtInn e)
+        void OnActorRecoveringAtInn(ActorRecoveringAtInn gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(e.ActorId)} recovering HP {e.CurrentHp}/{e.MaxHp}");
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} recovering HP {gameEvent.CurrentHp}/{gameEvent.MaxHp}");
         }
 
-        void OnActorFullyRecovered(ActorFullyRecovered e)
+        void OnActorFullyRecovered(ActorFullyRecovered gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(e.ActorId)} fully recovered");
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} fully recovered");
         }
 
-        void OnEncounterStarted(CombatEncounterStarted e)
+        void OnEncounterStarted(CombatEncounterStarted gameEvent)
         {
-            Debug.Log($"[Combat] {GetName(e.ActorId)} encountered {GetName(e.TargetActorId)}");
+            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} encountered {GetName(gameEvent.TargetActorId)}");
         }
 
-        void OnAttackOccurred(CombatAttackOccurred e)
+        void OnAttackOccurred(CombatAttackOccurred gameEvent)
         {
             Debug.Log(
-                $"[Combat] {GetName(e.AttackerActorId)} attacked {GetName(e.TargetActorId)} " +
-                $"for {e.Damage} (HP {e.TargetRemainingHp})");
+                $"[Combat] {GetName(gameEvent.AttackerActorId)} attacked {GetName(gameEvent.TargetActorId)} " +
+                $"for {gameEvent.Damage} (HP {gameEvent.TargetRemainingHp})");
         }
 
-        void OnActorDefeated(ActorDefeated e)
+        void OnActorDefeated(ActorDefeated gameEvent)
         {
-            var killerText = e.KillerActorId.HasValue
-                ? $" by {GetName(e.KillerActorId.Value)}"
+            var killerText = gameEvent.KillerActorId.HasValue
+                ? $" by {GetName(gameEvent.KillerActorId.Value)}"
                 : string.Empty;
-            Debug.Log($"[Combat] {GetName(e.ActorId)} defeated{killerText} ({e.Cause})");
+            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} defeated{killerText} ({gameEvent.Cause})");
         }
 
-        void OnEncounterEnded(CombatEncounterEnded e)
+        void OnEncounterEnded(CombatEncounterEnded gameEvent)
         {
-            if (!battleRecordService.TryGetRecord(e.ActorId, out var record))
+            if (!battleRecordService.TryGetRecord(gameEvent.ActorId, out var record))
             {
                 return;
             }
 
             Debug.Log(
-                $"[Record] {GetName(e.ActorId)}: " +
+                $"[Record] {GetName(gameEvent.ActorId)}: " +
                 $"{record.TotalCombats} combats, " +
                 $"{record.TotalDamageDealt} total damage dealt");
         }
 
-        void OnExperienceGranted(ExperienceGranted e)
+        void OnExperienceGranted(ExperienceGranted gameEvent)
         {
-            Debug.Log($"[Growth] {GetName(e.ActorId)} gained {e.GainedXp} EXP (total: {e.TotalXp})");
+            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} gained {gameEvent.GainedXp} EXP (total: {gameEvent.TotalXp})");
         }
 
-        void OnActorLeveledUp(ActorLeveledUp e)
+        void OnActorLeveledUp(ActorLeveledUp gameEvent)
         {
-            Debug.Log($"[Growth] {GetName(e.ActorId)} leveled up! Lv.{e.PreviousLevel} → Lv.{e.NewLevel}");
+            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} leveled up! Lv.{gameEvent.PreviousLevel} → Lv.{gameEvent.NewLevel}");
         }
 
-        void OnItemDropped(ItemDropped e)
+        void OnItemDropped(ItemDropped gameEvent)
         {
-            Debug.Log($"[Drop] {GetName(e.ActorId)} dropped {e.ItemName} at {e.Position}");
+            Debug.Log($"[Drop] {GetName(gameEvent.ActorId)} dropped item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count}");
         }
 
-        void OnInnFeeCharged(InnFeeCharged e)
+        void OnItemPickedUp(ItemPickedUp gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(e.ActorId)} paid {e.FeeAmount}G for inn room (remaining: {e.ActorRemainingGold}G)");
-            Debug.Log($"[Guild] Treasury +{e.FeeAmount}G (total: {e.GuildGold}G)");
+            if (gameEvent.ItemInstance.Stack.ItemId == Domain.Item.SpecialItemIds.Money)
+            {
+                var actor = worldState.FindActor(gameEvent.ActorId);
+                var walletText = actor == null ? "unknown" : $"{actor.Inventory.Gold}G";
+                Debug.Log($"[Item] {GetName(gameEvent.ActorId)} picked up {gameEvent.ItemInstance.Stack.Count}G (wallet: {walletText})");
+                return;
+            }
+
+            Debug.Log($"[Item] {GetName(gameEvent.ActorId)} picked up item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count}");
+        }
+
+        void OnInnFeeCharged(InnFeeCharged gameEvent)
+        {
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} paid {gameEvent.FeeAmount}G for inn room (remaining: {gameEvent.ActorRemainingGold}G)");
+            Debug.Log($"[Guild] Treasury +{gameEvent.FeeAmount}G (total: {gameEvent.GuildGold}G)");
         }
 
         string GetName(Guid actorId)

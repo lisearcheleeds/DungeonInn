@@ -4,29 +4,20 @@ using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
-using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
     public sealed class DropItemUseCase
     {
-        readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
         readonly IGameEventBus eventBus;
 
         [Inject]
-        public DropItemUseCase(
-            IMasterRepository masterRepository,
-            IGameRandom gameRandom,
-            IGameEventBus eventBus)
+        public DropItemUseCase(IGameRandom gameRandom, IGameEventBus eventBus)
         {
-            this.masterRepository = masterRepository
-                ?? throw new ArgumentNullException(nameof(masterRepository));
-            this.gameRandom = gameRandom
-                ?? throw new ArgumentNullException(nameof(gameRandom));
-            this.eventBus = eventBus
-                ?? throw new ArgumentNullException(nameof(eventBus));
+            this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
+            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public void Execute(Actor defeatedActor, IGameWorldState worldState)
@@ -58,18 +49,9 @@ namespace DungeonInn.Application.UseCase
                     ? entry.MinCount
                     : gameRandom.Next(entry.MinCount, entry.MaxCount + 1);
 
-                for (var i = 0; i < count; i++)
-                {
-                    var itemMaster = masterRepository.GetItemMaster(entry.ItemId);
-                    var instance = new ItemInstance(Guid.NewGuid(), entry.ItemId, defeatedActor.Position);
-                    worldState.AddItem(instance);
-                    eventBus.Publish(new ItemDropped(
-                        defeatedActor.Id,
-                        instance.InstanceId,
-                        entry.ItemId,
-                        itemMaster.Name,
-                        defeatedActor.Position));
-                }
+                var instance = new ItemInstance(Guid.NewGuid(), new ItemStack(entry.ItemId, count), defeatedActor.Position);
+                worldState.AddItem(instance);
+                eventBus.Publish(new ItemDropped(defeatedActor.Id, instance));
             }
         }
     }

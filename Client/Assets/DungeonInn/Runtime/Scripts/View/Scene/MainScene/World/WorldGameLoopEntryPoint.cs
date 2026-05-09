@@ -19,6 +19,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase;
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
         AdvanceCombatUseCase advanceCombatUseCase;
+        PickUpItemUseCase pickUpItemUseCase;
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
@@ -36,6 +37,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase,
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
             AdvanceCombatUseCase advanceCombatUseCase,
+            PickUpItemUseCase pickUpItemUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
@@ -48,6 +50,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.advanceActorSimpleLifecycleUseCase = advanceActorSimpleLifecycleUseCase ?? throw new ArgumentNullException(nameof(advanceActorSimpleLifecycleUseCase));
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
             this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
+            this.pickUpItemUseCase = pickUpItemUseCase ?? throw new ArgumentNullException(nameof(pickUpItemUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
@@ -111,6 +114,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                pickUpItemUseCase.Execute(gameWorldState);
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
                 await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
             }

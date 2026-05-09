@@ -122,9 +122,9 @@ namespace DungeonInn.Tests.EditMode
         static LevelTable CreateAdventurerTable()
         {
             var xp = new int[101];
-            for (var n = 0; n <= 100; n++)
+            for (var level = 0; level <= 100; level++)
             {
-                xp[n] = n * (n + 1) / 2 * 10;
+                xp[level] = level * (level + 1) / 2 * 10;
             }
 
             return new LevelTable(1, xp);

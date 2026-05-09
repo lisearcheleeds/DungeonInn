@@ -76,9 +76,9 @@ namespace DungeonInn.Infrastructure.AssetLoader
                 {
                     ParseTsv(contents[i], fileName, languageCode, result);
                 }
-                catch (Exception e)
+                catch (Exception exception)
                 {
-                    Debug.LogError($"[TextTable] Failed to parse TSV file: '{fileName}'\n{e}");
+                    Debug.LogError($"[TextTable] Failed to parse TSV file: '{fileName}'\n{exception}");
                 }
             }
 
@@ -123,9 +123,9 @@ namespace DungeonInn.Infrastructure.AssetLoader
                     var content = File.ReadAllText(filePath);
                     ParseTsv(content, fileNameWithoutExt, languageCode, result);
                 }
-                catch (Exception e)
+                catch (Exception exception)
                 {
-                    Debug.LogError($"[TextTable] Failed to load TSV file: '{filePath}'\n{e}");
+                    Debug.LogError($"[TextTable] Failed to load TSV file: '{filePath}'\n{exception}");
                 }
             }
 

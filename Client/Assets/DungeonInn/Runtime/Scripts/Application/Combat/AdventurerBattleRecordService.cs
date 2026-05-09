@@ -45,18 +45,18 @@ namespace DungeonInn.Application.Combat
             return record;
         }
 
-        void OnEncounterStarted(CombatEncounterStarted e)
+        void OnEncounterStarted(CombatEncounterStarted gameEvent)
         {
-            GetOrCreate(e.ActorId).RecordCombatStarted();
+            GetOrCreate(gameEvent.ActorId).RecordCombatStarted();
         }
 
-        void OnAttackOccurred(CombatAttackOccurred e)
+        void OnAttackOccurred(CombatAttackOccurred gameEvent)
         {
-            GetOrCreate(e.AttackerActorId).RecordDamageDealt(e.Damage);
-            GetOrCreate(e.TargetActorId).RecordDamageTaken(e.Damage);
-            if (e.TargetRemainingHp <= 0)
+            GetOrCreate(gameEvent.AttackerActorId).RecordDamageDealt(gameEvent.Damage);
+            GetOrCreate(gameEvent.TargetActorId).RecordDamageTaken(gameEvent.Damage);
+            if (gameEvent.TargetRemainingHp <= 0)
             {
-                GetOrCreate(e.AttackerActorId).RecordKill();
+                GetOrCreate(gameEvent.AttackerActorId).RecordKill();
             }
         }
 

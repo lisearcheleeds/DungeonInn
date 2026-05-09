@@ -6,13 +6,13 @@ namespace DungeonInn.Domain.Item
     public sealed class ItemInstance
     {
         public Guid InstanceId { get; }
-        public int ItemId { get; }
+        public ItemStack Stack { get; }
         public LayerPosition Position { get; }
 
-        public ItemInstance(Guid instanceId, int itemId, LayerPosition position)
+        public ItemInstance(Guid instanceId, ItemStack stack, LayerPosition position)
         {
             InstanceId = instanceId;
-            ItemId = itemId;
+            Stack = stack;
             Position = position;
         }
     }

@@ -9,7 +9,7 @@ namespace DungeonInn.Domain.Item
         readonly Dictionary<int, int> itemCounts = new();
 
         public IReadOnlyDictionary<int, int> ItemCounts => itemCounts;
-        public int Gold => itemCounts.TryGetValue(SpecialItemIds.Money, out var g) ? g : 0;
+        public int Gold => itemCounts.TryGetValue(SpecialItemIds.Money, out var gold) ? gold : 0;
 
         public void AddGold(int amount)
         {

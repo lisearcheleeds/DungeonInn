@@ -88,7 +88,9 @@ namespace DungeonInn.Core
                 }
 
                 builder.Register<ProductAssetLoader>(Lifetime.Singleton).AsImplementedInterfaces();
-                builder.Register<HardcodedMasterRepository>(Lifetime.Singleton).As<IMasterRepository>();
+                builder.Register<HardcodedMasterRepository>(Lifetime.Singleton)
+                    .As<IMasterRepository>()
+                    .As<IItemMasterRepository>();
                 builder.Register<AdventurerFactory>(Lifetime.Singleton).As<IAdventurerFactory>();
                 builder.Register<MonsterFactory>(Lifetime.Singleton).As<IMonsterFactory>();
                 builder.Register<ScoutCostPolicy>(Lifetime.Singleton);

@@ -145,7 +145,7 @@ namespace DungeonInn.Tests.EditMode
 
         static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
         {
-            return new DropItemUseCase(new ThrowingMasterRepository(), new ZeroGameRandom(), eventBus);
+            return new DropItemUseCase(new ZeroGameRandom(), eventBus);
         }
 
         sealed class ZeroGameRandom : IGameRandom

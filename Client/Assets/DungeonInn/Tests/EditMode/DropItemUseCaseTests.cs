@@ -8,7 +8,6 @@ using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
-using DungeonInn.Master;
 using NUnit.Framework;
 using R3;
 
@@ -40,10 +39,11 @@ namespace DungeonInn.Tests.EditMode
             var droppedEvents = eventBus.GetEvents<ItemDropped>();
             Assert.That(droppedEvents.Count, Is.EqualTo(1));
             Assert.That(droppedEvents[0].ActorId, Is.EqualTo(actor.Id));
-            Assert.That(droppedEvents[0].ItemId, Is.EqualTo(1001));
-            Assert.That(droppedEvents[0].ItemName, Is.EqualTo("Herb"));
+            Assert.That(droppedEvents[0].ItemInstance.Stack.ItemId, Is.EqualTo(1001));
+            Assert.That(droppedEvents[0].ItemInstance.Stack.Count, Is.EqualTo(1));
             Assert.That(worldState.Items.Count, Is.EqualTo(1));
-            Assert.That(worldState.Items[0].ItemId, Is.EqualTo(1001));
+            Assert.That(worldState.Items[0].Stack.ItemId, Is.EqualTo(1001));
+            Assert.That(worldState.Items[0].Stack.Count, Is.EqualTo(1));
         }
 
         [Test]
@@ -61,7 +61,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void CountRangeDropsMultipleInstances()
+        public void FixedCountDropsOneStackWithCorrectAmount()
         {
             var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 0);
             var drops = new[] { new ActorDropEntry(1001, 1.0f, 3, 3) };
@@ -69,8 +69,22 @@ namespace DungeonInn.Tests.EditMode
 
             useCase.Execute(actor, worldState);
 
-            Assert.That(eventBus.GetEvents<ItemDropped>().Count, Is.EqualTo(3));
-            Assert.That(worldState.Items.Count, Is.EqualTo(3));
+            Assert.That(eventBus.GetEvents<ItemDropped>().Count, Is.EqualTo(1));
+            Assert.That(worldState.Items.Count, Is.EqualTo(1));
+            Assert.That(worldState.Items[0].Stack.Count, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void RangeCountUsesRandomAmountWithinBounds()
+        {
+            // FixedGameRandom.Next(min, max) returns min, so amount = MinCount
+            var (useCase, worldState, _, _) = CreateContext(fixedRoll: 0);
+            var drops = new[] { new ActorDropEntry(1001, 1.0f, 1, 3) };
+            var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), drops);
+
+            useCase.Execute(actor, worldState);
+
+            Assert.That(worldState.Items[0].Stack.Count, Is.InRange(1, 3));
         }
 
         [Test]
@@ -88,8 +102,8 @@ namespace DungeonInn.Tests.EditMode
 
             var droppedEvents = eventBus.GetEvents<ItemDropped>();
             Assert.That(droppedEvents.Count, Is.EqualTo(2));
-            Assert.That(droppedEvents.Any(e => e.ItemId == 1001), Is.True);
-            Assert.That(droppedEvents.Any(e => e.ItemId == 1002), Is.True);
+            Assert.That(droppedEvents.Any(droppedEvent => droppedEvent.ItemInstance.Stack.ItemId == 1001), Is.True);
+            Assert.That(droppedEvents.Any(droppedEvent => droppedEvent.ItemInstance.Stack.ItemId == 1002), Is.True);
         }
 
         [Test]
@@ -107,7 +121,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var random = new FixedGameRandom(fixedRoll);
-            var useCase = new DropItemUseCase(new StubItemMasterRepository(), random, eventBus);
+            var useCase = new DropItemUseCase(random, eventBus);
             var worldState = new GameWorldState();
             return (useCase, worldState, eventBus, random);
         }
@@ -148,32 +162,6 @@ namespace DungeonInn.Tests.EditMode
                 position,
                 new ActorFaction(1, "Adventurer"),
                 new AdventurerBehavior(0));
-        }
-
-        sealed class StubItemMasterRepository : IMasterRepository
-        {
-            static readonly Dictionary<int, ItemMaster> masters = new()
-            {
-                { 1001, new ItemMaster(1001, "Herb", ItemCategory.Material, 10, 1, true) },
-                { 1002, new ItemMaster(1002, "Goblin Ear", ItemCategory.Material, 25, 1, true) }
-            };
-
-            public IReadOnlyDictionary<int, ItemMaster> ItemMasters => masters;
-            public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => throw new NotSupportedException();
-            public IReadOnlyDictionary<int, WeaponMaster> WeaponMasters => throw new NotSupportedException();
-            public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => throw new NotSupportedException();
-            public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => throw new NotSupportedException();
-            public IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters => throw new NotSupportedException();
-            public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
-            public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
-            public ItemMaster GetItemMaster(int itemId) => masters[itemId];
-            public EquipmentMaster GetEquipmentMaster(int itemId) => throw new NotSupportedException();
-            public WeaponMaster GetWeaponMaster(int itemId) => throw new NotSupportedException();
-            public WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType) => throw new NotSupportedException();
-            public ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId) => throw new NotSupportedException();
-            public MonsterSpeciesMaster GetMonsterSpeciesMaster(int speciesId) => throw new NotSupportedException();
-            public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
-            public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
         }
 
         sealed class FixedGameRandom : IGameRandom

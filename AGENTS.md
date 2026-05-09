@@ -1,5 +1,12 @@
 # DungeonInn — プロジェクト共通情報
 
+> **このファイルを読んでいる AI へ**
+>
+> 作業を始める前に、このファイルを最後まで読むこと。
+> 迷いが生じた場合・仕様に記載のない判断が必要になった場合は、**実装を止めてユーザーに確認する**。
+> 確認なしに独自判断で進めることは禁止する。
+> ファイル末尾に「作業開始前の自己確認リスト」があるので、作業開始前に必ず確認すること。
+
 このファイルは Claude Code と Codex の両方が参照する共通情報。
 
 ## プロジェクト概要
@@ -38,13 +45,32 @@
   - Codex はただ実装するのではなく、タスクの作業前にインターフェース設計が適切かレビューし、問題があればClaude Codeに確認する
   - Codex はuLoopコマンドを利用してUnityの動作確認が出来る
 
+## docs フォルダ構成
+
+```
+docs/
+  guidelines/   ← 他プロジェクトでも利用できる開発指針（必読）
+  design/       ← DungeonInn 固有の設計ドキュメント
+  roadmap/      ← マイルストーン計画
+  self-review/  ← レビューログ
+```
+
 ## 参照ドキュメント（実装前に必ず確認）
+
+### 開発指針（他プロジェクト共通・必読）
+
+| ファイル | 内容 |
+|---|---|
+| `docs/guidelines/lighthouse-patterns.md` | Lighthouse ルール・禁止事項・実装パターン集 |
+| `docs/guidelines/coding-rules.md` | C# コーディング規約 |
+| `docs/guidelines/domain-usecase-design-guidelines.md` | Domain / UseCase の設計判断基準 |
+| `docs/guidelines/review-policy-guideline.md` | コードレビューの方針・判断基準 |
+
+### プロジェクト固有ドキュメント
 
 | ファイル | 内容 | 生成タイミング |
 |---|---|---|
 | `/AGENTS.md` | プロジェクト共通情報・役割分担・タスクフロー | 最初から |
-| `docs/lighthouse-patterns.md` | Lighthouse ルール・禁止事項・実装パターン集 | 最初から |
-| `docs/coding-rules.md` | C# コーディング規約 | 最初から |
 | `docs/spec_prompt.md` | ユーザーからのゲーム仕様となる初期プロンプト | プロジェクトフェーズ1 |
 | `docs/spec.md` | 企画書 | プロジェクトフェーズ1 |
 | `docs/spec_rule.md` | ゲームルールに関して詳細に記載したドキュメント | プロジェクトフェーズ2 |
@@ -114,10 +140,10 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
       - タスクの状態遷移は 設計待ち -> 設計レビュー待ち -> 実装待ち -> 実装レビュー待ち -> 完了 の5段階とする
     - タスクの目的の記載(ClaudeCodeが記載)
     - 利用するLighthouseパターンの記載（ClaudeCodeが記載）
-      - 実装に必要なLighthouseパターンを `docs/lighthouse-patterns.md` のラベル（P1〜P10）で列挙する
+      - 実装に必要なLighthouseパターンを `docs/guidelines/lighthouse-patterns.md` のラベル（P1〜P10）で列挙する
       - 例: `[P5] アセット非同期ロード（IAssetScope）`, `[P6] Config Repository`, `[P8] LifetimeScope`
       - コードの記載は不要。パターン名と用途を端的に記載
-      - Codexはここに列挙されたパターンを実装前に必ず `docs/lighthouse-patterns.md` で確認すること
+      - Codexはここに列挙されたパターンを実装前に必ず `docs/guidelines/lighthouse-patterns.md` で確認すること
     - 作業ログの記載（ClaudeCode, Codexが記載）
     - レビューログの記載（ClaudeCodeが記載）
 
@@ -157,6 +183,19 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
   - 問題があればClaudeにフィードバック・指摘を行う
   - 問題が無ければプロジェクトフェーズ3に戻り、次のマイルストーンを定める
 
+## 作業を止めてユーザーに確認する条件
+
+以下のいずれかに該当した場合、**その場で作業を停止し**、ユーザーに状況を報告して判断を仰ぐ。
+「たぶん大丈夫」と自己判断して続行しないこと。
+
+- 仕様ドキュメントに記載のない設計判断・方針決定が必要になった
+- 既存の設計・インターフェースの変更（追加・削除・リネーム）が必要になった
+- 既存の設計と矛盾するケースを発見した
+- 同じ問題・同じ修正を 3 回以上繰り返している
+- 禁止パターン（実装ハードゲート参照）を回避するための代替手段が見つからない
+- タスクの作業範囲が当初の想定より大幅に広がっていると気づいた
+- ユーザーの意図が複数の解釈に取れる
+
 ## アセットのプレースホルダー
 
 アセットは基本的に無くても動くようにする。3Dモデルなどプレースホルダーではどうにも出来ない場合はユーザーに方針を確認する
@@ -171,10 +210,10 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 ## ClaudeCode/Codex必須条件
 
 - Lighthouseを利用してゲームを開発すること
-  - 実装時、レビュー時にドキュメントを参照し、違反していた場合は必ず修正する
+  - 実装時、レビュー時に `docs/guidelines/lighthouse-patterns.md` を参照し、違反していた場合は必ず修正する
 - uLoopを利用して動作確認すること
 - コーディングルールを必ず守ること
-  - 実装時、レビュー時にドキュメントを参照すること
+  - 実装時、レビュー時に `docs/guidelines/coding-rules.md` を参照すること
 
 ## 実装ハードゲート
 
@@ -191,20 +230,40 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 
 ## Codex 完了前チェック
 
-Codex は完了前に以下を確認し、結果を作業ログに記載する。
+> **以下を全てチェックするまで「完了しました」と報告してはならない。**
+> チェックできていない項目が 1 つでもあれば、作業を継続するか、Claude Code に確認を取ること。
 
-- `uloop.cmd compile --project-path Client`
-- `Addressables.LoadAssetAsync` が追加されていないこと
-- `Resources.Load` / `Resource.Load` が追加されていないこと
-- `Task` / `ValueTask` が追加されていないこと
-- DI 登録が必要なクラスは LifetimeScope / Installer に登録されていること
-- LighthouseGenerated 以下を編集していないこと
+- [ ] `uloop.cmd compile --project-path Client` が成功した
+- [ ] `Addressables.LoadAssetAsync` が追加されていない
+- [ ] `Resources.Load` / `Resource.Load` が追加されていない
+- [ ] `Task` / `ValueTask` が追加されていない
+- [ ] DI 登録が必要なクラスは LifetimeScope / Installer に登録されている
+- [ ] LighthouseGenerated 以下を編集していない
+- [ ] 作業ログに上記チェック結果を記載した
 
 ## Claude Code レビュー必須チェック
 
-Claude Code は実装レビュー時に、Codex の作業ログだけを信用せず、禁止 API 検索と差分確認を行う。
-例
+> **以下を全てチェックするまでタスクを「完了」にしてはならない。**
+> Codex の作業ログの自己申告だけを信用せず、必ず自分で差分と禁止 API を確認すること。
+
+- [ ] 禁止 API が追加されていないことを検索で確認した
+- [ ] LifetimeScope / Installer への DI 登録漏れがないことを確認した
+- [ ] 公開インターフェース・イベント設計が `docs/guidelines/review-policy-guideline.md` の方針に沿っている
+- [ ] コンパイルが通っている（uloop compile または Codex ログで確認）
+
 ```powershell
-  rg "Addressables\.LoadAssetAsync|Resources\.Load|Resource\.Load|SceneManager\.LoadScene|UnityEngine\.UI\.Button|Task<|
-  ValueTask<|WaitForCompletion|\.Result" Client/Assets
+rg "Addressables\.LoadAssetAsync|Resources\.Load|Resource\.Load|SceneManager\.LoadScene|UnityEngine\.UI\.Button|Task<|ValueTask<|WaitForCompletion|\.Result" Client/Assets
 ```
+
+---
+
+## 作業開始前の自己確認リスト
+
+> **このファイルを読み終えた AI は、作業を始める前に以下を自問すること。**
+> 全て「YES」でなければ作業を開始してはならない。
+
+- [ ] `docs/guidelines/lighthouse-patterns.md` を確認した（または今回のタスクで参照が不要であることを確認した）
+- [ ] `docs/guidelines/coding-rules.md` を確認した（または今回のタスクで参照が不要であることを確認した）
+- [ ] タスクの目的・スコープを理解した
+- [ ] 仕様ドキュメントに記載のない設計判断が発生していないことを確認した
+- [ ] 「作業を止めてユーザーに確認する条件」に該当する状況がないことを確認した

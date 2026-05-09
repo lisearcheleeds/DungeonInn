@@ -17,7 +17,7 @@ namespace DungeonInn.Application.Event
 
         public Observable<T> OnEvent<T>() where T : class, IGameEvent
         {
-            return subject.Where(e => e is T).Select(e => (T)(object)e);
+            return subject.Where(gameEvent => gameEvent is T).Select(gameEvent => (T)(object)gameEvent);
         }
 
         public void Dispose() => subject.Dispose();

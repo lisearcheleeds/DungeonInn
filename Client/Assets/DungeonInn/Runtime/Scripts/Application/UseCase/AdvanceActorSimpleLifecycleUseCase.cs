@@ -47,7 +47,7 @@ namespace DungeonInn.Application.UseCase
             this.eventBus = eventBus
                 ?? throw new ArgumentNullException(nameof(eventBus));
             deathSubscription = eventBus.OnEvent<ActorDefeated>()
-                .Subscribe(e => { exploringDestinations.Remove(e.ActorId); });
+                .Subscribe(gameEvent => { exploringDestinations.Remove(gameEvent.ActorId); });
         }
 
         public void Dispose()

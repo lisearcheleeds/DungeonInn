@@ -116,10 +116,10 @@ namespace DungeonInn.Master
         {
             var adventurerXp = new int[101];
             var monsterXp = new int[101];
-            for (var n = 0; n <= 100; n++)
+            for (var level = 0; level <= 100; level++)
             {
-                adventurerXp[n] = n * (n + 1) / 2 * 10;
-                monsterXp[n] = n * (n + 1) / 2 * 100;
+                adventurerXp[level] = level * (level + 1) / 2 * 10;
+                monsterXp[level] = level * (level + 1) / 2 * 100;
             }
 
             return new[]
