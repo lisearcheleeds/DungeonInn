@@ -22,12 +22,12 @@ namespace DungeonInn.Application.Factory
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var speciesMaster = masterRepository.GetMonsterSpeciesMaster(request.SpeciesId);
-            var archetypeMaster = masterRepository.GetActorArchetypeMaster(speciesMaster.ActorArchetypeId);
+            var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
             if (archetypeMaster.BehaviorType != ActorBehaviorType.Monster)
             {
                 throw new InvalidOperationException("Monster factory requires monster actor archetype.");
             }
+            var speciesMaster = masterRepository.GetSpeciesMaster(archetypeMaster.SpeciesId);
 
             var levelTable = masterRepository.GetLevelTable(archetypeMaster.LevelTableId);
             var actor = ActorFactoryCore.CreateActor(
@@ -37,9 +37,9 @@ namespace DungeonInn.Application.Factory
                 request.Position,
                 request.Faction,
                 request.PreferenceSeed,
-                new MonsterBehavior(speciesMaster.Id, speciesMaster.CanScavenge, speciesMaster.SpeciesDrops),
+                new MonsterBehavior(speciesMaster.Id, speciesMaster.SpeciesDrops),
                 masterRepository);
-            actor.ChangeNaturalWeaponType(masterRepository.GetWeaponTypeCombatMaster(speciesMaster.DefaultWeaponType));
+            actor.ChangeNaturalWeaponType(masterRepository.GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType));
             actor.Inventory.AddRange(archetypeMaster.InitialInventoryItemIds);
             return actor;
         }

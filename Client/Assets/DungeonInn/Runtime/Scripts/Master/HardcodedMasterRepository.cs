@@ -13,7 +13,8 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, WeaponMaster> weaponMasters;
         readonly IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> weaponTypeCombatMasters;
         readonly IReadOnlyDictionary<int, ActorArchetypeMaster> actorArchetypeMasters;
-        readonly IReadOnlyDictionary<int, MonsterSpeciesMaster> monsterSpeciesMasters;
+        readonly IReadOnlyDictionary<int, AdventurerSpawnMaster> adventurerSpawnMasters;
+        readonly IReadOnlyDictionary<int, SpeciesMaster> speciesMasters;
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
         readonly IReadOnlyDictionary<int, LevelTable> levelTables;
         readonly IReadOnlyDictionary<int, DungeonFloorExplorationMaster> dungeonFloorExplorationMasters;
@@ -23,7 +24,8 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, WeaponMaster> WeaponMasters => weaponMasters;
         public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => weaponTypeCombatMasters;
         public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => actorArchetypeMasters;
-        public IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters => monsterSpeciesMasters;
+        public IReadOnlyDictionary<int, AdventurerSpawnMaster> AdventurerSpawnMasters => adventurerSpawnMasters;
+        public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => speciesMasters;
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
         public IReadOnlyDictionary<int, LevelTable> LevelTables => levelTables;
         public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => dungeonFloorExplorationMasters;
@@ -36,8 +38,9 @@ namespace DungeonInn.Master
             weaponMasters = CreateWeaponMasters();
             levelTables = CreateLevelTables();
             dungeonFloorExplorationMasters = CreateDungeonFloorExplorationMasters();
+            speciesMasters = CreateSpeciesMasters();
             actorArchetypeMasters = CreateActorArchetypeMasters();
-            monsterSpeciesMasters = CreateMonsterSpeciesMasters();
+            adventurerSpawnMasters = CreateAdventurerSpawnMasters();
             spawnTableMasters = CreateSpawnTableMasters();
             ValidateReferences();
         }
@@ -67,9 +70,14 @@ namespace DungeonInn.Master
             return GetRequired(actorArchetypeMasters, archetypeId, nameof(ActorArchetypeMaster));
         }
 
-        public MonsterSpeciesMaster GetMonsterSpeciesMaster(int speciesId)
+        public AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId)
         {
-            return GetRequired(monsterSpeciesMasters, speciesId, nameof(MonsterSpeciesMaster));
+            return GetRequired(adventurerSpawnMasters, adventurerSpawnId, nameof(AdventurerSpawnMaster));
+        }
+
+        public SpeciesMaster GetSpeciesMaster(int speciesId)
+        {
+            return GetRequired(speciesMasters, speciesId, nameof(SpeciesMaster));
         }
 
         public SpawnTableMaster GetSpawnTableMaster(int spawnTableId)
@@ -170,6 +178,42 @@ namespace DungeonInn.Master
             }.ToDictionary(x => x.Id);
         }
 
+        static IReadOnlyDictionary<int, SpeciesMaster> CreateSpeciesMasters()
+        {
+            return new[]
+            {
+                new SpeciesMaster(
+                    1,
+                    "Goblin",
+                    new[]
+                    {
+                        new ActorDropEntry(1002, 0.7f, 1, 1),
+                        new ActorDropEntry(1, 0.5f, 1, 3),
+                        new ActorDropEntry(3004, 1.0f, 1, 1)
+                    }),
+                new SpeciesMaster(
+                    2,
+                    "Orc",
+                    new[]
+                    {
+                        new ActorDropEntry(1, 0.7f, 3, 8),
+                        new ActorDropEntry(3004, 0.25f, 1, 1)
+                    }),
+                new SpeciesMaster(
+                    3,
+                    "Ogre",
+                    new[]
+                    {
+                        new ActorDropEntry(1, 0.9f, 8, 15),
+                        new ActorDropEntry(3004, 0.4f, 1, 1)
+                    }),
+                new SpeciesMaster(
+                    10,
+                    "Human",
+                    Array.Empty<ActorDropEntry>())
+            }.ToDictionary(x => x.Id);
+        }
+
         static IReadOnlyDictionary<int, ActorArchetypeMaster> CreateActorArchetypeMasters()
         {
             return new[]
@@ -178,6 +222,8 @@ namespace DungeonInn.Master
                     1,
                     "Novice Adventurer",
                     ActorBehaviorType.Adventurer,
+                    10,
+                    WeaponType.Fist,
                     new ActorStats(5, 5, 5, 5, 5, 5),
                     1,
                     1,
@@ -187,6 +233,8 @@ namespace DungeonInn.Master
                     2,
                     "Goblin",
                     ActorBehaviorType.Monster,
+                    1,
+                    WeaponType.Claws,
                     new ActorStats(4, 6, 4, 2, 2, 1),
                     1,
                     2,
@@ -196,7 +244,9 @@ namespace DungeonInn.Master
                     3,
                     "Orc",
                     ActorBehaviorType.Monster,
-                    new ActorStats(8, 7, 8, 4, 4, 4),
+                    2,
+                    WeaponType.Axe,
+                    new ActorStats(8, 7, 8, 4, 4, 3),
                     1,
                     2,
                     Array.Empty<int>(),
@@ -205,6 +255,8 @@ namespace DungeonInn.Master
                     4,
                     "Ogre",
                     ActorBehaviorType.Monster,
+                    3,
+                    WeaponType.Fist,
                     new ActorStats(14, 8, 14, 6, 6, 8),
                     1,
                     2,
@@ -213,44 +265,13 @@ namespace DungeonInn.Master
             }.ToDictionary(x => x.Id);
         }
 
-        static IReadOnlyDictionary<int, MonsterSpeciesMaster> CreateMonsterSpeciesMasters()
+        static IReadOnlyDictionary<int, AdventurerSpawnMaster> CreateAdventurerSpawnMasters()
         {
             return new[]
             {
-                new MonsterSpeciesMaster(
-                    1,
-                    "Goblin",
-                    2,
-                    WeaponType.Claws,
-                    true,
-                    new[]
-                    {
-                        new ActorDropEntry(1002, 0.7f, 1, 1),
-                        new ActorDropEntry(1, 0.5f, 1, 3),
-                        new ActorDropEntry(3004, 1.0f, 1, 1)
-                    }),
-                new MonsterSpeciesMaster(
-                    2,
-                    "Orc",
-                    3,
-                    WeaponType.Axe,
-                    true,
-                    new[]
-                    {
-                        new ActorDropEntry(1, 0.7f, 3, 8),
-                        new ActorDropEntry(3004, 0.25f, 1, 1)
-                    }),
-                new MonsterSpeciesMaster(
-                    3,
-                    "Ogre",
-                    4,
-                    WeaponType.Fist,
-                    true,
-                    new[]
-                    {
-                        new ActorDropEntry(1, 0.9f, 8, 15),
-                        new ActorDropEntry(3004, 0.4f, 1, 1)
-                    })
+                new AdventurerSpawnMaster(1, "Alice", 1, true),
+                new AdventurerSpawnMaster(2, "Bob", 1, true),
+                new AdventurerSpawnMaster(3, "Cecilia", 1, true)
             }.ToDictionary(x => x.Id);
         }
 
@@ -258,27 +279,29 @@ namespace DungeonInn.Master
         {
             var adventurerEntries = new[]
             {
-                new SpawnTableEntryMaster(1, 1, 1, 100, 1, 1)
+                new SpawnTableEntryMaster(1, 1, 1, 100, 1, 1),
+                new SpawnTableEntryMaster(2, 1, 2, 100, 1, 1),
+                new SpawnTableEntryMaster(3, 1, 3, 100, 1, 1)
             };
             var monsterEntries = new[]
             {
-                new SpawnTableEntryMaster(2, 2, 1, 100, 1, 5)
+                new SpawnTableEntryMaster(4, 2, 2, 100, 1, 5)
             };
             var floorTwoMonsterEntries = new[]
             {
-                new SpawnTableEntryMaster(3, 3, 2, 100, 1, 5)
+                new SpawnTableEntryMaster(5, 3, 3, 100, 1, 5)
             };
             var floorThreeMonsterEntries = new[]
             {
-                new SpawnTableEntryMaster(4, 4, 3, 100, 1, 5)
+                new SpawnTableEntryMaster(6, 4, 4, 100, 1, 5)
             };
 
             return new[]
             {
-                new SpawnTableMaster(1, "Default Adventurer Spawn", SpawnTableTargetType.ActorArchetype, adventurerEntries),
-                new SpawnTableMaster(2, "Dungeon Floor 1 Monster Spawn", SpawnTableTargetType.MonsterSpecies, monsterEntries),
-                new SpawnTableMaster(3, "Dungeon Floor 2 Monster Spawn", SpawnTableTargetType.MonsterSpecies, floorTwoMonsterEntries),
-                new SpawnTableMaster(4, "Dungeon Floor 3 Monster Spawn", SpawnTableTargetType.MonsterSpecies, floorThreeMonsterEntries)
+                new SpawnTableMaster(1, "Default Adventurer Spawn", SpawnTableTargetType.AdventurerSpawn, adventurerEntries),
+                new SpawnTableMaster(2, "Dungeon Floor 1 Monster Spawn", SpawnTableTargetType.ActorArchetype, monsterEntries),
+                new SpawnTableMaster(3, "Dungeon Floor 2 Monster Spawn", SpawnTableTargetType.ActorArchetype, floorTwoMonsterEntries),
+                new SpawnTableMaster(4, "Dungeon Floor 3 Monster Spawn", SpawnTableTargetType.ActorArchetype, floorThreeMonsterEntries)
             }.ToDictionary(x => x.Id);
         }
 
@@ -302,20 +325,28 @@ namespace DungeonInn.Master
 
             foreach (var archetypeMaster in actorArchetypeMasters.Values)
             {
+                GetSpeciesMaster(archetypeMaster.SpeciesId);
+                GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType);
                 GetLevelTable(archetypeMaster.LevelTableId);
                 ValidateItemIds(archetypeMaster.InitialEquipmentItemIds);
                 ValidateItemStacks(archetypeMaster.InitialInventoryItemIds);
             }
 
-            foreach (var speciesMaster in monsterSpeciesMasters.Values)
+            foreach (var adventurerSpawnMaster in adventurerSpawnMasters.Values)
             {
-                GetActorArchetypeMaster(speciesMaster.ActorArchetypeId);
-                GetWeaponTypeCombatMaster(speciesMaster.DefaultWeaponType);
+                var archetypeMaster = GetActorArchetypeMaster(adventurerSpawnMaster.ActorArchetypeId);
+                if (archetypeMaster.BehaviorType != ActorBehaviorType.Adventurer)
+                {
+                    throw new InvalidOperationException("Adventurer spawn master requires adventurer actor archetype.");
+                }
+            }
+
+            foreach (var speciesMaster in speciesMasters.Values)
+            {
                 foreach (var drop in speciesMaster.SpeciesDrops)
                 {
                     RequireItem(drop.ItemId);
                 }
-
             }
 
             foreach (var spawnTableMaster in spawnTableMasters.Values)
@@ -329,9 +360,9 @@ namespace DungeonInn.Master
             foreach (var floorExplorationMaster in dungeonFloorExplorationMasters.Values)
             {
                 var spawnTableMaster = GetSpawnTableMaster(floorExplorationMaster.MonsterSpawnTableId);
-                if (spawnTableMaster.TargetType != SpawnTableTargetType.MonsterSpecies)
+                if (spawnTableMaster.TargetType != SpawnTableTargetType.ActorArchetype)
                 {
-                    throw new InvalidOperationException("Dungeon floor exploration requires monster species spawn table.");
+                    throw new InvalidOperationException("Dungeon floor exploration requires actor archetype spawn table.");
                 }
             }
         }
@@ -348,8 +379,8 @@ namespace DungeonInn.Master
                 case SpawnTableTargetType.ActorArchetype:
                     GetActorArchetypeMaster(entry.TargetId);
                     return;
-                case SpawnTableTargetType.MonsterSpecies:
-                    GetMonsterSpeciesMaster(entry.TargetId);
+                case SpawnTableTargetType.AdventurerSpawn:
+                    GetAdventurerSpawnMaster(entry.TargetId);
                     return;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(spawnTableMaster));

@@ -37,9 +37,14 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var speciesMaster = masterRepository.GetMonsterSpeciesMaster(request.SpeciesId);
+            var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
             var actor = monsterFactory.Create(request);
-            profileRegistry.RegisterMonster(actor.Id, speciesMaster.Name, speciesMaster.Id);
+            profileRegistry.Register(
+                actor.Id,
+                archetypeMaster.Name,
+                archetypeMaster.Id,
+                archetypeMaster.SpeciesId,
+                archetypeMaster.BehaviorType);
             eventBus.Publish(new ActorSpawned(actor.Id));
             return UniTask.FromResult(actor);
         }

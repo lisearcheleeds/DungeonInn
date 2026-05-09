@@ -1,3 +1,4 @@
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 using NUnit.Framework;
@@ -16,7 +17,8 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(repository.WeaponMasters, Is.Not.Empty);
             Assert.That(repository.WeaponTypeCombatMasters, Is.Not.Empty);
             Assert.That(repository.ActorArchetypeMasters, Is.Not.Empty);
-            Assert.That(repository.MonsterSpeciesMasters, Is.Not.Empty);
+            Assert.That(repository.AdventurerSpawnMasters, Is.Not.Empty);
+            Assert.That(repository.SpeciesMasters, Is.Not.Empty);
             Assert.That(repository.SpawnTableMasters, Is.Not.Empty);
         }
 
@@ -39,19 +41,42 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var adventurerSpawnTable = repository.GetSpawnTableMaster(1);
             var monsterSpawnTable = repository.GetSpawnTableMaster(2);
+            var adventurerSpawnMaster = repository.GetAdventurerSpawnMaster(adventurerSpawnTable.Entries[0].TargetId);
 
-            Assert.That(repository.GetActorArchetypeMaster(adventurerSpawnTable.Entries[0].TargetId), Is.Not.Null);
-            Assert.That(repository.GetMonsterSpeciesMaster(monsterSpawnTable.Entries[0].TargetId), Is.Not.Null);
+            Assert.That(repository.GetActorArchetypeMaster(adventurerSpawnMaster.ActorArchetypeId), Is.Not.Null);
+            Assert.That(repository.GetActorArchetypeMaster(monsterSpawnTable.Entries[0].TargetId), Is.Not.Null);
         }
 
         [Test]
-        public void MonsterSpeciesHasDefaultNaturalWeaponType()
+        public void AdventurerSpawnMasterReferencesAdventurerArchetype()
         {
             var repository = new HardcodedMasterRepository();
-            var monsterSpeciesMaster = repository.GetMonsterSpeciesMaster(1);
+            var adventurerSpawnMaster = repository.GetAdventurerSpawnMaster(1);
+            var archetypeMaster = repository.GetActorArchetypeMaster(adventurerSpawnMaster.ActorArchetypeId);
 
-            Assert.That(monsterSpeciesMaster.DefaultWeaponType, Is.EqualTo(WeaponType.Claws));
-            Assert.That(repository.GetWeaponTypeCombatMaster(monsterSpeciesMaster.DefaultWeaponType), Is.Not.Null);
+            Assert.That(adventurerSpawnMaster.DisplayName, Is.EqualTo("Alice"));
+            Assert.That(archetypeMaster.BehaviorType, Is.EqualTo(ActorBehaviorType.Adventurer));
+        }
+
+        [Test]
+        public void MonsterArchetypeHasDefaultNaturalWeaponType()
+        {
+            var repository = new HardcodedMasterRepository();
+            var monsterArchetypeMaster = repository.GetActorArchetypeMaster(2);
+
+            Assert.That(monsterArchetypeMaster.DefaultWeaponType, Is.EqualTo(WeaponType.Claws));
+            Assert.That(repository.GetWeaponTypeCombatMaster(monsterArchetypeMaster.DefaultWeaponType), Is.Not.Null);
+        }
+
+        [Test]
+        public void ActorArchetypeReferencesSpeciesMaster()
+        {
+            var repository = new HardcodedMasterRepository();
+            var monsterArchetypeMaster = repository.GetActorArchetypeMaster(2);
+            var speciesMaster = repository.GetSpeciesMaster(monsterArchetypeMaster.SpeciesId);
+
+            Assert.That(speciesMaster.Name, Is.EqualTo("Goblin"));
+            Assert.That(speciesMaster.SpeciesDrops, Is.Not.Empty);
         }
 
         [Test]

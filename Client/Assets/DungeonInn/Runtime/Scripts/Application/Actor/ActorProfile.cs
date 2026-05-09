@@ -1,4 +1,5 @@
 using System;
+using DungeonInn.Domain.Actor;
 
 namespace DungeonInn.Application.Profiles
 {
@@ -6,18 +7,27 @@ namespace DungeonInn.Application.Profiles
     {
         public Guid ActorId { get; }
         public string DisplayName { get; }
-        public int MonsterSpeciesId { get; }
+        public int ArchetypeId { get; }
+        public int SpeciesId { get; }
+        public ActorBehaviorType BehaviorType { get; }
 
         public ActorProfile(Guid actorId, string displayName)
-            : this(actorId, displayName, 0)
+            : this(actorId, displayName, 0, 0, ActorBehaviorType.None)
         {
         }
 
-        public ActorProfile(Guid actorId, string displayName, int monsterSpeciesId)
+        public ActorProfile(
+            Guid actorId,
+            string displayName,
+            int archetypeId,
+            int speciesId,
+            ActorBehaviorType behaviorType)
         {
             ActorId = actorId;
             DisplayName = displayName ?? string.Empty;
-            MonsterSpeciesId = Math.Max(0, monsterSpeciesId);
+            ArchetypeId = Math.Max(0, archetypeId);
+            SpeciesId = Math.Max(0, speciesId);
+            BehaviorType = behaviorType;
         }
     }
 }

@@ -63,7 +63,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
             var monsterId = Guid.NewGuid();
-            profileRegistry.RegisterMonster(monsterId, "Goblin", 1);
+            profileRegistry.Register(monsterId, "Goblin", 2, 1, ActorBehaviorType.Monster);
             actor.ChangeGoal(new ActorGoal(ActorGoalType.DefeatMonster, 1, 1, 0));
             worldState.RegisterActor(actor);
 

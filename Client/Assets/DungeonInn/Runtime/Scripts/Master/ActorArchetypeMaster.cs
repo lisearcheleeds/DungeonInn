@@ -11,6 +11,8 @@ namespace DungeonInn.Master
         public int Id { get; }
         public string Name { get; }
         public ActorBehaviorType BehaviorType { get; }
+        public int SpeciesId { get; }
+        public WeaponType DefaultWeaponType { get; }
         public ActorStats BaseStats { get; }
         public int InitialLevel { get; }
         public int LevelTableId { get; }
@@ -21,6 +23,8 @@ namespace DungeonInn.Master
             int id,
             string name,
             ActorBehaviorType behaviorType,
+            int speciesId,
+            WeaponType defaultWeaponType,
             ActorStats baseStats,
             int initialLevel,
             int levelTableId,
@@ -47,9 +51,16 @@ namespace DungeonInn.Master
                 throw new ArgumentOutOfRangeException(nameof(levelTableId));
             }
 
+            if (speciesId < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(speciesId));
+            }
+
             Id = id;
             Name = name;
             BehaviorType = behaviorType;
+            SpeciesId = speciesId;
+            DefaultWeaponType = defaultWeaponType == WeaponType.None ? WeaponType.Fist : defaultWeaponType;
             BaseStats = baseStats ?? throw new ArgumentNullException(nameof(baseStats));
             InitialLevel = initialLevel;
             LevelTableId = levelTableId;

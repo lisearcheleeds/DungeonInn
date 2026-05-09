@@ -281,6 +281,55 @@
 
 ---
 
+## Phase 11.5: Actor / Species マスタ整理
+
+Phase 11 の探索目的詳細化で、討伐対象や Actor 識別情報を扱うようになったため、Phase 12 に進む前に Actor / 種族まわりのマスタ責務を整理する。
+
+背景:
+
+- 現状、冒険者は主に `ActorArchetypeMaster` を参照し、モンスターは `MonsterSpeciesMaster` と `ActorArchetypeMaster` の両方を参照している
+- `MonsterSpeciesMaster` は実質的にモンスター専用の追加 Actor 定義になっており、`ActorArchetypeMaster` と情報・責務が重複している
+- 種族はモンスター専用概念ではなく、冒険者にも人間・エルフ・ドワーフなどの種族を持たせられる
+- 討伐目標判定では、Actor が削除された後も `ActorProfileRegistry` から種族情報を参照できる状態にしたい
+
+作るもの:
+
+- `SpeciesMaster`
+  - `Id`
+  - `Name`
+  - `SpeciesDrops`
+- `ActorArchetypeMaster` の拡張
+  - `SpeciesId`
+  - `DefaultWeaponType`
+- `AdventurerSpawnMaster` の追加
+  - 固有名
+  - `ActorArchetypeId`
+  - 一度だけスポーンするか
+- `MonsterSpeciesMaster` の廃止
+- `SpawnTableMaster` の生成対象を、冒険者は `AdventurerSpawnMaster`、モンスターは `ActorArchetypeMaster` に整理
+- `ActorProfileRegistry` に登録する識別情報を、Actor 削除後も討伐目標判定に使える形へ整理
+
+初期仕様:
+
+- `SpeciesMaster` は種族固有情報だけを持つ
+- `ActorArchetypeMaster` は実際に生成される Actor のテンプレートを表す
+- 種族ドロップは `SpeciesMaster.SpeciesDrops` に集約する
+- 自然武器・初期武器種としての `DefaultWeaponType` は `ActorArchetypeMaster` 側に持たせる
+- 冒険者・モンスターのどちらも `ActorArchetypeMaster.SpeciesId` を持つ
+- 冒険者の固有名は `AdventurerSpawnMaster.DisplayName` に持たせる
+- モンスター生成時は `ActorArchetypeMaster` と `SpeciesMaster` を参照して Actor を作成する
+
+完了条件:
+
+- `MonsterSpeciesMaster` への参照がなくなっていること
+- 冒険者とモンスターの生成経路が、どちらも `ActorArchetypeMaster` を生成単位として扱っていること
+- 冒険者スポーンが `AdventurerSpawnMaster` から固有名と `ActorArchetypeMaster` を解決していること
+- 討伐目標の判定が、削除済み Actor でも `ActorProfileRegistry` に残った種族情報から行えること
+- `uloop.cmd compile --project-path Client` が成功すること
+- EditMode テストが成功すること
+
+---
+
 ## Phase 12: 宿屋満室時の詳細挙動
 
 宿屋が満室または宿泊費不足の場合の冒険者の挙動を実装する。
@@ -343,5 +392,6 @@
 9. Phase 9: 売買
 10. Phase 10: 複数フロア探索
 11. Phase 11: 探索目的の詳細化
-12. Phase 12: 宿屋満室時の詳細挙動
-13. Phase 13: 冒険者の旅立ち / デスポーン
+12. Phase 11.5: Actor / Species マスタ整理
+13. Phase 12: 宿屋満室時の詳細挙動
+14. Phase 13: 冒険者の旅立ち / デスポーン

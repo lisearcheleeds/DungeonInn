@@ -8,6 +8,7 @@ namespace DungeonInn.Application.Factory
     {
         public int ArchetypeId { get; }
         public Guid ActorId { get; }
+        public string DisplayName { get; }
         public LayerPosition Position { get; }
         public ActorFaction Faction { get; }
         public int PreferenceSeed { get; }
@@ -18,6 +19,17 @@ namespace DungeonInn.Application.Factory
             LayerPosition position,
             ActorFaction faction,
             int preferenceSeed)
+            : this(archetypeId, actorId, position, faction, preferenceSeed, string.Empty)
+        {
+        }
+
+        public AdventurerCreateRequest(
+            int archetypeId,
+            Guid actorId,
+            LayerPosition position,
+            ActorFaction faction,
+            int preferenceSeed,
+            string displayName)
         {
             if (archetypeId < 1)
             {
@@ -26,6 +38,7 @@ namespace DungeonInn.Application.Factory
 
             ArchetypeId = archetypeId;
             ActorId = actorId;
+            DisplayName = displayName ?? string.Empty;
             Position = position;
             Faction = faction ?? throw new ArgumentNullException(nameof(faction));
             PreferenceSeed = preferenceSeed;

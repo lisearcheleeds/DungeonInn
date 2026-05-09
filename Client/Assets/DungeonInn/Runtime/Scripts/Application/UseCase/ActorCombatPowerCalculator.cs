@@ -29,14 +29,13 @@ namespace DungeonInn.Application.UseCase
                 + actor.Equipment.All.Sum(equipment => equipment.Defense);
         }
 
-        public int Calculate(MonsterSpeciesMaster speciesMaster)
+        public int Calculate(ActorArchetypeMaster archetypeMaster)
         {
-            if (speciesMaster == null)
+            if (archetypeMaster == null)
             {
-                throw new ArgumentNullException(nameof(speciesMaster));
+                throw new ArgumentNullException(nameof(archetypeMaster));
             }
 
-            var archetypeMaster = masterRepository.GetActorArchetypeMaster(speciesMaster.ActorArchetypeId);
             return CalculateStats(archetypeMaster.BaseStats);
         }
 

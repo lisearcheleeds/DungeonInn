@@ -43,7 +43,7 @@ LifetimeScope / DI / ゲームループの配置方針は `docs/lifetime-scope-g
 - Application/AI は初期実装済み。短期・中期・長期の AI 判断状態と Dirty 制御を持つ。
 - `EntityIdentity` / `EntityIdentityRegistry` が追加されており、表示名、種別、有効/削除状態を Domain 側で管理できる。
 - 冒険者ライフサイクル、宿屋居住権、探索目的、交換項目は初期 Domain/UseCase として実装済み。
-- `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArchetypeMaster`、`MonsterSpeciesMaster`、`SpawnTableMaster` は `Master/` に分離済み。
+- `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArchetypeMaster`、`SpeciesMaster`、`SpawnTableMaster` は `Master/` に分離済み。
 
 ## 中心となる Domain
 
@@ -101,7 +101,7 @@ LifetimeScope / DI / ゲームループの配置方針は `docs/lifetime-scope-g
 `Actor` は現在装備 `ActorEquipment`、現在の `IWeaponCalculator`、計算済みの `WeaponAttack` を持つ。
 装備変更時は武器スロットに対応する `WeaponMaster.WeaponType` に応じて現在の武器Calculatorを切り替える。
 武器を装備していない場合は `Actor.NaturalWeaponType` を使う。
-通常の冒険者は `Fist`、モンスターは種族マスタの `DefaultWeaponType` を初期値として使う。
+通常の冒険者は `Fist`、モンスターは `ActorArchetypeMaster.DefaultWeaponType` を初期値として使う。
 装備変更は `Actor.Equip()` / `Actor.Unequip()` を通して行い、`ActorEquipment` を外部から直接変更しない。
 これにより、`ActorParams` と `WeaponAttack` のキャッシュを装備状態と同期させる。
 Behavior 変更時も現在装備に基づいて武器Calculatorを再選択する。
@@ -120,7 +120,7 @@ Behavior 変更時も現在装備に基づいて武器Calculatorを再選択す�
 - `FangsWeaponCalculator`
 
 武器未装備時は `FistWeaponCalculator` を使う。
-ただし、モンスターなどは種族マスタの `DefaultWeaponType` により `Claws` / `Fangs` などを自然武器として使える。
+ただし、モンスターなどは `ActorArchetypeMaster.DefaultWeaponType` により `Claws` / `Fangs` などを自然武器として使える。
 
 ### IActorBehavior
 
@@ -410,11 +410,12 @@ MasterMemory 導入前は `IMasterRepository` / `HardcodedMasterRepository` が�
 - 持続時間
 - 使用条件
 
-### ActorArchetypeMaster / MonsterSpeciesMaster / SpawnTableMaster
+### ActorArchetypeMaster / SpeciesMaster / AdventurerSpawnMaster / SpawnTableMaster
 
-Actor の基本プロファイル、モンスター種族、スポーンテーブルは Master として扱う。
-`ActorArchetypeMaster` は Adventurer / GuildStaff / Monster といった振る舞いの初期生成元であり、`MonsterSpeciesMaster` は種族固有ドロップやスカベンジャー性質を持つ。
-`MonsterSpeciesMaster` は `DefaultWeaponType` を持ち、ゴブリンの爪や獣の牙のような自然武器を装備アイテムなしで表現する。
+Actor の基本プロファイル、種族、スポーンテーブルは Master として扱う。
+`ActorArchetypeMaster` は Adventurer / GuildStaff / Monster といった振る舞いの初期生成元であり、`SpeciesMaster` は Actor 共通の種族名と種族固有ドロップを持つ。
+`AdventurerSpawnMaster` は冒険者の来訪文脈で使う固有名と参照 `ActorArchetypeMaster` を持つ。
+`ActorArchetypeMaster` は `DefaultWeaponType` を持ち、ゴブリンの爪や獣の牙のような自然武器を装備アイテムなしで表現する。
 `SpawnTableMaster` はスポーン対象と重みを保持し、UseCase / AI / オーケストレーションが抽選に利用する。
 
 ### Master Repository / Actor Factory
@@ -428,7 +429,7 @@ Factory は以下を行う。
 
 - `ActorArchetypeMaster` から基礎能力、初期レベル、名前を決定する。
 - Factory の種類に応じて Behavior を決定する。
-- `MonsterFactory` は `MonsterSpeciesMaster` から `MonsterBehavior`、種族固有ドロップ、`DefaultWeaponType` を反映する。
+- `MonsterFactory` は `ActorArchetypeMaster` と `SpeciesMaster` から `MonsterBehavior`、種族固有ドロップ、`DefaultWeaponType` を反映する。
 - 作成直後の HP / MP を最大値まで回復する。
 
 ただし、ギルド在庫からの支給、初期装備の装備反映、取引履歴、スポーン可否、抽選は Factory では行わない。
@@ -437,18 +438,18 @@ Factory は以下を行う。
 現在の接続 UseCase:
 
 - `SpawnAdventurerFromMasterUseCase`
-  - 冒険者マスタから Actor を生成する。
+  - `AdventurerSpawnMaster` から固有名と `ActorArchetypeMaster` を解決して Actor を生成する。
   - Lv1 冒険者の初期装備はギルド在庫から支給し、`ExchangeTransaction` に記録する。
   - 支給後に装備状態へ反映する。
 - `SpawnMonsterFromMasterUseCase`
-  - モンスター種族マスタから Actor を生成する。
-  - 種族の `DefaultWeaponType` を自然武器として反映する。
+  - モンスターの `ActorArchetypeMaster` から Actor を生成する。
+  - `ActorArchetypeMaster.DefaultWeaponType` を自然武器として反映する。
 
 `WeaponType` は装備武器または自然武器の種類を表す。
 現在の想定値は `None`、`Sword`、`Bow`、`Axe`、`Scythe`、`Fist`、`Claws`、`Fangs`。
 `Sword`、`Bow`、`Axe`、`Scythe` は主に冒険者向け装備、`Claws`、`Fangs`、`Fist` はモンスターや素手攻撃にも使う。
 装備武器の場合は `WeaponMaster.WeaponType` を参照する。
-自然武器の場合は `Actor.NaturalWeaponType` または `MonsterSpeciesMaster.DefaultWeaponType` を参照する。
+自然武器の場合は `Actor.NaturalWeaponType` または `ActorArchetypeMaster.DefaultWeaponType` を参照する。
 `WeaponMaster` では `WeaponType.None` を禁止する。
 
 ### Inventory
@@ -817,7 +818,8 @@ Master/
 ├── WeaponMaster
 ├── ConsumableMaster
 ├── ActorArchetypeMaster
-├── MonsterSpeciesMaster
+├── AdventurerSpawnMaster
+├── SpeciesMaster
 ├── SpawnTableMaster
 ├── SpawnTableEntryMaster
 ├── IMasterRepository

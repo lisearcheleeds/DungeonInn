@@ -66,7 +66,15 @@ namespace DungeonInn.Application.UseCase
             }
 
             EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
-            profileRegistry.Register(actor.Id, archetypeMaster.Name);
+            var displayName = string.IsNullOrWhiteSpace(request.DisplayName)
+                ? archetypeMaster.Name
+                : request.DisplayName;
+            profileRegistry.Register(
+                actor.Id,
+                displayName,
+                archetypeMaster.Id,
+                archetypeMaster.SpeciesId,
+                archetypeMaster.BehaviorType);
             eventBus.Publish(new ActorSpawned(actor.Id));
             return UniTask.FromResult(actor);
         }

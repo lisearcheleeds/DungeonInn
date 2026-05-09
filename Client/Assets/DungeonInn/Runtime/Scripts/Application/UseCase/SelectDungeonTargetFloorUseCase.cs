@@ -53,16 +53,16 @@ namespace DungeonInn.Application.UseCase
         float CalculateFloorDifficulty(DungeonFloorExplorationMaster floorMaster)
         {
             var spawnTable = masterRepository.GetSpawnTableMaster(floorMaster.MonsterSpawnTableId);
-            if (spawnTable.TargetType != SpawnTableTargetType.MonsterSpecies)
+            if (spawnTable.TargetType != SpawnTableTargetType.ActorArchetype)
             {
-                throw new InvalidOperationException("Dungeon floor exploration requires monster species spawn table.");
+                throw new InvalidOperationException("Dungeon floor exploration requires actor archetype spawn table.");
             }
 
             var totalWeight = spawnTable.Entries.Sum(entry => entry.Weight);
             var averageCombatPower = spawnTable.Entries.Sum(entry =>
             {
-                var speciesMaster = masterRepository.GetMonsterSpeciesMaster(entry.TargetId);
-                return combatPowerCalculator.Calculate(speciesMaster) * entry.Weight;
+                var archetypeMaster = masterRepository.GetActorArchetypeMaster(entry.TargetId);
+                return combatPowerCalculator.Calculate(archetypeMaster) * entry.Weight;
             }) / (float)totalWeight;
             return averageCombatPower * floorMaster.DifficultyCoefficient;
         }

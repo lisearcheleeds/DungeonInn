@@ -113,7 +113,8 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, WeaponMaster> WeaponMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => throw new NotSupportedException();
-            public IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<int, AdventurerSpawnMaster> AdventurerSpawnMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
             public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
@@ -122,7 +123,8 @@ namespace DungeonInn.Tests.EditMode
             public WeaponMaster GetWeaponMaster(int itemId) => throw new NotSupportedException();
             public WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType) => throw new NotSupportedException();
             public ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId) => throw new NotSupportedException();
-            public MonsterSpeciesMaster GetMonsterSpeciesMaster(int speciesId) => throw new NotSupportedException();
+            public AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId) => throw new NotSupportedException();
+            public SpeciesMaster GetSpeciesMaster(int speciesId) => throw new NotSupportedException();
             public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
             public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
             public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex) => throw new NotSupportedException();

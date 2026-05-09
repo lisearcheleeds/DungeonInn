@@ -7,10 +7,9 @@ namespace DungeonInn.Domain.Actor
     public sealed class MonsterBehavior : IActorBehavior, IActorDropSource
     {
         public int SpeciesId { get; }
-        public bool CanScavenge { get; }
         public IReadOnlyList<ActorDropEntry> DropTable { get; }
 
-        public MonsterBehavior(int speciesId, bool canScavenge, IReadOnlyList<ActorDropEntry> dropTable)
+        public MonsterBehavior(int speciesId, IReadOnlyList<ActorDropEntry> dropTable)
         {
             if (speciesId < 1)
             {
@@ -18,7 +17,6 @@ namespace DungeonInn.Domain.Actor
             }
 
             SpeciesId = speciesId;
-            CanScavenge = canScavenge;
             DropTable = dropTable ?? throw new ArgumentNullException(nameof(dropTable));
         }
     }

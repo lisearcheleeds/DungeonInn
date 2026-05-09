@@ -37,12 +37,12 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void CreateMonsterBuildsMonsterFromSpeciesMaster()
+        public void CreateMonsterBuildsMonsterFromArchetypeMaster()
         {
             var factory = new MonsterFactory(new HardcodedMasterRepository());
 
             var actor = factory.Create(new MonsterCreateRequest(
-                1,
+                2,
                 Guid.NewGuid(),
                 new LayerPosition(MapLayerId.DungeonFloor(1), 10, 10),
                 new ActorFaction(2, "Monster"),
@@ -60,10 +60,11 @@ namespace DungeonInn.Tests.EditMode
         public void SpawnAdventurerUsesGuildInventoryForRookieEquipment()
         {
             var repository = new HardcodedMasterRepository();
+            var profileRegistry = new NoOpActorProfileRegistry();
             var useCase = new SpawnAdventurerUseCase(
                 new AdventurerFactory(repository),
                 repository,
-                new NoOpActorProfileRegistry(),
+                profileRegistry,
                 new NoOpGameEventBus());
             var guildInventory = new Inventory(new FixedItemStackLimitResolver());
             guildInventory.Add(new ItemStack(3001, 1));
@@ -90,18 +91,78 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(guild.Transactions.Count, Is.EqualTo(1));
         }
 
+        [Test]
+        public void SpawnAdventurerRegistersRequestDisplayName()
+        {
+            var repository = new HardcodedMasterRepository();
+            var profileRegistry = new RecordingActorProfileRegistry();
+            var useCase = new SpawnAdventurerUseCase(
+                new AdventurerFactory(repository),
+                repository,
+                profileRegistry,
+                new NoOpGameEventBus());
+            var guildInventory = new Inventory(new FixedItemStackLimitResolver());
+            guildInventory.Add(new ItemStack(3001, 1));
+            guildInventory.Add(new ItemStack(3003, 1));
+            var guild = new AdventurerGuild(Guid.NewGuid(), guildInventory, Array.Empty<DungeonInn.Domain.Facility.Facility>());
+            var actorId = Guid.NewGuid();
+
+            useCase.ExecuteAsync(
+                guild,
+                new AdventurerCreateRequest(
+                    1,
+                    actorId,
+                    new LayerPosition(MapLayerId.Ground, 0, 0),
+                    new ActorFaction(1, "Adventurer"),
+                    123,
+                    "Alice"),
+                10).GetAwaiter().GetResult();
+
+            Assert.That(profileRegistry.TryGetProfile(actorId, out var profile), Is.True);
+            Assert.That(profile.DisplayName, Is.EqualTo("Alice"));
+            Assert.That(profile.ArchetypeId, Is.EqualTo(1));
+        }
+
         sealed class NoOpActorProfileRegistry : IActorProfileRegistry
         {
             public void Register(Guid actorId, string displayName)
             {
             }
-            public void RegisterMonster(Guid actorId, string displayName, int monsterSpeciesId)
+            public void Register(
+                Guid actorId,
+                string displayName,
+                int archetypeId,
+                int speciesId,
+                ActorBehaviorType behaviorType)
             {
             }
             public bool TryGetProfile(Guid actorId, out ActorProfile profile)
             {
                 profile = null;
                 return false;
+            }
+        }
+
+        sealed class RecordingActorProfileRegistry : IActorProfileRegistry
+        {
+            readonly ActorProfileRegistry inner = new();
+
+            public void Register(Guid actorId, string displayName)
+            {
+                inner.Register(actorId, displayName);
+            }
+            public void Register(
+                Guid actorId,
+                string displayName,
+                int archetypeId,
+                int speciesId,
+                ActorBehaviorType behaviorType)
+            {
+                inner.Register(actorId, displayName, archetypeId, speciesId, behaviorType);
+            }
+            public bool TryGetProfile(Guid actorId, out ActorProfile profile)
+            {
+                return inner.TryGetProfile(actorId, out profile);
             }
         }
 

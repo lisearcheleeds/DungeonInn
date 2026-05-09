@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonInn.Domain.Actor;
 
 namespace DungeonInn.Application.Profiles
 {
@@ -15,11 +16,16 @@ namespace DungeonInn.Application.Profiles
             }
         }
 
-        public void RegisterMonster(Guid actorId, string displayName, int monsterSpeciesId)
+        public void Register(
+            Guid actorId,
+            string displayName,
+            int archetypeId,
+            int speciesId,
+            ActorBehaviorType behaviorType)
         {
             if (!profiles.ContainsKey(actorId))
             {
-                profiles[actorId] = new ActorProfile(actorId, displayName, monsterSpeciesId);
+                profiles[actorId] = new ActorProfile(actorId, displayName, archetypeId, speciesId, behaviorType);
             }
         }
 

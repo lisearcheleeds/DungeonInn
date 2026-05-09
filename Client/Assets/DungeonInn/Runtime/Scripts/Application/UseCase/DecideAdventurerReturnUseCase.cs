@@ -89,7 +89,7 @@ namespace DungeonInn.Application.UseCase
                 return;
             }
 
-            if (!profileRegistry.TryGetProfile(gameEvent.ActorId, out var profile) || profile.MonsterSpeciesId < 1)
+            if (!profileRegistry.TryGetProfile(gameEvent.ActorId, out var profile) || profile.SpeciesId < 1)
             {
                 return;
             }
@@ -101,12 +101,12 @@ namespace DungeonInn.Application.UseCase
                 defeatedMonsterCountsByActor.Add(actorId, defeatedMonsterCounts);
             }
 
-            if (!defeatedMonsterCounts.TryGetValue(profile.MonsterSpeciesId, out var count))
+            if (!defeatedMonsterCounts.TryGetValue(profile.SpeciesId, out var count))
             {
                 count = 0;
             }
 
-            defeatedMonsterCounts[profile.MonsterSpeciesId] = count + 1;
+            defeatedMonsterCounts[profile.SpeciesId] = count + 1;
         }
 
         bool TryCompleteGoal(Actor actor)

@@ -49,9 +49,19 @@ namespace DungeonInn.Application.UseCase
                 return null;
             }
 
-            // TODO: SpawnTableMasterから重み付き抽選に変更する
             var spawnTable = masterRepository.GetSpawnTableMaster(1);
-            var entry = spawnTable.Entries[0];
+            if (spawnTable.TargetType != SpawnTableTargetType.AdventurerSpawn)
+            {
+                throw new InvalidOperationException("Adventurer schedule requires adventurer spawn table.");
+            }
+
+            var entry = SelectAdventurerSpawnEntry(worldState, spawnTable);
+            if (entry == null)
+            {
+                return null;
+            }
+
+            var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetId);
 
             // TODO: スポーン地点をマスタから取得する
             var position = worldState.GroundMap.Layer.GetCellCenter(PickRandomEdgePosition());
@@ -60,15 +70,51 @@ namespace DungeonInn.Application.UseCase
             var faction = new ActorFaction(1, "Adventurer");
 
             var request = new AdventurerCreateRequest(
-                entry.TargetId,
+                adventurerSpawnMaster.ActorArchetypeId,
                 Guid.NewGuid(),
                 position,
                 faction,
-                gameRandom.Next());
+                gameRandom.Next(),
+                adventurerSpawnMaster.DisplayName);
 
             var actor = await spawnAdventurerUseCase.ExecuteAsync(worldState.Guild, request, currentScheduleTick);
             worldState.RegisterActor(actor);
+            if (adventurerSpawnMaster.SpawnOnce)
+            {
+                worldState.SpawnSchedule.MarkAdventurerSpawned(adventurerSpawnMaster.Id);
+            }
+
             return actor;
+        }
+
+        SpawnTableEntryMaster SelectAdventurerSpawnEntry(IGameWorldState worldState, SpawnTableMaster spawnTable)
+        {
+            var entries = spawnTable.Entries
+                .Where(entry =>
+                {
+                    var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetId);
+                    return !adventurerSpawnMaster.SpawnOnce ||
+                        !worldState.SpawnSchedule.HasSpawnedAdventurerSpawn(adventurerSpawnMaster.Id);
+                })
+                .ToArray();
+            if (entries.Length == 0)
+            {
+                return null;
+            }
+
+            var totalWeight = entries.Sum(entry => entry.Weight);
+            var roll = gameRandom.Next(totalWeight);
+            var currentWeight = 0;
+            foreach (var entry in entries)
+            {
+                currentWeight += entry.Weight;
+                if (roll < currentWeight)
+                {
+                    return entry;
+                }
+            }
+
+            return entries[entries.Length - 1];
         }
 
         GridPosition PickRandomEdgePosition()

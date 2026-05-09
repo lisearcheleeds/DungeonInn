@@ -6,25 +6,25 @@ namespace DungeonInn.Application.Factory
 {
     public sealed class MonsterCreateRequest
     {
-        public int SpeciesId { get; }
+        public int ArchetypeId { get; }
         public Guid ActorId { get; }
         public LayerPosition Position { get; }
         public ActorFaction Faction { get; }
         public int PreferenceSeed { get; }
 
         public MonsterCreateRequest(
-            int speciesId,
+            int archetypeId,
             Guid actorId,
             LayerPosition position,
             ActorFaction faction,
             int preferenceSeed)
         {
-            if (speciesId < 1)
+            if (archetypeId < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(speciesId));
+                throw new ArgumentOutOfRangeException(nameof(archetypeId));
             }
 
-            SpeciesId = speciesId;
+            ArchetypeId = archetypeId;
             ActorId = actorId;
             Position = position;
             Faction = faction ?? throw new ArgumentNullException(nameof(faction));

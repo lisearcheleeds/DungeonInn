@@ -142,7 +142,7 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(2, "Monster"),
-                new MonsterBehavior(1, false, dropTable));
+                new MonsterBehavior(1, dropTable));
         }
 
         static Actor CreateAdventurerActor(LayerPosition position)
