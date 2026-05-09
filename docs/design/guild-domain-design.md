@@ -415,6 +415,7 @@ MasterMemory 導入前は `IMasterRepository` / `HardcodedMasterRepository` が�
 Actor の基本プロファイル、種族、スポーンテーブルは Master として扱う。
 `ActorArchetypeMaster` は Adventurer / GuildStaff / Monster といった振る舞いの初期生成元であり、`SpeciesMaster` は Actor 共通の種族名と種族固有ドロップを持つ。
 `AdventurerSpawnMaster` は冒険者の来訪文脈で使う固有名と参照 `ActorArchetypeMaster` を持つ。
+生成後の Actor 個体の現在表示名は `ActorProfile.DisplayName` に保持する。ユーザー作成キャラクターや名前変更機能を追加する場合、マスタではなく `ActorProfile.DisplayName` を更新する。
 `ActorArchetypeMaster` は `DefaultWeaponType` を持ち、ゴブリンの爪や獣の牙のような自然武器を装備アイテムなしで表現する。
 `SpawnTableMaster` はスポーン対象と重みを保持し、UseCase / AI / オーケストレーションが抽選に利用する。
 

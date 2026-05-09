@@ -142,7 +142,11 @@ Actor が `GameWorldState` から削除された後も、討伐目標などの�
 
 討伐目標は削除済み Actor の `ActorId` から `ActorProfileRegistry` を参照し、`SpeciesId` または `ArchetypeId` によって対象判定を行う。
 
-`DisplayName` は表示用の個体名スナップショットとして扱う。冒険者は `AdventurerSpawnMaster.DisplayName`、固有名を持たない Actor は `ActorArchetypeMaster.Name` を登録する。
+`DisplayName` は表示用の個体名として扱う。冒険者は `AdventurerSpawnMaster.DisplayName`、固有名を持たない Actor は `ActorArchetypeMaster.Name` を初期値として登録する。
+
+`ActorArchetypeMaster.Name` はテンプレート名、`AdventurerSpawnMaster.DisplayName` は初期スポーン定義上の名前であり、生成後の Actor 個体の現在表示名ではない。
+
+将来、ユーザー作成キャラクターや名前変更機能を追加する場合は、生成済み Actor の現在表示名として `ActorProfile.DisplayName` を更新する。これにより、Actor が `GameWorldState` から削除された後も、ログ・履歴・討伐結果などで変更後の名前を参照できる。
 
 ## 実装時の注意
 
