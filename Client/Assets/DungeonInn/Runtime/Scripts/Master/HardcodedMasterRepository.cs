@@ -164,7 +164,11 @@ namespace DungeonInn.Master
                     2,
                     WeaponType.Claws,
                     true,
-                    new[] { new ItemStack(1002, 1) })
+                    new[]
+                    {
+                        new ActorDropEntry(1002, 0.7f, 1, 1),
+                        new ActorDropEntry(1, 0.5f, 1, 3)
+                    })
             }.ToDictionary(x => x.Id);
         }
 
@@ -219,6 +223,7 @@ namespace DungeonInn.Master
                 {
                     RequireItem(drop.ItemId);
                 }
+
             }
 
             foreach (var spawnTableMaster in spawnTableMasters.Values)

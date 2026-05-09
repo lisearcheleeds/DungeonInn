@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Domain.Actor
 {
-    public sealed class AdventurerBehavior : IActorBehavior
+    public sealed class AdventurerBehavior : IActorBehavior, IActorDropSource
     {
+        public IReadOnlyList<ActorDropEntry> DropTable => Array.Empty<ActorDropEntry>();
         public AdventurerLifecycleState LifecycleState { get; private set; }
         public int Stress { get; private set; }
         public int ExplorationRoomArrivalCount { get; private set; }

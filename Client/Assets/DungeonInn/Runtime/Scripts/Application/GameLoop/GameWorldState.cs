@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Guild;
+using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Application.GameLoop
@@ -11,12 +12,15 @@ namespace DungeonInn.Application.GameLoop
     {
         readonly List<Actor> actors = new();
         readonly Dictionary<Guid, Actor> actorById = new();
+        readonly List<ItemInstance> items = new();
+        readonly Dictionary<Guid, ItemInstance> itemById = new();
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
         public GroundMap GroundMap { get; private set; }
         public Dungeon Dungeon { get; private set; }
         public IReadOnlyList<Actor> Actors => actors;
+        public IReadOnlyList<ItemInstance> Items => items;
         public SpawnScheduleState SpawnSchedule { get; } = new();
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)
@@ -69,6 +73,39 @@ namespace DungeonInn.Application.GameLoop
         {
             actorById.TryGetValue(actorId, out var actor);
             return actor;
+        }
+
+        public void AddItem(ItemInstance item)
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            if (itemById.ContainsKey(item.InstanceId))
+            {
+                throw new InvalidOperationException("Item instance is already registered.");
+            }
+
+            items.Add(item);
+            itemById[item.InstanceId] = item;
+        }
+
+        public bool RemoveItem(Guid instanceId)
+        {
+            if (!itemById.ContainsKey(instanceId))
+            {
+                return false;
+            }
+
+            itemById.Remove(instanceId);
+            var index = items.FindIndex(x => x.InstanceId.Equals(instanceId));
+            if (index >= 0)
+            {
+                items.RemoveAt(index);
+            }
+
+            return true;
         }
     }
 }

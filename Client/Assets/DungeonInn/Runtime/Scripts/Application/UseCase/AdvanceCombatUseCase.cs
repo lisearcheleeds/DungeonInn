@@ -19,13 +19,15 @@ namespace DungeonInn.Application.UseCase
         readonly IGameClock gameClock;
         readonly IGameEventBus eventBus;
         readonly GrantExperienceUseCase grantExperienceUseCase;
+        readonly DropItemUseCase dropItemUseCase;
 
         [Inject]
         public AdvanceCombatUseCase(
             IActorCombatService actorCombatService,
             IGameClock gameClock,
             IGameEventBus eventBus,
-            GrantExperienceUseCase grantExperienceUseCase)
+            GrantExperienceUseCase grantExperienceUseCase,
+            DropItemUseCase dropItemUseCase)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -35,6 +37,8 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(eventBus));
             this.grantExperienceUseCase = grantExperienceUseCase
                 ?? throw new ArgumentNullException(nameof(grantExperienceUseCase));
+            this.dropItemUseCase = dropItemUseCase
+                ?? throw new ArgumentNullException(nameof(dropItemUseCase));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -100,6 +104,7 @@ namespace DungeonInn.Application.UseCase
                     }
 
                     grantExperienceUseCase.Execute(actor, target);
+                    dropItemUseCase.Execute(target, worldState);
                     worldState.RemoveActor(target.Id);
                     actorCombatService.ClearTargetsReferencing(target.Id);
                     actorCombatService.RemoveState(target.Id);

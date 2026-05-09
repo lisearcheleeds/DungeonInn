@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Master
@@ -12,7 +13,7 @@ namespace DungeonInn.Master
         public int ActorArchetypeId { get; }
         public WeaponType DefaultWeaponType { get; }
         public bool CanScavenge { get; }
-        public IReadOnlyList<ItemStack> SpeciesDrops { get; }
+        public IReadOnlyList<ActorDropEntry> SpeciesDrops { get; }
 
         public MonsterSpeciesMaster(
             int id,
@@ -20,7 +21,7 @@ namespace DungeonInn.Master
             int actorArchetypeId,
             WeaponType defaultWeaponType,
             bool canScavenge,
-            IReadOnlyList<ItemStack> speciesDrops)
+            IReadOnlyList<ActorDropEntry> speciesDrops)
         {
             if (id < 1)
             {
@@ -47,7 +48,7 @@ namespace DungeonInn.Master
             ActorArchetypeId = actorArchetypeId;
             DefaultWeaponType = defaultWeaponType;
             CanScavenge = canScavenge;
-            SpeciesDrops = (speciesDrops ?? Array.Empty<ItemStack>()).ToArray();
+            SpeciesDrops = (speciesDrops ?? Array.Empty<ActorDropEntry>()).ToArray();
         }
     }
 }

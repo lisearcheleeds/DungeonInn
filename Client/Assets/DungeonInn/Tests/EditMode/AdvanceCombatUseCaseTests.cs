@@ -24,7 +24,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus));
+            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
@@ -46,7 +46,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus));
+            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
@@ -72,7 +72,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus));
+            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
             worldState.RegisterActor(attacker);
@@ -141,6 +141,18 @@ namespace DungeonInn.Tests.EditMode
         static GrantExperienceUseCase CreateGrantExperienceUseCase(IGameEventBus eventBus)
         {
             return new GrantExperienceUseCase(new ThrowingMasterRepository(), eventBus);
+        }
+
+        static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
+        {
+            return new DropItemUseCase(new ThrowingMasterRepository(), new ZeroGameRandom(), eventBus);
+        }
+
+        sealed class ZeroGameRandom : IGameRandom
+        {
+            public int Next() => 0;
+            public int Next(int maxExclusive) => 0;
+            public int Next(int minInclusive, int maxExclusive) => minInclusive;
         }
 
         static Actor CreateActor(string name, int factionId, LayerPosition position, int hp)

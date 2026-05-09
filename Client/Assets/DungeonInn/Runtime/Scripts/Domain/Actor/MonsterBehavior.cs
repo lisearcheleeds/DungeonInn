@@ -4,13 +4,13 @@ using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Domain.Actor
 {
-    public sealed class MonsterBehavior : IActorBehavior
+    public sealed class MonsterBehavior : IActorBehavior, IActorDropSource
     {
         public int SpeciesId { get; }
         public bool CanScavenge { get; }
-        public IReadOnlyList<ItemStack> SpeciesDrops { get; }
+        public IReadOnlyList<ActorDropEntry> DropTable { get; }
 
-        public MonsterBehavior(int speciesId, bool canScavenge, IReadOnlyList<ItemStack> speciesDrops)
+        public MonsterBehavior(int speciesId, bool canScavenge, IReadOnlyList<ActorDropEntry> dropTable)
         {
             if (speciesId < 1)
             {
@@ -19,7 +19,7 @@ namespace DungeonInn.Domain.Actor
 
             SpeciesId = speciesId;
             CanScavenge = canScavenge;
-            SpeciesDrops = speciesDrops ?? throw new ArgumentNullException(nameof(speciesDrops));
+            DropTable = dropTable ?? throw new ArgumentNullException(nameof(dropTable));
         }
     }
 }

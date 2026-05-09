@@ -81,6 +81,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<ActorLeveledUp>()
                 .Subscribe(OnActorLeveledUp)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<ItemDropped>()
+                .Subscribe(OnItemDropped)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -159,6 +163,11 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnActorLeveledUp(ActorLeveledUp e)
         {
             Debug.Log($"[Growth] {GetName(e.ActorId)} leveled up! Lv.{e.PreviousLevel} → Lv.{e.NewLevel}");
+        }
+
+        void OnItemDropped(ItemDropped e)
+        {
+            Debug.Log($"[Drop] {GetName(e.ActorId)} dropped {e.ItemName} at {e.Position}");
         }
 
         void OnInnFeeCharged(InnFeeCharged e)

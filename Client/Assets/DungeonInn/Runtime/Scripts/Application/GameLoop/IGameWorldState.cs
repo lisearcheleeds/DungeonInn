@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Guild;
+using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Application.GameLoop
@@ -14,11 +15,14 @@ namespace DungeonInn.Application.GameLoop
         GroundMap GroundMap { get; }
         Dungeon Dungeon { get; }
         IReadOnlyList<Actor> Actors { get; }
+        IReadOnlyList<ItemInstance> Items { get; }
         SpawnScheduleState SpawnSchedule { get; }
 
         void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon);
         void RegisterActor(Actor actor);
         bool RemoveActor(Guid actorId);
         Actor FindActor(Guid actorId);
+        void AddItem(ItemInstance item);
+        bool RemoveItem(Guid instanceId);
     }
 }
