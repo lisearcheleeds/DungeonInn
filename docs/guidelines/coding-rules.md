@@ -135,6 +135,43 @@ for (var i = 0; i < count; i++) { }
 var ratio = Mathf.Lerp(0f, 1f, t);
 ```
 
+### 3-5. 引数名はメソッドが要求する抽象度に合わせる
+
+public / internal メソッドの引数名は、呼び出し元の現在用途ではなく、そのメソッド自身が要求する契約・抽象度に合わせる。
+
+型が汎用的な基底型・共通型・インターフェースであり、メソッド内で特定サブタイプや特定ロールの契約を要求しない場合、引数名も汎用名にする。
+
+```csharp
+// NG: 型は汎用なのに、呼び出し元都合の具体ロール名を付けている
+public int CalculateScore(Customer premiumCustomer)
+{
+    return premiumCustomer.Point;
+}
+
+// OK: メソッドが要求している抽象度と引数名が一致している
+public int CalculateScore(Customer customer)
+{
+    return customer.Point;
+}
+```
+
+特定ロール名を使ってよいのは、引数型・メソッド名・ガード条件・内部処理のいずれかで、そのロール固有の契約を明示している場合に限る。
+
+```csharp
+// OK: メソッド責務が特定ロール専用であることを名前で明示している
+public int CalculatePremiumCustomerScore(Customer premiumCustomer)
+{
+    if (!premiumCustomer.IsPremium)
+    {
+        throw new InvalidOperationException("Premium customer is required.");
+    }
+
+    return premiumCustomer.Point * 2;
+}
+```
+
+「今はその呼び出し元からしか呼ばれない」という理由だけで、境界メソッドの引数名に具体ロールを漏らさない。
+
 ---
 
 ## 4. ローカル変数の型

@@ -16,6 +16,7 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, MonsterSpeciesMaster> monsterSpeciesMasters;
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
         readonly IReadOnlyDictionary<int, LevelTable> levelTables;
+        readonly IReadOnlyDictionary<int, DungeonFloorExplorationMaster> dungeonFloorExplorationMasters;
 
         public IReadOnlyDictionary<int, ItemMaster> ItemMasters => itemMasters;
         public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => equipmentMasters;
@@ -25,6 +26,7 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters => monsterSpeciesMasters;
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
         public IReadOnlyDictionary<int, LevelTable> LevelTables => levelTables;
+        public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => dungeonFloorExplorationMasters;
 
         public HardcodedMasterRepository()
         {
@@ -33,6 +35,7 @@ namespace DungeonInn.Master
             weaponTypeCombatMasters = WeaponTypeCombatMasterCatalog.CreateAll();
             weaponMasters = CreateWeaponMasters();
             levelTables = CreateLevelTables();
+            dungeonFloorExplorationMasters = CreateDungeonFloorExplorationMasters();
             actorArchetypeMasters = CreateActorArchetypeMasters();
             monsterSpeciesMasters = CreateMonsterSpeciesMasters();
             spawnTableMasters = CreateSpawnTableMasters();
@@ -84,6 +87,11 @@ namespace DungeonInn.Master
             return GetItemMaster(itemId).MaxStackCount;
         }
 
+        public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex)
+        {
+            return GetRequired(dungeonFloorExplorationMasters, floorIndex, nameof(DungeonFloorExplorationMaster));
+        }
+
         static IReadOnlyDictionary<int, ItemMaster> CreateItemMasters()
         {
             return new[]
@@ -95,8 +103,18 @@ namespace DungeonInn.Master
                 new ItemMaster(3001, "Novice Sword", ItemCategory.Equipment, 80, 1, true, 1),
                 new ItemMaster(3002, "Novice Bow", ItemCategory.Equipment, 80, 1, true, 1),
                 new ItemMaster(3003, "Cloth Armor", ItemCategory.Equipment, 60, 1, true, 1),
-                new ItemMaster(3004, "Iron Sword", ItemCategory.Equipment, 120, 1, true, 1)
+                new ItemMaster(3004, "Iron Sword", ItemCategory.Equipment, 120, 5, true, 1)
             }.ToDictionary(x => x.Id);
+        }
+
+        static IReadOnlyDictionary<int, DungeonFloorExplorationMaster> CreateDungeonFloorExplorationMasters()
+        {
+            return new[]
+            {
+                new DungeonFloorExplorationMaster(1, 2, Domain.Common.GameConstants.DungeonFloorDifficultyCoefficient),
+                new DungeonFloorExplorationMaster(2, 3, Domain.Common.GameConstants.DungeonFloorDifficultyCoefficient),
+                new DungeonFloorExplorationMaster(3, 4, Domain.Common.GameConstants.DungeonFloorDifficultyCoefficient)
+            }.ToDictionary(x => x.FloorIndex);
         }
 
         static IReadOnlyDictionary<int, EquipmentMaster> CreateEquipmentMasters()
@@ -173,6 +191,24 @@ namespace DungeonInn.Master
                     1,
                     2,
                     Array.Empty<int>(),
+                    Array.Empty<ItemStack>()),
+                new ActorArchetypeMaster(
+                    3,
+                    "Orc",
+                    ActorBehaviorType.Monster,
+                    new ActorStats(8, 7, 8, 4, 4, 4),
+                    1,
+                    2,
+                    Array.Empty<int>(),
+                    Array.Empty<ItemStack>()),
+                new ActorArchetypeMaster(
+                    4,
+                    "Ogre",
+                    ActorBehaviorType.Monster,
+                    new ActorStats(14, 8, 14, 6, 6, 8),
+                    1,
+                    2,
+                    Array.Empty<int>(),
                     Array.Empty<ItemStack>())
             }.ToDictionary(x => x.Id);
         }
@@ -192,6 +228,28 @@ namespace DungeonInn.Master
                         new ActorDropEntry(1002, 0.7f, 1, 1),
                         new ActorDropEntry(1, 0.5f, 1, 3),
                         new ActorDropEntry(3004, 1.0f, 1, 1)
+                    }),
+                new MonsterSpeciesMaster(
+                    2,
+                    "Orc",
+                    3,
+                    WeaponType.Axe,
+                    true,
+                    new[]
+                    {
+                        new ActorDropEntry(1, 0.7f, 3, 8),
+                        new ActorDropEntry(3004, 0.25f, 1, 1)
+                    }),
+                new MonsterSpeciesMaster(
+                    3,
+                    "Ogre",
+                    4,
+                    WeaponType.Fist,
+                    true,
+                    new[]
+                    {
+                        new ActorDropEntry(1, 0.9f, 8, 15),
+                        new ActorDropEntry(3004, 0.4f, 1, 1)
                     })
             }.ToDictionary(x => x.Id);
         }
@@ -206,11 +264,21 @@ namespace DungeonInn.Master
             {
                 new SpawnTableEntryMaster(2, 2, 1, 100, 1, 5)
             };
+            var floorTwoMonsterEntries = new[]
+            {
+                new SpawnTableEntryMaster(3, 3, 2, 100, 1, 5)
+            };
+            var floorThreeMonsterEntries = new[]
+            {
+                new SpawnTableEntryMaster(4, 4, 3, 100, 1, 5)
+            };
 
             return new[]
             {
                 new SpawnTableMaster(1, "Default Adventurer Spawn", SpawnTableTargetType.ActorArchetype, adventurerEntries),
-                new SpawnTableMaster(2, "Dungeon Floor 1 Monster Spawn", SpawnTableTargetType.MonsterSpecies, monsterEntries)
+                new SpawnTableMaster(2, "Dungeon Floor 1 Monster Spawn", SpawnTableTargetType.MonsterSpecies, monsterEntries),
+                new SpawnTableMaster(3, "Dungeon Floor 2 Monster Spawn", SpawnTableTargetType.MonsterSpecies, floorTwoMonsterEntries),
+                new SpawnTableMaster(4, "Dungeon Floor 3 Monster Spawn", SpawnTableTargetType.MonsterSpecies, floorThreeMonsterEntries)
             }.ToDictionary(x => x.Id);
         }
 
@@ -255,6 +323,15 @@ namespace DungeonInn.Master
                 foreach (var entry in spawnTableMaster.Entries)
                 {
                     ValidateSpawnTableEntry(spawnTableMaster, entry);
+                }
+            }
+
+            foreach (var floorExplorationMaster in dungeonFloorExplorationMasters.Values)
+            {
+                var spawnTableMaster = GetSpawnTableMaster(floorExplorationMaster.MonsterSpawnTableId);
+                if (spawnTableMaster.TargetType != SpawnTableTargetType.MonsterSpecies)
+                {
+                    throw new InvalidOperationException("Dungeon floor exploration requires monster species spawn table.");
                 }
             }
         }

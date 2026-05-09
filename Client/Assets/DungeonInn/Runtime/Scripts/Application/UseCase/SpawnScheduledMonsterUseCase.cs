@@ -49,12 +49,16 @@ namespace DungeonInn.Application.UseCase
                 return null;
             }
 
-            var floor = worldState.Dungeon.GetFloor(1);
+            var generatedFloors = worldState.Dungeon.Floors.Values
+                .OrderBy(floor => floor.FloorIndex)
+                .ToArray();
+            var floor = generatedFloors[gameRandom.Next(generatedFloors.Length)];
             var room = floor.Rooms[currentScheduleTick % floor.Rooms.Count];
             var position = floor.Layer.GetCellCenter(room.Center);
 
             // TODO: SpawnTableMasterから重み付き抽選に変更する
-            var spawnTable = masterRepository.GetSpawnTableMaster(2);
+            var floorExplorationMaster = masterRepository.GetDungeonFloorExplorationMaster(floor.FloorIndex);
+            var spawnTable = masterRepository.GetSpawnTableMaster(floorExplorationMaster.MonsterSpawnTableId);
             var entry = spawnTable.Entries[0];
 
             // TODO: FactionをFactionMasterから取得する

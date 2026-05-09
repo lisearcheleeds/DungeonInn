@@ -103,6 +103,7 @@ namespace DungeonInn.Core
         static void RegisterApplicationUseCases(IContainerBuilder builder)
         {
             builder.Register<AdvanceAdventurerLifecycleUseCase>(Lifetime.Singleton);
+            builder.Register<ActorCombatPowerCalculator>(Lifetime.Singleton);
             builder.Register<AssignStaffUseCase>(Lifetime.Singleton);
             builder.Register<CalculateScoutCostUseCase>(Lifetime.Singleton);
             builder.Register<CanMoveOnMapLayerUseCase>(Lifetime.Singleton);
@@ -118,6 +119,7 @@ namespace DungeonInn.Core
             builder.Register<ReleaseInnReservationUseCase>(Lifetime.Singleton);
             builder.Register<ReserveInnUseCase>(Lifetime.Singleton);
             builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Singleton);
+            builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Singleton);
             builder.Register<UseDungeonStairUseCase>(Lifetime.Singleton);
         }
     }

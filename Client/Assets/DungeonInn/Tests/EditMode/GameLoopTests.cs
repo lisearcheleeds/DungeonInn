@@ -104,6 +104,7 @@ namespace DungeonInn.Tests.EditMode
                 new UseDungeonStairUseCase(
                     new EnsureDungeonFloorGeneratedUseCase(
                         new GenerateDungeonFloorUseCase())),
+                CreateSelectDungeonTargetFloorUseCase(),
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
@@ -134,6 +135,7 @@ namespace DungeonInn.Tests.EditMode
                 new UseDungeonStairUseCase(
                     new EnsureDungeonFloorGeneratedUseCase(
                         new GenerateDungeonFloorUseCase())),
+                CreateSelectDungeonTargetFloorUseCase(),
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
@@ -146,6 +148,50 @@ namespace DungeonInn.Tests.EditMode
             }
 
             Assert.That(behavior.ExplorationRoomArrivalCount, Is.EqualTo(GameConstants.AdventurerExplorationRoomArrivalTarget));
+            Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
+        }
+
+        [Test]
+        public void ExploringAdventurerDescendsTowardTargetFloor()
+        {
+            var worldState = CreateInitializedWorldState();
+            var floor = worldState.Dungeon.GetFloor(1);
+            var actor = CreateExploringAdventurer(floor.GetArrivalPosition(DungeonStairType.Down));
+            var behavior = actor.RequireBehavior<AdventurerBehavior>();
+            behavior.SetTargetFloorDepth(2);
+            worldState.RegisterActor(actor);
+
+            var useCase = CreateLifecycleUseCase();
+
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            Assert.That(worldState.Dungeon.HasFloor(2), Is.True);
+            Assert.That(actor.Position.LayerId, Is.EqualTo(MapLayerId.DungeonFloor(2)));
+            Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Exploring));
+        }
+
+        [Test]
+        public void ReturningAdventurerAscendsToPreviousFloorBeforeGround()
+        {
+            var worldState = CreateInitializedWorldState();
+            var floorGenerator = new EnsureDungeonFloorGeneratedUseCase(new GenerateDungeonFloorUseCase());
+            var secondFloor = floorGenerator.ExecuteAsync(
+                    worldState.Dungeon,
+                    2,
+                    Array.Empty<DungeonDepthBandConfig>())
+                .GetAwaiter()
+                .GetResult();
+            var actor = CreateAdventurer(
+                secondFloor.GetArrivalPosition(DungeonStairType.Up),
+                AdventurerLifecycleState.Returning);
+            var behavior = actor.RequireBehavior<AdventurerBehavior>();
+            worldState.RegisterActor(actor);
+
+            var useCase = CreateLifecycleUseCase();
+
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            Assert.That(actor.Position.LayerId, Is.EqualTo(MapLayerId.DungeonFloor(1)));
             Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
         }
 
@@ -172,6 +218,13 @@ namespace DungeonInn.Tests.EditMode
 
         static Actor CreateExploringAdventurer(LayerPosition position)
         {
+            return CreateAdventurer(position, AdventurerLifecycleState.Exploring);
+        }
+
+        static Actor CreateAdventurer(
+            LayerPosition position,
+            AdventurerLifecycleState lifecycleState)
+        {
             return new Actor(
                 Guid.NewGuid(),
                 0,
@@ -186,7 +239,30 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, AdventurerLifecycleState.Exploring));
+                new AdventurerBehavior(0, lifecycleState));
+        }
+
+        static AdvanceActorSimpleLifecycleUseCase CreateLifecycleUseCase()
+        {
+            var navigationService = new ActorNavigationService();
+            return new AdvanceActorSimpleLifecycleUseCase(
+                new MoveActorTowardDestinationUseCase(navigationService),
+                new UseDungeonStairUseCase(
+                    new EnsureDungeonFloorGeneratedUseCase(
+                        new GenerateDungeonFloorUseCase())),
+                CreateSelectDungeonTargetFloorUseCase(),
+                navigationService,
+                new ActorCombatService(),
+                new GameRandom(10),
+                new NoOpGameEventBus());
+        }
+
+        static SelectDungeonTargetFloorUseCase CreateSelectDungeonTargetFloorUseCase()
+        {
+            var masterRepository = new HardcodedMasterRepository();
+            return new SelectDungeonTargetFloorUseCase(
+                masterRepository,
+                new ActorCombatPowerCalculator(masterRepository));
         }
 
         sealed class NoOpGameEventBus : IGameEventBus

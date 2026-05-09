@@ -116,6 +116,7 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
+            public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
             public ItemMaster GetItemMaster(int itemId) => throw new NotSupportedException();
             public EquipmentMaster GetEquipmentMaster(int itemId) => throw new NotSupportedException();
             public WeaponMaster GetWeaponMaster(int itemId) => throw new NotSupportedException();
@@ -124,6 +125,7 @@ namespace DungeonInn.Tests.EditMode
             public MonsterSpeciesMaster GetMonsterSpeciesMaster(int speciesId) => throw new NotSupportedException();
             public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
             public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
+            public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex) => throw new NotSupportedException();
             public int GetMaxStackCount(int itemId) => throw new NotSupportedException();
         }
 

@@ -45,7 +45,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<SpawnScheduledAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledMonsterUseCase>(Lifetime.Scoped);
             builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Scoped);
+            builder.Register<ActorCombatPowerCalculator>(Lifetime.Scoped);
             builder.Register<UseDungeonStairUseCase>(Lifetime.Scoped);
+            builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorSimpleLifecycleUseCase>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
             builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);

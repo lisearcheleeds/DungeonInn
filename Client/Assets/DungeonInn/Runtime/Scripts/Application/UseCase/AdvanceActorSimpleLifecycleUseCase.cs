@@ -19,6 +19,7 @@ namespace DungeonInn.Application.UseCase
         readonly Dictionary<Guid, LayerPosition> exploringDestinations = new();
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
         readonly UseDungeonStairUseCase useDungeonStairUseCase;
+        readonly SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase;
         readonly IActorNavigationService navigationService;
         readonly IActorCombatService actorCombatService;
         readonly IGameRandom gameRandom;
@@ -29,6 +30,7 @@ namespace DungeonInn.Application.UseCase
         public AdvanceActorSimpleLifecycleUseCase(
             MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase,
             UseDungeonStairUseCase useDungeonStairUseCase,
+            SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase,
             IActorNavigationService navigationService,
             IActorCombatService actorCombatService,
             IGameRandom gameRandom,
@@ -38,6 +40,8 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
             this.useDungeonStairUseCase = useDungeonStairUseCase
                 ?? throw new ArgumentNullException(nameof(useDungeonStairUseCase));
+            this.selectDungeonTargetFloorUseCase = selectDungeonTargetFloorUseCase
+                ?? throw new ArgumentNullException(nameof(selectDungeonTargetFloorUseCase));
             this.navigationService = navigationService
                 ?? throw new ArgumentNullException(nameof(navigationService));
             this.actorCombatService = actorCombatService
@@ -80,6 +84,7 @@ namespace DungeonInn.Application.UseCase
             {
                 case AdventurerLifecycleState.Arrived:
                 case AdventurerLifecycleState.Preparing:
+                    behavior.SetTargetFloorDepth(await selectDungeonTargetFloorUseCase.ExecuteAsync(actor));
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.GoingToDungeon);
                     break;
 
@@ -88,7 +93,7 @@ namespace DungeonInn.Application.UseCase
                     break;
 
                 case AdventurerLifecycleState.Exploring:
-                    AdvanceExploring(actor, behavior, worldState, deltaGameSeconds);
+                    await AdvanceExploringAsync(actor, behavior, worldState, deltaGameSeconds);
                     break;
 
                 case AdventurerLifecycleState.Returning:
@@ -133,7 +138,7 @@ namespace DungeonInn.Application.UseCase
             }
         }
 
-        void AdvanceExploring(
+        async UniTask AdvanceExploringAsync(
             Actor actor,
             AdventurerBehavior behavior,
             IGameWorldState worldState,
@@ -150,6 +155,12 @@ namespace DungeonInn.Application.UseCase
             }
 
             var floor = worldState.Dungeon.GetFloor(actor.Position.LayerId.Value);
+            if (floor.FloorIndex < behavior.TargetFloorDepth)
+            {
+                await AdvanceTowardDeeperFloorAsync(actor, floor, worldState, deltaGameSeconds);
+                return;
+            }
+
             if (!exploringDestinations.TryGetValue(actor.Id, out var destination)
                 || !destination.LayerId.Equals(actor.Position.LayerId))
             {
@@ -182,6 +193,40 @@ namespace DungeonInn.Application.UseCase
             }
         }
 
+        async UniTask AdvanceTowardDeeperFloorAsync(
+            Actor actor,
+            DungeonFloor floor,
+            IGameWorldState worldState,
+            float deltaGameSeconds)
+        {
+            var downStairDestination = floor.GetArrivalPosition(DungeonStairType.Down);
+            var arrived = moveActorTowardDestinationUseCase.Execute(
+                actor,
+                downStairDestination,
+                floor.Layer,
+                pos => floor.IsWalkable(pos),
+                GameConstants.ActorMoveSpeedMetersPerSecond,
+                deltaGameSeconds);
+
+            if (!arrived)
+            {
+                return;
+            }
+
+            var nextFloorPosition = await useDungeonStairUseCase.ExecuteAsync(
+                worldState.Dungeon,
+                worldState.GroundMap,
+                actor.Position,
+                DungeonStairType.Down,
+                Array.Empty<DungeonDepthBandConfig>());
+
+            actor.MoveTo(nextFloorPosition);
+            exploringDestinations.Remove(actor.Id);
+            navigationService.InvalidatePath(actor.Id);
+            actorCombatService.ClearCombatHistory(actor.Id);
+            eventBus.Publish(new ActorEnteredDungeon(actor.Id, nextFloorPosition.LayerId.Value));
+        }
+
         async UniTask AdvanceReturningAsync(Actor actor, AdventurerBehavior behavior, IGameWorldState worldState, float deltaGameSeconds)
         {
             if (actor.Position.LayerId.Equals(MapLayerId.Ground))
@@ -210,14 +255,18 @@ namespace DungeonInn.Application.UseCase
                     DungeonStairType.Up,
                     Array.Empty<DungeonDepthBandConfig>());
 
-                actor.MoveTo(returnPosition);
-                navigationService.InvalidatePath(actor.Id);
-                behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-
                 if (returnPosition.LayerId.Equals(MapLayerId.Ground))
                 {
+                    actor.MoveTo(returnPosition);
+                    navigationService.InvalidatePath(actor.Id);
+                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
                     eventBus.Publish(new ActorExitedDungeon(actor.Id));
+                    return;
                 }
+
+                actor.MoveTo(returnPosition);
+                navigationService.InvalidatePath(actor.Id);
+                eventBus.Publish(new ActorEnteredDungeon(actor.Id, returnPosition.LayerId.Value));
             }
         }
 

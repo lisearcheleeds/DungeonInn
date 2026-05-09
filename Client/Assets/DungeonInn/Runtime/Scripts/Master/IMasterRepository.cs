@@ -10,11 +10,13 @@ namespace DungeonInn.Master
         IReadOnlyDictionary<int, MonsterSpeciesMaster> MonsterSpeciesMasters { get; }
         IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters { get; }
         IReadOnlyDictionary<int, LevelTable> LevelTables { get; }
+        IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters { get; }
 
         WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType);
         ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId);
         MonsterSpeciesMaster GetMonsterSpeciesMaster(int speciesId);
         SpawnTableMaster GetSpawnTableMaster(int spawnTableId);
         LevelTable GetLevelTable(int levelTableId);
+        DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex);
     }
 }

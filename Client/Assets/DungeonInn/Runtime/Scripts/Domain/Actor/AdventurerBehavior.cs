@@ -10,6 +10,7 @@ namespace DungeonInn.Domain.Actor
         public AdventurerLifecycleState LifecycleState { get; private set; }
         public int Stress { get; private set; }
         public int ExplorationRoomArrivalCount { get; private set; }
+        public int TargetFloorDepth { get; private set; }
 
         public AdventurerBehavior(int stress)
             : this(stress, AdventurerLifecycleState.Arrived)
@@ -20,6 +21,7 @@ namespace DungeonInn.Domain.Actor
         {
             Stress = Math.Max(0, stress);
             LifecycleState = lifecycleState;
+            TargetFloorDepth = 1;
         }
 
         public void ChangeLifecycleState(AdventurerLifecycleState lifecycleState)
@@ -35,6 +37,11 @@ namespace DungeonInn.Domain.Actor
         public void ResetExplorationRoomArrivalCount()
         {
             ExplorationRoomArrivalCount = 0;
+        }
+
+        public void SetTargetFloorDepth(int targetFloorDepth)
+        {
+            TargetFloorDepth = Math.Max(1, targetFloorDepth);
         }
 
         public void ReduceStress(int amount)
