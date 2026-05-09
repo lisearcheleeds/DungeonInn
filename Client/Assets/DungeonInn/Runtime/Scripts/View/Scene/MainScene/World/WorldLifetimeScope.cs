@@ -51,6 +51,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);
             builder.Register<DropItemUseCase>(Lifetime.Scoped);
             builder.Register<PickUpItemUseCase>(Lifetime.Scoped);
+            builder.Register<UpdateEquipmentUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceCombatUseCase>(Lifetime.Scoped);
             builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
             builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);

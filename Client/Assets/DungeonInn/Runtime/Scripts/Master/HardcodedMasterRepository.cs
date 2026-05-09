@@ -94,7 +94,8 @@ namespace DungeonInn.Master
                 new ItemMaster(2001, "Potion", ItemCategory.Consumable, 30, 1, true, 10),
                 new ItemMaster(3001, "Novice Sword", ItemCategory.Equipment, 80, 1, true, 1),
                 new ItemMaster(3002, "Novice Bow", ItemCategory.Equipment, 80, 1, true, 1),
-                new ItemMaster(3003, "Cloth Armor", ItemCategory.Equipment, 60, 1, true, 1)
+                new ItemMaster(3003, "Cloth Armor", ItemCategory.Equipment, 60, 1, true, 1),
+                new ItemMaster(3004, "Iron Sword", ItemCategory.Equipment, 120, 1, true, 1)
             }.ToDictionary(x => x.Id);
         }
 
@@ -102,9 +103,25 @@ namespace DungeonInn.Master
         {
             return new[]
             {
-                new EquipmentMaster(3001, EquipmentSlot.Weapon, 0),
-                new EquipmentMaster(3002, EquipmentSlot.Weapon, 0),
-                new EquipmentMaster(3003, EquipmentSlot.Armor, 4)
+                new EquipmentMaster(3001, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Strength, 3),
+                    new StatBonus(StatType.Dexterity, 1)
+                }),
+                new EquipmentMaster(3002, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Dexterity, 3),
+                    new StatBonus(StatType.Strength, 1)
+                }),
+                new EquipmentMaster(3003, EquipmentSlot.Armor, 4, new[]
+                {
+                    new StatBonus(StatType.Constitution, 2)
+                }),
+                new EquipmentMaster(3004, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Strength, 5),
+                    new StatBonus(StatType.Dexterity, 2)
+                })
             }.ToDictionary(x => x.ItemId);
         }
 
@@ -113,7 +130,8 @@ namespace DungeonInn.Master
             return new[]
             {
                 new WeaponMaster(3001, WeaponType.Sword, 8, 0, 0),
-                new WeaponMaster(3002, WeaponType.Bow, 7, 0, 0)
+                new WeaponMaster(3002, WeaponType.Bow, 7, 0, 0),
+                new WeaponMaster(3004, WeaponType.Sword, 10, 0, 0)
             }.ToDictionary(x => x.ItemId);
         }
 
@@ -172,7 +190,8 @@ namespace DungeonInn.Master
                     new[]
                     {
                         new ActorDropEntry(1002, 0.7f, 1, 1),
-                        new ActorDropEntry(1, 0.5f, 1, 3)
+                        new ActorDropEntry(1, 0.5f, 1, 3),
+                        new ActorDropEntry(3004, 1.0f, 1, 1)
                     })
             }.ToDictionary(x => x.Id);
         }

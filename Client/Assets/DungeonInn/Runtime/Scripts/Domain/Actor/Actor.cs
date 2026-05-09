@@ -250,7 +250,7 @@ namespace DungeonInn.Domain.Actor
 
         void RefreshWeaponAttack()
         {
-            WeaponAttack = WeaponCalculator.CalculateAttack(Stats, Equipment.Weapon, Equipment.WeaponEquipment, Behavior, Level);
+            WeaponAttack = WeaponCalculator.CalculateAttack(Stats, Equipment.Weapon, Equipment.WeaponEquipment, Behavior, Level, Equipment.AllStatBonuses);
         }
 
         void RefreshWeaponCombatParams()

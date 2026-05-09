@@ -31,13 +31,45 @@ namespace DungeonInn.Domain.Actor
             var equipment = equipmentMasters ?? Array.Empty<EquipmentMaster>();
             var equipmentDefense = equipment.Sum(x => x.Defense);
 
+            var bonuses = CollectBonuses(equipment);
+            var str = stats.Strength + GetBonusSum(bonuses, StatType.Strength);
+            var dex = stats.Dexterity + GetBonusSum(bonuses, StatType.Dexterity);
+            var con = stats.Constitution + GetBonusSum(bonuses, StatType.Constitution);
+            var intel = stats.Intelligence + GetBonusSum(bonuses, StatType.Intelligence);
+            var wis = stats.Wisdom + GetBonusSum(bonuses, StatType.Wisdom);
+
             return new ActorParams(
-                stats.Constitution * 10 + stats.Strength * 2 + level * 5 + equipmentDefense,
-                stats.Intelligence * 5 + stats.Wisdom * 5 + level * 2,
-                100 + stats.Dexterity * 2,
-                stats.Constitution * 3 + stats.Wisdom + equipmentDefense,
-                stats.Dexterity * 2 + stats.Wisdom * 2 + stats.Intelligence + level,
-                stats.Strength + stats.Dexterity + stats.Intelligence);
+                con * 10 + str * 2 + level * 5 + equipmentDefense,
+                intel * 5 + wis * 5 + level * 2,
+                100 + dex * 2,
+                con * 3 + wis + equipmentDefense,
+                dex * 2 + wis * 2 + intel + level,
+                str + dex + intel);
+        }
+
+        static List<StatBonus> CollectBonuses(IReadOnlyList<EquipmentMaster> equipment)
+        {
+            var result = new List<StatBonus>();
+            foreach (var equipmentMaster in equipment)
+            {
+                result.AddRange(equipmentMaster.StatBonuses);
+            }
+
+            return result;
+        }
+
+        static int GetBonusSum(List<StatBonus> bonuses, StatType statType)
+        {
+            var sum = 0;
+            foreach (var bonus in bonuses)
+            {
+                if (bonus.StatType == statType)
+                {
+                    sum += bonus.Amount;
+                }
+            }
+
+            return sum;
         }
     }
 }

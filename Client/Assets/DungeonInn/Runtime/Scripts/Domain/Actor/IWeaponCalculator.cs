@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 
@@ -10,6 +11,7 @@ namespace DungeonInn.Domain.Actor
             WeaponMaster weaponMaster,
             EquipmentMaster weaponEquipmentMaster,
             IActorBehavior behavior,
-            int level);
+            int level,
+            IReadOnlyList<StatBonus> allEquipmentBonuses);
     }
 }

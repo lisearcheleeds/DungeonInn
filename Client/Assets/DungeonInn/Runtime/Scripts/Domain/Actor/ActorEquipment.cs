@@ -16,6 +16,20 @@ namespace DungeonInn.Domain.Actor
         public WeaponMaster Weapon => weaponMaster;
         public IReadOnlyList<EquipmentMaster> All => equippedMasters.Values.ToArray();
 
+        public IReadOnlyList<StatBonus> AllStatBonuses
+        {
+            get
+            {
+                var result = new List<StatBonus>();
+                foreach (var equippedMaster in equippedMasters.Values)
+                {
+                    result.AddRange(equippedMaster.StatBonuses);
+                }
+
+                return result;
+            }
+        }
+
         internal void Equip(EquipmentMaster equipmentMaster)
         {
             Equip(equipmentMaster, null);

@@ -93,6 +93,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<ItemPickedUp>()
                 .Subscribe(OnItemPickedUp)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<EquipmentChanged>()
+                .Subscribe(OnEquipmentChanged)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -171,6 +175,18 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnActorLeveledUp(ActorLeveledUp gameEvent)
         {
             Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} leveled up! Lv.{gameEvent.PreviousLevel} → Lv.{gameEvent.NewLevel}");
+        }
+
+        void OnEquipmentChanged(EquipmentChanged gameEvent)
+        {
+            if (gameEvent.PreviousItemId.HasValue)
+            {
+                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} equipped item#{gameEvent.NewItemId} at {gameEvent.Slot} (replacing item#{gameEvent.PreviousItemId})");
+            }
+            else
+            {
+                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} equipped item#{gameEvent.NewItemId} at {gameEvent.Slot}");
+            }
         }
 
         void OnItemDropped(ItemDropped gameEvent)
