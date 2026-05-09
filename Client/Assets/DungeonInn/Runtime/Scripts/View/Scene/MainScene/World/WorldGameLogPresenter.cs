@@ -129,36 +129,36 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void OnActorStartedReturning(ActorStartedReturning gameEvent)
         {
-            Debug.Log($"[Actor] {GetName(gameEvent.ActorId)} starts returning");
+            Debug.Log($"[Actor] {GetName(gameEvent.ActorId)} は帰還を始めた");
         }
 
         void OnActorGoalCompleted(ActorGoalCompleted gameEvent)
         {
             Debug.Log(
-                $"[Goal] {GetName(gameEvent.ActorId)} completed goal: " +
+                $"[Goal] {GetName(gameEvent.ActorId)} は目標を達成した: " +
                 $"{gameEvent.GoalType} {gameEvent.ProgressCount}/{gameEvent.TargetCount}");
         }
 
         void OnActorRecoveringAtInn(ActorRecoveringAtInn gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} recovering HP {gameEvent.CurrentHp}/{gameEvent.MaxHp}");
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} は回復中 {gameEvent.CurrentHp}/{gameEvent.MaxHp}");
         }
 
         void OnActorFullyRecovered(ActorFullyRecovered gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} fully recovered");
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} は全回復した");
         }
 
         void OnEncounterStarted(CombatEncounterStarted gameEvent)
         {
-            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} encountered {GetName(gameEvent.TargetActorId)}");
+            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} は {GetName(gameEvent.TargetActorId)} と遭遇した");
         }
 
         void OnAttackOccurred(CombatAttackOccurred gameEvent)
         {
             Debug.Log(
-                $"[Combat] {GetName(gameEvent.AttackerActorId)} attacked {GetName(gameEvent.TargetActorId)} " +
-                $"for {gameEvent.Damage} (HP {gameEvent.TargetRemainingHp})");
+                $"[Combat] {GetName(gameEvent.AttackerActorId)} は {GetName(gameEvent.TargetActorId)} に攻撃！ " +
+                $"ダメージ: {gameEvent.Damage} (HP {gameEvent.TargetRemainingHp})");
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)
@@ -166,7 +166,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             var killerText = gameEvent.KillerActorId.HasValue
                 ? $" by {GetName(gameEvent.KillerActorId.Value)}"
                 : string.Empty;
-            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} defeated{killerText} ({gameEvent.Cause})");
+            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} は {killerText} に倒された ({gameEvent.Cause})");
         }
 
         void OnEncounterEnded(CombatEncounterEnded gameEvent)
@@ -177,41 +177,41 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             Debug.Log(
-                $"[Record] {GetName(gameEvent.ActorId)}: " +
+                $"[Record] {GetName(gameEvent.ActorId)}: は戦闘を終了した" +
                 $"{record.TotalCombats} combats, " +
                 $"{record.TotalDamageDealt} total damage dealt");
         }
 
         void OnExperienceGranted(ExperienceGranted gameEvent)
         {
-            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} gained {gameEvent.GainedXp} EXP (total: {gameEvent.TotalXp})");
+            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} は {gameEvent.GainedXp} EXP を得た (total: {gameEvent.TotalXp})");
         }
 
         void OnActorLeveledUp(ActorLeveledUp gameEvent)
         {
-            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} leveled up! Lv.{gameEvent.PreviousLevel} → Lv.{gameEvent.NewLevel}");
+            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} LEVEL UP! Lv.{gameEvent.PreviousLevel} → Lv.{gameEvent.NewLevel}");
         }
 
         void OnEquipmentChanged(EquipmentChanged gameEvent)
         {
             if (gameEvent.PreviousItemId.HasValue)
             {
-                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} equipped item#{gameEvent.NewItemId} at {gameEvent.Slot} (replacing item#{gameEvent.PreviousItemId})");
+                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} はアイテムを装備した item#{gameEvent.NewItemId} at {gameEvent.Slot} (入れ替え item#{gameEvent.PreviousItemId})");
             }
             else
             {
-                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} equipped item#{gameEvent.NewItemId} at {gameEvent.Slot}");
+                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} はアイテムを装備した item#{gameEvent.NewItemId} at {gameEvent.Slot}");
             }
         }
 
         void OnItemSold(ItemSold gameEvent)
         {
-            Debug.Log($"[Shop] {GetName(gameEvent.ActorId)} sold item#{gameEvent.Stack.ItemId} x{gameEvent.Stack.Count} for {gameEvent.TotalPrice}G (wallet: {gameEvent.ActorGold}G)");
+            Debug.Log($"[Shop] {GetName(gameEvent.ActorId)} はアイテムを売却した item#{gameEvent.Stack.ItemId} x{gameEvent.Stack.Count} for {gameEvent.TotalPrice}G (wallet: {gameEvent.ActorGold}G)");
         }
 
         void OnItemDropped(ItemDropped gameEvent)
         {
-            Debug.Log($"[Drop] {GetName(gameEvent.ActorId)} dropped item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count}");
+            Debug.Log($"[Drop] {GetName(gameEvent.ActorId)} はアイテムを落とした item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count}");
         }
 
         void OnItemPickedUp(ItemPickedUp gameEvent)
@@ -220,11 +220,11 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 var actor = worldState.FindActor(gameEvent.ActorId);
                 var walletText = actor == null ? "unknown" : $"{actor.Inventory.Gold}G";
-                Debug.Log($"[Item] {GetName(gameEvent.ActorId)} picked up {gameEvent.ItemInstance.Stack.Count}G (wallet: {walletText})");
+                Debug.Log($"[Item] {GetName(gameEvent.ActorId)} は {gameEvent.ItemInstance.Stack.Count}G を拾った (wallet: {walletText})");
                 return;
             }
 
-            Debug.Log($"[Item] {GetName(gameEvent.ActorId)} picked up item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count}");
+            Debug.Log($"[Item] {GetName(gameEvent.ActorId)} は item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count} を拾った");
         }
 
         void OnInnFeeCharged(InnFeeCharged gameEvent)

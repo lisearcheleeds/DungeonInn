@@ -36,6 +36,6 @@ namespace DungeonInn.Domain.Common
         public const int InitialGuildInventorySlotCapacity = 100;
 
         // 探索階層選択で、モンスター平均戦闘力に掛ける難易度係数。
-        public const float DungeonFloorDifficultyCoefficient = 1.5f;
+        public const float DungeonFloorDifficultyCoefficient = 3.0f;
     }
 }
