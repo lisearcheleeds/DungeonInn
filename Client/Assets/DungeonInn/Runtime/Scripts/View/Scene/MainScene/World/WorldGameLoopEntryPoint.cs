@@ -22,6 +22,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         PickUpItemUseCase pickUpItemUseCase;
         UpdateEquipmentUseCase updateEquipmentUseCase;
         SellItemsUseCase sellItemsUseCase;
+        UseRecoveryItemUseCase useRecoveryItemUseCase;
+        AdvanceActorEffectsUseCase advanceActorEffectsUseCase;
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
@@ -42,6 +44,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             PickUpItemUseCase pickUpItemUseCase,
             UpdateEquipmentUseCase updateEquipmentUseCase,
             SellItemsUseCase sellItemsUseCase,
+            UseRecoveryItemUseCase useRecoveryItemUseCase,
+            AdvanceActorEffectsUseCase advanceActorEffectsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
@@ -57,6 +61,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.pickUpItemUseCase = pickUpItemUseCase ?? throw new ArgumentNullException(nameof(pickUpItemUseCase));
             this.updateEquipmentUseCase = updateEquipmentUseCase ?? throw new ArgumentNullException(nameof(updateEquipmentUseCase));
             this.sellItemsUseCase = sellItemsUseCase ?? throw new ArgumentNullException(nameof(sellItemsUseCase));
+            this.useRecoveryItemUseCase = useRecoveryItemUseCase ?? throw new ArgumentNullException(nameof(useRecoveryItemUseCase));
+            this.advanceActorEffectsUseCase = advanceActorEffectsUseCase ?? throw new ArgumentNullException(nameof(advanceActorEffectsUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
@@ -123,6 +129,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 pickUpItemUseCase.Execute(gameWorldState);
                 updateEquipmentUseCase.Execute(gameWorldState);
                 sellItemsUseCase.Execute(gameWorldState);
+                await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
+                await advanceActorEffectsUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
                 await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
             }

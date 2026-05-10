@@ -61,6 +61,48 @@ DungeonInn では `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArch
 DungeonInn のようにマスタが Domain Entity ではなく参照データである場合、`Domain/` ではなく `Master/` などの専用フォルダ・名前空間に置き、Repository から UseCase / オーケストレーションへ供給する。
 MasterMemory 導入前は、`HardcodedMasterRepository` のような仮 Repository で同じ読み取り契約を満たす。
 
+## マスタ参照値を Runtime Instance に複製しない
+
+Runtime Instance / State / Entity がマスタ行を参照する場合、原則として保持するのは `XxxMasterId` のみとする。
+`Name`、`DisplayName`、`ReapplyPolicy`、固定 Duration、固定 Amount、Category など、マスタから O(1) で参照できる不変値を Instance 側へコピーしてはならない。
+
+マスタリポジトリは `Id -> Master` の辞書参照を提供できる前提で設計する。
+したがって「参照のために毎回マスタを引くのが面倒」「表示名をすぐ使いたい」という理由で、マスタ由来値を Runtime Instance に重複保持しない。
+
+### Before
+
+```csharp
+public sealed class ActorEffectInstance
+{
+    public int ActorEffectMasterId { get; }
+    public string DisplayName { get; }                 // NG: ActorEffectMaster.Name から引ける
+    public ActorEffectReapplyPolicy ReapplyPolicy { get; } // NG: ActorEffectMaster.ReapplyPolicy から引ける
+}
+```
+
+### After
+
+```csharp
+public sealed class ActorEffectInstance
+{
+    public int ActorEffectMasterId { get; }
+    public float ElapsedSeconds { get; private set; }  // OK: 実行時に変化する状態
+}
+```
+
+表示や再付与判断が必要な UseCase / Presenter は、`ActorEffectMasterId` から `ActorEffectMaster` を引いて `Name` や `ReapplyPolicy` を参照する。
+
+### 例外
+
+以下の場合のみ、マスタ由来値のスナップショット保持を検討してよい。
+
+- 履歴・ログ・リプレイ・セーブ互換のため、後でマスタが変わっても当時の値を固定したい
+- 生成時に複数のマスタや乱数から確定した、個体固有の値として扱う
+- マスタではなくプレイヤー操作で変更される現在値として扱う
+
+例外として保持する場合は、フィールド名やコメントで「スナップショット」「現在値」「個体固有値」であることを明示する。
+単なるマスタ参照値のキャッシュとして追加してはならない。
+
 ## 1. Entity は分類ではなく状態と振る舞いを持つ
 
 同じ個体が時間経過や操作によって役割を変える可能性がある場合、継承で役割を固定しない。

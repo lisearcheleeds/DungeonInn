@@ -12,6 +12,7 @@ namespace DungeonInn.Master
         public int Quality { get; }
         public bool CanTrade { get; }
         public int MaxStackCount { get; }
+        public int ActorEffectMasterId { get; }
 
         public ItemMaster(
             int id,
@@ -20,7 +21,8 @@ namespace DungeonInn.Master
             int basePrice,
             int quality,
             bool canTrade,
-            int maxStackCount = int.MaxValue)
+            int maxStackCount = int.MaxValue,
+            int actorEffectMasterId = 0)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -47,6 +49,11 @@ namespace DungeonInn.Master
                 throw new ArgumentOutOfRangeException(nameof(maxStackCount));
             }
 
+            if (actorEffectMasterId < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(actorEffectMasterId));
+            }
+
             Id = id;
             Name = name;
             Category = category;
@@ -54,6 +61,7 @@ namespace DungeonInn.Master
             Quality = Math.Max(0, quality);
             CanTrade = canTrade;
             MaxStackCount = maxStackCount;
+            ActorEffectMasterId = actorEffectMasterId;
         }
     }
 }

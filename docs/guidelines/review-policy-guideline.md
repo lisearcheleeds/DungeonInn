@@ -535,3 +535,10 @@ if (actor.Behavior is IActorDropSource dropSource)
 - [ ] テストを書いてから run-tests でグリーンを確認したか
 - [ ] Play モード確認はテスト通過後に行ったか
 - [ ] 新しいマスタクラスのコンストラクタ代入をテストで検証したか
+
+### マスタ参照と Runtime Instance
+
+- [ ] Runtime Instance / State / Entity が、マスタから O(1) で引ける不変値をコピー保持していないか
+- [ ] `XxxMasterId` があるのに、同じマスタ由来の `Name` / `DisplayName` / `ReapplyPolicy` / 固定 Duration / 固定 Amount / Category を重複保持していないか
+- [ ] 表示や判定に必要なマスタ値は、UseCase / Presenter / Policy 側で Repository から解決しているか
+- [ ] 例外的に保持する値は、履歴・ログ・セーブ互換・個体固有値・現在値のいずれかであり、フィールド名やコメントで意図が明示されているか

@@ -14,6 +14,7 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> weaponTypeCombatMasters;
         readonly IReadOnlyDictionary<int, ActorArchetypeMaster> actorArchetypeMasters;
         readonly IReadOnlyDictionary<int, AdventurerSpawnMaster> adventurerSpawnMasters;
+        readonly IReadOnlyDictionary<int, ActorEffectMaster> actorEffectMasters;
         readonly IReadOnlyDictionary<int, SpeciesMaster> speciesMasters;
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
         readonly IReadOnlyDictionary<int, LevelTable> levelTables;
@@ -25,6 +26,7 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => weaponTypeCombatMasters;
         public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => actorArchetypeMasters;
         public IReadOnlyDictionary<int, AdventurerSpawnMaster> AdventurerSpawnMasters => adventurerSpawnMasters;
+        public IReadOnlyDictionary<int, ActorEffectMaster> ActorEffectMasters => actorEffectMasters;
         public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => speciesMasters;
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
         public IReadOnlyDictionary<int, LevelTable> LevelTables => levelTables;
@@ -32,6 +34,7 @@ namespace DungeonInn.Master
 
         public HardcodedMasterRepository()
         {
+            actorEffectMasters = CreateActorEffectMasters();
             itemMasters = CreateItemMasters();
             equipmentMasters = CreateEquipmentMasters();
             weaponTypeCombatMasters = WeaponTypeCombatMasterCatalog.CreateAll();
@@ -75,6 +78,11 @@ namespace DungeonInn.Master
             return GetRequired(adventurerSpawnMasters, adventurerSpawnId, nameof(AdventurerSpawnMaster));
         }
 
+        public ActorEffectMaster GetActorEffectMaster(int actorEffectId)
+        {
+            return GetRequired(actorEffectMasters, actorEffectId, nameof(ActorEffectMaster));
+        }
+
         public SpeciesMaster GetSpeciesMaster(int speciesId)
         {
             return GetRequired(speciesMasters, speciesId, nameof(SpeciesMaster));
@@ -107,11 +115,32 @@ namespace DungeonInn.Master
                 new ItemMaster(1, "Gold", ItemCategory.Material, 1, 1, false, 100000),
                 new ItemMaster(1001, "Herb", ItemCategory.Material, 10, 1, true, 10),
                 new ItemMaster(1002, "Goblin Ear", ItemCategory.Material, 25, 1, true, 10),
-                new ItemMaster(2001, "Potion", ItemCategory.Consumable, 30, 1, true, 10),
+                new ItemMaster(2001, "Potion", ItemCategory.Consumable, 30, 1, true, 10, 1),
                 new ItemMaster(3001, "Novice Sword", ItemCategory.Equipment, 80, 1, true, 1),
                 new ItemMaster(3002, "Novice Bow", ItemCategory.Equipment, 80, 1, true, 1),
                 new ItemMaster(3003, "Cloth Armor", ItemCategory.Equipment, 60, 1, true, 1),
                 new ItemMaster(3004, "Iron Sword", ItemCategory.Equipment, 120, 5, true, 1)
+            }.ToDictionary(x => x.Id);
+        }
+
+        static IReadOnlyDictionary<int, ActorEffectMaster> CreateActorEffectMasters()
+        {
+            return new[]
+            {
+                new ActorEffectMaster(
+                    1,
+                    "体力回復ポーション",
+                    10f,
+                    ActorEffectReapplyPolicy.AppendDuration,
+                    new[]
+                    {
+                        new StatusEffectSpec(
+                            StatusEffectType.HealHpOverTime,
+                            30,
+                            10f,
+                            1f,
+                            StatusEffectAggregationPolicy.Sum)
+                    })
             }.ToDictionary(x => x.Id);
         }
 
@@ -317,6 +346,14 @@ namespace DungeonInn.Master
 
         void ValidateReferences()
         {
+            foreach (var itemMaster in itemMasters.Values)
+            {
+                if (0 < itemMaster.ActorEffectMasterId)
+                {
+                    GetActorEffectMaster(itemMaster.ActorEffectMasterId);
+                }
+            }
+
             foreach (var equipmentMaster in equipmentMasters.Values)
             {
                 RequireItem(equipmentMaster.ItemId);

@@ -117,6 +117,9 @@ namespace DungeonInn.Core
             builder.Register<ProcessExchangeOfferUseCase>(Lifetime.Singleton);
             builder.Register<ProcessFacilityUsageUseCase>(Lifetime.Singleton);
             builder.Register<RecruitStaffUseCase>(Lifetime.Singleton);
+            builder.Register<UseConsumableItemUseCase>(Lifetime.Singleton);
+            builder.Register<UseRecoveryItemUseCase>(Lifetime.Singleton);
+            builder.Register<AdvanceActorEffectsUseCase>(Lifetime.Singleton);
             builder.Register<ReleaseInnReservationUseCase>(Lifetime.Singleton);
             builder.Register<ReserveInnUseCase>(Lifetime.Singleton);
             builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Singleton);

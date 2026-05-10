@@ -35,6 +35,8 @@ namespace DungeonInn.Domain.Actor
         public ActorGoal CurrentGoal { get; private set; }
         public ActorPlan CurrentPlan { get; private set; }
         public ActorAction CurrentAction { get; private set; }
+        public IReadOnlyList<ActorEffectInstance> ActorEffects => actorEffects;
+        readonly List<ActorEffectInstance> actorEffects = new();
 
         public Actor(
             Guid id,
@@ -190,6 +192,64 @@ namespace DungeonInn.Domain.Actor
         public void CancelCurrentAction()
         {
             CurrentAction.Cancel();
+        }
+
+        public void AddActorEffect(ActorEffectMaster actorEffectMaster)
+        {
+            if (actorEffectMaster == null)
+            {
+                throw new ArgumentNullException(nameof(actorEffectMaster));
+            }
+
+            if (actorEffectMaster.ReapplyPolicy == ActorEffectReapplyPolicy.AddStack ||
+                !TryFindActorEffect(actorEffectMaster.Id, out var existingEffect))
+            {
+                actorEffects.Add(new ActorEffectInstance(actorEffectMaster));
+                return;
+            }
+
+            switch (actorEffectMaster.ReapplyPolicy)
+            {
+                case ActorEffectReapplyPolicy.AppendDuration:
+                    existingEffect.Append(actorEffectMaster);
+                    return;
+                case ActorEffectReapplyPolicy.RefreshDuration:
+                    existingEffect.Refresh(actorEffectMaster);
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(actorEffectMaster));
+            }
+        }
+
+        public void RemoveExpiredActorEffects()
+        {
+            for (var i = actorEffects.Count - 1; 0 <= i; i--)
+            {
+                if (actorEffects[i].IsExpired)
+                {
+                    actorEffects.RemoveAt(i);
+                }
+            }
+        }
+
+        public bool HasActorEffect(int actorEffectMasterId)
+        {
+            return TryFindActorEffect(actorEffectMasterId, out _);
+        }
+
+        bool TryFindActorEffect(int actorEffectMasterId, out ActorEffectInstance actorEffect)
+        {
+            foreach (var candidate in actorEffects)
+            {
+                if (candidate.ActorEffectMasterId == actorEffectMasterId)
+                {
+                    actorEffect = candidate;
+                    return true;
+                }
+            }
+
+            actorEffect = null;
+            return false;
         }
 
         public void Equip(EquipmentMaster equipmentMaster)

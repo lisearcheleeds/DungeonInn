@@ -263,6 +263,11 @@ namespace DungeonInn.Application.UseCase
 
         bool HasRecoveryItem(Actor actor)
         {
+            if (HasActiveRecoveryEffect(actor))
+            {
+                return true;
+            }
+
             foreach (var kvp in actor.Inventory.ItemCounts)
             {
                 if (kvp.Value < 1)
@@ -273,6 +278,22 @@ namespace DungeonInn.Application.UseCase
                 if (itemMasterRepository.GetItemMaster(kvp.Key).Category == ItemCategory.Consumable)
                 {
                     return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool HasActiveRecoveryEffect(Actor actor)
+        {
+            foreach (var actorEffect in actor.ActorEffects)
+            {
+                foreach (var statusEffect in actorEffect.StatusEffects)
+                {
+                    if (statusEffect.Type == StatusEffectType.HealHpOverTime && !statusEffect.IsExpired)
+                    {
+                        return true;
+                    }
                 }
             }
 

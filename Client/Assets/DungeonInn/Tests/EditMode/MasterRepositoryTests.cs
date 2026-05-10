@@ -18,8 +18,23 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(repository.WeaponTypeCombatMasters, Is.Not.Empty);
             Assert.That(repository.ActorArchetypeMasters, Is.Not.Empty);
             Assert.That(repository.AdventurerSpawnMasters, Is.Not.Empty);
+            Assert.That(repository.ActorEffectMasters, Is.Not.Empty);
             Assert.That(repository.SpeciesMasters, Is.Not.Empty);
             Assert.That(repository.SpawnTableMasters, Is.Not.Empty);
+        }
+
+        [Test]
+        public void PotionReferencesHealActorEffectMaster()
+        {
+            var repository = new HardcodedMasterRepository();
+            var itemMaster = repository.GetItemMaster(2001);
+            var actorEffectMaster = repository.GetActorEffectMaster(itemMaster.ActorEffectMasterId);
+
+            Assert.That(itemMaster.Category, Is.EqualTo(ItemCategory.Consumable));
+            Assert.That(actorEffectMaster.ReapplyPolicy, Is.EqualTo(ActorEffectReapplyPolicy.AppendDuration));
+            Assert.That(actorEffectMaster.StatusEffectSpecs[0].Type, Is.EqualTo(StatusEffectType.HealHpOverTime));
+            Assert.That(actorEffectMaster.StatusEffectSpecs[0].Amount, Is.EqualTo(30));
+            Assert.That(actorEffectMaster.StatusEffectSpecs[0].DurationSeconds, Is.EqualTo(10f));
         }
 
         [Test]

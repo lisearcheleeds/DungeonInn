@@ -21,9 +21,7 @@ ActorEffect が、実際に Actor へ作用する StatusEffect を1つ以上持�
 Actor
   └─ ActorEffects[]
         ├─ ActorEffectMasterId
-        ├─ DisplayName
-        ├─ RemainingSeconds
-        ├─ ReapplyPolicy
+        ├─ RemainingSeconds / ElapsedSeconds
         └─ StatusEffectSpecs[]
               ├─ Type
               ├─ Amount
@@ -45,6 +43,10 @@ ActorEffect は「何によって付与された効果か」を表す。
 
 ActorEffect は UI / ログ / 再付与ルールの単位になる。
 同じ StatusEffect を持っていても、ActorEffect が異なれば別の効果として扱う。
+
+Runtime の ActorEffectInstance は `ActorEffectMasterId` と経過時間などの実行時状態だけを持つ。
+表示名や再付与ルールは `ActorEffectMaster.Name` / `ActorEffectMaster.ReapplyPolicy` から解決する。
+マスタから O(1) で取得できる不変値を ActorEffectInstance に複製してはならない。
 
 例:
 
