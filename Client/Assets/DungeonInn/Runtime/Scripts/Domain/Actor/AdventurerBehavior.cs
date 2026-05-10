@@ -11,6 +11,7 @@ namespace DungeonInn.Domain.Actor
         public int Stress { get; private set; }
         public int ExplorationRoomArrivalCount { get; private set; }
         public int TargetFloorDepth { get; private set; }
+        public int WaitingForInnStartedDay { get; private set; } = -1;
 
         public AdventurerBehavior(int stress)
             : this(stress, AdventurerLifecycleState.Arrived)
@@ -27,6 +28,21 @@ namespace DungeonInn.Domain.Actor
         public void ChangeLifecycleState(AdventurerLifecycleState lifecycleState)
         {
             LifecycleState = lifecycleState;
+        }
+
+        public void StartWaitingForInn(int currentDay)
+        {
+            if (WaitingForInnStartedDay < 0)
+            {
+                WaitingForInnStartedDay = Math.Max(0, currentDay);
+            }
+
+            LifecycleState = AdventurerLifecycleState.WaitingForInn;
+        }
+
+        public void ClearWaitingForInn()
+        {
+            WaitingForInnStartedDay = -1;
         }
 
         public void RecordExplorationRoomArrival()

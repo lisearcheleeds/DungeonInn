@@ -60,6 +60,67 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void RecoveringAdventurerReturnsToPreparingWhenInnFeeCannotBePaid()
+        {
+            var worldState = CreateInitializedWorldState();
+            var eventBus = new CollectingEventBus();
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, 0);
+            worldState.RegisterActor(actor);
+            var useCase = CreateUseCase(eventBus);
+
+            useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
+
+            var behavior = actor.RequireBehavior<AdventurerBehavior>();
+            Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Preparing));
+            Assert.That(behavior.WaitingForInnStartedDay, Is.EqualTo(-1));
+            Assert.That(worldState.Guild.HasActiveInnReservation(actor.Id), Is.False);
+            Assert.That(eventBus.GetEvents<ActorWaitingForInn>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void WaitingAdventurerDepartsAfterThreeGameDaysWithoutInn()
+        {
+            var worldState = CreateInitializedWorldState();
+            var inn = worldState.Guild.Facilities[0];
+            FillInn(worldState, inn.Capacity);
+            var eventBus = new CollectingEventBus();
+            var clock = new StubGameClock();
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, GameConstants.InnFeePerStay);
+            worldState.RegisterActor(actor);
+            var useCase = CreateUseCase(eventBus, clock);
+            useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
+
+            clock.CurrentDayValue = GameConstants.AdventurerInnWaitDepartureDays;
+            useCase.EnsureReservationsAsync(worldState, 2).GetAwaiter().GetResult();
+
+            Assert.That(worldState.FindActor(actor.Id), Is.Null);
+            var events = eventBus.GetEvents<ActorDeparted>();
+            Assert.That(events.Count, Is.EqualTo(1));
+            Assert.That(events[0].ActorId, Is.EqualTo(actor.Id));
+            Assert.That(events[0].WaitedDays, Is.EqualTo(GameConstants.AdventurerInnWaitDepartureDays));
+        }
+
+        [Test]
+        public void ReservedAdventurerDoesNotDepartAfterThreeGameDays()
+        {
+            var worldState = CreateInitializedWorldState();
+            var inn = worldState.Guild.Facilities[0];
+            var eventBus = new CollectingEventBus();
+            var clock = new StubGameClock { CurrentDayValue = GameConstants.AdventurerInnWaitDepartureDays };
+            var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, GameConstants.InnFeePerStay);
+            actor.RequireBehavior<AdventurerBehavior>().StartWaitingForInn(0);
+            worldState.RegisterActor(actor);
+            worldState.Guild.ReserveInn(Guid.NewGuid(), actor, inn.Id, 1);
+            var useCase = CreateUseCase(eventBus, clock);
+
+            useCase.EnsureReservationsAsync(worldState, 2).GetAwaiter().GetResult();
+
+            Assert.That(worldState.FindActor(actor.Id), Is.EqualTo(actor));
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Recovering));
+            Assert.That(eventBus.GetEvents<ActorDeparted>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
         public void WaitingAdventurerDoesNotRecoverWithoutReservation()
         {
             var worldState = CreateInitializedWorldState();
@@ -93,10 +154,16 @@ namespace DungeonInn.Tests.EditMode
 
         static RecoverAdventurerAtInnUseCase CreateUseCase(IGameEventBus eventBus)
         {
+            return CreateUseCase(eventBus, new StubGameClock());
+        }
+
+        static RecoverAdventurerAtInnUseCase CreateUseCase(IGameEventBus eventBus, IGameClock gameClock)
+        {
             return new RecoverAdventurerAtInnUseCase(
                 eventBus,
-                new GameClock(),
-                new ChargeInnFeeUseCase(eventBus));
+                gameClock,
+                new ChargeInnFeeUseCase(eventBus),
+                new DespawnAdventurerUseCase(eventBus));
         }
 
         static GameWorldState CreateInitializedWorldState()
@@ -173,6 +240,27 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyList<T> GetEvents<T>() where T : class, IGameEvent
             {
                 return events.OfType<T>().ToArray();
+            }
+        }
+
+        sealed class StubGameClock : IGameClock
+        {
+            public int CurrentDayValue { get; set; }
+            public int CurrentScheduleTickValue { get; set; }
+
+            public int CurrentScheduleTick => CurrentScheduleTickValue;
+            public int CurrentDay => CurrentDayValue;
+            public float ElapsedRealTimeSeconds => 0f;
+            public float ElapsedGameTimeSeconds => 0f;
+            public float TimeScale => 1f;
+
+            public void SetTimeScale(float timeScale)
+            {
+            }
+
+            public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
+            {
+                return new GameClockAdvanceResult(0, false);
             }
         }
     }

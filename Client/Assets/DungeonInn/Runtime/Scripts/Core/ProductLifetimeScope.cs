@@ -107,6 +107,7 @@ namespace DungeonInn.Core
             builder.Register<AssignStaffUseCase>(Lifetime.Singleton);
             builder.Register<CalculateScoutCostUseCase>(Lifetime.Singleton);
             builder.Register<CanMoveOnMapLayerUseCase>(Lifetime.Singleton);
+            builder.Register<DespawnAdventurerUseCase>(Lifetime.Singleton);
             builder.Register<EnsureDungeonFloorGeneratedUseCase>(Lifetime.Singleton);
             builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Singleton);
             builder.Register<InitializeDungeonUseCase>(Lifetime.Singleton);

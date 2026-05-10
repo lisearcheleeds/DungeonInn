@@ -66,6 +66,10 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .Subscribe(OnActorReservedInn)
                 .AddTo(ref bag);
 
+            eventBus.OnEvent<ActorDeparted>()
+                .Subscribe(OnActorDeparted)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<ActorFullyRecovered>()
                 .Subscribe(OnActorFullyRecovered)
                 .AddTo(ref bag);
@@ -172,6 +176,11 @@ namespace DungeonInn.View.Scene.MainScene.World
             var facility = worldState.Guild.GetFacility(gameEvent.InnFacilityId);
             var activeReservations = worldState.Guild.CountActiveInnReservations(gameEvent.InnFacilityId);
             Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} reserved inn room ({activeReservations}/{facility.Capacity})");
+        }
+
+        void OnActorDeparted(ActorDeparted gameEvent)
+        {
+            Debug.Log($"[Guild] {GetName(gameEvent.ActorId)} departed after waiting {gameEvent.WaitedDays} days for inn");
         }
 
         void OnActorFullyRecovered(ActorFullyRecovered gameEvent)

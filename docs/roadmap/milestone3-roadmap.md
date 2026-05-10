@@ -357,23 +357,26 @@ Phase 11 の探索目的詳細化で、討伐対象や Actor 識別情報を扱�
 
 ## Phase 13: 冒険者の旅立ち / デスポーン
 
-目的を達成するかステイ限度を超えた冒険者が宿を去る。
+宿屋を手配できない状態が一定期間続いた冒険者が宿を去る。
 
 作るもの:
 
 - `DespawnAdventurerUseCase`
-- `AdventurerBehavior.StayDuration`（宿泊日数カウンタ）
+- `AdventurerBehavior.WaitingForInnStartedDay`（宿屋手配待ち開始日）
 
 初期仕様:
 
-- 一定日数（ゲーム内時間）が経過したら旅立つ
-- 旅立ち前に所持ゴールドで宿泊費の精算を行う
+- 宿屋を手配できない状態で 3 日（ゲーム内時間）経過したら旅立つ
+- 宿屋を確保できている間は旅立たない
+- 宿泊費は宿屋に入室するときに 1 日分を支払う
+- 宿泊費を払えない場合は宿屋に入れないため、再度ダンジョンに突入するなど別の選択肢へ戻る
+- 旅立ち時に宿泊費の追加精算は行わない
 - `GameWorldState.RemoveActor` でデスポーン
 
 完了条件:
 
 ```text
-[Guild] Adventurer A departed after 3 days (paid 30G total)
+[Guild] Adventurer A departed after waiting 3 days for inn
 [Spawn] Adventurer C spawned (replacing departed adventurer)
 ```
 

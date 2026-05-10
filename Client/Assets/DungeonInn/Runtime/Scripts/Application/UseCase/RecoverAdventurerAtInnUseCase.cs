@@ -19,6 +19,7 @@ namespace DungeonInn.Application.UseCase
         readonly IGameEventBus eventBus;
         readonly IGameClock gameClock;
         readonly ChargeInnFeeUseCase chargeInnFeeUseCase;
+        readonly DespawnAdventurerUseCase despawnAdventurerUseCase;
         readonly Dictionary<Guid, float> accumulatedHp = new();
         readonly IDisposable deathSubscription;
 
@@ -26,11 +27,13 @@ namespace DungeonInn.Application.UseCase
         public RecoverAdventurerAtInnUseCase(
             IGameEventBus eventBus,
             IGameClock gameClock,
-            ChargeInnFeeUseCase chargeInnFeeUseCase)
+            ChargeInnFeeUseCase chargeInnFeeUseCase,
+            DespawnAdventurerUseCase despawnAdventurerUseCase)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.chargeInnFeeUseCase = chargeInnFeeUseCase ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
+            this.despawnAdventurerUseCase = despawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(despawnAdventurerUseCase));
             deathSubscription = eventBus.OnEvent<ActorDefeated>()
                 .Subscribe(gameEvent => { accumulatedHp.Remove(gameEvent.ActorId); });
         }
@@ -48,7 +51,7 @@ namespace DungeonInn.Application.UseCase
             }
 
             var guild = worldState.Guild;
-            var actors = worldState.Actors;
+            var actors = new List<Actor>(worldState.Actors);
 
             foreach (var actor in actors)
             {
@@ -68,7 +71,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                EnsureInnReservation(guild, actor, behavior, currentTick);
+                EnsureInnReservation(worldState, guild, actor, behavior, currentTick);
             }
 
             return UniTask.CompletedTask;
@@ -107,12 +110,18 @@ namespace DungeonInn.Application.UseCase
             return UniTask.CompletedTask;
         }
 
-        void EnsureInnReservation(AdventurerGuild guild, Actor actor, AdventurerBehavior behavior, int currentTick)
+        void EnsureInnReservation(
+            IGameWorldState worldState,
+            AdventurerGuild guild,
+            Actor actor,
+            AdventurerBehavior behavior,
+            int currentTick)
         {
             if (guild.HasActiveInnReservation(actor.Id))
             {
                 if (behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn)
                 {
+                    behavior.ClearWaitingForInn();
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
                 }
 
@@ -128,17 +137,19 @@ namespace DungeonInn.Application.UseCase
 
                 if (!guild.CanReserveInn(facility.Id))
                 {
-                    ChangeToWaitingForInn(actor, behavior, facility);
+                    ChangeToWaitingForInn(worldState, actor, behavior, facility);
                     continue;
                 }
 
                 if (!chargeInnFeeUseCase.Execute(actor, guild))
                 {
-                    ChangeToWaitingForInn(actor, behavior, facility);
+                    behavior.ClearWaitingForInn();
+                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
                     return;
                 }
 
                 guild.ReserveInn(Guid.NewGuid(), actor, facility.Id, currentTick);
+                behavior.ClearWaitingForInn();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
                 eventBus.Publish(new ActorReservedInn(actor.Id, facility.Id));
                 return;
@@ -146,12 +157,20 @@ namespace DungeonInn.Application.UseCase
         }
 
         void ChangeToWaitingForInn(
+            IGameWorldState worldState,
             Actor actor,
             AdventurerBehavior behavior,
             DungeonInn.Domain.Facility.Facility facility)
         {
             var wasWaiting = behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn;
-            behavior.ChangeLifecycleState(AdventurerLifecycleState.WaitingForInn);
+            behavior.StartWaitingForInn(gameClock.CurrentDay);
+
+            var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;
+            if (GameConstants.AdventurerInnWaitDepartureDays <= waitedDays)
+            {
+                despawnAdventurerUseCase.Execute(worldState, actor, waitedDays);
+                return;
+            }
 
             if (wasWaiting)
             {
