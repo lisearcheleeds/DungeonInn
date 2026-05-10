@@ -3,12 +3,11 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.LighthouseGenerated;
 using DungeonInn.View.Base;
 using Lighthouse.Scene;
-using Lighthouse.Scene.SceneBase;
 using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.Title
 {
-    public sealed class TitleScene : MainSceneBase<TitleScene.TitleTransitionData>
+    public sealed class TitleScene : ProductMainSceneBase<TitleScene.TitleTransitionData>
     {
         ITitlePresenter titlePresenter;
 

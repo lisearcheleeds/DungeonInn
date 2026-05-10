@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
@@ -27,6 +28,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
+
+        readonly CancellationTokenSource destroyCancellationTokenSource = new();
 
         bool isExecuting;
         bool isInitialized;
@@ -71,7 +74,13 @@ namespace DungeonInn.View.Scene.MainScene.World
         void Start()
         {
             Debug.Log("[WorldGameLoop] EntryPoint started.");
-            InitializeAsync().Forget();
+            InitializeAsync(destroyCancellationTokenSource.Token).Forget();
+        }
+
+        void OnDestroy()
+        {
+            destroyCancellationTokenSource.Cancel();
+            destroyCancellationTokenSource.Dispose();
         }
 
         void Update()
@@ -88,51 +97,72 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            TickAsync().Forget();
+            TickAsync(destroyCancellationTokenSource.Token).Forget();
         }
 
-        async UniTask InitializeAsync()
+        async UniTask InitializeAsync(CancellationToken cancellationToken)
         {
-            await initializeGameWorldUseCase.ExecuteAsync(
+            try
+            {
+                await initializeGameWorldUseCase.ExecuteAsync(
                 new InitializeGameWorldRequest(
                     GameConstants.InitialDungeonSeed,
                     Array.Empty<DungeonDepthBandConfig>()));
-            isInitialized = true;
-            Debug.Log(
-                $"[World] GameWorldState initialized. " +
-                $"Facilities={gameWorldState.Guild.Facilities.Count} " +
-                $"DungeonFloors={gameWorldState.Dungeon.Floors.Count} " +
-                $"Actors={gameWorldState.Actors.Count}");
+                cancellationToken.ThrowIfCancellationRequested();
+                isInitialized = true;
+                Debug.Log(
+                    $"[World] GameWorldState initialized. " +
+                    $"Facilities={gameWorldState.Guild.Facilities.Count} " +
+                    $"DungeonFloors={gameWorldState.Dungeon.Floors.Count} " +
+                    $"Actors={gameWorldState.Actors.Count}");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
         }
 
-        async UniTask TickAsync()
+        async UniTask TickAsync(CancellationToken cancellationToken)
         {
             isExecuting = true;
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var unscaledDeltaTime = Time.unscaledDeltaTime;
                 var result = await gameLoopUseCase.ExecuteAsync(new GameLoopTickRequest(unscaledDeltaTime));
+                cancellationToken.ThrowIfCancellationRequested();
                 var frameDeltaGameSeconds = unscaledDeltaTime * result.TimeScale;
 
                 if (0 < result.AdvancedScheduleTicks)
                 {
                     await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+                    cancellationToken.ThrowIfCancellationRequested();
                     await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     var scheduleDeltaGameSeconds = result.AdvancedScheduleTicks;
                     await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, scheduleDeltaGameSeconds);
+                    cancellationToken.ThrowIfCancellationRequested();
                     await recoverAdventurerAtInnUseCase.EnsureReservationsAsync(gameWorldState, result.CurrentScheduleTick);
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
 
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
+                cancellationToken.ThrowIfCancellationRequested();
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                cancellationToken.ThrowIfCancellationRequested();
                 pickUpItemUseCase.Execute(gameWorldState);
                 updateEquipmentUseCase.Execute(gameWorldState);
                 sellItemsUseCase.Execute(gameWorldState);
                 await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
+                cancellationToken.ThrowIfCancellationRequested();
                 await advanceActorEffectsUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                cancellationToken.ThrowIfCancellationRequested();
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
+                cancellationToken.ThrowIfCancellationRequested();
                 await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
             }
             finally
             {

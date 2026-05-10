@@ -1,5 +1,4 @@
 using DungeonInn.Application.Factory;
-using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Infrastructure.AssetLoader;
@@ -96,35 +95,7 @@ namespace DungeonInn.Core
                 builder.Register<AdventurerFactory>(Lifetime.Singleton).As<IAdventurerFactory>();
                 builder.Register<MonsterFactory>(Lifetime.Singleton).As<IMonsterFactory>();
                 builder.Register<ScoutCostPolicy>(Lifetime.Singleton);
-                RegisterApplicationUseCases(builder);
             }
-        }
-
-        static void RegisterApplicationUseCases(IContainerBuilder builder)
-        {
-            builder.Register<AdvanceAdventurerLifecycleUseCase>(Lifetime.Singleton);
-            builder.Register<ActorCombatPowerCalculator>(Lifetime.Singleton);
-            builder.Register<AssignStaffUseCase>(Lifetime.Singleton);
-            builder.Register<CalculateScoutCostUseCase>(Lifetime.Singleton);
-            builder.Register<CanMoveOnMapLayerUseCase>(Lifetime.Singleton);
-            builder.Register<DespawnAdventurerUseCase>(Lifetime.Singleton);
-            builder.Register<EnsureDungeonFloorGeneratedUseCase>(Lifetime.Singleton);
-            builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Singleton);
-            builder.Register<InitializeDungeonUseCase>(Lifetime.Singleton);
-            builder.Register<InitializeWorldMapUseCase>(Lifetime.Singleton);
-            builder.Register<PayStaffSalaryUseCase>(Lifetime.Singleton);
-            builder.Register<ProcessAdventurerSaleUseCase>(Lifetime.Singleton);
-            builder.Register<ProcessExchangeOfferUseCase>(Lifetime.Singleton);
-            builder.Register<ProcessFacilityUsageUseCase>(Lifetime.Singleton);
-            builder.Register<RecruitStaffUseCase>(Lifetime.Singleton);
-            builder.Register<UseConsumableItemUseCase>(Lifetime.Singleton);
-            builder.Register<UseRecoveryItemUseCase>(Lifetime.Singleton);
-            builder.Register<AdvanceActorEffectsUseCase>(Lifetime.Singleton);
-            builder.Register<ReleaseInnReservationUseCase>(Lifetime.Singleton);
-            builder.Register<ReserveInnUseCase>(Lifetime.Singleton);
-            builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Singleton);
-            builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Singleton);
-            builder.Register<UseDungeonStairUseCase>(Lifetime.Singleton);
         }
     }
 }

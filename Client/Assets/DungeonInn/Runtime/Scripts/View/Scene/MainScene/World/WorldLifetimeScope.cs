@@ -40,6 +40,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<InitializeGameWorldUseCase>(Lifetime.Scoped);
             builder.Register<GameLoopUseCase>(Lifetime.Scoped).As<IGameLoopUseCase>();
             builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
+            builder.Register<AssignStaffUseCase>(Lifetime.Scoped);
+            builder.Register<CalculateScoutCostUseCase>(Lifetime.Scoped);
             builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<SpawnMonsterUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledAdventurerUseCase>(Lifetime.Scoped);
@@ -64,6 +66,13 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);
             builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<RecoverAdventurerAtInnUseCase>(Lifetime.Scoped);
+            builder.Register<ReleaseInnReservationUseCase>(Lifetime.Scoped);
+            builder.Register<ReserveInnUseCase>(Lifetime.Scoped);
+            builder.Register<PayStaffSalaryUseCase>(Lifetime.Scoped);
+            builder.Register<ProcessAdventurerSaleUseCase>(Lifetime.Scoped);
+            builder.Register<ProcessExchangeOfferUseCase>(Lifetime.Scoped);
+            builder.Register<ProcessFacilityUsageUseCase>(Lifetime.Scoped);
+            builder.Register<RecruitStaffUseCase>(Lifetime.Scoped);
 
             builder.Register<ActorDecisionScheduler>(Lifetime.Scoped);
             builder.Register<ApplyActorAiDecisionUseCase>(Lifetime.Scoped);

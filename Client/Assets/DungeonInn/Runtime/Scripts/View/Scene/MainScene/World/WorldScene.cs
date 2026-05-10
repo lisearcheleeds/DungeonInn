@@ -3,12 +3,11 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.LighthouseGenerated;
 using DungeonInn.View.Base;
 using Lighthouse.Scene;
-using Lighthouse.Scene.SceneBase;
 using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
-    public sealed class WorldScene : MainSceneBase<WorldScene.WorldTransitionData>
+    public sealed class WorldScene : ProductMainSceneBase<WorldScene.WorldTransitionData>
     {
         IWorldPresenter worldPresenter;
 
