@@ -41,10 +41,10 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var adventurerSpawnTable = repository.GetSpawnTableMaster(1);
             var monsterSpawnTable = repository.GetSpawnTableMaster(2);
-            var adventurerSpawnMaster = repository.GetAdventurerSpawnMaster(adventurerSpawnTable.Entries[0].TargetId);
+            var adventurerSpawnMaster = repository.GetAdventurerSpawnMaster(adventurerSpawnTable.Entries[0].TargetMasterId);
 
             Assert.That(repository.GetActorArchetypeMaster(adventurerSpawnMaster.ActorArchetypeId), Is.Not.Null);
-            Assert.That(repository.GetActorArchetypeMaster(monsterSpawnTable.Entries[0].TargetId), Is.Not.Null);
+            Assert.That(repository.GetActorArchetypeMaster(monsterSpawnTable.Entries[0].TargetMasterId), Is.Not.Null);
         }
 
         [Test]
@@ -54,7 +54,7 @@ namespace DungeonInn.Tests.EditMode
             var adventurerSpawnMaster = repository.GetAdventurerSpawnMaster(1);
             var archetypeMaster = repository.GetActorArchetypeMaster(adventurerSpawnMaster.ActorArchetypeId);
 
-            Assert.That(adventurerSpawnMaster.DisplayName, Is.EqualTo("Alice"));
+            Assert.That(adventurerSpawnMaster.DisplayName, Is.EqualTo("アリス"));
             Assert.That(archetypeMaster.BehaviorType, Is.EqualTo(ActorBehaviorType.Adventurer));
         }
 

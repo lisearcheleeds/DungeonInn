@@ -6,7 +6,7 @@ namespace DungeonInn.Master
     {
         public int Id { get; }
         public int SpawnTableId { get; }
-        public int TargetId { get; }
+        public int TargetMasterId { get; }
         public int Weight { get; }
         public int MinLevel { get; }
         public int MaxLevel { get; }
@@ -14,7 +14,7 @@ namespace DungeonInn.Master
         public SpawnTableEntryMaster(
             int id,
             int spawnTableId,
-            int targetId,
+            int targetMasterId,
             int weight,
             int minLevel,
             int maxLevel)
@@ -29,9 +29,9 @@ namespace DungeonInn.Master
                 throw new ArgumentOutOfRangeException(nameof(spawnTableId));
             }
 
-            if (targetId < 1)
+            if (targetMasterId < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(targetId));
+                throw new ArgumentOutOfRangeException(nameof(targetMasterId));
             }
 
             if (weight < 1)
@@ -51,7 +51,7 @@ namespace DungeonInn.Master
 
             Id = id;
             SpawnTableId = spawnTableId;
-            TargetId = targetId;
+            TargetMasterId = targetMasterId;
             Weight = weight;
             MinLevel = minLevel;
             MaxLevel = maxLevel;

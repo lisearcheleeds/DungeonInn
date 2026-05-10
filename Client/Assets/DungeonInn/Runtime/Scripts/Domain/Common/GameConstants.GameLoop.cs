@@ -15,7 +15,7 @@ namespace DungeonInn.Domain.Common
         public const int AdventurerExplorationRoomArrivalTarget = 8;
 
         // 初期ゲームループで同時に存在できる冒険者の上限。
-        public const int InitialMaxAdventurerCount = 6;
+        public const int InitialMaxAdventurerCount = 8;
 
         // 初期ゲームループで同時に存在できるモンスターの上限。
         public const int InitialMaxMonsterCount = 20;

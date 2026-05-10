@@ -65,7 +65,7 @@ namespace DungeonInn.Application.UseCase
             var faction = new ActorFaction(2, "Monster");
 
             var request = new MonsterCreateRequest(
-                entry.TargetId,
+                entry.TargetMasterId,
                 Guid.NewGuid(),
                 position,
                 faction,

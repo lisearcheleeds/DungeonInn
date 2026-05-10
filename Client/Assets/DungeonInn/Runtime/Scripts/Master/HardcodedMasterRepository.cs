@@ -269,9 +269,14 @@ namespace DungeonInn.Master
         {
             return new[]
             {
-                new AdventurerSpawnMaster(1, "Alice", 1, true),
-                new AdventurerSpawnMaster(2, "Bob", 1, true),
-                new AdventurerSpawnMaster(3, "Cecilia", 1, true)
+                new AdventurerSpawnMaster(1, "アリス", 1, true),
+                new AdventurerSpawnMaster(2, "ヤスオ", 1, true),
+                new AdventurerSpawnMaster(3, "アカリ", 1, true),
+                new AdventurerSpawnMaster(4, "ゼド", 1, true),
+                new AdventurerSpawnMaster(5, "ラックス", 1, true),
+                new AdventurerSpawnMaster(6, "ガレン", 1, true),
+                new AdventurerSpawnMaster(7, "セト", 1, true),
+                new AdventurerSpawnMaster(8, "ユーミ", 1, true),
             }.ToDictionary(x => x.Id);
         }
 
@@ -281,7 +286,12 @@ namespace DungeonInn.Master
             {
                 new SpawnTableEntryMaster(1, 1, 1, 100, 1, 1),
                 new SpawnTableEntryMaster(2, 1, 2, 100, 1, 1),
-                new SpawnTableEntryMaster(3, 1, 3, 100, 1, 1)
+                new SpawnTableEntryMaster(3, 1, 3, 100, 1, 1),
+                new SpawnTableEntryMaster(4, 1, 4, 100, 1, 1),
+                new SpawnTableEntryMaster(5, 1, 5, 100, 1, 1),
+                new SpawnTableEntryMaster(6, 1, 6, 100, 1, 1),
+                new SpawnTableEntryMaster(7, 1, 7, 100, 1, 1),
+                new SpawnTableEntryMaster(8, 1, 8, 100, 1, 1)
             };
             var monsterEntries = new[]
             {
@@ -377,10 +387,10 @@ namespace DungeonInn.Master
             switch (spawnTableMaster.TargetType)
             {
                 case SpawnTableTargetType.ActorArchetype:
-                    GetActorArchetypeMaster(entry.TargetId);
+                    GetActorArchetypeMaster(entry.TargetMasterId);
                     return;
                 case SpawnTableTargetType.AdventurerSpawn:
-                    GetAdventurerSpawnMaster(entry.TargetId);
+                    GetAdventurerSpawnMaster(entry.TargetMasterId);
                     return;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(spawnTableMaster));

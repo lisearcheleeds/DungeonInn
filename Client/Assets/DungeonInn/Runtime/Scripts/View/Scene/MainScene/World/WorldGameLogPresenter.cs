@@ -153,7 +153,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void OnActorRecoveringAtInn(ActorRecoveringAtInn gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} は回復中 {gameEvent.CurrentHp}/{gameEvent.MaxHp}");
+            // Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} は回復中 {gameEvent.CurrentHp}/{gameEvent.MaxHp}");
         }
 
         void OnActorWaitingForInn(ActorWaitingForInn gameEvent)

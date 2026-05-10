@@ -61,7 +61,7 @@ namespace DungeonInn.Application.UseCase
                 return null;
             }
 
-            var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetId);
+            var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetMasterId);
 
             // TODO: スポーン地点をマスタから取得する
             var position = worldState.GroundMap.Layer.GetCellCenter(PickRandomEdgePosition());
@@ -92,7 +92,7 @@ namespace DungeonInn.Application.UseCase
             var entries = spawnTable.Entries
                 .Where(entry =>
                 {
-                    var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetId);
+                    var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetMasterId);
                     return !adventurerSpawnMaster.SpawnOnce ||
                         !worldState.SpawnSchedule.HasSpawnedAdventurerSpawn(adventurerSpawnMaster.Id);
                 })

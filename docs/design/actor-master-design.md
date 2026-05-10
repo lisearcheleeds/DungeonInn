@@ -98,7 +98,7 @@ AdventurerSpawnMaster
 
 ```text
 MonsterSpeciesMaster.Id
-  -> ActorArchetypeMaster.Id に統合、または SpawnTableEntry.TargetId が ActorArchetypeId を直接参照する
+  -> ActorArchetypeMaster.Id に統合、または SpawnTableEntry.TargetMasterId が ActorArchetypeId を直接参照する
 
 MonsterSpeciesMaster.Name
   -> SpeciesMaster.Name または ActorArchetypeMaster.Name
@@ -124,7 +124,7 @@ MonsterSpeciesMaster.SpeciesDrops
 
 モンスターの SpawnTable は `ActorArchetypeMaster` を生成対象として参照する。
 
-`SpawnTableTargetType.MonsterSpecies` は廃止する。冒険者 SpawnTable の TargetId は AdventurerSpawnId を指し、モンスター SpawnTable の TargetId は ActorArchetypeId を指す。
+`SpawnTableTargetType.MonsterSpecies` は廃止する。冒険者 SpawnTable の TargetMasterId は AdventurerSpawnId を指し、モンスター SpawnTable の TargetMasterId は ActorArchetypeId を指す。
 
 ## ActorProfileRegistry
 

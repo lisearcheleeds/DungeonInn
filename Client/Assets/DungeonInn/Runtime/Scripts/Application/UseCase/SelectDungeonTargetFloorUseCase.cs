@@ -61,7 +61,7 @@ namespace DungeonInn.Application.UseCase
             var totalWeight = spawnTable.Entries.Sum(entry => entry.Weight);
             var averageCombatPower = spawnTable.Entries.Sum(entry =>
             {
-                var archetypeMaster = masterRepository.GetActorArchetypeMaster(entry.TargetId);
+                var archetypeMaster = masterRepository.GetActorArchetypeMaster(entry.TargetMasterId);
                 return combatPowerCalculator.Calculate(archetypeMaster) * entry.Weight;
             }) / (float)totalWeight;
             return averageCombatPower * floorMaster.DifficultyCoefficient;
