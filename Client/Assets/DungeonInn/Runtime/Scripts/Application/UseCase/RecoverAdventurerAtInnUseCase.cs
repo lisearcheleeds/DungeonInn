@@ -182,6 +182,16 @@ namespace DungeonInn.Application.UseCase
                 actor.Id,
                 GameConstants.InnWaitingSatisfactionDelta,
                 InnSatisfactionChangeReason.WaitingForInn));
+            eventBus.Publish(new ActorAiDecisionRecorded(
+                actor.Id,
+                AiDecisionType.WaitForInn,
+                AiDecisionReasonType.NoVacantInnRoom,
+                default,
+                facility.Id,
+                0,
+                0,
+                0,
+                0));
             eventBus.Publish(new ActorWaitingForInn(actor.Id, facility.Id));
         }
 

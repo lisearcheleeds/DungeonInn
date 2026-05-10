@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
@@ -6,6 +10,7 @@ using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using NUnit.Framework;
+using R3;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -73,8 +78,9 @@ namespace DungeonInn.Tests.EditMode
         public void LowHpExploringAdventurerUsesRecoveryItemAutomatically()
         {
             var repository = new HardcodedMasterRepository();
+            var eventBus = new CollectingEventBus();
             var useConsumableItemUseCase = new UseConsumableItemUseCase(repository);
-            var useRecoveryItemUseCase = new UseRecoveryItemUseCase(repository, useConsumableItemUseCase);
+            var useRecoveryItemUseCase = new UseRecoveryItemUseCase(repository, useConsumableItemUseCase, eventBus);
             var worldState = new GameWorldState();
             var actor = CreateAdventurer(30);
             actor.Inventory.Add(new ItemStack(2001, 1));
@@ -84,6 +90,10 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(actor.Inventory.ItemCounts.ContainsKey(2001), Is.False);
             Assert.That(actor.ActorEffects.Count, Is.EqualTo(1));
+            var aiEvents = eventBus.GetEvents<ActorAiDecisionRecorded>();
+            Assert.That(aiEvents.Count, Is.EqualTo(1));
+            Assert.That(aiEvents[0].DecisionType, Is.EqualTo(AiDecisionType.UseRecoveryItem));
+            Assert.That(aiEvents[0].ReasonType, Is.EqualTo(AiDecisionReasonType.LowHpWithRecoveryItem));
         }
 
         static Actor CreateAdventurer(int hp)
@@ -103,6 +113,26 @@ namespace DungeonInn.Tests.EditMode
                 new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f),
                 new ActorFaction(1, "Adventurer"),
                 new AdventurerBehavior(0, AdventurerLifecycleState.Exploring));
+        }
+
+        sealed class CollectingEventBus : IGameEventBus
+        {
+            readonly List<IGameEvent> events = new();
+
+            public void Publish(IGameEvent gameEvent)
+            {
+                events.Add(gameEvent);
+            }
+
+            public Observable<T> OnEvent<T>() where T : class, IGameEvent
+            {
+                return Observable.Empty<T>();
+            }
+
+            public IReadOnlyList<T> GetEvents<T>() where T : class, IGameEvent
+            {
+                return events.OfType<T>().ToArray();
+            }
         }
     }
 }

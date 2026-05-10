@@ -1,5 +1,6 @@
 using System;
 using R3;
+using VContainer;
 
 namespace DungeonInn.Application.Event
 {
@@ -9,9 +10,17 @@ namespace DungeonInn.Application.Event
     public sealed class GameEventBus : IGameEventBus, IDisposable
     {
         readonly Subject<IGameEvent> subject = new();
+        readonly IGameEventHistoryRecorder historyRecorder;
+
+        [Inject]
+        public GameEventBus(IGameEventHistoryRecorder historyRecorder)
+        {
+            this.historyRecorder = historyRecorder ?? throw new ArgumentNullException(nameof(historyRecorder));
+        }
 
         public void Publish(IGameEvent gameEvent)
         {
+            historyRecorder.Record(gameEvent);
             subject.OnNext(gameEvent);
         }
 

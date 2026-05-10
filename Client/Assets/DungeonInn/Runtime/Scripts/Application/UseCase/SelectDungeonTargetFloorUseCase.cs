@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
 using VContainer;
@@ -11,15 +13,18 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IMasterRepository masterRepository;
         readonly ActorCombatPowerCalculator combatPowerCalculator;
+        readonly IGameEventBus eventBus;
 
         [Inject]
         public SelectDungeonTargetFloorUseCase(
             IMasterRepository masterRepository,
-            ActorCombatPowerCalculator combatPowerCalculator)
+            ActorCombatPowerCalculator combatPowerCalculator,
+            IGameEventBus eventBus)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.combatPowerCalculator = combatPowerCalculator
                 ?? throw new ArgumentNullException(nameof(combatPowerCalculator));
+            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public UniTask<int> ExecuteAsync(Actor actor)
@@ -41,12 +46,32 @@ namespace DungeonInn.Application.UseCase
                 .FirstOrDefault();
             if (selected.Master != null)
             {
+                eventBus.Publish(new ActorAiDecisionRecorded(
+                    actor.Id,
+                    AiDecisionType.SelectDungeonFloor,
+                    AiDecisionReasonType.CombatPowerMatchesFloor,
+                    default,
+                    default,
+                    0,
+                    0,
+                    selected.Master.FloorIndex,
+                    0));
                 return UniTask.FromResult(selected.Master.FloorIndex);
             }
 
             selected = floors
                 .OrderBy(score => score.Master.FloorIndex)
                 .First();
+            eventBus.Publish(new ActorAiDecisionRecorded(
+                actor.Id,
+                AiDecisionType.SelectDungeonFloor,
+                AiDecisionReasonType.FallbackToLowestFloor,
+                default,
+                default,
+                0,
+                0,
+                selected.Master.FloorIndex,
+                0));
             return UniTask.FromResult(selected.Master.FloorIndex);
         }
 

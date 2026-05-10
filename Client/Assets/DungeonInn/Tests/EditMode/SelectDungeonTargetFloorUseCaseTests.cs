@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using NUnit.Framework;
+using R3;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -49,6 +54,27 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void SelectingTargetFloorPublishesAiReason()
+        {
+            var eventBus = new CollectingEventBus();
+            var masterRepository = new HardcodedMasterRepository();
+            var useCase = new SelectDungeonTargetFloorUseCase(
+                masterRepository,
+                new ActorCombatPowerCalculator(masterRepository),
+                eventBus);
+            var actor = CreateActor(new ActorStats(30, 30, 30, 30, 30, 30));
+
+            var targetFloor = useCase.ExecuteAsync(actor).GetAwaiter().GetResult();
+
+            Assert.That(targetFloor, Is.EqualTo(3));
+            var aiEvents = eventBus.GetEvents<ActorAiDecisionRecorded>();
+            Assert.That(aiEvents.Count, Is.EqualTo(1));
+            Assert.That(aiEvents[0].DecisionType, Is.EqualTo(AiDecisionType.SelectDungeonFloor));
+            Assert.That(aiEvents[0].ReasonType, Is.EqualTo(AiDecisionReasonType.CombatPowerMatchesFloor));
+            Assert.That(aiEvents[0].SelectedFloor, Is.EqualTo(3));
+        }
+
+        [Test]
         public void AlwaysSelectsAtLeastFirstFloor()
         {
             var useCase = CreateUseCase();
@@ -68,7 +94,8 @@ namespace DungeonInn.Tests.EditMode
         {
             return new SelectDungeonTargetFloorUseCase(
                 masterRepository,
-                new ActorCombatPowerCalculator(masterRepository));
+                new ActorCombatPowerCalculator(masterRepository),
+                new CollectingEventBus());
         }
 
         static Actor CreateActor(ActorStats stats)
@@ -88,6 +115,26 @@ namespace DungeonInn.Tests.EditMode
                 new LayerPosition(MapLayerId.Ground, 0f, 0f),
                 new ActorFaction(1, "Adventurer"),
                 new AdventurerBehavior(0));
+        }
+
+        sealed class CollectingEventBus : IGameEventBus
+        {
+            readonly List<IGameEvent> events = new();
+
+            public void Publish(IGameEvent gameEvent)
+            {
+                events.Add(gameEvent);
+            }
+
+            public Observable<T> OnEvent<T>() where T : class, IGameEvent
+            {
+                return Observable.Empty<T>();
+            }
+
+            public IReadOnlyList<T> GetEvents<T>() where T : class, IGameEvent
+            {
+                return events.OfType<T>().ToArray();
+            }
         }
     }
 }

@@ -352,7 +352,8 @@ namespace DungeonInn.Tests.EditMode
             var masterRepository = new HardcodedMasterRepository();
             return new SelectDungeonTargetFloorUseCase(
                 masterRepository,
-                new ActorCombatPowerCalculator(masterRepository));
+                new ActorCombatPowerCalculator(masterRepository),
+                new NoOpGameEventBus());
         }
 
         sealed class NoOpGameEventBus : IGameEventBus
@@ -360,6 +361,7 @@ namespace DungeonInn.Tests.EditMode
             public void Publish(IGameEvent gameEvent)
             {
             }
+
             public Observable<T> OnEvent<T>() where T : class, IGameEvent
             {
                 return Observable.Empty<T>();

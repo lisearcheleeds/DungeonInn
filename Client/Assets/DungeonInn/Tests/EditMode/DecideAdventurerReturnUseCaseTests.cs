@@ -148,6 +148,10 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
             Assert.That(eventBus.GetEvents<ActorGoalCompleted>().Count, Is.EqualTo(0));
             Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(1));
+            var aiEvents = eventBus.GetEvents<ActorAiDecisionRecorded>();
+            Assert.That(aiEvents.Count, Is.EqualTo(1));
+            Assert.That(aiEvents[0].DecisionType, Is.EqualTo(AiDecisionType.ReturnToInn));
+            Assert.That(aiEvents[0].ReasonType, Is.EqualTo(AiDecisionReasonType.LowHpWithoutRecoveryItem));
         }
 
         [Test]
@@ -186,6 +190,9 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
             Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(1));
+            var aiEvents = eventBus.GetEvents<ActorAiDecisionRecorded>();
+            Assert.That(aiEvents.Count, Is.EqualTo(1));
+            Assert.That(aiEvents[0].ReasonType, Is.EqualTo(AiDecisionReasonType.CriticalHp));
         }
 
         [Test]

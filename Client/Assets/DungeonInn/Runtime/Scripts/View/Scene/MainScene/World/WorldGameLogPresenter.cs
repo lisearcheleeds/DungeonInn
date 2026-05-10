@@ -145,6 +145,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<DailyInnReportGenerated>()
                 .Subscribe(OnDailyInnReportGenerated)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<ActorAiDecisionRecorded>()
+                .Subscribe(OnActorAiDecisionRecorded)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -344,6 +348,38 @@ namespace DungeonInn.View.Scene.MainScene.World
                 $"Sales={report.Sales}G Satisfaction={report.SatisfactionDelta:+#;-#;0} " +
                 $"Reputation={report.Reputation} Treasury={report.GuildGold}G " +
                 $"Stock(Sword={report.RookieSwordStock}, Armor={report.RookieArmorStock})");
+        }
+
+        void OnActorAiDecisionRecorded(ActorAiDecisionRecorded gameEvent)
+        {
+            Debug.Log($"[AI] {GetName(gameEvent.ActorId)} selected {gameEvent.DecisionType}: {FormatAiReason(gameEvent)}");
+        }
+
+        static string FormatAiReason(ActorAiDecisionRecorded gameEvent)
+        {
+            switch (gameEvent.ReasonType)
+            {
+                case AiDecisionReasonType.GoalCompleted:
+                    return $"goal completed (score {gameEvent.Score})";
+                case AiDecisionReasonType.CriticalHp:
+                    return $"critical HP {gameEvent.CurrentHp}/{gameEvent.MaxHp}";
+                case AiDecisionReasonType.LowHpWithoutRecoveryItem:
+                    return $"low HP {gameEvent.CurrentHp}/{gameEvent.MaxHp} without recovery item";
+                case AiDecisionReasonType.NoVacantInnRoom:
+                    return "no vacant room";
+                case AiDecisionReasonType.LowHpWithRecoveryItem:
+                    return $"low HP {gameEvent.CurrentHp}/{gameEvent.MaxHp} with recovery item";
+                case AiDecisionReasonType.NearestHostileInRange:
+                    return $"nearest hostile {gameEvent.TargetActorId:N}";
+                case AiDecisionReasonType.CombatPowerMatchesFloor:
+                    return $"combat power matched floor {gameEvent.SelectedFloor}";
+                case AiDecisionReasonType.FallbackToLowestFloor:
+                    return $"fallback to floor {gameEvent.SelectedFloor}";
+                case AiDecisionReasonType.FacilityUsageRequest:
+                    return $"facility request {gameEvent.FacilityId:N}";
+                default:
+                    return gameEvent.ReasonType.ToString();
+            }
         }
 
         string GetName(Guid actorId)

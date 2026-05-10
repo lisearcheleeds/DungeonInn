@@ -120,6 +120,16 @@ namespace DungeonInn.Application.UseCase
                         actor.CurrentGoal.TargetCount));
                 }
 
+                eventBus.Publish(new ActorAiDecisionRecorded(
+                    actor.Id,
+                    AiDecisionType.ReturnToInn,
+                    returnDecision.ReasonType,
+                    default,
+                    default,
+                    currentHp: actor.Hp,
+                    maxHp: actor.Params.MaxHp,
+                    selectedFloor: 0,
+                    score: returnDecision.Score));
                 eventBus.Publish(new ActorStartedReturning(actor.Id));
             }
 
@@ -163,7 +173,21 @@ namespace DungeonInn.Application.UseCase
                 score += GameConstants.AdventurerReturnLowHpWithoutRecoveryItemScore;
             }
 
-            return new AdventurerReturnDecision(score, goalCompleted);
+            var reasonType = AiDecisionReasonType.None;
+            if (goalCompleted)
+            {
+                reasonType = AiDecisionReasonType.GoalCompleted;
+            }
+            else if (hpRatio <= GameConstants.AdventurerReturnCriticalHpRatio)
+            {
+                reasonType = AiDecisionReasonType.CriticalHp;
+            }
+            else if (hpRatio <= GameConstants.AdventurerReturnLowHpRatio && !HasRecoveryItem(actor))
+            {
+                reasonType = AiDecisionReasonType.LowHpWithoutRecoveryItem;
+            }
+
+            return new AdventurerReturnDecision(score, goalCompleted, reasonType);
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)
@@ -304,11 +328,13 @@ namespace DungeonInn.Application.UseCase
         {
             public int Score { get; }
             public bool GoalCompleted { get; }
+            public AiDecisionReasonType ReasonType { get; }
 
-            public AdventurerReturnDecision(int score, bool goalCompleted)
+            public AdventurerReturnDecision(int score, bool goalCompleted, AiDecisionReasonType reasonType)
             {
                 Score = score;
                 GoalCompleted = goalCompleted;
+                ReasonType = reasonType;
             }
         }
     }

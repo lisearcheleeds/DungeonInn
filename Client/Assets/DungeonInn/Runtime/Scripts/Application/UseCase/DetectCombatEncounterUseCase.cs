@@ -60,6 +60,16 @@ namespace DungeonInn.Application.UseCase
 
                     if (!hadTarget || isNewTarget)
                     {
+                        eventBus.Publish(new ActorAiDecisionRecorded(
+                            actor.Id,
+                            AiDecisionType.StartCombat,
+                            AiDecisionReasonType.NearestHostileInRange,
+                            nearest.Id,
+                            default,
+                            0,
+                            0,
+                            0,
+                            0));
                         eventBus.Publish(new CombatEncounterStarted(actor.Id, nearest.Id));
                     }
                 }

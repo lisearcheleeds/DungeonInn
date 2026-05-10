@@ -24,6 +24,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterEntryPoint<WorldGameLogPresenter>(Lifetime.Scoped);
 
             builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();
+            builder.Register<GameEventHistoryService>(Lifetime.Scoped)
+                .As<IGameEventHistoryReader>()
+                .As<IGameEventHistoryRecorder>()
+                .AsSelf();
             builder.Register<GameEventBus>(Lifetime.Scoped).As<IGameEventBus>().AsSelf();
             builder.Register<AdventurerBattleRecordService>(Lifetime.Scoped);
 
@@ -44,6 +48,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ResumeGameTimeUseCase>(Lifetime.Scoped);
             builder.Register<ToggleGamePauseUseCase>(Lifetime.Scoped);
             builder.Register<GetGameTimeStateUseCase>(Lifetime.Scoped);
+            builder.Register<GetGameEventHistoryUseCase>(Lifetime.Scoped);
             builder.Register<InnEconomyStatusCalculator>(Lifetime.Scoped);
             builder.Register<GetInnEconomyStatusUseCase>(Lifetime.Scoped);
             builder.Register<AssignStaffUseCase>(Lifetime.Scoped);

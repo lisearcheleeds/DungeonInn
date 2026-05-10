@@ -36,6 +36,10 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(events.Count, Is.EqualTo(1));
             Assert.That(events[0].ActorId, Is.EqualTo(actor.Id));
             Assert.That(events[0].InnFacilityId, Is.EqualTo(inn.Id));
+            var aiEvents = eventBus.GetEvents<ActorAiDecisionRecorded>();
+            Assert.That(aiEvents.Count, Is.EqualTo(1));
+            Assert.That(aiEvents[0].DecisionType, Is.EqualTo(AiDecisionType.WaitForInn));
+            Assert.That(aiEvents[0].ReasonType, Is.EqualTo(AiDecisionReasonType.NoVacantInnRoom));
         }
 
         [Test]

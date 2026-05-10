@@ -1,5 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
@@ -13,14 +15,17 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IMasterRepository masterRepository;
         readonly UseConsumableItemUseCase useConsumableItemUseCase;
+        readonly IGameEventBus eventBus;
 
         [Inject]
         public UseRecoveryItemUseCase(
             IMasterRepository masterRepository,
-            UseConsumableItemUseCase useConsumableItemUseCase)
+            UseConsumableItemUseCase useConsumableItemUseCase,
+            IGameEventBus eventBus)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.useConsumableItemUseCase = useConsumableItemUseCase ?? throw new ArgumentNullException(nameof(useConsumableItemUseCase));
+            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState)
@@ -55,7 +60,20 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                await useConsumableItemUseCase.ExecuteAsync(actor, itemId);
+                var used = await useConsumableItemUseCase.ExecuteAsync(actor, itemId);
+                if (used)
+                {
+                    eventBus.Publish(new ActorAiDecisionRecorded(
+                        actor.Id,
+                        AiDecisionType.UseRecoveryItem,
+                        AiDecisionReasonType.LowHpWithRecoveryItem,
+                        default,
+                        default,
+                        currentHp: actor.Hp,
+                        maxHp: actor.Params.MaxHp,
+                        selectedFloor: 0,
+                        score: 0));
+                }
             }
         }
 

@@ -1,10 +1,13 @@
 using System;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
+using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
@@ -13,6 +16,14 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class ProcessFacilityUsageUseCase
     {
+        readonly IGameEventBus eventBus;
+
+        [Inject]
+        public ProcessFacilityUsageUseCase(IGameEventBus eventBus)
+        {
+            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        }
+
         /// <summary>
         /// 施設利用リクエストを処理し、冒険者とギルドの状態を更新する。
         /// </summary>
@@ -39,6 +50,16 @@ namespace DungeonInn.Application.UseCase
             guild.Inventory.Add(price);
             ApplyFacilityEffect(guild, adventurer, facility, request);
             RecordTransaction(guild, adventurer, facilityId, request, price, occurredAtTick);
+            eventBus.Publish(new ActorAiDecisionRecorded(
+                adventurer.Id,
+                AiDecisionType.UseFacility,
+                AiDecisionReasonType.FacilityUsageRequest,
+                default,
+                facilityId,
+                0,
+                0,
+                0,
+                0));
 
             return UniTask.CompletedTask;
         }

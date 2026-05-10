@@ -1,0 +1,27 @@
+using System;
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Event;
+
+namespace DungeonInn.Application.GameLoop
+{
+    public sealed class GetGameEventHistoryUseCase
+    {
+        readonly IGameEventHistoryReader historyReader;
+
+        public GetGameEventHistoryUseCase(IGameEventHistoryReader historyReader)
+        {
+            this.historyReader = historyReader ?? throw new ArgumentNullException(nameof(historyReader));
+        }
+
+        public UniTask<IReadOnlyList<GameEventHistoryEntry>> GetRecentAsync(int count)
+        {
+            return UniTask.FromResult(historyReader.GetRecent(count));
+        }
+
+        public UniTask<IReadOnlyList<GameEventHistoryEntry>> GetByDayAsync(int day)
+        {
+            return UniTask.FromResult(historyReader.GetByDay(day));
+        }
+    }
+}
