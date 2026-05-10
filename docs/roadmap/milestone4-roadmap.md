@@ -21,6 +21,7 @@
 
 - Milestone 3 のゲームループ（成長・アイテム経済）が安定して動作していること
 - NavMesh の Bake がダンジョン生成後に動的に実行できること
+- Milestone 4 に入る前に、回復薬・バフ・デバフ共通基盤として `docs/design/actor-effect-status-effect-design.md` の ActorEffect / StatusEffect を実装する
 
 ---
 
