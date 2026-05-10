@@ -25,7 +25,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
+            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
@@ -47,7 +47,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
+            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
@@ -73,7 +73,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
+            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
             worldState.RegisterActor(attacker);
@@ -99,7 +99,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
+            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             attacker.ChangeNaturalWeaponType(WeaponType.Scythe);
@@ -180,6 +180,20 @@ namespace DungeonInn.Tests.EditMode
         static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
         {
             return new DropItemUseCase(new ZeroGameRandom(), eventBus);
+        }
+
+        static CombatEffectExecutor CreateCombatEffectExecutor(
+            IActorCombatService combatService,
+            IGameEventBus eventBus)
+        {
+            var defeatResolver = new CombatDefeatResolver(
+                combatService,
+                eventBus,
+                CreateGrantExperienceUseCase(eventBus),
+                CreateDropItemUseCase(eventBus));
+            return new CombatEffectExecutor(
+                eventBus,
+                new CombatDamageResolver(combatService, eventBus, defeatResolver));
         }
 
         sealed class ZeroGameRandom : IGameRandom

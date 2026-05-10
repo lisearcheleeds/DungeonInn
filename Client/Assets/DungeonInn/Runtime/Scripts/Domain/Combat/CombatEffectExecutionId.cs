@@ -8,7 +8,7 @@ namespace DungeonInn.Domain.Combat
 
         public CombatEffectExecutionId(Guid value)
         {
-            if (value.Equals(Guid.Empty))
+            if (value == Guid.Empty)
             {
                 throw new ArgumentException("Combat effect execution id is required.", nameof(value));
             }

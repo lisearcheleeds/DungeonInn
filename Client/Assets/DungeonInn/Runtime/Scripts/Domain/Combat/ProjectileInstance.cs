@@ -10,6 +10,9 @@ namespace DungeonInn.Domain.Combat
         public Guid TargetActorId { get; }
         public LayerPosition Position { get; private set; }
         public LayerPosition TargetPosition { get; }
+        public WeaponAttackSpec AttackSpec { get; }
+        public int SourceNodeId { get; }
+        public CombatEffectExecutionId ExecutionId { get; }
         public int Damage { get; }
         public float SpeedMetersPerSecond { get; }
         public float RemainingDistanceMeters { get; private set; }
@@ -20,6 +23,33 @@ namespace DungeonInn.Domain.Combat
             Guid targetActorId,
             LayerPosition position,
             LayerPosition targetPosition,
+            int damage,
+            float speedMetersPerSecond,
+            float maxDistanceMeters)
+            : this(
+                id,
+                attackerActorId,
+                targetActorId,
+                position,
+                targetPosition,
+                null,
+                0,
+                CombatEffectExecutionId.New(),
+                damage,
+                speedMetersPerSecond,
+                maxDistanceMeters)
+        {
+        }
+
+        public ProjectileInstance(
+            Guid id,
+            Guid attackerActorId,
+            Guid targetActorId,
+            LayerPosition position,
+            LayerPosition targetPosition,
+            WeaponAttackSpec attackSpec,
+            int sourceNodeId,
+            CombatEffectExecutionId executionId,
             int damage,
             float speedMetersPerSecond,
             float maxDistanceMeters)
@@ -34,6 +64,9 @@ namespace DungeonInn.Domain.Combat
             TargetActorId = targetActorId;
             Position = position;
             TargetPosition = targetPosition;
+            AttackSpec = attackSpec;
+            SourceNodeId = sourceNodeId;
+            ExecutionId = executionId;
             Damage = Math.Max(0, damage);
             SpeedMetersPerSecond = Math.Max(0, speedMetersPerSecond);
             RemainingDistanceMeters = Math.Max(0, maxDistanceMeters);

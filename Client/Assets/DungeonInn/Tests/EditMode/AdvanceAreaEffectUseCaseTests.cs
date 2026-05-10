@@ -25,11 +25,8 @@ namespace DungeonInn.Tests.EditMode
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = new AdvanceAreaEffectUseCase(
-                combatService,
                 new AttackAreaTargetResolver(),
-                eventBus,
-                CreateGrantExperienceUseCase(eventBus),
-                CreateDropItemUseCase(eventBus));
+                CreateCombatEffectExecutor(combatService, eventBus));
             var attacker = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var enemyA = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             var enemyB = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 7f, 5f), 50);
@@ -123,6 +120,20 @@ namespace DungeonInn.Tests.EditMode
         static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
         {
             return new DropItemUseCase(new ZeroGameRandom(), eventBus);
+        }
+
+        static CombatEffectExecutor CreateCombatEffectExecutor(
+            IActorCombatService combatService,
+            IGameEventBus eventBus)
+        {
+            var defeatResolver = new CombatDefeatResolver(
+                combatService,
+                eventBus,
+                CreateGrantExperienceUseCase(eventBus),
+                CreateDropItemUseCase(eventBus));
+            return new CombatEffectExecutor(
+                eventBus,
+                new CombatDamageResolver(combatService, eventBus, defeatResolver));
         }
 
         static Actor CreateActor(int factionId, LayerPosition position, int hp)

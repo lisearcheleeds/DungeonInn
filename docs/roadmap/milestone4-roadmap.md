@@ -2,26 +2,31 @@
 
 このドキュメントは Milestone 4 の実装計画をまとめる。
 
-対象ループ:
+## 対象ループ
 
 ```text
 冒険者が来訪する
--> ダンジョンへ向かう（NavMesh による経路探索）
--> モンスターと戦闘（Projectile / Area 攻撃を含む）
--> 帰還・成長・経済ループ（Milestone 3 継続）
+-> ダンジョンへ向かう
+-> モンスターと戦闘する（Projectile / Area 攻撃を含む）
+-> 宿屋へ帰還する
+-> 宿泊・施設利用・売上・評判に反映される
+-> AI判断理由とイベント履歴からシミュレーションの状態を追える
 ```
 
 ## 到達目標
 
-- 戦闘に Projectile（飛び道具）と Area 攻撃（範囲攻撃）が加わり、戦術的な多様性が生まれる
-- 移動が NavMesh による経路探索になり、ダンジョンの地形を正しく回避して移動する
-- 上記2点によって Milestone 2〜3 のシミュレーションが視覚的にも説得力ある動きを見せる
+- 戦闘の CombatEffect 実行が Direct / Projectile / Area で共通化され、撃破処理やダメージ適用の重複が減っている
+- 宿屋経営シミュレーションとして、宿泊・施設利用・売上・満足度/評判の最小ループが内部状態として成立している
+- AIの主要判断について、なぜその行動を選んだかをログ/イベント履歴から追える
+- Pause / 倍速など、シミュレーション観察に必要な時間操作がUseCaseとして用意されている
+- Unity/GameObject 表現に移る前に、内部シミュレーションの状態変化をテストとログで確認できる
 
 ## 前提
 
-- Milestone 3 のゲームループ（成長・アイテム経済）が安定して動作していること
-- NavMesh の Bake がダンジョン生成後に動的に実行できること
-- Milestone 4 に入る前に、回復薬・バフ・デバフ共通基盤として `docs/design/actor-effect-status-effect-design.md` の ActorEffect / StatusEffect を実装する
+- Milestone 3 のゲームループ、探索、帰還、アイテム経済が動作している
+- Milestone 4 Phase 1 の Projectile 攻撃が実装済み
+- Milestone 4 Phase 2 の Area 攻撃が実装済み
+- NavMesh / GameObject / Unity表示都合の本格実装は Milestone 5 に分離する
 
 ---
 
@@ -31,24 +36,22 @@
 
 作るもの:
 
-- `ProjectileInstance`（位置, 速度, 発射元, ターゲット, ダメージ）
+- `ProjectileInstance`
 - `GameWorldState.Projectiles`
-- `AdvanceProjectileUseCase`（フレームごとに飛翔体を移動・命中判定）
-- `ActorAttackType`（Direct / Projectile / Area）
-- `AttackMaster` の Projectile パラメータ（射程, 速度, 弾道）
-
-初期仕様:
-
-- 直線飛翔のみ
-- ターゲットに命中 or 最大射程で消滅
-- Direct 攻撃との共存（攻撃タイプはモンスター/冒険者ごとに設定）
+- `AdvanceProjectileUseCase`
+- `ProjectileFired` / `ProjectileHit`
+- Bow の `Projectile -> DirectDamage` CombatEffect
 
 完了条件:
 
 ```text
-[Combat] Goblin Archer fired arrow at Adventurer A
-[Combat] Arrow hit Adventurer A for 12
+[Combat] Goblin Archer fired projectile at Adventurer A
+[Combat] Projectile hit Adventurer A for 12
 ```
+
+状態:
+
+- 実装済み
 
 ---
 
@@ -58,54 +61,149 @@
 
 作るもの:
 
-- `AreaEffectInstance`（中心位置, 半径, 持続時間, ダメージ/効果）
+- `AreaEffectInstance`
 - `GameWorldState.AreaEffects`
-- `AdvanceAreaEffectUseCase`（範囲内アクターへの効果適用）
-- 発動条件（即時 or 着弾後 or 時間差）
+- `AttackAreaTargetResolver`
+- `AdvanceAreaEffectUseCase`
+- `AreaEffectCreated` / `AreaEffectHit`
+- Scythe の `Area -> DirectDamage` CombatEffect
 
 初期仕様:
 
-- 即時爆発と一定時間持続する床置き効果の2種類
-- ダメージのみ（バフ/デバフは Milestone 5 以降）
-- Friendly Fire は考慮しない（Faction 判定のみ）
+- Instant / Duration の2種類
+- ダメージのみ
+- Friendly Fire は行わず、敵Factionのみを対象にする
 
 完了条件:
 
 ```text
-[Combat] Mage cast Fireball at (15.0, 8.0) radius 4m
-[Combat] Fireball hit Adventurer A for 20, Adventurer B for 15
+[Combat] Orc created area effect at (15.0, 8.0) radius 3.0m
+[Combat] Area effect hit Adventurer A for 20
+[Combat] Area effect hit Adventurer B for 20
+```
+
+状態:
+
+- 実装済み
+
+---
+
+## Phase 3: CombatEffect 実行共通化
+
+Projectile / Area 実装で分散し始めた攻撃実行、ダメージ適用、撃破解決を共通化する。
+
+作るもの:
+
+- `CombatEffectExecutor`
+- `CombatDamageResolver`
+- `CombatDefeatResolver`
+- `CombatEffectExecutionId` または同等の実行単位ID
+- Projectile / Area / DirectDamage から共通Executorを呼ぶ経路
+
+初期仕様:
+
+- DirectDamage、Projectile、Area のNode解釈をUseCase内の個別分岐から段階的にExecutorへ移す
+- 撃破時の経験値付与、ドロップ、Actor削除、CombatTarget解除を `CombatDefeatResolver` に集約する
+- `Projectile -> Area -> DirectDamage` の連鎖を実行できるようにする
+- イベントには表示用加工値ではなく、実行結果として必要な事実だけを含める
+
+完了条件:
+
+```text
+Projectile -> Area -> DirectDamage の攻撃定義を実行できる
+Direct / Projectile / Area の撃破処理が同じResolverを通る
 ```
 
 ---
 
-## Phase 3: 高度な NavMesh 連携
+## Phase 4: シミュレーション時間操作
 
-移動を直線移動から NavMesh 経路探索に切り替える。
+経営シミュレーションとして観察と検証をしやすくするため、時間操作のUseCaseを整える。
 
 作るもの:
 
-- `NavMeshBakeService`（ダンジョン生成後に NavMesh を動的に Bake）
-- `IActorNavigationService` の NavMesh 実装（`NavMeshActorNavigationService`）
-- `MoveActorTowardDestinationUseCase` の NavMesh パス追従モード
+- Pause / Resume UseCase
+- 1x / 2x / 4x などの時間倍率変更
+- 現在日・現在時刻・時間倍率を参照するクエリ
+- 重要イベント時の自動Pause候補を後で差し込める設計
 
 初期仕様:
 
-- ダンジョン生成完了後に NavMesh を Bake
-- フロアを跨いだ移動は NavMesh を切り替える
-- 経路が取れない場合は直線移動にフォールバック
+- UIはまだ必須にしない
+- `GameClock` の状態変更はUseCase経由に寄せる
+- PlayMode確認ではログまたはRuntime Queryで状態を確認する
 
 完了条件:
 
-- 冒険者・モンスターが壁を通り抜けず、廊下や部屋を通って目標へ到達すること
-- ダンジョン再生成後に NavMesh が再 Bake されること
+```text
+Pause中はゲーム時間が進まない
+2x / 4x でスケジュール進行とフレーム進行が倍率通りに進む
+```
+
+---
+
+## Phase 5: 宿屋経営ループ拡張
+
+宿屋経営シミュレーションとして、戦闘・探索以外の内部数値ループを成立させる。
+
+作るもの:
+
+- 客室/ベッド稼働率
+- 宿泊料金と売上集計
+- 施設利用需要
+- 満足度または評判
+- 在庫消費/補充の最小ループ
+- 日次集計
+
+初期仕様:
+
+- まずは内部状態とログで成立させる
+- 施設の見た目やGameObject配置は Milestone 5 で扱う
+- 満足度/評判は来訪者数や滞在判断に影響する最小モデルから始める
+
+完了条件:
+
+```text
+[Daily] Guests=8 Occupancy=75% Sales=240G Reputation=12
+[Inn] Adventurer A stayed and satisfaction changed +2
+```
+
+---
+
+## Phase 6: AI行動理由ログとイベント履歴
+
+シミュレーションゲームとして「なぜその状態になったか」を追えるようにする。
+
+作るもの:
+
+- AI判断理由イベント
+- イベント履歴サービス
+- 日次/直近イベントの参照API
+- デバッグログ出力
+
+対象にする判断:
+
+- 冒険者がなぜ帰還したか
+- なぜ宿を待っているか
+- なぜアイテムを使ったか
+- なぜ敵を狙ったか
+- なぜその階層を選んだか
+- なぜ施設を利用したか
+
+完了条件:
+
+```text
+[AI] Adventurer A selected ReturnToInn: low HP 18/80
+[AI] Adventurer B waits for inn: no vacant room
+```
 
 ---
 
 ## 推奨実装順
 
-1. Phase 1: Projectile 攻撃
-2. Phase 2: Area 攻撃
-3. Phase 3: 高度な NavMesh 連携
+1. Phase 3: CombatEffect 実行共通化
+2. Phase 4: シミュレーション時間操作
+3. Phase 5: 宿屋経営ループ拡張
+4. Phase 6: AI行動理由ログとイベント履歴
 
-NavMesh 連携は他フェーズと独立しているため、Phase 1/2 と並行して着手可能。
-ただし View 表示が整ってから着手するほうが動作確認がしやすい。
+Projectile / Area は実装済みのため、以降はUnity表示に進む前の内部シミュレーション基盤を整える。

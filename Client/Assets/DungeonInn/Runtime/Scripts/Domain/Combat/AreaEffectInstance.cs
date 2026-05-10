@@ -14,6 +14,9 @@ namespace DungeonInn.Domain.Combat
         public Guid AttackerActorId { get; }
         public int SourceFactionId { get; }
         public LayerPosition CenterPosition { get; }
+        public WeaponAttackSpec AttackSpec { get; }
+        public int SourceNodeId { get; }
+        public CombatEffectExecutionId ExecutionId { get; }
         public AttackAreaSpec AreaSpec { get; }
         public int Damage { get; }
         public float RemainingDurationSeconds { get; private set; }
@@ -26,11 +29,37 @@ namespace DungeonInn.Domain.Combat
             LayerPosition centerPosition,
             AttackAreaSpec areaSpec,
             int damage)
+            : this(
+                id,
+                attackerActorId,
+                sourceFactionId,
+                centerPosition,
+                null,
+                0,
+                CombatEffectExecutionId.New(),
+                areaSpec,
+                damage)
+        {
+        }
+
+        public AreaEffectInstance(
+            Guid id,
+            Guid attackerActorId,
+            int sourceFactionId,
+            LayerPosition centerPosition,
+            WeaponAttackSpec attackSpec,
+            int sourceNodeId,
+            CombatEffectExecutionId executionId,
+            AttackAreaSpec areaSpec,
+            int damage)
         {
             Id = id;
             AttackerActorId = attackerActorId;
             SourceFactionId = sourceFactionId;
             CenterPosition = centerPosition;
+            AttackSpec = attackSpec;
+            SourceNodeId = sourceNodeId;
+            ExecutionId = executionId;
             AreaSpec = areaSpec ?? throw new ArgumentNullException(nameof(areaSpec));
             Damage = Math.Max(0, damage);
             RemainingDurationSeconds = areaSpec.DurationType == AttackAreaDurationType.Duration

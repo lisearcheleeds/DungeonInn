@@ -24,11 +24,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceProjectileUseCase(
-                combatService,
-                eventBus,
-                CreateGrantExperienceUseCase(eventBus),
-                CreateDropItemUseCase(eventBus));
+            var useCase = new AdvanceProjectileUseCase(CreateCombatEffectExecutor(combatService, eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             var projectile = new ProjectileInstance(
@@ -56,6 +52,51 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(attacks.Count, Is.EqualTo(1));
             Assert.That(attacks[0].Damage, Is.EqualTo(7));
             Assert.That(attacks[0].TargetRemainingHp, Is.EqualTo(43));
+        }
+
+        [Test]
+        public void ProjectileHitCanCreateAreaThatDealsLinkedDirectDamage()
+        {
+            var worldState = new GameWorldState();
+            var combatService = new ActorCombatService();
+            var eventBus = new CollectingGameEventBus();
+            var executor = CreateCombatEffectExecutor(combatService, eventBus);
+            var projectileUseCase = new AdvanceProjectileUseCase(executor);
+            var areaUseCase = new AdvanceAreaEffectUseCase(new AttackAreaTargetResolver(), executor);
+            var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
+            var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
+            var attackSpec = CreateProjectileAreaDamageAttackSpec(6);
+            var projectile = new ProjectileInstance(
+                Guid.NewGuid(),
+                attacker.Id,
+                target.Id,
+                attacker.Position,
+                target.Position,
+                attackSpec,
+                1,
+                CombatEffectExecutionId.New(),
+                0,
+                10f,
+                10f);
+            worldState.RegisterActor(attacker);
+            worldState.RegisterActor(target);
+            worldState.AddProjectile(projectile);
+
+            projectileUseCase.ExecuteAsync(worldState, 1f).GetAwaiter().GetResult();
+            areaUseCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            var projectileHits = eventBus.GetEvents<ProjectileHit>();
+            var areaHits = eventBus.GetEvents<AreaEffectHit>();
+            var attacks = eventBus.GetEvents<CombatAttackOccurred>();
+            Assert.That(worldState.Projectiles.Count, Is.EqualTo(0));
+            Assert.That(worldState.AreaEffects.Count, Is.EqualTo(0));
+            Assert.That(target.Hp, Is.EqualTo(44));
+            Assert.That(projectileHits.Count, Is.EqualTo(1));
+            Assert.That(projectileHits[0].Damage, Is.EqualTo(0));
+            Assert.That(areaHits.Count, Is.EqualTo(1));
+            Assert.That(areaHits[0].Damage, Is.EqualTo(6));
+            Assert.That(attacks.Count, Is.EqualTo(1));
+            Assert.That(attacks[0].Damage, Is.EqualTo(6));
         }
 
         sealed class CollectingGameEventBus : IGameEventBus
@@ -113,6 +154,63 @@ namespace DungeonInn.Tests.EditMode
         static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
         {
             return new DropItemUseCase(new ZeroGameRandom(), eventBus);
+        }
+
+        static CombatEffectExecutor CreateCombatEffectExecutor(
+            IActorCombatService combatService,
+            IGameEventBus eventBus)
+        {
+            var defeatResolver = new CombatDefeatResolver(
+                combatService,
+                eventBus,
+                CreateGrantExperienceUseCase(eventBus),
+                CreateDropItemUseCase(eventBus));
+            return new CombatEffectExecutor(
+                eventBus,
+                new CombatDamageResolver(combatService, eventBus, defeatResolver));
+        }
+
+        static WeaponAttackSpec CreateProjectileAreaDamageAttackSpec(int damage)
+        {
+            var projectileNode = new CombatEffectNodeSpec(
+                1,
+                CombatEffectNodeType.Projectile,
+                null,
+                null,
+                new ProjectileSpec(
+                    ProjectileMovementType.TargetPoint,
+                    ProjectileHitBehavior.DisappearOnHit,
+                    10f,
+                    10f,
+                    null),
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, 2) });
+            var areaNode = new CombatEffectNodeSpec(
+                2,
+                CombatEffectNodeType.Area,
+                null,
+                new AttackAreaSpec(
+                    AttackAreaShape.Circle,
+                    AttackAreaDurationType.Instant,
+                    AttackHitIntervalType.OncePerTarget,
+                    0f,
+                    0f,
+                    2f,
+                    0f,
+                    0),
+                null,
+                new[] { new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, 3) });
+            var directDamageNode = new CombatEffectNodeSpec(
+                3,
+                CombatEffectNodeType.DirectDamage,
+                new DamageSpec(damage),
+                null,
+                null,
+                Array.Empty<CombatEffectLinkSpec>());
+            return new WeaponAttackSpec(
+                10,
+                new[] { projectileNode.Id },
+                new[] { projectileNode, areaNode, directDamageNode },
+                3);
         }
 
         static Actor CreateActor(string name, int factionId, LayerPosition position, int hp)
