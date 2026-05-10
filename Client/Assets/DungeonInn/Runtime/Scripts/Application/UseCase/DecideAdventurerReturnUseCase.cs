@@ -8,7 +8,10 @@ using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Profiles;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.UseCase
@@ -18,24 +21,42 @@ namespace DungeonInn.Application.UseCase
         readonly IActorCombatService actorCombatService;
         readonly IGameEventBus eventBus;
         readonly IActorProfileRegistry profileRegistry;
+        readonly IItemMasterRepository itemMasterRepository;
         readonly Dictionary<Guid, Dictionary<int, int>> defeatedMonsterCountsByActor = new();
-        readonly IDisposable defeatedSubscription;
+        readonly HashSet<Guid> dirtyActorIds = new();
+        DisposableBag bag;
 
         [Inject]
         public DecideAdventurerReturnUseCase(
             IActorCombatService actorCombatService,
             IGameEventBus eventBus,
-            IActorProfileRegistry profileRegistry)
+            IActorProfileRegistry profileRegistry,
+            IItemMasterRepository itemMasterRepository)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
-            defeatedSubscription = eventBus.OnEvent<ActorDefeated>().Subscribe(OnActorDefeated);
+            this.itemMasterRepository = itemMasterRepository ?? throw new ArgumentNullException(nameof(itemMasterRepository));
+            eventBus.OnEvent<ActorDefeated>()
+                .Subscribe(OnActorDefeated)
+                .AddTo(ref bag);
+            eventBus.OnEvent<CombatEncounterEnded>()
+                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
+                .AddTo(ref bag);
+            eventBus.OnEvent<ItemPickedUp>()
+                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
+                .AddTo(ref bag);
+            eventBus.OnEvent<ActorLeveledUp>()
+                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
+                .AddTo(ref bag);
+            eventBus.OnEvent<ActorEnteredDungeon>()
+                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
+                .AddTo(ref bag);
         }
 
         public void Dispose()
         {
-            defeatedSubscription.Dispose();
+            bag.Dispose();
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
@@ -45,16 +66,31 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(worldState));
             }
 
+            if (dirtyActorIds.Count == 0)
+            {
+                return UniTask.CompletedTask;
+            }
+
             var actors = worldState.Actors;
+            var foundDirtyActorIds = new HashSet<Guid>();
             foreach (var actor in actors)
             {
+                if (!dirtyActorIds.Contains(actor.Id))
+                {
+                    continue;
+                }
+
+                foundDirtyActorIds.Add(actor.Id);
+
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
+                    dirtyActorIds.Remove(actor.Id);
                     continue;
                 }
 
                 if (behavior.LifecycleState != AdventurerLifecycleState.Exploring)
                 {
+                    dirtyActorIds.Remove(actor.Id);
                     continue;
                 }
 
@@ -63,27 +99,80 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                if (!TryCompleteGoal(actor))
+                var returnDecision = CalculateReturnDecision(actor);
+                if (returnDecision.Score < GameConstants.AdventurerReturnDecisionThresholdScore)
                 {
+                    dirtyActorIds.Remove(actor.Id);
                     continue;
                 }
 
                 actorCombatService.ClearCombatHistory(actor.Id);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
-                eventBus.Publish(new ActorGoalCompleted(
-                    actor.Id,
-                    actor.CurrentGoal.Type,
-                    actor.CurrentGoal.TargetId,
-                    actor.CurrentGoal.ProgressCount,
-                    actor.CurrentGoal.TargetCount));
+                dirtyActorIds.Remove(actor.Id);
+
+                if (returnDecision.GoalCompleted)
+                {
+                    eventBus.Publish(new ActorGoalCompleted(
+                        actor.Id,
+                        actor.CurrentGoal.Type,
+                        actor.CurrentGoal.TargetId,
+                        actor.CurrentGoal.ProgressCount,
+                        actor.CurrentGoal.TargetCount));
+                }
+
                 eventBus.Publish(new ActorStartedReturning(actor.Id));
             }
 
+            RemoveMissingDirtyActors(foundDirtyActorIds);
             return UniTask.CompletedTask;
+        }
+
+        void MarkDirty(Guid actorId)
+        {
+            dirtyActorIds.Add(actorId);
+        }
+
+        void RemoveMissingDirtyActors(HashSet<Guid> foundDirtyActorIds)
+        {
+            var dirtyIds = new List<Guid>(dirtyActorIds);
+            foreach (var actorId in dirtyIds)
+            {
+                if (!foundDirtyActorIds.Contains(actorId))
+                {
+                    dirtyActorIds.Remove(actorId);
+                }
+            }
+        }
+
+        AdventurerReturnDecision CalculateReturnDecision(Actor actor)
+        {
+            var score = 0;
+            var goalCompleted = TryCompleteGoal(actor);
+            if (goalCompleted)
+            {
+                score += GameConstants.AdventurerReturnGoalCompletedScore;
+            }
+
+            var hpRatio = actor.Hp / (float)actor.Params.MaxHp;
+            if (hpRatio <= GameConstants.AdventurerReturnCriticalHpRatio)
+            {
+                score += GameConstants.AdventurerReturnCriticalHpScore;
+            }
+            else if (hpRatio <= GameConstants.AdventurerReturnLowHpRatio && !HasRecoveryItem(actor))
+            {
+                score += GameConstants.AdventurerReturnLowHpWithoutRecoveryItemScore;
+            }
+
+            return new AdventurerReturnDecision(score, goalCompleted);
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)
         {
+            if (gameEvent.KillerActorId.HasValue)
+            {
+                MarkDirty(gameEvent.KillerActorId.Value);
+            }
+
             if (!gameEvent.KillerActorId.HasValue)
             {
                 return;
@@ -170,6 +259,36 @@ namespace DungeonInn.Application.UseCase
             var progress = actor.CurrentGoal.TargetId <= actor.Position.LayerId.Value ? 1 : 0;
             actor.CurrentGoal.SetProgress(progress);
             return actor.CurrentGoal.IsCompleted();
+        }
+
+        bool HasRecoveryItem(Actor actor)
+        {
+            foreach (var kvp in actor.Inventory.ItemCounts)
+            {
+                if (kvp.Value < 1)
+                {
+                    continue;
+                }
+
+                if (itemMasterRepository.GetItemMaster(kvp.Key).Category == ItemCategory.Consumable)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        readonly struct AdventurerReturnDecision
+        {
+            public int Score { get; }
+            public bool GoalCompleted { get; }
+
+            public AdventurerReturnDecision(int score, bool goalCompleted)
+            {
+                Score = score;
+                GoalCompleted = goalCompleted;
+            }
         }
     }
 }

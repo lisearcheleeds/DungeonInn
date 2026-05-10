@@ -10,6 +10,7 @@ using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 using R3;
 
@@ -28,6 +29,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.ReachFloor, 2, 1, 0));
             worldState.RegisterActor(actor);
 
+            eventBus.Publish(new ActorEnteredDungeon(actor.Id, 2));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
@@ -47,6 +49,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
+            eventBus.Publish(new ItemPickedUp(actor.Id, CreateItemInstance(1002, actor.Position)));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
             Assert.That(actor.CurrentGoal.ProgressCount, Is.EqualTo(2));
@@ -86,6 +89,7 @@ namespace DungeonInn.Tests.EditMode
             worldState.RegisterActor(actor);
             combatService.MarkCombatParticipation(actor.Id);
 
+            eventBus.Publish(new CombatEncounterEnded(actor.Id));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
@@ -102,17 +106,154 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
+            eventBus.Publish(new ActorEnteredDungeon(actor.Id, 1));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Exploring));
             Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(0));
         }
 
-        static Actor CreateExploringAdventurer(LayerPosition position)
+        [Test]
+        public void DamagedAboveLowHpThresholdDoesNotStartReturning()
+        {
+            var combatService = new ActorCombatService();
+            using var eventBus = new CollectingGameEventBus();
+            using var useCase = CreateUseCase(combatService, eventBus);
+            var worldState = new GameWorldState();
+            var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), 40);
+            actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
+            worldState.RegisterActor(actor);
+
+            eventBus.Publish(new CombatEncounterEnded(actor.Id));
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Exploring));
+            Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void LowHpWithoutRecoveryItemStartsReturning()
+        {
+            var combatService = new ActorCombatService();
+            using var eventBus = new CollectingGameEventBus();
+            using var useCase = CreateUseCase(combatService, eventBus);
+            var worldState = new GameWorldState();
+            var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), 39);
+            actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
+            worldState.RegisterActor(actor);
+
+            eventBus.Publish(new CombatEncounterEnded(actor.Id));
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
+            Assert.That(eventBus.GetEvents<ActorGoalCompleted>().Count, Is.EqualTo(0));
+            Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void LowHpWithRecoveryItemDoesNotStartReturning()
+        {
+            var combatService = new ActorCombatService();
+            using var eventBus = new CollectingGameEventBus();
+            using var useCase = CreateUseCase(combatService, eventBus);
+            var worldState = new GameWorldState();
+            var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), 39);
+            actor.Inventory.Add(new ItemStack(2001, 1));
+            actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
+            worldState.RegisterActor(actor);
+
+            eventBus.Publish(new CombatEncounterEnded(actor.Id));
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Exploring));
+            Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CriticalHpStartsReturningEvenWithRecoveryItem()
+        {
+            var combatService = new ActorCombatService();
+            using var eventBus = new CollectingGameEventBus();
+            using var useCase = CreateUseCase(combatService, eventBus);
+            var worldState = new GameWorldState();
+            var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), 19);
+            actor.Inventory.Add(new ItemStack(2001, 1));
+            actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
+            worldState.RegisterActor(actor);
+
+            eventBus.Publish(new CombatEncounterEnded(actor.Id));
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
+            Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CompletedGoalDoesNotStartReturningWithoutDirtyEvent()
+        {
+            var combatService = new ActorCombatService();
+            using var eventBus = new CollectingGameEventBus();
+            using var useCase = CreateUseCase(combatService, eventBus);
+            var worldState = new GameWorldState();
+            var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(2), 0f, 0f));
+            actor.ChangeGoal(new ActorGoal(ActorGoalType.ReachFloor, 2, 1, 0));
+            worldState.RegisterActor(actor);
+
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Exploring));
+            Assert.That(eventBus.GetEvents<ActorStartedReturning>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void DirtyReturnDecisionWaitsUntilCombatTargetIsCleared()
+        {
+            var combatService = new ActorCombatService();
+            using var eventBus = new CollectingGameEventBus();
+            using var useCase = CreateUseCase(combatService, eventBus);
+            var worldState = new GameWorldState();
+            var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), 19);
+            var monster = CreateMonster(new LayerPosition(MapLayerId.DungeonFloor(1), 1f, 0f));
+            actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
+            worldState.RegisterActor(actor);
+            worldState.RegisterActor(monster);
+            combatService.SetTarget(actor.Id, monster.Id);
+
+            eventBus.Publish(new CombatEncounterEnded(actor.Id));
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Exploring));
+
+            combatService.ClearTarget(actor.Id);
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
+        }
+
+        static Actor CreateExploringAdventurer(LayerPosition position, int hp = 50)
         {
             return new Actor(
                 Guid.NewGuid(),
                 0,
+                new ActorStats(5, 5, 5, 5, 5, 5),
+                new Inventory(new FixedItemStackLimitResolver()),
+                1,
+                0,
+                hp,
+                10,
+                0,
+                0,
+                1,
+                position,
+                new ActorFaction(1, "Adventurer"),
+                new AdventurerBehavior(0, AdventurerLifecycleState.Exploring));
+        }
+
+        static Actor CreateMonster(LayerPosition position)
+        {
+            return new Actor(
+                Guid.NewGuid(),
+                2,
                 new ActorStats(5, 5, 5, 5, 5, 5),
                 new Inventory(new FixedItemStackLimitResolver()),
                 1,
@@ -123,8 +264,8 @@ namespace DungeonInn.Tests.EditMode
                 0,
                 1,
                 position,
-                new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, AdventurerLifecycleState.Exploring));
+                new ActorFaction(2, "Monster"),
+                new MonsterBehavior(1, Array.Empty<ActorDropEntry>()));
         }
 
         static DecideAdventurerReturnUseCase CreateUseCase(
@@ -139,7 +280,12 @@ namespace DungeonInn.Tests.EditMode
             IGameEventBus eventBus,
             IActorProfileRegistry profileRegistry)
         {
-            return new DecideAdventurerReturnUseCase(combatService, eventBus, profileRegistry);
+            return new DecideAdventurerReturnUseCase(combatService, eventBus, profileRegistry, new HardcodedMasterRepository());
+        }
+
+        static ItemInstance CreateItemInstance(int itemId, LayerPosition position)
+        {
+            return new ItemInstance(Guid.NewGuid(), new ItemStack(itemId, 1), position);
         }
 
         sealed class CollectingGameEventBus : IGameEventBus, IDisposable

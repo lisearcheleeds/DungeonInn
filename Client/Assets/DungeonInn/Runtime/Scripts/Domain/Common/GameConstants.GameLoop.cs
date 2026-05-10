@@ -37,5 +37,15 @@ namespace DungeonInn.Domain.Common
 
         // 探索階層選択で、モンスター平均戦闘力に掛ける難易度係数。
         public const float DungeonFloorDifficultyCoefficient = 3.0f;
+
+        // Return decision starts when the accumulated return score reaches this value.
+        public const int AdventurerReturnDecisionThresholdScore = 100;
+
+        public const int AdventurerReturnGoalCompletedScore = 100;
+        public const int AdventurerReturnCriticalHpScore = 100;
+        public const int AdventurerReturnLowHpWithoutRecoveryItemScore = 100;
+
+        public const float AdventurerReturnLowHpRatio = 0.6f;
+        public const float AdventurerReturnCriticalHpRatio = 0.3f;
     }
 }
