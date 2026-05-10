@@ -29,6 +29,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         AdvanceActorEffectsUseCase advanceActorEffectsUseCase;
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
+        AdvanceInnEconomyUseCase advanceInnEconomyUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
@@ -55,6 +56,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             AdvanceActorEffectsUseCase advanceActorEffectsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
+            AdvanceInnEconomyUseCase advanceInnEconomyUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
@@ -74,6 +76,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.advanceActorEffectsUseCase = advanceActorEffectsUseCase ?? throw new ArgumentNullException(nameof(advanceActorEffectsUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
+            this.advanceInnEconomyUseCase = advanceInnEconomyUseCase ?? throw new ArgumentNullException(nameof(advanceInnEconomyUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
         }
 
@@ -136,7 +139,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 var unscaledDeltaTime = Time.unscaledDeltaTime;
                 var result = await gameLoopUseCase.ExecuteAsync(new GameLoopTickRequest(unscaledDeltaTime));
                 cancellationToken.ThrowIfCancellationRequested();
-                var frameDeltaGameSeconds = unscaledDeltaTime * result.TimeScale;
+                var frameDeltaGameSeconds = result.IsPaused ? 0f : unscaledDeltaTime * result.TimeScale;
 
                 if (0 < result.AdvancedScheduleTicks)
                 {
@@ -170,6 +173,11 @@ namespace DungeonInn.View.Scene.MainScene.World
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
                 cancellationToken.ThrowIfCancellationRequested();
                 await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (result.GameDateChanged)
+                {
+                    await advanceInnEconomyUseCase.ExecuteAsync(gameWorldState, result.CurrentDay);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

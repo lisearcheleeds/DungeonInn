@@ -15,7 +15,9 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldScene : ProductMainSceneBase<WorldScene.WorldTransitionData>
     {
         IWorldPresenter worldPresenter;
+        IGameWorldState gameWorldState;
         ToggleGamePauseUseCase toggleGamePauseUseCase;
+        GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
 
         public override MainSceneId MainSceneId => DungeonInnMainSceneId.World;
 
@@ -27,15 +29,23 @@ namespace DungeonInn.View.Scene.MainScene.World
         [Inject]
         public void Construct(
             IWorldPresenter worldPresenter,
-            ToggleGamePauseUseCase toggleGamePauseUseCase)
+            IGameWorldState gameWorldState,
+            ToggleGamePauseUseCase toggleGamePauseUseCase,
+            GetInnEconomyStatusUseCase getInnEconomyStatusUseCase)
         {
             this.worldPresenter = worldPresenter;
+            this.gameWorldState = gameWorldState;
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
+            this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
         }
 
         protected override IInputLayer CreateInputLayer(InputActions inputActions)
         {
-            return new WorldSceneInputLayer(inputActions, toggleGamePauseUseCase);
+            return new WorldSceneInputLayer(
+                inputActions,
+                gameWorldState,
+                toggleGamePauseUseCase,
+                getInnEconomyStatusUseCase);
         }
 
         protected override InputActionMap GetInputLayerActionMap(InputActions inputActions)

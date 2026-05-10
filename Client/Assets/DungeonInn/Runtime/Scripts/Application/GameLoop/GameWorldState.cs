@@ -24,6 +24,7 @@ namespace DungeonInn.Application.GameLoop
         public AdventurerGuild Guild { get; private set; }
         public GroundMap GroundMap { get; private set; }
         public Dungeon Dungeon { get; private set; }
+        public InnEconomyState InnEconomy { get; } = new();
         public IReadOnlyList<Actor> Actors => actors;
         public IReadOnlyList<ItemInstance> Items => items;
         public IReadOnlyList<ProjectileInstance> Projectiles => projectiles;

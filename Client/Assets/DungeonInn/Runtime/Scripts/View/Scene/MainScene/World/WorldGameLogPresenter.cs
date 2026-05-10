@@ -133,6 +133,18 @@ namespace DungeonInn.View.Scene.MainScene.World
             eventBus.OnEvent<ItemSold>()
                 .Subscribe(OnItemSold)
                 .AddTo(ref bag);
+
+            eventBus.OnEvent<InnSatisfactionChanged>()
+                .Subscribe(OnInnSatisfactionChanged)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<GuildSupplyReplenished>()
+                .Subscribe(OnGuildSupplyReplenished)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<DailyInnReportGenerated>()
+                .Subscribe(OnDailyInnReportGenerated)
+                .AddTo(ref bag);
         }
 
         public void Dispose()
@@ -308,6 +320,30 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} paid {gameEvent.FeeAmount}G for inn room (remaining: {gameEvent.ActorRemainingGold}G)");
             Debug.Log($"[Guild] Treasury +{gameEvent.FeeAmount}G (total: {gameEvent.GuildGold}G)");
+        }
+
+        void OnInnSatisfactionChanged(InnSatisfactionChanged gameEvent)
+        {
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} satisfaction changed {gameEvent.Delta:+#;-#;0} ({gameEvent.Reason})");
+        }
+
+        void OnGuildSupplyReplenished(GuildSupplyReplenished gameEvent)
+        {
+            Debug.Log(
+                $"[Guild] Replenished item#{gameEvent.ItemId} x{gameEvent.Count} " +
+                $"for {gameEvent.Cost}G (treasury: {gameEvent.RemainingGold}G)");
+        }
+
+        void OnDailyInnReportGenerated(DailyInnReportGenerated gameEvent)
+        {
+            var report = gameEvent.Report;
+            Debug.Log(
+                $"[Daily] Day={report.Day} Guests={report.Guests} " +
+                $"Demand={report.Demand} Rejected={report.RejectedGuests} " +
+                $"Occupancy={report.OccupiedRooms}/{report.RoomCapacity} ({report.OccupancyPercent}%) " +
+                $"Sales={report.Sales}G Satisfaction={report.SatisfactionDelta:+#;-#;0} " +
+                $"Reputation={report.Reputation} Treasury={report.GuildGold}G " +
+                $"Stock(Sword={report.RookieSwordStock}, Armor={report.RookieArmorStock})");
         }
 
         string GetName(Guid actorId)

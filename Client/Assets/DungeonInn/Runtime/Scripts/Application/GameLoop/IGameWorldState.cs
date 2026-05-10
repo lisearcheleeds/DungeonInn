@@ -15,6 +15,7 @@ namespace DungeonInn.Application.GameLoop
         AdventurerGuild Guild { get; }
         GroundMap GroundMap { get; }
         Dungeon Dungeon { get; }
+        InnEconomyState InnEconomy { get; }
         IReadOnlyList<Actor> Actors { get; }
         IReadOnlyList<ItemInstance> Items { get; }
         IReadOnlyList<ProjectileInstance> Projectiles { get; }
