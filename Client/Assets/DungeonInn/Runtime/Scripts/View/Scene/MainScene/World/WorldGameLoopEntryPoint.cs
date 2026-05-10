@@ -21,6 +21,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
         AdvanceCombatUseCase advanceCombatUseCase;
         AdvanceProjectileUseCase advanceProjectileUseCase;
+        AdvanceAreaEffectUseCase advanceAreaEffectUseCase;
         PickUpItemUseCase pickUpItemUseCase;
         UpdateEquipmentUseCase updateEquipmentUseCase;
         SellItemsUseCase sellItemsUseCase;
@@ -46,6 +47,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
             AdvanceCombatUseCase advanceCombatUseCase,
             AdvanceProjectileUseCase advanceProjectileUseCase,
+            AdvanceAreaEffectUseCase advanceAreaEffectUseCase,
             PickUpItemUseCase pickUpItemUseCase,
             UpdateEquipmentUseCase updateEquipmentUseCase,
             SellItemsUseCase sellItemsUseCase,
@@ -64,6 +66,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
             this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
             this.advanceProjectileUseCase = advanceProjectileUseCase ?? throw new ArgumentNullException(nameof(advanceProjectileUseCase));
+            this.advanceAreaEffectUseCase = advanceAreaEffectUseCase ?? throw new ArgumentNullException(nameof(advanceAreaEffectUseCase));
             this.pickUpItemUseCase = pickUpItemUseCase ?? throw new ArgumentNullException(nameof(pickUpItemUseCase));
             this.updateEquipmentUseCase = updateEquipmentUseCase ?? throw new ArgumentNullException(nameof(updateEquipmentUseCase));
             this.sellItemsUseCase = sellItemsUseCase ?? throw new ArgumentNullException(nameof(sellItemsUseCase));
@@ -154,6 +157,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 cancellationToken.ThrowIfCancellationRequested();
                 await advanceProjectileUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                cancellationToken.ThrowIfCancellationRequested();
+                await advanceAreaEffectUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 cancellationToken.ThrowIfCancellationRequested();
                 pickUpItemUseCase.Execute(gameWorldState);
                 updateEquipmentUseCase.Execute(gameWorldState);

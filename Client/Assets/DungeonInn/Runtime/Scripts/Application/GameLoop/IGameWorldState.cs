@@ -18,6 +18,7 @@ namespace DungeonInn.Application.GameLoop
         IReadOnlyList<Actor> Actors { get; }
         IReadOnlyList<ItemInstance> Items { get; }
         IReadOnlyList<ProjectileInstance> Projectiles { get; }
+        IReadOnlyList<AreaEffectInstance> AreaEffects { get; }
         SpawnScheduleState SpawnSchedule { get; }
 
         void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon);
@@ -28,5 +29,7 @@ namespace DungeonInn.Application.GameLoop
         bool RemoveItem(Guid instanceId);
         void AddProjectile(ProjectileInstance projectile);
         bool RemoveProjectile(Guid projectileId);
+        void AddAreaEffect(AreaEffectInstance areaEffect);
+        bool RemoveAreaEffect(Guid areaEffectId);
     }
 }

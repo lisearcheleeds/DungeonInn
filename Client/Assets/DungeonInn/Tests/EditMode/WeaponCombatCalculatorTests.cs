@@ -12,7 +12,6 @@ namespace DungeonInn.Tests.EditMode
     {
         [TestCase(WeaponType.Sword)]
         [TestCase(WeaponType.Axe)]
-        [TestCase(WeaponType.Scythe)]
         [TestCase(WeaponType.Fist)]
         [TestCase(WeaponType.Claws)]
         [TestCase(WeaponType.Fangs)]
@@ -25,6 +24,28 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].Type, Is.EqualTo(CombatEffectNodeType.DirectDamage));
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount, Is.EqualTo(actor.WeaponAttack));
             Assert.DoesNotThrow(() => new DungeonInn.Domain.Combat.CombatEffectGraphValidator().Validate(actor.WeaponCombatParams.AttackSpec));
+        }
+
+        [Test]
+        public void ScytheUsesDurationAreaAttackSpecLinkedToDirectDamage()
+        {
+            var actor = CreateActor();
+            actor.ChangeNaturalWeaponType(WeaponType.Scythe);
+
+            var attackSpec = actor.WeaponCombatParams.AttackSpec;
+            Assert.That(attackSpec.Nodes.Count, Is.EqualTo(2));
+            Assert.That(attackSpec.RootNodeIds.Count, Is.EqualTo(1));
+            Assert.That(attackSpec.RootNodeIds[0], Is.EqualTo(1));
+            Assert.That(attackSpec.Nodes[0].Type, Is.EqualTo(CombatEffectNodeType.Area));
+            Assert.That(attackSpec.Nodes[0].AreaSpec.Shape, Is.EqualTo(AttackAreaShape.Circle));
+            Assert.That(attackSpec.Nodes[0].AreaSpec.DurationType, Is.EqualTo(AttackAreaDurationType.Duration));
+            Assert.That(attackSpec.Nodes[0].AreaSpec.HitIntervalType, Is.EqualTo(AttackHitIntervalType.OncePerTarget));
+            Assert.That(attackSpec.Nodes[0].Links.Count, Is.EqualTo(1));
+            Assert.That(attackSpec.Nodes[0].Links[0].TriggerType, Is.EqualTo(CombatEffectTriggerType.OnHit));
+            Assert.That(attackSpec.Nodes[0].Links[0].TargetNodeId, Is.EqualTo(2));
+            Assert.That(attackSpec.Nodes[1].Type, Is.EqualTo(CombatEffectNodeType.DirectDamage));
+            Assert.That(attackSpec.Nodes[1].DamageSpec.Amount, Is.EqualTo(actor.WeaponAttack));
+            Assert.DoesNotThrow(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]

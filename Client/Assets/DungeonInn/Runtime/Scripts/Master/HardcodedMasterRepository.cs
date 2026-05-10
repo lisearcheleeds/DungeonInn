@@ -274,7 +274,7 @@ namespace DungeonInn.Master
                     "Orc",
                     ActorBehaviorType.Monster,
                     2,
-                    WeaponType.Axe,
+                    WeaponType.Scythe,
                     new ActorStats(8, 7, 8, 4, 4, 3),
                     1,
                     2,

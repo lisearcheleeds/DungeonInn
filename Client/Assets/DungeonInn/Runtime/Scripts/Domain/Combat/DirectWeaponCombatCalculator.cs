@@ -27,10 +27,21 @@ namespace DungeonInn.Domain.Combat
             var resolvedAttackIntervalSeconds = weaponTypeCombatMaster.BaseAttackIntervalSeconds
                 + (weaponMaster == null ? 0f : weaponMaster.AttackIntervalModifierSeconds);
             var attackPower = source.WeaponAttack;
-            var attackSpec = weaponTypeCombatMaster.WeaponType == WeaponType.Bow
-                ? CreateProjectileAttackSpec(attackPower, resolvedRangeMeters)
-                : CreateDirectAttackSpec(attackPower);
+            var attackSpec = CreateAttackSpec(weaponTypeCombatMaster.WeaponType, attackPower, resolvedRangeMeters);
             return new WeaponCombatParams(attackPower, resolvedRangeMeters, resolvedAttackIntervalSeconds, attackSpec);
+        }
+
+        static WeaponAttackSpec CreateAttackSpec(WeaponType weaponType, int attackPower, float resolvedRangeMeters)
+        {
+            switch (weaponType)
+            {
+                case WeaponType.Bow:
+                    return CreateProjectileAttackSpec(attackPower, resolvedRangeMeters);
+                case WeaponType.Scythe:
+                    return CreateAreaAttackSpec(attackPower);
+                default:
+                    return CreateDirectAttackSpec(attackPower);
+            }
         }
 
         static WeaponAttackSpec CreateDirectAttackSpec(int attackPower)
@@ -79,6 +90,41 @@ namespace DungeonInn.Domain.Combat
                 2,
                 new[] { projectileNode.Id },
                 new[] { projectileNode, directDamageNode },
+                2);
+        }
+
+        static WeaponAttackSpec CreateAreaAttackSpec(int attackPower)
+        {
+            var areaNode = new CombatEffectNodeSpec(
+                1,
+                CombatEffectNodeType.Area,
+                null,
+                new AttackAreaSpec(
+                    AttackAreaShape.Circle,
+                    AttackAreaDurationType.Duration,
+                    AttackHitIntervalType.OncePerTarget,
+                    0f,
+                    0f,
+                    GameConstants.AreaEffectDefaultRadiusMeters,
+                    0f,
+                    GameConstants.AreaEffectDefaultDurationTicks),
+                null,
+                new[]
+                {
+                    new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, 2)
+                });
+            var directDamageNode = new CombatEffectNodeSpec(
+                2,
+                CombatEffectNodeType.DirectDamage,
+                new DamageSpec(attackPower),
+                null,
+                null,
+                Array.Empty<CombatEffectLinkSpec>());
+
+            return new WeaponAttackSpec(
+                3,
+                new[] { areaNode.Id },
+                new[] { areaNode, directDamageNode },
                 2);
         }
     }

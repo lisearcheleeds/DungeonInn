@@ -17,6 +17,8 @@ namespace DungeonInn.Application.GameLoop
         readonly Dictionary<Guid, ItemInstance> itemById = new();
         readonly List<ProjectileInstance> projectiles = new();
         readonly Dictionary<Guid, ProjectileInstance> projectileById = new();
+        readonly List<AreaEffectInstance> areaEffects = new();
+        readonly Dictionary<Guid, AreaEffectInstance> areaEffectById = new();
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
@@ -25,6 +27,7 @@ namespace DungeonInn.Application.GameLoop
         public IReadOnlyList<Actor> Actors => actors;
         public IReadOnlyList<ItemInstance> Items => items;
         public IReadOnlyList<ProjectileInstance> Projectiles => projectiles;
+        public IReadOnlyList<AreaEffectInstance> AreaEffects => areaEffects;
         public SpawnScheduleState SpawnSchedule { get; } = new();
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)
@@ -140,6 +143,39 @@ namespace DungeonInn.Application.GameLoop
             if (0 <= index)
             {
                 projectiles.RemoveAt(index);
+            }
+
+            return true;
+        }
+
+        public void AddAreaEffect(AreaEffectInstance areaEffect)
+        {
+            if (areaEffect == null)
+            {
+                throw new ArgumentNullException(nameof(areaEffect));
+            }
+
+            if (areaEffectById.ContainsKey(areaEffect.Id))
+            {
+                throw new InvalidOperationException("Area effect is already registered.");
+            }
+
+            areaEffects.Add(areaEffect);
+            areaEffectById[areaEffect.Id] = areaEffect;
+        }
+
+        public bool RemoveAreaEffect(Guid areaEffectId)
+        {
+            if (!areaEffectById.ContainsKey(areaEffectId))
+            {
+                return false;
+            }
+
+            areaEffectById.Remove(areaEffectId);
+            var index = areaEffects.FindIndex(x => x.Id.Equals(areaEffectId));
+            if (0 <= index)
+            {
+                areaEffects.RemoveAt(index);
             }
 
             return true;

@@ -90,6 +90,14 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .Subscribe(OnProjectileHit)
                 .AddTo(ref bag);
 
+            eventBus.OnEvent<AreaEffectCreated>()
+                .Subscribe(OnAreaEffectCreated)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<AreaEffectHit>()
+                .Subscribe(OnAreaEffectHit)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<ActorDefeated>()
                 .Subscribe(OnActorDefeated)
                 .AddTo(ref bag);
@@ -216,6 +224,18 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnProjectileHit(ProjectileHit gameEvent)
         {
             Debug.Log($"[Combat] Projectile hit {GetName(gameEvent.TargetActorId)} for {gameEvent.Damage}");
+        }
+
+        void OnAreaEffectCreated(AreaEffectCreated gameEvent)
+        {
+            Debug.Log(
+                $"[Combat] {GetName(gameEvent.AttackerActorId)} created area effect at " +
+                $"({gameEvent.CenterPosition.X:0.0}, {gameEvent.CenterPosition.Z:0.0}) radius {gameEvent.RadiusMeters:0.0}m");
+        }
+
+        void OnAreaEffectHit(AreaEffectHit gameEvent)
+        {
+            Debug.Log($"[Combat] Area effect hit {GetName(gameEvent.TargetActorId)} for {gameEvent.Damage}");
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)

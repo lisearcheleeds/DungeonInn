@@ -92,6 +92,19 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
+                if (TryCreateAreaEffect(actor, target, actor.WeaponCombatParams.AttackSpec, out var areaEffect))
+                {
+                    worldState.AddAreaEffect(areaEffect);
+                    combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
+                    actorCombatService.MarkCombatParticipation(actor.Id);
+                    eventBus.Publish(new AreaEffectCreated(
+                        areaEffect.Id,
+                        actor.Id,
+                        areaEffect.CenterPosition,
+                        areaEffect.AreaSpec.RadiusMeters));
+                    continue;
+                }
+
                 var damage = CalculateDirectDamage(actor.WeaponCombatParams.AttackSpec);
                 target.ReceiveDamage(damage);
                 combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
@@ -151,6 +164,35 @@ namespace DungeonInn.Application.UseCase
             }
 
             projectile = null;
+            return false;
+        }
+
+        static bool TryCreateAreaEffect(
+            Actor actor,
+            Actor target,
+            WeaponAttackSpec attackSpec,
+            out AreaEffectInstance areaEffect)
+        {
+            foreach (var rootNodeId in attackSpec.RootNodeIds)
+            {
+                var node = FindNode(attackSpec, rootNodeId);
+                if (node.Type != CombatEffectNodeType.Area)
+                {
+                    continue;
+                }
+
+                var damage = CalculateLinkedDirectDamage(attackSpec, node, CombatEffectTriggerType.OnHit);
+                areaEffect = new AreaEffectInstance(
+                    Guid.NewGuid(),
+                    actor.Id,
+                    actor.Faction.Id,
+                    target.Position,
+                    node.AreaSpec,
+                    damage);
+                return true;
+            }
+
+            areaEffect = null;
             return false;
         }
 
@@ -226,7 +268,7 @@ namespace DungeonInn.Application.UseCase
                 var node = FindNode(attackSpec, link.TargetNodeId);
                 if (node.Type != CombatEffectNodeType.DirectDamage)
                 {
-                    throw new InvalidOperationException("Only direct damage projectile links are currently supported.");
+                    throw new InvalidOperationException("Only direct damage combat effect links are currently supported.");
                 }
 
                 damage += node.DamageSpec.Amount;

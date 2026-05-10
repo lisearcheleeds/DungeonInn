@@ -7,6 +7,7 @@ using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
@@ -89,6 +90,32 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(deaths[0].Cause, Is.EqualTo(DeathCause.Combat));
             Assert.That(worldState.Actors.Any(x => x.Id.Equals(target.Id)), Is.False);
             Assert.That(combatService.HasTarget(attacker.Id), Is.False);
+        }
+
+        [Test]
+        public void AreaAttackCreatesAreaEffectWithoutImmediateDamage()
+        {
+            var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
+            var worldState = new GameWorldState();
+            var combatService = new ActorCombatService();
+            var eventBus = new CollectingGameEventBus();
+            var useCase = new AdvanceCombatUseCase(combatService, clock, eventBus, CreateGrantExperienceUseCase(eventBus), CreateDropItemUseCase(eventBus));
+            var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
+            var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
+            attacker.ChangeNaturalWeaponType(WeaponType.Scythe);
+            worldState.RegisterActor(attacker);
+            worldState.RegisterActor(target);
+            combatService.SetTarget(attacker.Id, target.Id);
+
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            var createdAreas = eventBus.GetEvents<AreaEffectCreated>();
+            Assert.That(worldState.AreaEffects.Count, Is.EqualTo(1));
+            Assert.That(createdAreas.Count, Is.EqualTo(1));
+            Assert.That(worldState.AreaEffects[0].AttackerActorId, Is.EqualTo(attacker.Id));
+            Assert.That(worldState.AreaEffects[0].CenterPosition, Is.EqualTo(target.Position));
+            Assert.That(worldState.AreaEffects[0].AreaSpec.Shape, Is.EqualTo(AttackAreaShape.Circle));
+            Assert.That(target.Hp, Is.EqualTo(50));
         }
 
         sealed class CollectingGameEventBus : IGameEventBus
