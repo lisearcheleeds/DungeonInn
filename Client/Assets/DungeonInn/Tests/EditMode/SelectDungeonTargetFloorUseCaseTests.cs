@@ -26,7 +26,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var masterRepository = new HardcodedMasterRepository();
             var useCase = CreateUseCase(masterRepository);
-            var actor = CreateActor(new ActorStats(5, 5, 5, 5, 5, 5));
+            var actor = CreateActor(new ActorStats(14, 14, 14, 14, 14, 14));
             actor.Equip(
                 masterRepository.GetEquipmentMaster(3004),
                 masterRepository.GetWeaponMaster(3004));
@@ -41,7 +41,7 @@ namespace DungeonInn.Tests.EditMode
         public void StrongActorTargetsThirdFloor()
         {
             var useCase = CreateUseCase();
-            var actor = CreateActor(new ActorStats(15, 15, 15, 15, 15, 15));
+            var actor = CreateActor(new ActorStats(30, 30, 30, 30, 30, 30));
 
             var targetFloor = useCase.ExecuteAsync(actor).GetAwaiter().GetResult();
 

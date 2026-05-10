@@ -55,7 +55,7 @@ public sealed class WeaponAttackSpec
 
 ### DungeonInn Example
 
-DungeonInn では `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArchetypeMaster`、`MonsterSpeciesMaster` をマスタデータ相当として扱う。
+DungeonInn では `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArchetypeMaster`、`SpeciesMaster`、`AdventurerSpawnMaster` をマスタデータ相当として扱う。
 一方、`WeaponAttackSpec`、`CombatEffectNodeSpec`、`CombatEffectLinkSpec`、`DamageSpec`、`AttackAreaSpec`、`ProjectileSpec` は戦闘処理で参照する不変仕様として扱う。
 将来的に `ConsumableMaster` などを追加する場合も、マスタ1行に対応する型は `Master`、複数マスタを束ねた実行時仕様は `Spec` に寄せる。
 DungeonInn のようにマスタが Domain Entity ではなく参照データである場合、`Domain/` ではなく `Master/` などの専用フォルダ・名前空間に置き、Repository から UseCase / オーケストレーションへ供給する。

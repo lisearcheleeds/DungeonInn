@@ -58,6 +58,14 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .Subscribe(OnActorRecoveringAtInn)
                 .AddTo(ref bag);
 
+            eventBus.OnEvent<ActorWaitingForInn>()
+                .Subscribe(OnActorWaitingForInn)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<ActorReservedInn>()
+                .Subscribe(OnActorReservedInn)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<ActorFullyRecovered>()
                 .Subscribe(OnActorFullyRecovered)
                 .AddTo(ref bag);
@@ -142,6 +150,28 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnActorRecoveringAtInn(ActorRecoveringAtInn gameEvent)
         {
             Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} は回復中 {gameEvent.CurrentHp}/{gameEvent.MaxHp}");
+        }
+
+        void OnActorWaitingForInn(ActorWaitingForInn gameEvent)
+        {
+            var facility = worldState.Guild.GetFacility(gameEvent.InnFacilityId);
+            var activeReservations = worldState.Guild.CountActiveInnReservations(gameEvent.InnFacilityId);
+            if (facility.Capacity <= activeReservations)
+            {
+                Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn vacancy (all {facility.Capacity} rooms occupied)");
+                return;
+            }
+
+            var actor = worldState.FindActor(gameEvent.ActorId);
+            var currentGold = actor == null ? 0 : actor.Inventory.Gold;
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn fee ({currentGold}/{Domain.Common.GameConstants.InnFeePerStay}G)");
+        }
+
+        void OnActorReservedInn(ActorReservedInn gameEvent)
+        {
+            var facility = worldState.Guild.GetFacility(gameEvent.InnFacilityId);
+            var activeReservations = worldState.Guild.CountActiveInnReservations(gameEvent.InnFacilityId);
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} reserved inn room ({activeReservations}/{facility.Capacity})");
         }
 
         void OnActorFullyRecovered(ActorFullyRecovered gameEvent)

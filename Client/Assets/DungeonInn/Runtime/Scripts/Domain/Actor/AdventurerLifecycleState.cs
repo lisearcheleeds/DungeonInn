@@ -9,6 +9,7 @@ namespace DungeonInn.Domain.Actor
         Exploring,
         Returning,
         Recovering,
+        WaitingForInn,
         ReadyToLeave,
         Dead
     }

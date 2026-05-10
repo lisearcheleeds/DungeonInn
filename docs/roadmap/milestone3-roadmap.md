@@ -83,7 +83,7 @@
 作るもの:
 
 - `Actor.Experience`（現在XP / 次のレベルまでのXP）
-- `MonsterMaster.ExperienceReward`（モンスターごとの経験値）
+- 撃破された `Actor.Experience` に基づく経験値報酬
 - `GrantExperienceUseCase`
 
 接続:
@@ -122,9 +122,9 @@
 
 作るもの:
 
-- `MonsterDropEntry`（アイテムID, ドロップ確率 [0.0–1.0], 個数範囲 [min, max]）
-  - 既存の `ItemStack` ベースの `SpeciesDrops` を `IReadOnlyList<MonsterDropEntry>` に置き換える
-  - `MonsterSpeciesMaster.SpeciesDrops` の型を `IReadOnlyList<MonsterDropEntry>` に変更
+- `ActorDropEntry`（アイテムID, ドロップ確率 [0.0–1.0], 個数範囲 [min, max]）
+  - 既存の `ItemStack` ベースの `SpeciesDrops` を `IReadOnlyList<ActorDropEntry>` に置き換える
+  - `SpeciesMaster.SpeciesDrops` の型を `IReadOnlyList<ActorDropEntry>` として扱う
 - `ItemInstance`（ドロップしたアイテムの実体: インスタンスID, マスターID, 位置, フロアIndex）
 - `GameWorldState.Items`（フロア上のアイテムインスタンス一覧）
 - `DropItemUseCase`

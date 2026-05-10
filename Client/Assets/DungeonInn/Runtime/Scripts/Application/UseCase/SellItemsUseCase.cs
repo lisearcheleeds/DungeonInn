@@ -37,7 +37,8 @@ namespace DungeonInn.Application.UseCase
                 }
 
                 if (behavior.LifecycleState != AdventurerLifecycleState.Returning &&
-                    behavior.LifecycleState != AdventurerLifecycleState.Recovering)
+                    behavior.LifecycleState != AdventurerLifecycleState.Recovering &&
+                    behavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
                 {
                     continue;
                 }

@@ -57,7 +57,8 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                if (behavior.LifecycleState != AdventurerLifecycleState.Recovering)
+                if (behavior.LifecycleState != AdventurerLifecycleState.Recovering &&
+                    behavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
                 {
                     continue;
                 }
@@ -67,7 +68,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                EnsureInnReservation(guild, actor, currentTick);
+                EnsureInnReservation(guild, actor, behavior, currentTick);
             }
 
             return UniTask.CompletedTask;
@@ -106,10 +107,15 @@ namespace DungeonInn.Application.UseCase
             return UniTask.CompletedTask;
         }
 
-        void EnsureInnReservation(AdventurerGuild guild, Actor actor, int currentTick)
+        void EnsureInnReservation(AdventurerGuild guild, Actor actor, AdventurerBehavior behavior, int currentTick)
         {
             if (guild.HasActiveInnReservation(actor.Id))
             {
+                if (behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn)
+                {
+                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
+                }
+
                 return;
             }
 
@@ -122,17 +128,37 @@ namespace DungeonInn.Application.UseCase
 
                 if (!guild.CanReserveInn(facility.Id))
                 {
+                    ChangeToWaitingForInn(actor, behavior, facility);
                     continue;
                 }
 
                 if (!chargeInnFeeUseCase.Execute(actor, guild))
                 {
+                    ChangeToWaitingForInn(actor, behavior, facility);
                     return;
                 }
 
                 guild.ReserveInn(Guid.NewGuid(), actor, facility.Id, currentTick);
+                behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
+                eventBus.Publish(new ActorReservedInn(actor.Id, facility.Id));
                 return;
             }
+        }
+
+        void ChangeToWaitingForInn(
+            Actor actor,
+            AdventurerBehavior behavior,
+            DungeonInn.Domain.Facility.Facility facility)
+        {
+            var wasWaiting = behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn;
+            behavior.ChangeLifecycleState(AdventurerLifecycleState.WaitingForInn);
+
+            if (wasWaiting)
+            {
+                return;
+            }
+
+            eventBus.Publish(new ActorWaitingForInn(actor.Id, facility.Id));
         }
 
         void TickRecovery(AdventurerGuild guild, Actor actor, AdventurerBehavior behavior, float deltaGameSeconds)
