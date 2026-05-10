@@ -21,7 +21,7 @@ namespace DungeonInn.Tests.EditMode
         public void GameClockReportsDateChangedWhenDayAdvances()
         {
             var clock = new GameClock();
-            GameClockAdvanceResult result = null;
+            var result = default(GameClockAdvanceResult);
 
             for (var i = 0; i < GameConstants.GameScheduleTicksPerDay; i++)
             {
@@ -48,6 +48,77 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void GameClockDoesNotAdvanceGameTimeWhilePaused()
+        {
+            var clock = new GameClock();
+            clock.Pause();
+
+            var result = clock.Advance(10f);
+
+            Assert.That(clock.ElapsedRealTimeSeconds, Is.EqualTo(10f));
+            Assert.That(clock.ElapsedGameTimeSeconds, Is.EqualTo(0f));
+            Assert.That(clock.CurrentScheduleTick, Is.EqualTo(0));
+            Assert.That(result.AdvancedScheduleTicks, Is.EqualTo(0));
+            Assert.That(clock.IsPaused, Is.True);
+        }
+
+        [Test]
+        public void GameClockResumesAfterPause()
+        {
+            var clock = new GameClock();
+            clock.Pause();
+            clock.Advance(10f);
+            clock.Resume();
+
+            var result = clock.Advance(1f);
+
+            Assert.That(clock.ElapsedRealTimeSeconds, Is.EqualTo(11f));
+            Assert.That(clock.ElapsedGameTimeSeconds, Is.EqualTo(1f));
+            Assert.That(clock.CurrentScheduleTick, Is.EqualTo(1));
+            Assert.That(result.AdvancedScheduleTicks, Is.EqualTo(1));
+            Assert.That(clock.IsPaused, Is.False);
+        }
+
+        [Test]
+        public void GameTimeUseCasesPauseResumeScaleAndQueryClock()
+        {
+            var clock = new GameClock();
+            var pauseUseCase = new PauseGameTimeUseCase(clock);
+            var resumeUseCase = new ResumeGameTimeUseCase(clock);
+            var scaleUseCase = new SetGameTimeScaleUseCase(clock);
+            var queryUseCase = new GetGameTimeStateUseCase(clock);
+
+            scaleUseCase.ExecuteAsync(4f).GetAwaiter().GetResult();
+            pauseUseCase.ExecuteAsync().GetAwaiter().GetResult();
+            clock.Advance(1f);
+            var pausedState = queryUseCase.ExecuteAsync().GetAwaiter().GetResult();
+            resumeUseCase.ExecuteAsync().GetAwaiter().GetResult();
+            clock.Advance(1f);
+            var resumedState = queryUseCase.ExecuteAsync().GetAwaiter().GetResult();
+
+            Assert.That(pausedState.IsPaused, Is.True);
+            Assert.That(pausedState.TimeScale, Is.EqualTo(4f));
+            Assert.That(pausedState.ElapsedGameTimeSeconds, Is.EqualTo(0f));
+            Assert.That(resumedState.IsPaused, Is.False);
+            Assert.That(resumedState.ElapsedGameTimeSeconds, Is.EqualTo(4f));
+            Assert.That(resumedState.CurrentScheduleTick, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void ToggleGamePauseUseCaseAlternatesPauseAndResume()
+        {
+            var clock = new GameClock();
+            var useCase = new ToggleGamePauseUseCase(clock);
+
+            var pausedState = useCase.ExecuteAsync().GetAwaiter().GetResult();
+            var resumedState = useCase.ExecuteAsync().GetAwaiter().GetResult();
+
+            Assert.That(pausedState.IsPaused, Is.True);
+            Assert.That(clock.IsPaused, Is.False);
+            Assert.That(resumedState.IsPaused, Is.False);
+        }
+
+        [Test]
         public void GameLoopAdvancesClockWithoutActorAiEvaluation()
         {
             var useCase = new GameLoopUseCase(new GameClock());
@@ -59,6 +130,22 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(result.GameDateChanged, Is.False);
             Assert.That(result.ElapsedRealTimeSeconds, Is.EqualTo(0.5f));
             Assert.That(result.ElapsedGameTimeSeconds, Is.EqualTo(0.5f));
+            Assert.That(result.IsPaused, Is.False);
+        }
+
+        [Test]
+        public void GameLoopReportsPausedStateAndDoesNotAdvanceGameTime()
+        {
+            var clock = new GameClock();
+            clock.Pause();
+            var useCase = new GameLoopUseCase(clock);
+
+            var result = useCase.ExecuteAsync(new GameLoopTickRequest(1f)).GetAwaiter().GetResult();
+
+            Assert.That(result.IsPaused, Is.True);
+            Assert.That(result.ElapsedRealTimeSeconds, Is.EqualTo(1f));
+            Assert.That(result.ElapsedGameTimeSeconds, Is.EqualTo(0f));
+            Assert.That(result.AdvancedScheduleTicks, Is.EqualTo(0));
         }
 
         [Test]

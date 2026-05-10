@@ -1,6 +1,6 @@
 namespace DungeonInn.Application.GameLoop
 {
-    public sealed class GameClockAdvanceResult
+    public readonly struct GameClockAdvanceResult
     {
         public int AdvancedScheduleTicks { get; }
         public bool GameDateChanged { get; }

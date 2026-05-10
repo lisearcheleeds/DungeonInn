@@ -117,6 +117,15 @@ namespace DungeonInn.Input
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""TogglePause"",
+                    ""type"": ""Button"",
+                    ""id"": ""00000000-0000-0000-0002-000000000003"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -150,6 +159,17 @@ namespace DungeonInn.Input
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Cancel"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000104"",
+                    ""path"": ""<Keyboard>/p"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TogglePause"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -265,6 +285,7 @@ namespace DungeonInn.Input
             m_Scene = asset.FindActionMap("Scene", throwIfNotFound: true);
             m_Scene_Back = m_Scene.FindAction("Back", throwIfNotFound: true);
             m_Scene_Cancel = m_Scene.FindAction("Cancel", throwIfNotFound: true);
+            m_Scene_TogglePause = m_Scene.FindAction("TogglePause", throwIfNotFound: true);
             // ScreenStack
             m_ScreenStack = asset.FindActionMap("ScreenStack", throwIfNotFound: true);
             m_ScreenStack_Back = m_ScreenStack.FindAction("Back", throwIfNotFound: true);
@@ -439,6 +460,7 @@ namespace DungeonInn.Input
         private List<ISceneActions> m_SceneActionsCallbackInterfaces = new List<ISceneActions>();
         private readonly InputAction m_Scene_Back;
         private readonly InputAction m_Scene_Cancel;
+        private readonly InputAction m_Scene_TogglePause;
         /// <summary>
         /// Provides access to input actions defined in input action map "Scene".
         /// </summary>
@@ -458,6 +480,10 @@ namespace DungeonInn.Input
             /// Provides access to the underlying input action "Scene/Cancel".
             /// </summary>
             public InputAction @Cancel => m_Wrapper.m_Scene_Cancel;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/TogglePause".
+            /// </summary>
+            public InputAction @TogglePause => m_Wrapper.m_Scene_TogglePause;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -490,6 +516,9 @@ namespace DungeonInn.Input
                 @Cancel.started += instance.OnCancel;
                 @Cancel.performed += instance.OnCancel;
                 @Cancel.canceled += instance.OnCancel;
+                @TogglePause.started += instance.OnTogglePause;
+                @TogglePause.performed += instance.OnTogglePause;
+                @TogglePause.canceled += instance.OnTogglePause;
             }
 
             /// <summary>
@@ -507,6 +536,9 @@ namespace DungeonInn.Input
                 @Cancel.started -= instance.OnCancel;
                 @Cancel.performed -= instance.OnCancel;
                 @Cancel.canceled -= instance.OnCancel;
+                @TogglePause.started -= instance.OnTogglePause;
+                @TogglePause.performed -= instance.OnTogglePause;
+                @TogglePause.canceled -= instance.OnTogglePause;
             }
 
             /// <summary>
@@ -687,6 +719,13 @@ namespace DungeonInn.Input
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnCancel(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "TogglePause" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnTogglePause(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "ScreenStack" which allows adding and removing callbacks.

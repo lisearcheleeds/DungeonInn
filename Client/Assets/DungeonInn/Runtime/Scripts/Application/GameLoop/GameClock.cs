@@ -14,6 +14,7 @@ namespace DungeonInn.Application.GameLoop
         public float ElapsedRealTimeSeconds { get; private set; }
         public float ElapsedGameTimeSeconds { get; private set; }
         public float TimeScale { get; private set; } = 1f;
+        public bool IsPaused { get; private set; }
 
         public void SetTimeScale(float timeScale)
         {
@@ -25,6 +26,16 @@ namespace DungeonInn.Application.GameLoop
             TimeScale = timeScale;
         }
 
+        public void Pause()
+        {
+            IsPaused = true;
+        }
+
+        public void Resume()
+        {
+            IsPaused = false;
+        }
+
         public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
         {
             if (unscaledDeltaTimeSeconds < 0f)
@@ -33,6 +44,10 @@ namespace DungeonInn.Application.GameLoop
             }
 
             ElapsedRealTimeSeconds += unscaledDeltaTimeSeconds;
+            if (IsPaused)
+            {
+                return new GameClockAdvanceResult(0, false);
+            }
 
             var scaledDeltaSeconds = unscaledDeltaTimeSeconds * TimeScale;
             ElapsedGameTimeSeconds += scaledDeltaSeconds;

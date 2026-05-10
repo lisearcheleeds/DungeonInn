@@ -167,7 +167,10 @@ namespace DungeonInn.Tests.EditMode
             public float ElapsedRealTimeSeconds => ElapsedGameTimeSeconds;
             public float ElapsedGameTimeSeconds { get; set; }
             public float TimeScale => 1f;
+            public bool IsPaused => false;
             public void SetTimeScale(float timeScale) { }
+            public void Pause() { }
+            public void Resume() { }
             public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
                 => new GameClockAdvanceResult(0, false);
         }

@@ -4,30 +4,30 @@ using VContainer;
 
 namespace DungeonInn.Application.GameLoop
 {
-    public sealed class GameLoopUseCase : IGameLoopUseCase
+    public sealed class ToggleGamePauseUseCase
     {
         readonly IGameClock gameClock;
 
         [Inject]
-        public GameLoopUseCase(IGameClock gameClock)
+        public ToggleGamePauseUseCase(IGameClock gameClock)
         {
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
         }
 
-        public UniTask<GameLoopTickResult> ExecuteAsync(GameLoopTickRequest request)
+        public UniTask<GameTimeState> ExecuteAsync()
         {
-            if (request == null)
+            if (gameClock.IsPaused)
             {
-                throw new ArgumentNullException(nameof(request));
+                gameClock.Resume();
+            }
+            else
+            {
+                gameClock.Pause();
             }
 
-            var advanceResult = gameClock.Advance(request.UnscaledDeltaTimeSeconds);
-
-            return UniTask.FromResult(new GameLoopTickResult(
+            return UniTask.FromResult(new GameTimeState(
                 gameClock.CurrentScheduleTick,
                 gameClock.CurrentDay,
-                advanceResult.AdvancedScheduleTicks,
-                advanceResult.GameDateChanged,
                 gameClock.ElapsedRealTimeSeconds,
                 gameClock.ElapsedGameTimeSeconds,
                 gameClock.TimeScale,

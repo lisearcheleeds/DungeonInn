@@ -40,6 +40,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<InitializeGameWorldUseCase>(Lifetime.Scoped);
             builder.Register<GameLoopUseCase>(Lifetime.Scoped).As<IGameLoopUseCase>();
             builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
+            builder.Register<PauseGameTimeUseCase>(Lifetime.Scoped);
+            builder.Register<ResumeGameTimeUseCase>(Lifetime.Scoped);
+            builder.Register<ToggleGamePauseUseCase>(Lifetime.Scoped);
+            builder.Register<GetGameTimeStateUseCase>(Lifetime.Scoped);
             builder.Register<AssignStaffUseCase>(Lifetime.Scoped);
             builder.Register<CalculateScoutCostUseCase>(Lifetime.Scoped);
             builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
