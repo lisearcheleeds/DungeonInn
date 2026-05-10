@@ -82,6 +82,14 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .Subscribe(OnAttackOccurred)
                 .AddTo(ref bag);
 
+            eventBus.OnEvent<ProjectileFired>()
+                .Subscribe(OnProjectileFired)
+                .AddTo(ref bag);
+
+            eventBus.OnEvent<ProjectileHit>()
+                .Subscribe(OnProjectileHit)
+                .AddTo(ref bag);
+
             eventBus.OnEvent<ActorDefeated>()
                 .Subscribe(OnActorDefeated)
                 .AddTo(ref bag);
@@ -198,6 +206,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             Debug.Log(
                 $"[Combat] {GetName(gameEvent.AttackerActorId)} は {GetName(gameEvent.TargetActorId)} に攻撃！ " +
                 $"ダメージ: {gameEvent.Damage} (HP {gameEvent.TargetRemainingHp})");
+        }
+
+        void OnProjectileFired(ProjectileFired gameEvent)
+        {
+            Debug.Log($"[Combat] {GetName(gameEvent.AttackerActorId)} fired projectile at {GetName(gameEvent.TargetActorId)}");
+        }
+
+        void OnProjectileHit(ProjectileHit gameEvent)
+        {
+            Debug.Log($"[Combat] Projectile hit {GetName(gameEvent.TargetActorId)} for {gameEvent.Damage}");
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)

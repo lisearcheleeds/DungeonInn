@@ -11,13 +11,12 @@ namespace DungeonInn.Tests.EditMode
     public sealed class WeaponCombatCalculatorTests
     {
         [TestCase(WeaponType.Sword)]
-        [TestCase(WeaponType.Bow)]
         [TestCase(WeaponType.Axe)]
         [TestCase(WeaponType.Scythe)]
         [TestCase(WeaponType.Fist)]
         [TestCase(WeaponType.Claws)]
         [TestCase(WeaponType.Fangs)]
-        public void AllWeaponTypesCurrentlyUseDirectDamageAttackSpec(WeaponType weaponType)
+        public void CloseRangeWeaponTypesUseDirectDamageAttackSpec(WeaponType weaponType)
         {
             var actor = CreateActor();
             EquipWeapon(actor, 100 + (int)weaponType, weaponType, 10, 0, 0);
@@ -26,6 +25,27 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].Type, Is.EqualTo(CombatEffectNodeType.DirectDamage));
             Assert.That(actor.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount, Is.EqualTo(actor.WeaponAttack));
             Assert.DoesNotThrow(() => new DungeonInn.Domain.Combat.CombatEffectGraphValidator().Validate(actor.WeaponCombatParams.AttackSpec));
+        }
+
+        [Test]
+        public void BowUsesProjectileAttackSpecLinkedToDirectDamage()
+        {
+            var actor = CreateActor();
+            EquipWeapon(actor, 102, WeaponType.Bow, 10, 0, 0);
+
+            var attackSpec = actor.WeaponCombatParams.AttackSpec;
+            Assert.That(attackSpec.Nodes.Count, Is.EqualTo(2));
+            Assert.That(attackSpec.RootNodeIds.Count, Is.EqualTo(1));
+            Assert.That(attackSpec.RootNodeIds[0], Is.EqualTo(1));
+            Assert.That(attackSpec.Nodes[0].Type, Is.EqualTo(CombatEffectNodeType.Projectile));
+            Assert.That(attackSpec.Nodes[0].ProjectileSpec.SpeedMetersPerSecond, Is.GreaterThan(0f));
+            Assert.That(attackSpec.Nodes[0].ProjectileSpec.MaxDistanceMeters, Is.EqualTo(actor.WeaponCombatParams.RangeMeters));
+            Assert.That(attackSpec.Nodes[0].Links.Count, Is.EqualTo(1));
+            Assert.That(attackSpec.Nodes[0].Links[0].TriggerType, Is.EqualTo(CombatEffectTriggerType.OnHit));
+            Assert.That(attackSpec.Nodes[0].Links[0].TargetNodeId, Is.EqualTo(2));
+            Assert.That(attackSpec.Nodes[1].Type, Is.EqualTo(CombatEffectNodeType.DirectDamage));
+            Assert.That(attackSpec.Nodes[1].DamageSpec.Amount, Is.EqualTo(actor.WeaponAttack));
+            Assert.DoesNotThrow(() => new CombatEffectGraphValidator().Validate(attackSpec));
         }
 
         [Test]

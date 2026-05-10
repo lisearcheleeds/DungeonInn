@@ -82,8 +82,16 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                // TODO: Area・Projectile 攻撃の実装時に CombatEffectExecutor.Execute(attackSpec, actor, targets) へ置き換える。
-                // 現在は WeaponAttackSpec の Node グラフを解釈せず、DirectDamage 相当の値を直接計算している暫定実装。
+                if (TryCreateProjectile(actor, target, actor.WeaponCombatParams.AttackSpec, out var projectile))
+                {
+                    worldState.AddProjectile(projectile);
+                    combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
+                    actorCombatService.MarkCombatParticipation(actor.Id);
+                    actorCombatService.MarkCombatParticipation(target.Id);
+                    eventBus.Publish(new ProjectileFired(projectile.Id, actor.Id, target.Id));
+                    continue;
+                }
+
                 var damage = CalculateDirectDamage(actor.WeaponCombatParams.AttackSpec);
                 target.ReceiveDamage(damage);
                 combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
@@ -113,6 +121,37 @@ namespace DungeonInn.Application.UseCase
             }
 
             return UniTask.CompletedTask;
+        }
+
+        static bool TryCreateProjectile(
+            Actor actor,
+            Actor target,
+            WeaponAttackSpec attackSpec,
+            out ProjectileInstance projectile)
+        {
+            foreach (var rootNodeId in attackSpec.RootNodeIds)
+            {
+                var node = FindNode(attackSpec, rootNodeId);
+                if (node.Type != CombatEffectNodeType.Projectile)
+                {
+                    continue;
+                }
+
+                var damage = CalculateLinkedDirectDamage(attackSpec, node, CombatEffectTriggerType.OnHit);
+                projectile = new ProjectileInstance(
+                    Guid.NewGuid(),
+                    actor.Id,
+                    target.Id,
+                    actor.Position,
+                    target.Position,
+                    damage,
+                    node.ProjectileSpec.SpeedMetersPerSecond,
+                    node.ProjectileSpec.MaxDistanceMeters);
+                return true;
+            }
+
+            projectile = null;
+            return false;
         }
 
         static void MoveTowardTarget(Actor actor, Actor target, float deltaGameSeconds)
@@ -163,6 +202,31 @@ namespace DungeonInn.Application.UseCase
                 if (node.Type != CombatEffectNodeType.DirectDamage)
                 {
                     throw new InvalidOperationException("Only direct damage root nodes are currently supported by combat execution.");
+                }
+
+                damage += node.DamageSpec.Amount;
+            }
+
+            return damage;
+        }
+
+        static int CalculateLinkedDirectDamage(
+            WeaponAttackSpec attackSpec,
+            CombatEffectNodeSpec sourceNode,
+            CombatEffectTriggerType triggerType)
+        {
+            var damage = 0;
+            foreach (var link in sourceNode.Links)
+            {
+                if (link.TriggerType != triggerType)
+                {
+                    continue;
+                }
+
+                var node = FindNode(attackSpec, link.TargetNodeId);
+                if (node.Type != CombatEffectNodeType.DirectDamage)
+                {
+                    throw new InvalidOperationException("Only direct damage projectile links are currently supported.");
                 }
 
                 damage += node.DamageSpec.Amount;

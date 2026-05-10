@@ -290,6 +290,17 @@ namespace DungeonInn.Master
                     1,
                     2,
                     Array.Empty<int>(),
+                    Array.Empty<ItemStack>()),
+                new ActorArchetypeMaster(
+                    5,
+                    "Goblin Archer",
+                    ActorBehaviorType.Monster,
+                    1,
+                    WeaponType.Bow,
+                    new ActorStats(3, 9, 3, 2, 2, 1),
+                    1,
+                    2,
+                    Array.Empty<int>(),
                     Array.Empty<ItemStack>())
             }.ToDictionary(x => x.Id);
         }
@@ -324,7 +335,8 @@ namespace DungeonInn.Master
             };
             var monsterEntries = new[]
             {
-                new SpawnTableEntryMaster(4, 2, 2, 100, 1, 5)
+                new SpawnTableEntryMaster(4, 2, 2, 70, 1, 5),
+                new SpawnTableEntryMaster(7, 2, 5, 30, 1, 5)
             };
             var floorTwoMonsterEntries = new[]
             {

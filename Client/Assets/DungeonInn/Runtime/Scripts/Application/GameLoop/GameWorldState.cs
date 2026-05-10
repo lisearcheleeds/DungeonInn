@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
@@ -14,6 +15,8 @@ namespace DungeonInn.Application.GameLoop
         readonly Dictionary<Guid, Actor> actorById = new();
         readonly List<ItemInstance> items = new();
         readonly Dictionary<Guid, ItemInstance> itemById = new();
+        readonly List<ProjectileInstance> projectiles = new();
+        readonly Dictionary<Guid, ProjectileInstance> projectileById = new();
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
@@ -21,6 +24,7 @@ namespace DungeonInn.Application.GameLoop
         public Dungeon Dungeon { get; private set; }
         public IReadOnlyList<Actor> Actors => actors;
         public IReadOnlyList<ItemInstance> Items => items;
+        public IReadOnlyList<ProjectileInstance> Projectiles => projectiles;
         public SpawnScheduleState SpawnSchedule { get; } = new();
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)
@@ -103,6 +107,39 @@ namespace DungeonInn.Application.GameLoop
             if (index >= 0)
             {
                 items.RemoveAt(index);
+            }
+
+            return true;
+        }
+
+        public void AddProjectile(ProjectileInstance projectile)
+        {
+            if (projectile == null)
+            {
+                throw new ArgumentNullException(nameof(projectile));
+            }
+
+            if (projectileById.ContainsKey(projectile.Id))
+            {
+                throw new InvalidOperationException("Projectile is already registered.");
+            }
+
+            projectiles.Add(projectile);
+            projectileById[projectile.Id] = projectile;
+        }
+
+        public bool RemoveProjectile(Guid projectileId)
+        {
+            if (!projectileById.ContainsKey(projectileId))
+            {
+                return false;
+            }
+
+            projectileById.Remove(projectileId);
+            var index = projectiles.FindIndex(x => x.Id.Equals(projectileId));
+            if (0 <= index)
+            {
+                projectiles.RemoveAt(index);
             }
 
             return true;
