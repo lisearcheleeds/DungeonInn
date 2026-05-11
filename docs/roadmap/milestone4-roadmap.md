@@ -197,6 +197,29 @@ Pause中はゲーム時間が進まない
 [AI] Adventurer B waits for inn: no vacant room
 ```
 
+### Phase 6 追加リファクタリング: UseCase / Event / Aggregate 境界整理
+
+`docs/guidelines/usecase-boundary-guidelines.md` を次回以降の実装ルールとして採用する。
+既存コードはまだ完全準拠していないため、Milestone 4 Phase 6 の後続リファクタ作業として段階的に対応する。
+
+対象:
+
+- `IEventPublisher` / `IEventSubscriber` を追加し、`IGameEventBus` 直接注入を必要最小限に下げる
+- `DecideAdventurerReturnUseCase` からイベント購読・Dirty状態・撃破数履歴をServiceへ分離する
+- `RecoverAdventurerAtInnUseCase` から回復蓄積状態とイベント購読をServiceへ分離する
+- `AdvanceActorSimpleLifecycleUseCase` の探索目的地状態をServiceへ分離する
+- UseCaseからUseCaseを呼ぶ箇所を確認し、通常UseCase呼び出しとOrchestrator責務を明示的に分ける
+- 読み取り専用処理向けに `IGameWorldStateReader` / 書き込み向けに `IGameWorldStateWriter` の分離を検討する
+- `Actor.Inventory` / `Actor.Equipment` など可変Aggregate内部オブジェクトの公開範囲を見直す
+- Domain Entity の static catalog 参照をRepository/Factory注入へ寄せる方針を検討する
+
+完了条件:
+
+- 新規実装が `usecase-boundary-guidelines.md` に準拠している
+- UseCaseが長期状態・イベント購読を直接持つ箇所がPhase 6対象範囲で解消されている
+- ゲーム状態を変更するイベント購読者が増えていない
+- `uloop.cmd compile --project-path Client` と EditMode テストが成功している
+
 ---
 
 ## 推奨実装順
