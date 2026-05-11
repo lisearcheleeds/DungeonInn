@@ -13,10 +13,10 @@ namespace DungeonInn.Application.UseCase
     public sealed class SellItemsUseCase
     {
         readonly IItemMasterRepository masterRepository;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public SellItemsUseCase(IItemMasterRepository masterRepository, IGameEventBus eventBus)
+        public SellItemsUseCase(IItemMasterRepository masterRepository, IEventPublisher eventBus)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
@@ -196,7 +196,8 @@ namespace DungeonInn.Tests.EditMode
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
-                new NoOpGameEventBus());
+                new NoOpGameEventBus(),
+                new AdventurerExplorationStateService(new NoOpGameEventBus()));
             var before = actor.Position;
 
             for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
@@ -228,7 +229,8 @@ namespace DungeonInn.Tests.EditMode
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
-                new NoOpGameEventBus());
+                new NoOpGameEventBus(),
+                new AdventurerExplorationStateService(new NoOpGameEventBus()));
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
 
             for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
@@ -344,7 +346,8 @@ namespace DungeonInn.Tests.EditMode
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(10),
-                new NoOpGameEventBus());
+                new NoOpGameEventBus(),
+                new AdventurerExplorationStateService(new NoOpGameEventBus()));
         }
 
         static SelectDungeonTargetFloorUseCase CreateSelectDungeonTargetFloorUseCase()

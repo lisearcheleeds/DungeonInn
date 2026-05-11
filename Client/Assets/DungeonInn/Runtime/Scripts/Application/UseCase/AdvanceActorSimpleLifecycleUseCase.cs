@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using R3;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
@@ -14,9 +12,8 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class AdvanceActorSimpleLifecycleUseCase : IDisposable
+    public sealed class AdvanceActorSimpleLifecycleUseCase
     {
-        readonly Dictionary<Guid, LayerPosition> exploringDestinations = new();
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
         readonly UseDungeonStairUseCase useDungeonStairUseCase;
         readonly SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase;
@@ -24,8 +21,8 @@ namespace DungeonInn.Application.UseCase
         readonly IActorNavigationService navigationService;
         readonly IActorCombatService actorCombatService;
         readonly IGameRandom gameRandom;
-        readonly IGameEventBus eventBus;
-        readonly IDisposable deathSubscription;
+        readonly IEventPublisher eventPublisher;
+        readonly AdventurerExplorationStateService explorationStateService;
 
         [Inject]
         public AdvanceActorSimpleLifecycleUseCase(
@@ -36,7 +33,8 @@ namespace DungeonInn.Application.UseCase
             IActorNavigationService navigationService,
             IActorCombatService actorCombatService,
             IGameRandom gameRandom,
-            IGameEventBus eventBus)
+            IEventPublisher eventPublisher,
+            AdventurerExplorationStateService explorationStateService)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -52,15 +50,10 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.gameRandom = gameRandom
                 ?? throw new ArgumentNullException(nameof(gameRandom));
-            this.eventBus = eventBus
-                ?? throw new ArgumentNullException(nameof(eventBus));
-            deathSubscription = eventBus.OnEvent<ActorDefeated>()
-                .Subscribe(gameEvent => { exploringDestinations.Remove(gameEvent.ActorId); });
-        }
-
-        public void Dispose()
-        {
-            deathSubscription.Dispose();
+            this.eventPublisher = eventPublisher
+                ?? throw new ArgumentNullException(nameof(eventPublisher));
+            this.explorationStateService = explorationStateService
+                ?? throw new ArgumentNullException(nameof(explorationStateService));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -138,7 +131,7 @@ namespace DungeonInn.Application.UseCase
                 actorCombatService.ClearCombatHistory(actor.Id);
                 behavior.ResetExplorationRoomArrivalCount();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
-                eventBus.Publish(new ActorEnteredDungeon(actor.Id, arrivalPosition.LayerId.Value));
+                eventPublisher.Publish(new ActorEnteredDungeon(actor.Id, arrivalPosition.LayerId.Value));
             }
         }
 
@@ -197,7 +190,7 @@ namespace DungeonInn.Application.UseCase
                 return;
             }
 
-            if (!exploringDestinations.TryGetValue(actor.Id, out var destination)
+            if (!explorationStateService.TryGetDestination(actor.Id, out var destination)
                 || !destination.LayerId.Equals(actor.Position.LayerId))
             {
                 if (!TryPickRoomDestination(floor, actor.Position, out destination))
@@ -205,7 +198,7 @@ namespace DungeonInn.Application.UseCase
                     return;
                 }
 
-                exploringDestinations[actor.Id] = destination;
+                explorationStateService.SetDestination(actor.Id, destination);
             }
 
             var arrived = moveActorTowardDestinationUseCase.Execute(
@@ -219,7 +212,7 @@ namespace DungeonInn.Application.UseCase
             if (arrived)
             {
                 behavior.RecordExplorationRoomArrival();
-                exploringDestinations.Remove(actor.Id);
+                explorationStateService.RemoveDestination(actor.Id);
                 navigationService.InvalidatePath(actor.Id);
 
                 if (GameConstants.AdventurerExplorationRoomArrivalTarget <= behavior.ExplorationRoomArrivalCount)
@@ -257,10 +250,10 @@ namespace DungeonInn.Application.UseCase
                 Array.Empty<DungeonDepthBandConfig>());
 
             actor.MoveTo(nextFloorPosition);
-            exploringDestinations.Remove(actor.Id);
+            explorationStateService.RemoveDestination(actor.Id);
             navigationService.InvalidatePath(actor.Id);
             actorCombatService.ClearCombatHistory(actor.Id);
-            eventBus.Publish(new ActorEnteredDungeon(actor.Id, nextFloorPosition.LayerId.Value));
+            eventPublisher.Publish(new ActorEnteredDungeon(actor.Id, nextFloorPosition.LayerId.Value));
         }
 
         async UniTask AdvanceReturningAsync(Actor actor, AdventurerBehavior behavior, IGameWorldState worldState, float deltaGameSeconds)
@@ -296,13 +289,13 @@ namespace DungeonInn.Application.UseCase
                     actor.MoveTo(returnPosition);
                     navigationService.InvalidatePath(actor.Id);
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                    eventBus.Publish(new ActorExitedDungeon(actor.Id));
+                    eventPublisher.Publish(new ActorExitedDungeon(actor.Id));
                     return;
                 }
 
                 actor.MoveTo(returnPosition);
                 navigationService.InvalidatePath(actor.Id);
-                eventBus.Publish(new ActorEnteredDungeon(actor.Id, returnPosition.LayerId.Value));
+                eventPublisher.Publish(new ActorEnteredDungeon(actor.Id, returnPosition.LayerId.Value));
             }
         }
 

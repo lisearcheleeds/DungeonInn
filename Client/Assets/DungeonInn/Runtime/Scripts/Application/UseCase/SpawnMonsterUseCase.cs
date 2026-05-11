@@ -15,14 +15,14 @@ namespace DungeonInn.Application.UseCase
         readonly IMonsterFactory monsterFactory;
         readonly IMasterRepository masterRepository;
         readonly IActorProfileRegistry profileRegistry;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
         public SpawnMonsterUseCase(
             IMonsterFactory monsterFactory,
             IMasterRepository masterRepository,
             IActorProfileRegistry profileRegistry,
-            IGameEventBus eventBus)
+            IEventPublisher eventBus)
         {
             this.monsterFactory = monsterFactory ?? throw new ArgumentNullException(nameof(monsterFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));

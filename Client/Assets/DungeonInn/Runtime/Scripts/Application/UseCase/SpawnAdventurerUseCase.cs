@@ -20,14 +20,14 @@ namespace DungeonInn.Application.UseCase
         readonly IAdventurerFactory adventurerFactory;
         readonly IMasterRepository masterRepository;
         readonly IActorProfileRegistry profileRegistry;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
         public SpawnAdventurerUseCase(
             IAdventurerFactory adventurerFactory,
             IMasterRepository masterRepository,
             IActorProfileRegistry profileRegistry,
-            IGameEventBus eventBus)
+            IEventPublisher eventBus)
         {
             this.adventurerFactory = adventurerFactory ?? throw new ArgumentNullException(nameof(adventurerFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));

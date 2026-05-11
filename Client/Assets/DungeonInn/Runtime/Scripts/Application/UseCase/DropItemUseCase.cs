@@ -11,10 +11,10 @@ namespace DungeonInn.Application.UseCase
     public sealed class DropItemUseCase
     {
         readonly IGameRandom gameRandom;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public DropItemUseCase(IGameRandom gameRandom, IGameEventBus eventBus)
+        public DropItemUseCase(IGameRandom gameRandom, IEventPublisher eventBus)
         {
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));

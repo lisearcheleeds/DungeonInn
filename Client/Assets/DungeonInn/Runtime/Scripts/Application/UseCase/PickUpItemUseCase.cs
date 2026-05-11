@@ -11,10 +11,10 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class PickUpItemUseCase
     {
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public PickUpItemUseCase(IGameEventBus eventBus)
+        public PickUpItemUseCase(IEventPublisher eventBus)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }

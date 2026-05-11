@@ -16,10 +16,10 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class ProcessFacilityUsageUseCase
     {
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public ProcessFacilityUsageUseCase(IGameEventBus eventBus)
+        public ProcessFacilityUsageUseCase(IEventPublisher eventBus)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }

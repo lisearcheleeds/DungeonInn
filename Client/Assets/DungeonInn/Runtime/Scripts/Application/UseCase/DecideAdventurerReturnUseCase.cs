@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using R3;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Profiles;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Item;
@@ -16,47 +14,24 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class DecideAdventurerReturnUseCase : IDisposable
+    public sealed class DecideAdventurerReturnUseCase
     {
         readonly IActorCombatService actorCombatService;
-        readonly IGameEventBus eventBus;
-        readonly IActorProfileRegistry profileRegistry;
+        readonly IEventPublisher eventPublisher;
+        readonly AdventurerReturnTrackingService returnTrackingService;
         readonly IItemMasterRepository itemMasterRepository;
-        readonly Dictionary<Guid, Dictionary<int, int>> defeatedMonsterCountsByActor = new();
-        readonly HashSet<Guid> dirtyActorIds = new();
-        DisposableBag bag;
 
         [Inject]
         public DecideAdventurerReturnUseCase(
             IActorCombatService actorCombatService,
-            IGameEventBus eventBus,
-            IActorProfileRegistry profileRegistry,
+            IEventPublisher eventPublisher,
+            AdventurerReturnTrackingService returnTrackingService,
             IItemMasterRepository itemMasterRepository)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
+            this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
+            this.returnTrackingService = returnTrackingService ?? throw new ArgumentNullException(nameof(returnTrackingService));
             this.itemMasterRepository = itemMasterRepository ?? throw new ArgumentNullException(nameof(itemMasterRepository));
-            eventBus.OnEvent<ActorDefeated>()
-                .Subscribe(OnActorDefeated)
-                .AddTo(ref bag);
-            eventBus.OnEvent<CombatEncounterEnded>()
-                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
-                .AddTo(ref bag);
-            eventBus.OnEvent<ItemPickedUp>()
-                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
-                .AddTo(ref bag);
-            eventBus.OnEvent<ActorLeveledUp>()
-                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
-                .AddTo(ref bag);
-            eventBus.OnEvent<ActorEnteredDungeon>()
-                .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
-                .AddTo(ref bag);
-        }
-
-        public void Dispose()
-        {
-            bag.Dispose();
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
@@ -66,7 +41,7 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            if (dirtyActorIds.Count == 0)
+            if (!returnTrackingService.HasDirtyActors)
             {
                 return UniTask.CompletedTask;
             }
@@ -75,7 +50,7 @@ namespace DungeonInn.Application.UseCase
             var foundDirtyActorIds = new HashSet<Guid>();
             foreach (var actor in actors)
             {
-                if (!dirtyActorIds.Contains(actor.Id))
+                if (!returnTrackingService.IsDirty(actor.Id))
                 {
                     continue;
                 }
@@ -84,13 +59,13 @@ namespace DungeonInn.Application.UseCase
 
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
-                    dirtyActorIds.Remove(actor.Id);
+                    returnTrackingService.ClearDirty(actor.Id);
                     continue;
                 }
 
                 if (behavior.LifecycleState != AdventurerLifecycleState.Exploring)
                 {
-                    dirtyActorIds.Remove(actor.Id);
+                    returnTrackingService.ClearDirty(actor.Id);
                     continue;
                 }
 
@@ -102,17 +77,17 @@ namespace DungeonInn.Application.UseCase
                 var returnDecision = CalculateReturnDecision(actor);
                 if (returnDecision.Score < GameConstants.AdventurerReturnDecisionThresholdScore)
                 {
-                    dirtyActorIds.Remove(actor.Id);
+                    returnTrackingService.ClearDirty(actor.Id);
                     continue;
                 }
 
                 actorCombatService.ClearCombatHistory(actor.Id);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
-                dirtyActorIds.Remove(actor.Id);
+                returnTrackingService.ClearDirty(actor.Id);
 
                 if (returnDecision.GoalCompleted)
                 {
-                    eventBus.Publish(new ActorGoalCompleted(
+                    eventPublisher.Publish(new ActorGoalCompleted(
                         actor.Id,
                         actor.CurrentGoal.Type,
                         actor.CurrentGoal.TargetId,
@@ -120,7 +95,7 @@ namespace DungeonInn.Application.UseCase
                         actor.CurrentGoal.TargetCount));
                 }
 
-                eventBus.Publish(new ActorAiDecisionRecorded(
+                eventPublisher.Publish(new ActorAiDecisionRecorded(
                     actor.Id,
                     AiDecisionType.ReturnToInn,
                     returnDecision.ReasonType,
@@ -130,28 +105,11 @@ namespace DungeonInn.Application.UseCase
                     maxHp: actor.Params.MaxHp,
                     selectedFloor: 0,
                     score: returnDecision.Score));
-                eventBus.Publish(new ActorStartedReturning(actor.Id));
+                eventPublisher.Publish(new ActorStartedReturning(actor.Id));
             }
 
-            RemoveMissingDirtyActors(foundDirtyActorIds);
+            returnTrackingService.RemoveMissingDirtyActors(foundDirtyActorIds);
             return UniTask.CompletedTask;
-        }
-
-        void MarkDirty(Guid actorId)
-        {
-            dirtyActorIds.Add(actorId);
-        }
-
-        void RemoveMissingDirtyActors(HashSet<Guid> foundDirtyActorIds)
-        {
-            var dirtyIds = new List<Guid>(dirtyActorIds);
-            foreach (var actorId in dirtyIds)
-            {
-                if (!foundDirtyActorIds.Contains(actorId))
-                {
-                    dirtyActorIds.Remove(actorId);
-                }
-            }
         }
 
         AdventurerReturnDecision CalculateReturnDecision(Actor actor)
@@ -188,38 +146,6 @@ namespace DungeonInn.Application.UseCase
             }
 
             return new AdventurerReturnDecision(score, goalCompleted, reasonType);
-        }
-
-        void OnActorDefeated(ActorDefeated gameEvent)
-        {
-            if (gameEvent.KillerActorId.HasValue)
-            {
-                MarkDirty(gameEvent.KillerActorId.Value);
-            }
-
-            if (!gameEvent.KillerActorId.HasValue)
-            {
-                return;
-            }
-
-            if (!profileRegistry.TryGetProfile(gameEvent.ActorId, out var profile) || profile.SpeciesId < 1)
-            {
-                return;
-            }
-
-            var actorId = gameEvent.KillerActorId.Value;
-            if (!defeatedMonsterCountsByActor.TryGetValue(actorId, out var defeatedMonsterCounts))
-            {
-                defeatedMonsterCounts = new Dictionary<int, int>();
-                defeatedMonsterCountsByActor.Add(actorId, defeatedMonsterCounts);
-            }
-
-            if (!defeatedMonsterCounts.TryGetValue(profile.SpeciesId, out var count))
-            {
-                count = 0;
-            }
-
-            defeatedMonsterCounts[profile.SpeciesId] = count + 1;
         }
 
         bool TryCompleteGoal(Actor actor)
@@ -261,13 +187,7 @@ namespace DungeonInn.Application.UseCase
 
         bool TryCompleteDefeatMonsterGoal(Actor actor)
         {
-            if (!defeatedMonsterCountsByActor.TryGetValue(actor.Id, out var defeatedMonsterCounts))
-            {
-                actor.CurrentGoal.SetProgress(0);
-                return false;
-            }
-
-            defeatedMonsterCounts.TryGetValue(actor.CurrentGoal.TargetId, out var count);
+            var count = returnTrackingService.GetDefeatedMonsterCount(actor.Id, actor.CurrentGoal.TargetId);
             actor.CurrentGoal.SetProgress(count);
             return actor.CurrentGoal.IsCompleted();
         }

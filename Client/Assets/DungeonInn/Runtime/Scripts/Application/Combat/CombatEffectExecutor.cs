@@ -11,12 +11,12 @@ namespace DungeonInn.Application.Combat
 {
     public sealed class CombatEffectExecutor
     {
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
         readonly CombatDamageResolver damageResolver;
 
         [Inject]
         public CombatEffectExecutor(
-            IGameEventBus eventBus,
+            IEventPublisher eventBus,
             CombatDamageResolver damageResolver)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));

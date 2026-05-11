@@ -11,10 +11,10 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class ChargeInnFeeUseCase
     {
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public ChargeInnFeeUseCase(IGameEventBus eventBus)
+        public ChargeInnFeeUseCase(IEventPublisher eventBus)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }

@@ -220,6 +220,45 @@ Pause中はゲーム時間が進まない
 - ゲーム状態を変更するイベント購読者が増えていない
 - `uloop.cmd compile --project-path Client` と EditMode テストが成功している
 
+状態:
+
+- 実装済み
+- 実装ログ: `docs/self-review/milestone4-phase6-boundary-refactor.md`
+
+---
+
+## Phase 7: Unity化前の境界整理
+
+Milestone 5 で NavMesh / GameObject / View 表現に進む前に、Application / Domain の責務境界をもう一段整理する。
+Unity 表現が乗った後に副作用の追跡が難しくならないよう、GameObject 化で触れる可能性が高い境界を先に固める。
+
+作るもの / 対応するもの:
+
+- UseCase から UseCase を呼ぶ箇所の棚卸し
+- Orchestrator UseCase と通常 UseCase の責務分離
+- `IGameWorldStateReader` / `IGameWorldStateWriter` の導入検討と、読み取り専用箇所の段階的置き換え
+- GameObject 化で参照される Actor / WorldState 周辺の Aggregate 境界点検
+- `Actor.Inventory` / `Actor.Equipment` など可変内部オブジェクトの公開範囲見直し方針
+- Domain Entity の static catalog 参照を Repository / Factory 注入へ寄せる方針整理
+
+初期仕様:
+
+- 既存挙動を変えないリファクタリングを優先する
+- GameObject / Unity API を使う実装は Milestone 5 に残す
+- 影響範囲が広い Domain API 変更は、対象と移行手順を明確にしてから実装する
+- すべてを一括で完了させるのではなく、Milestone 5 の実装前にブロッカーになる境界から対応する
+
+完了条件:
+
+- UseCase から UseCase を呼ぶ箇所が一覧化され、Orchestrator 化する対象と維持する対象が明確になっている
+- Unity View / Presenter から参照される WorldState 読み取り経路に、読み取り専用契約を適用する方針が決まっている
+- GameObject 化で直接触れる Actor / WorldState 周辺に、Aggregate 境界を壊す公開 API が残っていない、または対応タスク化されている
+- `uloop.cmd compile --project-path Client` と EditMode テストが成功している
+
+状態:
+
+- 設計レビュー待ち
+
 ---
 
 ## 推奨実装順
@@ -228,5 +267,6 @@ Pause中はゲーム時間が進まない
 2. Phase 4: シミュレーション時間操作
 3. Phase 5: 宿屋経営ループ拡張
 4. Phase 6: AI行動理由ログとイベント履歴
+5. Phase 7: Unity化前の境界整理
 
 Projectile / Area は実装済みのため、以降はUnity表示に進む前の内部シミュレーション基盤を整える。

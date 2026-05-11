@@ -13,13 +13,13 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IMasterRepository masterRepository;
         readonly ActorCombatPowerCalculator combatPowerCalculator;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
         public SelectDungeonTargetFloorUseCase(
             IMasterRepository masterRepository,
             ActorCombatPowerCalculator combatPowerCalculator,
-            IGameEventBus eventBus)
+            IEventPublisher eventBus)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.combatPowerCalculator = combatPowerCalculator

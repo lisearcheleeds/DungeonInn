@@ -17,10 +17,10 @@ namespace DungeonInn.Application.UseCase
         const float EncounterRangeMeters = 20f;
 
         readonly IActorCombatService actorCombatService;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public DetectCombatEncounterUseCase(IActorCombatService actorCombatService, IGameEventBus eventBus)
+        public DetectCombatEncounterUseCase(IActorCombatService actorCombatService, IEventPublisher eventBus)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));

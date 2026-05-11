@@ -167,7 +167,8 @@ namespace DungeonInn.Tests.EditMode
                 eventBus,
                 gameClock,
                 new ChargeInnFeeUseCase(eventBus),
-                new DespawnAdventurerUseCase(eventBus));
+                new DespawnAdventurerUseCase(eventBus),
+                new AdventurerRecoveryStateService(eventBus));
         }
 
         static GameWorldState CreateInitializedWorldState()

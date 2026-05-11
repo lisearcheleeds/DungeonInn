@@ -9,10 +9,10 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class DespawnAdventurerUseCase
     {
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public DespawnAdventurerUseCase(IGameEventBus eventBus)
+        public DespawnAdventurerUseCase(IEventPublisher eventBus)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }

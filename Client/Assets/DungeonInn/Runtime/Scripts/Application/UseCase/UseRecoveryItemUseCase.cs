@@ -15,13 +15,13 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IMasterRepository masterRepository;
         readonly UseConsumableItemUseCase useConsumableItemUseCase;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
         public UseRecoveryItemUseCase(
             IMasterRepository masterRepository,
             UseConsumableItemUseCase useConsumableItemUseCase,
-            IGameEventBus eventBus)
+            IEventPublisher eventBus)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.useConsumableItemUseCase = useConsumableItemUseCase ?? throw new ArgumentNullException(nameof(useConsumableItemUseCase));

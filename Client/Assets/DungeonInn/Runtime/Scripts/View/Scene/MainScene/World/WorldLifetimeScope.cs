@@ -28,8 +28,15 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .As<IGameEventHistoryReader>()
                 .As<IGameEventHistoryRecorder>()
                 .AsSelf();
-            builder.Register<GameEventBus>(Lifetime.Scoped).As<IGameEventBus>().AsSelf();
+            builder.Register<GameEventBus>(Lifetime.Scoped)
+                .As<IGameEventBus>()
+                .As<IEventPublisher>()
+                .As<IEventSubscriber>()
+                .AsSelf();
             builder.Register<AdventurerBattleRecordService>(Lifetime.Scoped);
+            builder.Register<AdventurerReturnTrackingService>(Lifetime.Scoped);
+            builder.Register<AdventurerRecoveryStateService>(Lifetime.Scoped);
+            builder.Register<AdventurerExplorationStateService>(Lifetime.Scoped);
 
             builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();

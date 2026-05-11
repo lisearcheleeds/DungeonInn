@@ -13,13 +13,13 @@ namespace DungeonInn.Application.UseCase
     public sealed class AdvanceInnEconomyUseCase
     {
         readonly IItemMasterRepository masterRepository;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
         readonly InnEconomyStatusCalculator statusCalculator;
 
         [Inject]
         public AdvanceInnEconomyUseCase(
             IItemMasterRepository masterRepository,
-            IGameEventBus eventBus,
+            IEventPublisher eventBus,
             InnEconomyStatusCalculator statusCalculator)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));

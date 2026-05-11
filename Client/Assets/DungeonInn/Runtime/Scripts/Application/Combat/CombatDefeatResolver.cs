@@ -11,14 +11,14 @@ namespace DungeonInn.Application.Combat
     public sealed class CombatDefeatResolver
     {
         readonly IActorCombatService actorCombatService;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
         readonly GrantExperienceUseCase grantExperienceUseCase;
         readonly DropItemUseCase dropItemUseCase;
 
         [Inject]
         public CombatDefeatResolver(
             IActorCombatService actorCombatService,
-            IGameEventBus eventBus,
+            IEventPublisher eventBus,
             GrantExperienceUseCase grantExperienceUseCase,
             DropItemUseCase dropItemUseCase)
         {

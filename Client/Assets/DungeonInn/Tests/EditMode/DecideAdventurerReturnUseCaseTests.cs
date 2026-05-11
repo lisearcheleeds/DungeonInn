@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
@@ -275,19 +276,25 @@ namespace DungeonInn.Tests.EditMode
                 new MonsterBehavior(1, Array.Empty<ActorDropEntry>()));
         }
 
-        static DecideAdventurerReturnUseCase CreateUseCase(
+        static DecideAdventurerReturnUseCaseFixture CreateUseCase(
             IActorCombatService combatService,
             IGameEventBus eventBus)
         {
             return CreateUseCase(combatService, eventBus, new ActorProfileRegistry());
         }
 
-        static DecideAdventurerReturnUseCase CreateUseCase(
+        static DecideAdventurerReturnUseCaseFixture CreateUseCase(
             IActorCombatService combatService,
             IGameEventBus eventBus,
             IActorProfileRegistry profileRegistry)
         {
-            return new DecideAdventurerReturnUseCase(combatService, eventBus, profileRegistry, new HardcodedMasterRepository());
+            var trackingService = new AdventurerReturnTrackingService(eventBus, profileRegistry);
+            var useCase = new DecideAdventurerReturnUseCase(
+                combatService,
+                eventBus,
+                trackingService,
+                new HardcodedMasterRepository());
+            return new DecideAdventurerReturnUseCaseFixture(useCase, trackingService);
         }
 
         static ItemInstance CreateItemInstance(int itemId, LayerPosition position)
@@ -319,6 +326,30 @@ namespace DungeonInn.Tests.EditMode
             public void Dispose()
             {
                 subject.Dispose();
+            }
+        }
+
+        sealed class DecideAdventurerReturnUseCaseFixture : IDisposable
+        {
+            readonly DecideAdventurerReturnUseCase useCase;
+            readonly AdventurerReturnTrackingService trackingService;
+
+            public DecideAdventurerReturnUseCaseFixture(
+                DecideAdventurerReturnUseCase useCase,
+                AdventurerReturnTrackingService trackingService)
+            {
+                this.useCase = useCase;
+                this.trackingService = trackingService;
+            }
+
+            public UniTask ExecuteAsync(IGameWorldState worldState)
+            {
+                return useCase.ExecuteAsync(worldState);
+            }
+
+            public void Dispose()
+            {
+                trackingService.Dispose();
             }
         }
     }

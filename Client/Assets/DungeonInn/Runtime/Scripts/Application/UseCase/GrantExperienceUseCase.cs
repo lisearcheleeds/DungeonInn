@@ -12,10 +12,10 @@ namespace DungeonInn.Application.UseCase
     public sealed class GrantExperienceUseCase
     {
         readonly IMasterRepository masterRepository;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
 
         [Inject]
-        public GrantExperienceUseCase(IMasterRepository masterRepository, IGameEventBus eventBus)
+        public GrantExperienceUseCase(IMasterRepository masterRepository, IEventPublisher eventBus)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));

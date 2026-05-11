@@ -11,18 +11,18 @@ namespace DungeonInn.Application.Combat
         readonly Dictionary<Guid, AdventurerBattleRecord> records = new();
         DisposableBag bag;
 
-        public AdventurerBattleRecordService(IGameEventBus eventBus)
+        public AdventurerBattleRecordService(IEventSubscriber eventSubscriber)
         {
-            if (eventBus == null)
+            if (eventSubscriber == null)
             {
-                throw new ArgumentNullException(nameof(eventBus));
+                throw new ArgumentNullException(nameof(eventSubscriber));
             }
 
-            eventBus.OnEvent<CombatEncounterStarted>()
+            eventSubscriber.OnEvent<CombatEncounterStarted>()
                 .Subscribe(OnEncounterStarted)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<CombatAttackOccurred>()
+            eventSubscriber.OnEvent<CombatAttackOccurred>()
                 .Subscribe(OnAttackOccurred)
                 .AddTo(ref bag);
         }

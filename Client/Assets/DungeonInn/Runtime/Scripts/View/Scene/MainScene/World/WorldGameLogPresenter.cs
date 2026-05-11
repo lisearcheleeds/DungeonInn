@@ -13,7 +13,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldGameLogPresenter : IInitializable, IDisposable
     {
-        readonly IGameEventBus eventBus;
+        readonly IEventSubscriber eventSubscriber;
         readonly IGameWorldState worldState;
         readonly AdventurerBattleRecordService battleRecordService;
         readonly IActorProfileRegistry profileRegistry;
@@ -21,12 +21,12 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         [Inject]
         public WorldGameLogPresenter(
-            IGameEventBus eventBus,
+            IEventSubscriber eventSubscriber,
             IGameWorldState worldState,
             AdventurerBattleRecordService battleRecordService,
             IActorProfileRegistry profileRegistry)
         {
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.eventSubscriber = eventSubscriber ?? throw new ArgumentNullException(nameof(eventSubscriber));
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
             this.battleRecordService = battleRecordService ?? throw new ArgumentNullException(nameof(battleRecordService));
             this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
@@ -34,119 +34,119 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void Initialize()
         {
-            eventBus.OnEvent<ActorSpawned>()
+            eventSubscriber.OnEvent<ActorSpawned>()
                 .Subscribe(OnActorSpawned)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorEnteredDungeon>()
+            eventSubscriber.OnEvent<ActorEnteredDungeon>()
                 .Subscribe(OnActorEnteredDungeon)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorExitedDungeon>()
+            eventSubscriber.OnEvent<ActorExitedDungeon>()
                 .Subscribe(OnActorExitedDungeon)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorStartedReturning>()
+            eventSubscriber.OnEvent<ActorStartedReturning>()
                 .Subscribe(OnActorStartedReturning)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorGoalCompleted>()
+            eventSubscriber.OnEvent<ActorGoalCompleted>()
                 .Subscribe(OnActorGoalCompleted)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorRecoveringAtInn>()
+            eventSubscriber.OnEvent<ActorRecoveringAtInn>()
                 .Subscribe(OnActorRecoveringAtInn)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorWaitingForInn>()
+            eventSubscriber.OnEvent<ActorWaitingForInn>()
                 .Subscribe(OnActorWaitingForInn)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorReservedInn>()
+            eventSubscriber.OnEvent<ActorReservedInn>()
                 .Subscribe(OnActorReservedInn)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorDeparted>()
+            eventSubscriber.OnEvent<ActorDeparted>()
                 .Subscribe(OnActorDeparted)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorFullyRecovered>()
+            eventSubscriber.OnEvent<ActorFullyRecovered>()
                 .Subscribe(OnActorFullyRecovered)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<CombatEncounterStarted>()
+            eventSubscriber.OnEvent<CombatEncounterStarted>()
                 .Subscribe(OnEncounterStarted)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<CombatAttackOccurred>()
+            eventSubscriber.OnEvent<CombatAttackOccurred>()
                 .Subscribe(OnAttackOccurred)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ProjectileFired>()
+            eventSubscriber.OnEvent<ProjectileFired>()
                 .Subscribe(OnProjectileFired)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ProjectileHit>()
+            eventSubscriber.OnEvent<ProjectileHit>()
                 .Subscribe(OnProjectileHit)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<AreaEffectCreated>()
+            eventSubscriber.OnEvent<AreaEffectCreated>()
                 .Subscribe(OnAreaEffectCreated)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<AreaEffectHit>()
+            eventSubscriber.OnEvent<AreaEffectHit>()
                 .Subscribe(OnAreaEffectHit)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorDefeated>()
+            eventSubscriber.OnEvent<ActorDefeated>()
                 .Subscribe(OnActorDefeated)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<CombatEncounterEnded>()
+            eventSubscriber.OnEvent<CombatEncounterEnded>()
                 .Subscribe(OnEncounterEnded)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<InnFeeCharged>()
+            eventSubscriber.OnEvent<InnFeeCharged>()
                 .Subscribe(OnInnFeeCharged)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ExperienceGranted>()
+            eventSubscriber.OnEvent<ExperienceGranted>()
                 .Subscribe(OnExperienceGranted)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorLeveledUp>()
+            eventSubscriber.OnEvent<ActorLeveledUp>()
                 .Subscribe(OnActorLeveledUp)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ItemDropped>()
+            eventSubscriber.OnEvent<ItemDropped>()
                 .Subscribe(OnItemDropped)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ItemPickedUp>()
+            eventSubscriber.OnEvent<ItemPickedUp>()
                 .Subscribe(OnItemPickedUp)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<EquipmentChanged>()
+            eventSubscriber.OnEvent<EquipmentChanged>()
                 .Subscribe(OnEquipmentChanged)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ItemSold>()
+            eventSubscriber.OnEvent<ItemSold>()
                 .Subscribe(OnItemSold)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<InnSatisfactionChanged>()
+            eventSubscriber.OnEvent<InnSatisfactionChanged>()
                 .Subscribe(OnInnSatisfactionChanged)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<GuildSupplyReplenished>()
+            eventSubscriber.OnEvent<GuildSupplyReplenished>()
                 .Subscribe(OnGuildSupplyReplenished)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<DailyInnReportGenerated>()
+            eventSubscriber.OnEvent<DailyInnReportGenerated>()
                 .Subscribe(OnDailyInnReportGenerated)
                 .AddTo(ref bag);
 
-            eventBus.OnEvent<ActorAiDecisionRecorded>()
+            eventSubscriber.OnEvent<ActorAiDecisionRecorded>()
                 .Subscribe(OnActorAiDecisionRecorded)
                 .AddTo(ref bag);
         }

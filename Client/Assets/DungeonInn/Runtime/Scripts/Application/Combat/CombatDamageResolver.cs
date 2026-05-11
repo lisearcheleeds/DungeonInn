@@ -10,13 +10,13 @@ namespace DungeonInn.Application.Combat
     public sealed class CombatDamageResolver
     {
         readonly IActorCombatService actorCombatService;
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventBus;
         readonly CombatDefeatResolver defeatResolver;
 
         [Inject]
         public CombatDamageResolver(
             IActorCombatService actorCombatService,
-            IGameEventBus eventBus,
+            IEventPublisher eventBus,
             CombatDefeatResolver defeatResolver)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));

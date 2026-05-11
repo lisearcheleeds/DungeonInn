@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using R3;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
@@ -14,33 +13,27 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class RecoverAdventurerAtInnUseCase : IDisposable
+    public sealed class RecoverAdventurerAtInnUseCase
     {
-        readonly IGameEventBus eventBus;
+        readonly IEventPublisher eventPublisher;
         readonly IGameClock gameClock;
         readonly ChargeInnFeeUseCase chargeInnFeeUseCase;
         readonly DespawnAdventurerUseCase despawnAdventurerUseCase;
-        readonly Dictionary<Guid, float> accumulatedHp = new();
-        readonly IDisposable deathSubscription;
+        readonly AdventurerRecoveryStateService recoveryStateService;
 
         [Inject]
         public RecoverAdventurerAtInnUseCase(
-            IGameEventBus eventBus,
+            IEventPublisher eventPublisher,
             IGameClock gameClock,
             ChargeInnFeeUseCase chargeInnFeeUseCase,
-            DespawnAdventurerUseCase despawnAdventurerUseCase)
+            DespawnAdventurerUseCase despawnAdventurerUseCase,
+            AdventurerRecoveryStateService recoveryStateService)
         {
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.chargeInnFeeUseCase = chargeInnFeeUseCase ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
             this.despawnAdventurerUseCase = despawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(despawnAdventurerUseCase));
-            deathSubscription = eventBus.OnEvent<ActorDefeated>()
-                .Subscribe(gameEvent => { accumulatedHp.Remove(gameEvent.ActorId); });
-        }
-
-        public void Dispose()
-        {
-            deathSubscription.Dispose();
+            this.recoveryStateService = recoveryStateService ?? throw new ArgumentNullException(nameof(recoveryStateService));
         }
 
         public UniTask EnsureReservationsAsync(IGameWorldState worldState, int currentTick)
@@ -151,7 +144,7 @@ namespace DungeonInn.Application.UseCase
                 guild.ReserveInn(Guid.NewGuid(), actor, facility.Id, currentTick);
                 behavior.ClearWaitingForInn();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                eventBus.Publish(new ActorReservedInn(actor.Id, facility.Id));
+                eventPublisher.Publish(new ActorReservedInn(actor.Id, facility.Id));
                 return;
             }
         }
@@ -178,11 +171,11 @@ namespace DungeonInn.Application.UseCase
             }
 
             worldState.InnEconomy.RecordRejectedGuest(GameConstants.InnWaitingSatisfactionDelta);
-            eventBus.Publish(new InnSatisfactionChanged(
+            eventPublisher.Publish(new InnSatisfactionChanged(
                 actor.Id,
                 GameConstants.InnWaitingSatisfactionDelta,
                 InnSatisfactionChangeReason.WaitingForInn));
-            eventBus.Publish(new ActorAiDecisionRecorded(
+            eventPublisher.Publish(new ActorAiDecisionRecorded(
                 actor.Id,
                 AiDecisionType.WaitForInn,
                 AiDecisionReasonType.NoVacantInnRoom,
@@ -192,7 +185,7 @@ namespace DungeonInn.Application.UseCase
                 0,
                 0,
                 0));
-            eventBus.Publish(new ActorWaitingForInn(actor.Id, facility.Id));
+            eventPublisher.Publish(new ActorWaitingForInn(actor.Id, facility.Id));
         }
 
         void TickRecovery(AdventurerGuild guild, Actor actor, AdventurerBehavior behavior, float deltaGameSeconds)
@@ -202,11 +195,7 @@ namespace DungeonInn.Application.UseCase
                 return;
             }
 
-            if (!accumulatedHp.TryGetValue(actor.Id, out var accumulated))
-            {
-                accumulated = 0f;
-            }
-
+            var accumulated = recoveryStateService.GetAccumulatedHp(actor.Id);
             accumulated += actor.Params.MaxHp * GameConstants.InnHpRecoveryPercentPerMinute / 60f * deltaGameSeconds;
             var healAmount = (int)accumulated;
 
@@ -214,17 +203,17 @@ namespace DungeonInn.Application.UseCase
             {
                 actor.Recover(healAmount, 0, 0, 0, 0);
                 accumulated -= healAmount;
-                eventBus.Publish(new ActorRecoveringAtInn(actor.Id, actor.Hp, actor.Params.MaxHp));
+                eventPublisher.Publish(new ActorRecoveringAtInn(actor.Id, actor.Hp, actor.Params.MaxHp));
             }
 
-            accumulatedHp[actor.Id] = accumulated;
+            recoveryStateService.SetAccumulatedHp(actor.Id, accumulated);
 
             if (actor.Hp >= actor.Params.MaxHp)
             {
-                accumulatedHp.Remove(actor.Id);
+                recoveryStateService.Remove(actor.Id);
                 guild.ReleaseInnReservation(actor.Id, gameClock.CurrentScheduleTick);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
-                eventBus.Publish(new ActorFullyRecovered(actor.Id));
+                eventPublisher.Publish(new ActorFullyRecovered(actor.Id));
             }
         }
     }
