@@ -16,7 +16,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         const float ActorHeightOffset = 1.5f;
         const float ActorSphereDiameterMeters = 3f;
 
-        readonly IGameWorldState gameWorldState;
+        readonly IGameWorldStateReader gameWorldState;
         readonly Dictionary<Guid, GameObject> actorObjects = new();
         readonly HashSet<int> builtLayerIds = new();
         readonly Material groundWalkableMaterial;
@@ -30,7 +30,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly GameObject actorRoot;
 
         [Inject]
-        public WorldActorDebugVisualizer(IGameWorldState gameWorldState)
+        public WorldActorDebugVisualizer(IGameWorldStateReader gameWorldState)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             groundWalkableMaterial = CreateMaterial(new Color(0.24f, 0.32f, 0.24f, 0.45f));

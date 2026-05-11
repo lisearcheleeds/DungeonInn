@@ -10,13 +10,13 @@ namespace DungeonInn.Input.Layer
     {
         readonly InputAction togglePauseAction;
         readonly InputAction showInnStatusAction;
-        readonly IGameWorldState worldState;
+        readonly IGameWorldStateReader worldState;
         readonly ToggleGamePauseUseCase toggleGamePauseUseCase;
         readonly GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
 
         public WorldSceneInputLayer(
             InputActions inputActions,
-            IGameWorldState worldState,
+            IGameWorldStateReader worldState,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase)
         {

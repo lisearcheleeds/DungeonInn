@@ -15,7 +15,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldScene : ProductMainSceneBase<WorldScene.WorldTransitionData>
     {
         IWorldPresenter worldPresenter;
-        IGameWorldState gameWorldState;
+        IGameWorldStateReader gameWorldState;
         ToggleGamePauseUseCase toggleGamePauseUseCase;
         GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
 
@@ -29,7 +29,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         [Inject]
         public void Construct(
             IWorldPresenter worldPresenter,
-            IGameWorldState gameWorldState,
+            IGameWorldStateReader gameWorldState,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase)
         {

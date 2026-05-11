@@ -6,13 +6,13 @@ namespace DungeonInn.Application.GameLoop
 {
     public sealed class GetInnEconomyStatusUseCase
     {
-        readonly IGameWorldState worldState;
+        readonly IGameWorldStateReader worldState;
         readonly IGameClock gameClock;
         readonly InnEconomyStatusCalculator calculator;
 
         [Inject]
         public GetInnEconomyStatusUseCase(
-            IGameWorldState worldState,
+            IGameWorldStateReader worldState,
             IGameClock gameClock,
             InnEconomyStatusCalculator calculator)
         {

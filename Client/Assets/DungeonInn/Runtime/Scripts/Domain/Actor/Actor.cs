@@ -14,7 +14,9 @@ namespace DungeonInn.Domain.Actor
         public int ArchetypeId { get; }
         public ActorStats Stats { get; private set; }
         public ActorParams Params { get; private set; }
-        public ActorEquipment Equipment { get; }
+        readonly ActorEquipment equipment;
+
+        public IReadOnlyActorEquipment Equipment => equipment;
         public Inventory Inventory { get; }
         public int Level { get; private set; }
         public int Experience { get; private set; }
@@ -63,7 +65,7 @@ namespace DungeonInn.Domain.Actor
             ArchetypeId = archetypeId;
             Stats = stats ?? throw new ArgumentNullException(nameof(stats));
             Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
-            Equipment = new ActorEquipment();
+            equipment = new ActorEquipment();
             Level = level;
             Experience = Math.Max(0, experience);
             Hp = Math.Max(0, hp);
@@ -254,7 +256,7 @@ namespace DungeonInn.Domain.Actor
 
         public void Equip(EquipmentMaster equipmentMaster)
         {
-            Equipment.Equip(equipmentMaster);
+            equipment.Equip(equipmentMaster);
 
             if (equipmentMaster.Slot == EquipmentSlot.Weapon)
             {
@@ -266,7 +268,7 @@ namespace DungeonInn.Domain.Actor
 
         public void Equip(EquipmentMaster equipmentMaster, WeaponMaster weaponMaster)
         {
-            Equipment.Equip(equipmentMaster, weaponMaster);
+            equipment.Equip(equipmentMaster, weaponMaster);
 
             if (equipmentMaster.Slot == EquipmentSlot.Weapon)
             {
@@ -278,7 +280,7 @@ namespace DungeonInn.Domain.Actor
 
         public void Unequip(EquipmentSlot slot)
         {
-            Equipment.Unequip(slot);
+            equipment.Unequip(slot);
 
             if (slot == EquipmentSlot.Weapon)
             {

@@ -257,7 +257,8 @@ Unity 表現が乗った後に副作用の追跡が難しくならないよう�
 
 状態:
 
-- 設計レビュー待ち
+- 実装レビュー待ち
+- 実装ログ: `docs/self-review/milestone4-phase7-unity-boundary-review.md`
 
 ---
 

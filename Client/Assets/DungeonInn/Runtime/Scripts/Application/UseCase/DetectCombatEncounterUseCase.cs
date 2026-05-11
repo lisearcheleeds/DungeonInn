@@ -28,7 +28,7 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
-        public UniTask ExecuteAsync(IGameWorldState worldState)
+        public UniTask ExecuteAsync(IGameWorldStateReader worldState)
         {
             if (worldState == null)
             {

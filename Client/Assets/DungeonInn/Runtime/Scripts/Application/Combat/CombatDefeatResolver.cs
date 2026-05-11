@@ -2,7 +2,6 @@ using System;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using VContainer;
 
@@ -12,20 +11,14 @@ namespace DungeonInn.Application.Combat
     {
         readonly IActorCombatService actorCombatService;
         readonly IEventPublisher eventBus;
-        readonly GrantExperienceUseCase grantExperienceUseCase;
-        readonly DropItemUseCase dropItemUseCase;
 
         [Inject]
         public CombatDefeatResolver(
             IActorCombatService actorCombatService,
-            IEventPublisher eventBus,
-            GrantExperienceUseCase grantExperienceUseCase,
-            DropItemUseCase dropItemUseCase)
+            IEventPublisher eventBus)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            this.grantExperienceUseCase = grantExperienceUseCase ?? throw new ArgumentNullException(nameof(grantExperienceUseCase));
-            this.dropItemUseCase = dropItemUseCase ?? throw new ArgumentNullException(nameof(dropItemUseCase));
         }
 
         public void Resolve(IGameWorldState worldState, Actor attacker, Actor target)
@@ -45,12 +38,6 @@ namespace DungeonInn.Application.Combat
                 eventBus.Publish(new CombatEncounterEnded(attackerId));
             }
 
-            if (attacker != null)
-            {
-                grantExperienceUseCase.Execute(attacker, target);
-            }
-
-            dropItemUseCase.Execute(target, worldState);
             worldState.RemoveActor(target.Id);
             actorCombatService.ClearTargetsReferencing(target.Id);
             actorCombatService.RemoveState(target.Id);

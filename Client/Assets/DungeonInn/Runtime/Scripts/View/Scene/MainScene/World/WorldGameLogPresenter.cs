@@ -14,7 +14,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldGameLogPresenter : IInitializable, IDisposable
     {
         readonly IEventSubscriber eventSubscriber;
-        readonly IGameWorldState worldState;
+        readonly IGameWorldStateReader worldState;
         readonly AdventurerBattleRecordService battleRecordService;
         readonly IActorProfileRegistry profileRegistry;
         DisposableBag bag;
@@ -22,7 +22,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         [Inject]
         public WorldGameLogPresenter(
             IEventSubscriber eventSubscriber,
-            IGameWorldState worldState,
+            IGameWorldStateReader worldState,
             AdventurerBattleRecordService battleRecordService,
             IActorProfileRegistry profileRegistry)
         {

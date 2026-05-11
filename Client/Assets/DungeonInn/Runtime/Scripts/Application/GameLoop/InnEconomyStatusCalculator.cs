@@ -5,7 +5,7 @@ namespace DungeonInn.Application.GameLoop
 {
     public sealed class InnEconomyStatusCalculator
     {
-        public InnEconomyStatus Calculate(IGameWorldState worldState, int currentDay)
+        public InnEconomyStatus Calculate(IGameWorldStateReader worldState, int currentDay)
         {
             var economy = worldState.InnEconomy;
             var roomCapacity = CountRoomCapacity(worldState);
@@ -28,12 +28,12 @@ namespace DungeonInn.Application.GameLoop
                 CountItem(worldState, GameConstants.InitialRookieArmorItemId));
         }
 
-        static int CountItem(IGameWorldState worldState, int itemId)
+        static int CountItem(IGameWorldStateReader worldState, int itemId)
         {
             return worldState.Guild.Inventory.ItemCounts.TryGetValue(itemId, out var count) ? count : 0;
         }
 
-        static int CountRoomCapacity(IGameWorldState worldState)
+        static int CountRoomCapacity(IGameWorldStateReader worldState)
         {
             var capacity = 0;
             foreach (var facility in worldState.Guild.Facilities)
@@ -47,7 +47,7 @@ namespace DungeonInn.Application.GameLoop
             return capacity;
         }
 
-        static int CountOccupiedRooms(IGameWorldState worldState)
+        static int CountOccupiedRooms(IGameWorldStateReader worldState)
         {
             var occupiedRooms = 0;
             foreach (var facility in worldState.Guild.Facilities)

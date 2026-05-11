@@ -11,17 +11,17 @@ namespace DungeonInn.Application.Combat
     {
         readonly IActorCombatService actorCombatService;
         readonly IEventPublisher eventBus;
-        readonly CombatDefeatResolver defeatResolver;
+        readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
 
         [Inject]
         public CombatDamageResolver(
             IActorCombatService actorCombatService,
             IEventPublisher eventBus,
-            CombatDefeatResolver defeatResolver)
+            ActorDefeatOrchestrator actorDefeatOrchestrator)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            this.defeatResolver = defeatResolver ?? throw new ArgumentNullException(nameof(defeatResolver));
+            this.actorDefeatOrchestrator = actorDefeatOrchestrator ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
         }
 
         public void ApplyDamage(IGameWorldState worldState, Actor attacker, Actor target, int damage)
@@ -67,7 +67,7 @@ namespace DungeonInn.Application.Combat
 
             if (target.Hp <= 0)
             {
-                defeatResolver.Resolve(worldState, attacker, target);
+                actorDefeatOrchestrator.Execute(worldState, attacker, target);
             }
         }
     }

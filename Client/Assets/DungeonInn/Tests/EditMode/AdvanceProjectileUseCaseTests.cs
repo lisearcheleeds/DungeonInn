@@ -146,14 +146,14 @@ namespace DungeonInn.Tests.EditMode
             public int Next(int minInclusive, int maxExclusive) => minInclusive;
         }
 
-        static GrantExperienceUseCase CreateGrantExperienceUseCase(IGameEventBus eventBus)
+        static GrantExperienceService CreateGrantExperienceService(IGameEventBus eventBus)
         {
-            return new GrantExperienceUseCase(new ThrowingMasterRepository(), eventBus);
+            return new GrantExperienceService(new ThrowingMasterRepository(), eventBus);
         }
 
-        static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
+        static DropItemService CreateDropItemService(IGameEventBus eventBus)
         {
-            return new DropItemUseCase(new ZeroGameRandom(), eventBus);
+            return new DropItemService(new ZeroGameRandom(), eventBus);
         }
 
         static CombatEffectExecutor CreateCombatEffectExecutor(
@@ -162,12 +162,14 @@ namespace DungeonInn.Tests.EditMode
         {
             var defeatResolver = new CombatDefeatResolver(
                 combatService,
-                eventBus,
-                CreateGrantExperienceUseCase(eventBus),
-                CreateDropItemUseCase(eventBus));
+                eventBus);
+            var actorDefeatOrchestrator = new ActorDefeatOrchestrator(
+                defeatResolver,
+                CreateGrantExperienceService(eventBus),
+                CreateDropItemService(eventBus));
             return new CombatEffectExecutor(
                 eventBus,
-                new CombatDamageResolver(combatService, eventBus, defeatResolver));
+                new CombatDamageResolver(combatService, eventBus, actorDefeatOrchestrator));
         }
 
         static WeaponAttackSpec CreateProjectileAreaDamageAttackSpec(int damage)

@@ -17,23 +17,38 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IEventPublisher eventPublisher;
         readonly IGameClock gameClock;
-        readonly ChargeInnFeeUseCase chargeInnFeeUseCase;
-        readonly DespawnAdventurerUseCase despawnAdventurerUseCase;
+        readonly ChargeInnFeeService chargeInnFeeService;
+        readonly DespawnAdventurerService despawnAdventurerService;
         readonly AdventurerRecoveryStateService recoveryStateService;
 
         [Inject]
         public RecoverAdventurerAtInnUseCase(
             IEventPublisher eventPublisher,
             IGameClock gameClock,
-            ChargeInnFeeUseCase chargeInnFeeUseCase,
-            DespawnAdventurerUseCase despawnAdventurerUseCase,
+            ChargeInnFeeService chargeInnFeeService,
+            DespawnAdventurerService despawnAdventurerService,
             AdventurerRecoveryStateService recoveryStateService)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
-            this.chargeInnFeeUseCase = chargeInnFeeUseCase ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
-            this.despawnAdventurerUseCase = despawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(despawnAdventurerUseCase));
+            this.chargeInnFeeService = chargeInnFeeService ?? throw new ArgumentNullException(nameof(chargeInnFeeService));
+            this.despawnAdventurerService = despawnAdventurerService ?? throw new ArgumentNullException(nameof(despawnAdventurerService));
             this.recoveryStateService = recoveryStateService ?? throw new ArgumentNullException(nameof(recoveryStateService));
+        }
+
+        public RecoverAdventurerAtInnUseCase(
+            IEventPublisher eventPublisher,
+            IGameClock gameClock,
+            ChargeInnFeeUseCase chargeInnFeeUseCase,
+            DespawnAdventurerUseCase despawnAdventurerUseCase,
+            AdventurerRecoveryStateService recoveryStateService)
+            : this(
+                eventPublisher,
+                gameClock,
+                new ChargeInnFeeService(eventPublisher),
+                new DespawnAdventurerService(eventPublisher),
+                recoveryStateService)
+        {
         }
 
         public UniTask EnsureReservationsAsync(IGameWorldState worldState, int currentTick)
@@ -134,7 +149,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                if (!chargeInnFeeUseCase.Execute(actor, guild, worldState))
+                if (!chargeInnFeeService.Execute(actor, guild, worldState))
                 {
                     behavior.ClearWaitingForInn();
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
@@ -161,7 +176,7 @@ namespace DungeonInn.Application.UseCase
             var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;
             if (GameConstants.AdventurerInnWaitDepartureDays <= waitedDays)
             {
-                despawnAdventurerUseCase.Execute(worldState, actor, waitedDays);
+                despawnAdventurerService.Execute(worldState, actor, waitedDays);
                 return;
             }
 

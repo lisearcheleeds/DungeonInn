@@ -43,7 +43,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ActorCombatService>(Lifetime.Scoped).As<IActorCombatService>();
 
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
-            builder.Register<GameWorldState>(Lifetime.Scoped).As<IGameWorldState>();
+            builder.Register<GameWorldState>(Lifetime.Scoped)
+                .As<IGameWorldState>()
+                .As<IGameWorldStateReader>()
+                .As<IGameWorldStateWriter>();
             builder.Register<InitializeWorldMapUseCase>(Lifetime.Scoped);
             builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Scoped);
             builder.Register<EnsureDungeonFloorGeneratedUseCase>(Lifetime.Scoped);
@@ -71,7 +74,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorSimpleLifecycleUseCase>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
+            builder.Register<GrantExperienceService>(Lifetime.Scoped);
             builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);
+            builder.Register<DropItemService>(Lifetime.Scoped);
             builder.Register<DropItemUseCase>(Lifetime.Scoped);
             builder.Register<PickUpItemUseCase>(Lifetime.Scoped);
             builder.Register<UpdateEquipmentUseCase>(Lifetime.Scoped);
@@ -82,12 +87,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<AdvanceCombatUseCase>(Lifetime.Scoped);
             builder.Register<AttackAreaTargetResolver>(Lifetime.Scoped);
             builder.Register<CombatDefeatResolver>(Lifetime.Scoped);
+            builder.Register<ActorDefeatOrchestrator>(Lifetime.Scoped);
             builder.Register<CombatDamageResolver>(Lifetime.Scoped);
             builder.Register<CombatEffectExecutor>(Lifetime.Scoped);
             builder.Register<AdvanceProjectileUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceAreaEffectUseCase>(Lifetime.Scoped);
             builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
+            builder.Register<ChargeInnFeeService>(Lifetime.Scoped);
             builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);
+            builder.Register<DespawnAdventurerService>(Lifetime.Scoped);
             builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<RecoverAdventurerAtInnUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceInnEconomyUseCase>(Lifetime.Scoped);

@@ -9,7 +9,7 @@ using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Application.GameLoop
 {
-    public interface IGameWorldState
+    public interface IGameWorldStateReader
     {
         bool IsInitialized { get; }
         AdventurerGuild Guild { get; }
@@ -22,15 +22,23 @@ namespace DungeonInn.Application.GameLoop
         IReadOnlyList<AreaEffectInstance> AreaEffects { get; }
         SpawnScheduleState SpawnSchedule { get; }
 
+        Actor FindActor(Guid actorId);
+    }
+
+    public interface IGameWorldStateWriter
+    {
         void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon);
         void RegisterActor(Actor actor);
         bool RemoveActor(Guid actorId);
-        Actor FindActor(Guid actorId);
         void AddItem(ItemInstance item);
         bool RemoveItem(Guid instanceId);
         void AddProjectile(ProjectileInstance projectile);
         bool RemoveProjectile(Guid projectileId);
         void AddAreaEffect(AreaEffectInstance areaEffect);
         bool RemoveAreaEffect(Guid areaEffectId);
+    }
+
+    public interface IGameWorldState : IGameWorldStateReader, IGameWorldStateWriter
+    {
     }
 }

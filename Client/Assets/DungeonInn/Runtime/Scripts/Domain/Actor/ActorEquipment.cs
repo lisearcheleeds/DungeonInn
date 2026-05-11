@@ -6,7 +6,16 @@ using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Actor
 {
-    public sealed class ActorEquipment
+    public interface IReadOnlyActorEquipment
+    {
+        IReadOnlyDictionary<EquipmentSlot, EquipmentMaster> EquippedMasters { get; }
+        EquipmentMaster WeaponEquipment { get; }
+        WeaponMaster Weapon { get; }
+        IReadOnlyList<EquipmentMaster> All { get; }
+        IReadOnlyList<StatBonus> AllStatBonuses { get; }
+    }
+
+    public sealed class ActorEquipment : IReadOnlyActorEquipment
     {
         readonly Dictionary<EquipmentSlot, EquipmentMaster> equippedMasters = new();
         WeaponMaster weaponMaster;
