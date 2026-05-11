@@ -2,6 +2,7 @@ using System;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Orchestration;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
@@ -152,11 +153,11 @@ namespace DungeonInn.Tests.EditMode
         public void InitializeGameWorldCreatesGroundDungeonGuildAndInn()
         {
             var worldState = new GameWorldState();
-            var useCase = new InitializeGameWorldUseCase(
+            var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),
-                new InitializeDungeonUseCase(
-                    new EnsureDungeonFloorGeneratedUseCase(
+                new InitializeDungeonOrchestrator(
+                    new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
                 new HardcodedMasterRepository());
 
@@ -186,10 +187,10 @@ namespace DungeonInn.Tests.EditMode
             worldState.RegisterActor(actor);
 
             var navigationService = new ActorNavigationService();
-            var useCase = new AdvanceActorSimpleLifecycleUseCase(
+            var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(navigationService),
-                new UseDungeonStairUseCase(
-                    new EnsureDungeonFloorGeneratedUseCase(
+                new UseDungeonStairOrchestrator(
+                    new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
@@ -219,10 +220,10 @@ namespace DungeonInn.Tests.EditMode
             worldState.RegisterActor(actor);
 
             var navigationService = new ActorNavigationService();
-            var useCase = new AdvanceActorSimpleLifecycleUseCase(
+            var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(navigationService),
-                new UseDungeonStairUseCase(
-                    new EnsureDungeonFloorGeneratedUseCase(
+                new UseDungeonStairOrchestrator(
+                    new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
@@ -265,7 +266,7 @@ namespace DungeonInn.Tests.EditMode
         public void ReturningAdventurerAscendsToPreviousFloorBeforeGround()
         {
             var worldState = CreateInitializedWorldState();
-            var floorGenerator = new EnsureDungeonFloorGeneratedUseCase(new GenerateDungeonFloorUseCase());
+            var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase());
             var secondFloor = floorGenerator.ExecuteAsync(
                     worldState.Dungeon,
                     2,
@@ -289,11 +290,11 @@ namespace DungeonInn.Tests.EditMode
         static GameWorldState CreateInitializedWorldState()
         {
             var worldState = new GameWorldState();
-            var useCase = new InitializeGameWorldUseCase(
+            var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),
-                new InitializeDungeonUseCase(
-                    new EnsureDungeonFloorGeneratedUseCase(
+                new InitializeDungeonOrchestrator(
+                    new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
                 new HardcodedMasterRepository());
 
@@ -333,13 +334,13 @@ namespace DungeonInn.Tests.EditMode
                 new AdventurerBehavior(0, lifecycleState));
         }
 
-        static AdvanceActorSimpleLifecycleUseCase CreateLifecycleUseCase()
+        static AdvanceActorLifecycleOrchestrator CreateLifecycleUseCase()
         {
             var navigationService = new ActorNavigationService();
-            return new AdvanceActorSimpleLifecycleUseCase(
+            return new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(navigationService),
-                new UseDungeonStairUseCase(
-                    new EnsureDungeonFloorGeneratedUseCase(
+                new UseDungeonStairOrchestrator(
+                    new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),

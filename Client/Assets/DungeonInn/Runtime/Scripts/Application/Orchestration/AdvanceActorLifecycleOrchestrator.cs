@@ -1,4 +1,5 @@
 using System;
+using DungeonInn.Application.UseCase;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
@@ -10,12 +11,12 @@ using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
-    public sealed class AdvanceActorSimpleLifecycleUseCase
+    public sealed class AdvanceActorLifecycleOrchestrator
     {
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
-        readonly UseDungeonStairUseCase useDungeonStairUseCase;
+        readonly UseDungeonStairOrchestrator useDungeonStairUseCase;
         readonly SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase;
         readonly SelectDungeonExplorationGoalUseCase selectDungeonExplorationGoalUseCase;
         readonly IActorNavigationService navigationService;
@@ -25,9 +26,9 @@ namespace DungeonInn.Application.UseCase
         readonly AdventurerExplorationStateService explorationStateService;
 
         [Inject]
-        public AdvanceActorSimpleLifecycleUseCase(
+        public AdvanceActorLifecycleOrchestrator(
             MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase,
-            UseDungeonStairUseCase useDungeonStairUseCase,
+            UseDungeonStairOrchestrator useDungeonStairUseCase,
             SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase,
             SelectDungeonExplorationGoalUseCase selectDungeonExplorationGoalUseCase,
             IActorNavigationService navigationService,

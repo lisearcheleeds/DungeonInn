@@ -1,21 +1,24 @@
 using System;
+using DungeonInn.Application.UseCase;
+using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Combat;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
     /// <summary>
     /// ダンジョン階段を利用して、地上または別フロアへ移動するユースケース。
     /// </summary>
-    public sealed class UseDungeonStairUseCase
+    public sealed class UseDungeonStairOrchestrator
     {
-        readonly EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase;
+        readonly EnsureDungeonFloorGeneratedOrchestrator ensureDungeonFloorGeneratedUseCase;
 
         [Inject]
-        public UseDungeonStairUseCase(EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase)
+        public UseDungeonStairOrchestrator(EnsureDungeonFloorGeneratedOrchestrator ensureDungeonFloorGeneratedUseCase)
         {
             this.ensureDungeonFloorGeneratedUseCase = ensureDungeonFloorGeneratedUseCase ?? throw new ArgumentNullException(nameof(ensureDungeonFloorGeneratedUseCase));
         }

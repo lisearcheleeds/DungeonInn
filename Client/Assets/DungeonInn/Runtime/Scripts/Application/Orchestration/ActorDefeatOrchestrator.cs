@@ -1,10 +1,11 @@
 using System;
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using VContainer;
 
-namespace DungeonInn.Application.Combat
+namespace DungeonInn.Application.Orchestration
 {
     public sealed class ActorDefeatOrchestrator
     {

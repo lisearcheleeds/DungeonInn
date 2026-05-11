@@ -1,4 +1,6 @@
 using System;
+using DungeonInn.Application.UseCase;
+using DungeonInn.Application.Combat;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Factory;
@@ -8,16 +10,16 @@ using DungeonInn.Domain.Common;
 using DungeonInn.Master;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
-    public sealed class SpawnScheduledMonsterUseCase
+    public sealed class SpawnScheduledMonsterOrchestrator
     {
         readonly SpawnMonsterUseCase spawnMonsterUseCase;
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
 
         [Inject]
-        public SpawnScheduledMonsterUseCase(
+        public SpawnScheduledMonsterOrchestrator(
             SpawnMonsterUseCase spawnMonsterUseCase,
             IMasterRepository masterRepository,
             IGameRandom gameRandom)

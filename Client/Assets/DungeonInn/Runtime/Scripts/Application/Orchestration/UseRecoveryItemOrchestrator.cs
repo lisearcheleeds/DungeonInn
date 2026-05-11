@@ -1,4 +1,6 @@
 using System;
+using DungeonInn.Application.UseCase;
+using DungeonInn.Application.Combat;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
@@ -9,16 +11,16 @@ using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
-    public sealed class UseRecoveryItemUseCase
+    public sealed class UseRecoveryItemOrchestrator
     {
         readonly IMasterRepository masterRepository;
         readonly UseConsumableItemUseCase useConsumableItemUseCase;
         readonly IEventPublisher eventBus;
 
         [Inject]
-        public UseRecoveryItemUseCase(
+        public UseRecoveryItemOrchestrator(
             IMasterRepository masterRepository,
             UseConsumableItemUseCase useConsumableItemUseCase,
             IEventPublisher eventBus)

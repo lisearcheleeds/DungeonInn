@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Orchestration;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
@@ -14,10 +15,10 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         IGameLoopUseCase gameLoopUseCase;
         IGameWorldState gameWorldState;
-        InitializeGameWorldUseCase initializeGameWorldUseCase;
-        SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase;
-        SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase;
-        AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase;
+        InitializeGameWorldOrchestrator initializeGameWorldUseCase;
+        SpawnScheduledAdventurerOrchestrator spawnScheduledAdventurerUseCase;
+        SpawnScheduledMonsterOrchestrator spawnScheduledMonsterUseCase;
+        AdvanceActorLifecycleOrchestrator advanceActorSimpleLifecycleUseCase;
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
         AdvanceCombatUseCase advanceCombatUseCase;
         AdvanceProjectileUseCase advanceProjectileUseCase;
@@ -25,7 +26,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         PickUpItemUseCase pickUpItemUseCase;
         UpdateEquipmentUseCase updateEquipmentUseCase;
         SellItemsUseCase sellItemsUseCase;
-        UseRecoveryItemUseCase useRecoveryItemUseCase;
+        UseRecoveryItemOrchestrator useRecoveryItemUseCase;
         AdvanceActorEffectsUseCase advanceActorEffectsUseCase;
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
@@ -41,10 +42,10 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void Construct(
             IGameLoopUseCase gameLoopUseCase,
             IGameWorldState gameWorldState,
-            InitializeGameWorldUseCase initializeGameWorldUseCase,
-            SpawnScheduledAdventurerUseCase spawnScheduledAdventurerUseCase,
-            SpawnScheduledMonsterUseCase spawnScheduledMonsterUseCase,
-            AdvanceActorSimpleLifecycleUseCase advanceActorSimpleLifecycleUseCase,
+            InitializeGameWorldOrchestrator initializeGameWorldUseCase,
+            SpawnScheduledAdventurerOrchestrator spawnScheduledAdventurerUseCase,
+            SpawnScheduledMonsterOrchestrator spawnScheduledMonsterUseCase,
+            AdvanceActorLifecycleOrchestrator advanceActorSimpleLifecycleUseCase,
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
             AdvanceCombatUseCase advanceCombatUseCase,
             AdvanceProjectileUseCase advanceProjectileUseCase,
@@ -52,7 +53,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             PickUpItemUseCase pickUpItemUseCase,
             UpdateEquipmentUseCase updateEquipmentUseCase,
             SellItemsUseCase sellItemsUseCase,
-            UseRecoveryItemUseCase useRecoveryItemUseCase,
+            UseRecoveryItemOrchestrator useRecoveryItemUseCase,
             AdvanceActorEffectsUseCase advanceActorEffectsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,

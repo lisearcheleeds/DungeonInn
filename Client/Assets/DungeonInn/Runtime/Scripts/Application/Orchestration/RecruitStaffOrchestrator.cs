@@ -1,4 +1,7 @@
 using System;
+using DungeonInn.Application.UseCase;
+using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Combat;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Actor;
@@ -7,17 +10,17 @@ using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
     /// <summary>
     /// 冒険者またはスカウト候補をギルドスタッフとして雇用するユースケース。
     /// </summary>
-    public sealed class RecruitStaffUseCase
+    public sealed class RecruitStaffOrchestrator
     {
         readonly CalculateScoutCostUseCase calculateScoutCostUseCase;
 
         [Inject]
-        public RecruitStaffUseCase(CalculateScoutCostUseCase calculateScoutCostUseCase)
+        public RecruitStaffOrchestrator(CalculateScoutCostUseCase calculateScoutCostUseCase)
         {
             this.calculateScoutCostUseCase = calculateScoutCostUseCase ?? throw new ArgumentNullException(nameof(calculateScoutCostUseCase));
         }

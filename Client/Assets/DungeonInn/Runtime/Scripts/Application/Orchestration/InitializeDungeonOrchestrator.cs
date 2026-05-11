@@ -3,17 +3,17 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Dungeon;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
     /// <summary>
     /// ダンジョンを初期化し、地下 1 階を生成するユースケース。
     /// </summary>
-    public sealed class InitializeDungeonUseCase
+    public sealed class InitializeDungeonOrchestrator
     {
-        readonly EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase;
+        readonly EnsureDungeonFloorGeneratedOrchestrator ensureDungeonFloorGeneratedUseCase;
 
         [Inject]
-        public InitializeDungeonUseCase(EnsureDungeonFloorGeneratedUseCase ensureDungeonFloorGeneratedUseCase)
+        public InitializeDungeonOrchestrator(EnsureDungeonFloorGeneratedOrchestrator ensureDungeonFloorGeneratedUseCase)
         {
             this.ensureDungeonFloorGeneratedUseCase = ensureDungeonFloorGeneratedUseCase ?? throw new System.ArgumentNullException(nameof(ensureDungeonFloorGeneratedUseCase));
         }

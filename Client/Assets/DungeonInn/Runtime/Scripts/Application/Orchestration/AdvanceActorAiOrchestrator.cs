@@ -1,4 +1,7 @@
 using System;
+using DungeonInn.Application.UseCase;
+using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Combat;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -6,16 +9,16 @@ using DungeonInn.Application.AI;
 using DungeonInn.Domain.Actor;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
-    public sealed class AdvanceActorAiUseCase
+    public sealed class AdvanceActorAiOrchestrator
     {
         readonly ActorDecisionScheduler scheduler;
         readonly IReadOnlyList<IActorAiPolicy> policies;
         readonly ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase;
 
         [Inject]
-        public AdvanceActorAiUseCase(
+        public AdvanceActorAiOrchestrator(
             ActorDecisionScheduler scheduler,
             AdventurerAiPolicy adventurerAiPolicy,
             MonsterAiPolicy monsterAiPolicy,
@@ -35,7 +38,7 @@ namespace DungeonInn.Application.UseCase
         {
         }
 
-        public AdvanceActorAiUseCase(
+        public AdvanceActorAiOrchestrator(
             ActorDecisionScheduler scheduler,
             IReadOnlyList<IActorAiPolicy> policies,
             ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase)

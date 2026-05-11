@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using DungeonInn.Application.AI;
+using DungeonInn.Application.Orchestration;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
@@ -70,7 +71,7 @@ namespace DungeonInn.Tests.EditMode
         public void AdvanceActorAiMarksEvaluatedWhenPolicyThrows()
         {
             var actor = CreateAdventurer();
-            var useCase = new AdvanceActorAiUseCase(
+            var useCase = new AdvanceActorAiOrchestrator(
                 new ActorDecisionScheduler(),
                 new IActorAiPolicy[] { new ThrowingActorAiPolicy() },
                 new ApplyActorAiDecisionUseCase());
@@ -106,9 +107,9 @@ namespace DungeonInn.Tests.EditMode
                 new AdventurerBehavior(0));
         }
 
-        static AdvanceActorAiUseCase CreateUseCase()
+        static AdvanceActorAiOrchestrator CreateUseCase()
         {
-            return new AdvanceActorAiUseCase(
+            return new AdvanceActorAiOrchestrator(
                 new ActorDecisionScheduler(),
                 new IActorAiPolicy[]
                 {

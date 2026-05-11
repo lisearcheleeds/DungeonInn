@@ -1,19 +1,20 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Dungeon;
 using VContainer;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Orchestration
 {
     /// <summary>
     /// 指定階層のダンジョンフロアが未生成なら生成するユースケース。
     /// </summary>
-    public sealed class EnsureDungeonFloorGeneratedUseCase
+    public sealed class EnsureDungeonFloorGeneratedOrchestrator
     {
         readonly GenerateDungeonFloorUseCase generateDungeonFloorUseCase;
 
         [Inject]
-        public EnsureDungeonFloorGeneratedUseCase(GenerateDungeonFloorUseCase generateDungeonFloorUseCase)
+        public EnsureDungeonFloorGeneratedOrchestrator(GenerateDungeonFloorUseCase generateDungeonFloorUseCase)
         {
             this.generateDungeonFloorUseCase = generateDungeonFloorUseCase ?? throw new System.ArgumentNullException(nameof(generateDungeonFloorUseCase));
         }

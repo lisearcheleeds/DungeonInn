@@ -4,6 +4,7 @@ using System.Linq;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Orchestration;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
@@ -80,7 +81,7 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var eventBus = new CollectingEventBus();
             var useConsumableItemUseCase = new UseConsumableItemUseCase(repository);
-            var useRecoveryItemUseCase = new UseRecoveryItemUseCase(repository, useConsumableItemUseCase, eventBus);
+            var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(repository, useConsumableItemUseCase, eventBus);
             var worldState = new GameWorldState();
             var actor = CreateAdventurer(30);
             actor.Inventory.Add(new ItemStack(2001, 1));

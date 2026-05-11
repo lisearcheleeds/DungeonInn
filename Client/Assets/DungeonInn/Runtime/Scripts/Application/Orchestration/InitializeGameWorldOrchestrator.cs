@@ -1,4 +1,6 @@
 using System;
+using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Combat;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.UseCase;
@@ -9,26 +11,26 @@ using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 using VContainer;
 
-namespace DungeonInn.Application.GameLoop
+namespace DungeonInn.Application.Orchestration
 {
     /// <summary>
     /// World シーン開始時に地上マップ、ダンジョン、冒険者ギルドを生成して GameWorldState へ格納するユースケース。
     /// </summary>
-    public sealed class InitializeGameWorldUseCase
+    public sealed class InitializeGameWorldOrchestrator
     {
         readonly IGameWorldState gameWorldState;
         readonly InitializeWorldMapUseCase initializeWorldMapUseCase;
-        readonly InitializeDungeonUseCase initializeDungeonUseCase;
+        readonly InitializeDungeonOrchestrator initializeDungeonUseCase;
         readonly IItemStackLimitResolver stackLimitResolver;
 
         /// <summary>
         /// GameWorldState 初期化ユースケースを作成する。
         /// </summary>
         [Inject]
-        public InitializeGameWorldUseCase(
+        public InitializeGameWorldOrchestrator(
             IGameWorldState gameWorldState,
             InitializeWorldMapUseCase initializeWorldMapUseCase,
-            InitializeDungeonUseCase initializeDungeonUseCase,
+            InitializeDungeonOrchestrator initializeDungeonUseCase,
             IItemStackLimitResolver stackLimitResolver)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
