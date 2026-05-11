@@ -6,7 +6,7 @@ namespace DungeonInn.Application.Event
 {
     public sealed class GameEventHistoryService : IGameEventHistoryReader, IGameEventHistoryRecorder
     {
-        const int Capacity = 256;
+        const int Capacity = 4096;
 
         readonly IGameClock gameClock;
         readonly Queue<GameEventHistoryEntry> entries = new();
@@ -56,6 +56,20 @@ namespace DungeonInn.Application.Event
             foreach (var entry in entries)
             {
                 if (entry.Day == day)
+                {
+                    result.Add(entry);
+                }
+            }
+
+            return result;
+        }
+
+        public IReadOnlyList<GameEventHistoryEntry> GetByDayRange(int startDay, int endDay)
+        {
+            var result = new List<GameEventHistoryEntry>();
+            foreach (var entry in entries)
+            {
+                if (startDay <= entry.Day && entry.Day <= endDay)
                 {
                     result.Add(entry);
                 }

@@ -23,5 +23,10 @@ namespace DungeonInn.Application.GameLoop
         {
             return UniTask.FromResult(historyReader.GetByDay(day));
         }
+
+        public UniTask<IReadOnlyList<GameEventHistoryEntry>> GetByDayRangeAsync(int startDay, int endDay)
+        {
+            return UniTask.FromResult(historyReader.GetByDayRange(startDay, endDay));
+        }
     }
 }

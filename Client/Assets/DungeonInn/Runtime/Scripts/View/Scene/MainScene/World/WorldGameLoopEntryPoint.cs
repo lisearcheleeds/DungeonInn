@@ -30,7 +30,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         AdvanceActorEffectsUseCase advanceActorEffectsUseCase;
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
-        AdvanceInnEconomyUseCase advanceInnEconomyUseCase;
+        PublishInnDailyReportUseCase publishInnDailyReportUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
@@ -57,7 +57,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             AdvanceActorEffectsUseCase advanceActorEffectsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
-            AdvanceInnEconomyUseCase advanceInnEconomyUseCase,
+            PublishInnDailyReportUseCase publishInnDailyReportUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
@@ -77,7 +77,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.advanceActorEffectsUseCase = advanceActorEffectsUseCase ?? throw new ArgumentNullException(nameof(advanceActorEffectsUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
-            this.advanceInnEconomyUseCase = advanceInnEconomyUseCase ?? throw new ArgumentNullException(nameof(advanceInnEconomyUseCase));
+            this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
         }
 
@@ -177,7 +177,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 cancellationToken.ThrowIfCancellationRequested();
                 if (result.GameDateChanged)
                 {
-                    await advanceInnEconomyUseCase.ExecuteAsync(gameWorldState, result.CurrentDay);
+                    await publishInnDailyReportUseCase.ExecuteAsync(Math.Max(0, result.CurrentDay - 1));
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

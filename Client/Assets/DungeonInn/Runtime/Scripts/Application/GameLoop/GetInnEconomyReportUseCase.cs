@@ -5,32 +5,39 @@ using VContainer;
 
 namespace DungeonInn.Application.GameLoop
 {
-    public sealed class GetInnEconomyStatusUseCase
+    public sealed class GetInnEconomyReportUseCase
     {
         readonly IGameWorldStateReader worldState;
-        readonly IGameClock gameClock;
         readonly IGameEventHistoryReader historyReader;
         readonly InnEconomyStatusCalculator calculator;
 
         [Inject]
-        public GetInnEconomyStatusUseCase(
+        public GetInnEconomyReportUseCase(
             IGameWorldStateReader worldState,
-            IGameClock gameClock,
             IGameEventHistoryReader historyReader,
             InnEconomyStatusCalculator calculator)
         {
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
-            this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.historyReader = historyReader ?? throw new ArgumentNullException(nameof(historyReader));
             this.calculator = calculator ?? throw new ArgumentNullException(nameof(calculator));
         }
 
-        public UniTask<InnEconomyStatus> ExecuteAsync()
+        public UniTask<InnEconomyReport> GetByDayAsync(int day)
         {
-            return UniTask.FromResult(calculator.Calculate(
+            return UniTask.FromResult(calculator.CalculateReport(
                 worldState,
-                gameClock.CurrentDay,
-                historyReader.GetByDay(gameClock.CurrentDay)));
+                day,
+                day,
+                historyReader.GetByDay(day)));
+        }
+
+        public UniTask<InnEconomyReport> GetByDayRangeAsync(int startDay, int endDay)
+        {
+            return UniTask.FromResult(calculator.CalculateReport(
+                worldState,
+                startDay,
+                endDay,
+                historyReader.GetByDayRange(startDay, endDay)));
         }
     }
 }

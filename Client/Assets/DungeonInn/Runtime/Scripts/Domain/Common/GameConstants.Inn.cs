@@ -9,8 +9,5 @@ namespace DungeonInn.Domain.Common
         public const int InnStayedSatisfactionDelta = 2;
         public const int InnWaitingSatisfactionDelta = -2;
         public const int InnCannotPaySatisfactionDelta = -1;
-        public const int InnDailyReputationSatisfactionUnit = 5;
-        public const int GuildRookieEquipmentMinimumStock = 8;
-        public const int GuildRookieEquipmentRestockTarget = 20;
     }
 }

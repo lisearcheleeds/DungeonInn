@@ -27,13 +27,13 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var useCase = new ChargeInnFeeUseCase(eventBus);
 
-            var charged = useCase.Execute(actor, worldState.Guild, worldState);
+            var charged = useCase.Execute(actor, worldState.Guild);
 
             Assert.That(charged, Is.True);
-            Assert.That(worldState.InnEconomy.TodayGuests, Is.EqualTo(1));
-            Assert.That(worldState.InnEconomy.TodaySales, Is.EqualTo(GameConstants.InnFeePerStay));
-            Assert.That(worldState.InnEconomy.TodaySatisfactionDelta, Is.EqualTo(GameConstants.InnStayedSatisfactionDelta));
+            Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<InnFeeCharged>()[0].FeeAmount, Is.EqualTo(GameConstants.InnFeePerStay));
             Assert.That(eventBus.GetEvents<InnSatisfactionChanged>().Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<InnSatisfactionChanged>()[0].Delta, Is.EqualTo(GameConstants.InnStayedSatisfactionDelta));
         }
 
         [Test]
@@ -44,28 +44,31 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var useCase = new ChargeInnFeeUseCase(eventBus);
 
-            var charged = useCase.Execute(actor, worldState.Guild, worldState);
+            var charged = useCase.Execute(actor, worldState.Guild);
 
             Assert.That(charged, Is.False);
-            Assert.That(worldState.InnEconomy.TodayRejectedGuests, Is.EqualTo(1));
-            Assert.That(worldState.InnEconomy.TodaySatisfactionDelta, Is.EqualTo(GameConstants.InnCannotPaySatisfactionDelta));
+            Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(0));
             Assert.That(eventBus.GetEvents<InnSatisfactionChanged>().Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<InnSatisfactionChanged>()[0].Reason, Is.EqualTo(InnSatisfactionChangeReason.CannotPayInnFee));
         }
 
         [Test]
-        public void AdvanceInnEconomyGeneratesDailyReportAndResetsTodayCounters()
+        public void PublishInnDailyReportGeneratesReportFromEventHistory()
         {
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(GameConstants.InnFeePerStay);
             worldState.Guild.ReserveInn(Guid.NewGuid(), actor, worldState.Guild.Facilities[0].Id, 1);
-            var eventBus = new CollectingEventBus();
-            new ChargeInnFeeUseCase(eventBus).Execute(actor, worldState.Guild, worldState);
-            var useCase = new AdvanceInnEconomyUseCase(
-                new HardcodedMasterRepository(),
+            var clock = new StubGameClock { CurrentDayValue = 0 };
+            var history = new GameEventHistoryService(clock);
+            var eventBus = new CollectingEventBus(history);
+            new ChargeInnFeeUseCase(eventBus).Execute(actor, worldState.Guild);
+            var useCase = new PublishInnDailyReportUseCase(
+                worldState,
+                history,
                 eventBus,
                 new InnEconomyStatusCalculator());
 
-            useCase.ExecuteAsync(worldState, 1).GetAwaiter().GetResult();
+            useCase.ExecuteAsync(0).GetAwaiter().GetResult();
 
             var reports = eventBus.GetEvents<DailyInnReportGenerated>();
             Assert.That(reports.Count, Is.EqualTo(1));
@@ -74,25 +77,25 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(reports[0].Report.Sales, Is.EqualTo(GameConstants.InnFeePerStay));
             Assert.That(reports[0].Report.OccupiedRooms, Is.EqualTo(1));
             Assert.That(reports[0].Report.RoomCapacity, Is.EqualTo(GameConstants.InitialInnCapacity));
-            Assert.That(worldState.InnEconomy.TodayGuests, Is.EqualTo(0));
-            Assert.That(worldState.InnEconomy.TodaySales, Is.EqualTo(0));
         }
 
         [Test]
-        public void AdvanceInnEconomyReplenishesRookieEquipmentWhenStockIsLow()
+        public void PublishInnDailyReportDoesNotReplenishRookieEquipment()
         {
             var worldState = CreateInitializedWorldState();
             RemoveStock(worldState, GameConstants.InitialRookieSwordItemId, GameConstants.InitialRookieSwordCount - 2);
+            var history = new GameEventHistoryService(new StubGameClock());
             var eventBus = new CollectingEventBus();
-            var useCase = new AdvanceInnEconomyUseCase(
-                new HardcodedMasterRepository(),
+            var useCase = new PublishInnDailyReportUseCase(
+                worldState,
+                history,
                 eventBus,
                 new InnEconomyStatusCalculator());
 
-            useCase.ExecuteAsync(worldState, 1).GetAwaiter().GetResult();
+            useCase.ExecuteAsync(0).GetAwaiter().GetResult();
 
-            Assert.That(CountItem(worldState, GameConstants.InitialRookieSwordItemId), Is.EqualTo(GameConstants.GuildRookieEquipmentRestockTarget));
-            Assert.That(eventBus.GetEvents<GuildSupplyReplenished>().Any(x => x.ItemId == GameConstants.InitialRookieSwordItemId), Is.True);
+            Assert.That(CountItem(worldState, GameConstants.InitialRookieSwordItemId), Is.EqualTo(2));
+            Assert.That(eventBus.GetEvents<GuildSupplyReplenished>().Any(x => x.ItemId == GameConstants.InitialRookieSwordItemId), Is.False);
         }
 
         [Test]
@@ -100,10 +103,13 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(GameConstants.InnFeePerStay);
-            new ChargeInnFeeUseCase(new CollectingEventBus()).Execute(actor, worldState.Guild, worldState);
+            var clock = new StubGameClock { CurrentDayValue = 2 };
+            var history = new GameEventHistoryService(clock);
+            new ChargeInnFeeUseCase(new CollectingEventBus(history)).Execute(actor, worldState.Guild);
             var useCase = new GetInnEconomyStatusUseCase(
                 worldState,
-                new StubGameClock { CurrentDayValue = 2 },
+                clock,
+                history,
                 new InnEconomyStatusCalculator());
 
             var status = useCase.ExecuteAsync().GetAwaiter().GetResult();
@@ -114,6 +120,37 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(status.SalesToday, Is.EqualTo(GameConstants.InnFeePerStay));
             Assert.That(status.RoomCapacity, Is.EqualTo(GameConstants.InitialInnCapacity));
             Assert.That(status.GuildGold, Is.EqualTo(GameConstants.InitialGuildGold + GameConstants.InnFeePerStay));
+        }
+
+        [Test]
+        public void GetInnEconomyReportReturnsDayRangeStatistics()
+        {
+            var worldState = CreateInitializedWorldState();
+            var clock = new StubGameClock { CurrentDayValue = 1 };
+            var history = new GameEventHistoryService(clock);
+            var eventBus = new CollectingEventBus(history);
+            new ChargeInnFeeUseCase(eventBus).Execute(
+                CreateAdventurer(GameConstants.InnFeePerStay),
+                worldState.Guild);
+            clock.CurrentDayValue = 2;
+            new ChargeInnFeeUseCase(eventBus).Execute(
+                CreateAdventurer(0),
+                worldState.Guild);
+            var useCase = new GetInnEconomyReportUseCase(
+                worldState,
+                history,
+                new InnEconomyStatusCalculator());
+
+            var report = useCase.GetByDayRangeAsync(1, 2).GetAwaiter().GetResult();
+
+            Assert.That(report.StartDay, Is.EqualTo(1));
+            Assert.That(report.EndDay, Is.EqualTo(2));
+            Assert.That(report.Guests, Is.EqualTo(1));
+            Assert.That(report.RejectedGuests, Is.EqualTo(1));
+            Assert.That(report.Demand, Is.EqualTo(2));
+            Assert.That(report.Sales, Is.EqualTo(GameConstants.InnFeePerStay));
+            Assert.That(report.SatisfactionDelta, Is.EqualTo(
+                GameConstants.InnStayedSatisfactionDelta + GameConstants.InnCannotPaySatisfactionDelta));
         }
 
         static GameWorldState CreateInitializedWorldState()
@@ -172,9 +209,20 @@ namespace DungeonInn.Tests.EditMode
         sealed class CollectingEventBus : IGameEventBus
         {
             readonly List<IGameEvent> events = new();
+            readonly IGameEventHistoryRecorder historyRecorder;
+
+            public CollectingEventBus()
+            {
+            }
+
+            public CollectingEventBus(IGameEventHistoryRecorder historyRecorder)
+            {
+                this.historyRecorder = historyRecorder;
+            }
 
             public void Publish(IGameEvent gameEvent)
             {
+                historyRecorder?.Record(gameEvent);
                 events.Add(gameEvent);
             }
 

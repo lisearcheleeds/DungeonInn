@@ -62,6 +62,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<GetGameEventHistoryUseCase>(Lifetime.Scoped);
             builder.Register<InnEconomyStatusCalculator>(Lifetime.Scoped);
             builder.Register<GetInnEconomyStatusUseCase>(Lifetime.Scoped);
+            builder.Register<GetInnEconomyReportUseCase>(Lifetime.Scoped);
             builder.Register<AssignStaffUseCase>(Lifetime.Scoped);
             builder.Register<CalculateScoutCostUseCase>(Lifetime.Scoped);
             builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
@@ -99,7 +100,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<DespawnAdventurerService>(Lifetime.Scoped);
             builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<RecoverAdventurerAtInnUseCase>(Lifetime.Scoped);
-            builder.Register<AdvanceInnEconomyUseCase>(Lifetime.Scoped);
+            builder.Register<PublishInnDailyReportUseCase>(Lifetime.Scoped);
             builder.Register<ReleaseInnReservationUseCase>(Lifetime.Scoped);
             builder.Register<ReserveInnUseCase>(Lifetime.Scoped);
             builder.Register<PayStaffSalaryUseCase>(Lifetime.Scoped);

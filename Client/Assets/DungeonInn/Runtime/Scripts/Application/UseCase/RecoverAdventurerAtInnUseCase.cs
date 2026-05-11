@@ -149,7 +149,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                if (!chargeInnFeeService.Execute(actor, guild, worldState))
+                if (!chargeInnFeeService.Execute(actor, guild))
                 {
                     behavior.ClearWaitingForInn();
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
@@ -185,7 +185,6 @@ namespace DungeonInn.Application.UseCase
                 return;
             }
 
-            worldState.InnEconomy.RecordRejectedGuest(GameConstants.InnWaitingSatisfactionDelta);
             eventPublisher.Publish(new InnSatisfactionChanged(
                 actor.Id,
                 GameConstants.InnWaitingSatisfactionDelta,

@@ -6,5 +6,6 @@ namespace DungeonInn.Application.Event
     {
         IReadOnlyList<GameEventHistoryEntry> GetRecent(int count);
         IReadOnlyList<GameEventHistoryEntry> GetByDay(int day);
+        IReadOnlyList<GameEventHistoryEntry> GetByDayRange(int startDay, int endDay);
     }
 }

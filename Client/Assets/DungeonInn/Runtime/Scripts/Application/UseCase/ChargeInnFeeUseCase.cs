@@ -1,6 +1,5 @@
 using System;
 using DungeonInn.Application.Event;
-using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Guild;
 using VContainer;
@@ -22,9 +21,9 @@ namespace DungeonInn.Application.UseCase
         {
         }
 
-        public bool Execute(Actor actor, AdventurerGuild guild, IGameWorldState worldState)
+        public bool Execute(Actor actor, AdventurerGuild guild)
         {
-            return chargeInnFeeService.Execute(actor, guild, worldState);
+            return chargeInnFeeService.Execute(actor, guild);
         }
     }
 }

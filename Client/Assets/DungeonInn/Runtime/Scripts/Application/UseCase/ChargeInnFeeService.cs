@@ -1,7 +1,6 @@
 using System;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
-using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Guild;
@@ -19,7 +18,7 @@ namespace DungeonInn.Application.UseCase
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }
 
-        public bool Execute(Actor actor, AdventurerGuild guild, IGameWorldState worldState)
+        public bool Execute(Actor actor, AdventurerGuild guild)
         {
             if (actor == null)
             {
@@ -31,16 +30,10 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(guild));
             }
 
-            if (worldState == null)
-            {
-                throw new ArgumentNullException(nameof(worldState));
-            }
-
             var fee = GameConstants.InnFeePerStay;
 
             if (!actor.Inventory.TrySpendGold(fee))
             {
-                worldState.InnEconomy.RecordRejectedGuest(GameConstants.InnCannotPaySatisfactionDelta);
                 eventPublisher.Publish(new InnSatisfactionChanged(
                     actor.Id,
                     GameConstants.InnCannotPaySatisfactionDelta,
@@ -49,7 +42,6 @@ namespace DungeonInn.Application.UseCase
             }
 
             guild.Inventory.AddGold(fee);
-            worldState.InnEconomy.RecordStayedGuest(fee, GameConstants.InnStayedSatisfactionDelta);
             eventPublisher.Publish(new InnFeeCharged(actor.Id, fee, actor.Inventory.Gold, guild.Inventory.Gold));
             eventPublisher.Publish(new InnSatisfactionChanged(
                 actor.Id,
