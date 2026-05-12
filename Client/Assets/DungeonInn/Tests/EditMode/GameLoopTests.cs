@@ -19,7 +19,7 @@ namespace DungeonInn.Tests.EditMode
     public sealed class GameLoopTests
     {
         [Test]
-        public void GameClockReportsDateChangedWhenDayAdvances()
+        public void GameClockReportsCompletedDayWhenDayBoundaryIsCrossed()
         {
             var clock = new GameClock();
             var result = default(GameClockAdvanceResult);
@@ -30,7 +30,20 @@ namespace DungeonInn.Tests.EditMode
             }
 
             Assert.That(clock.CurrentDay, Is.EqualTo(1));
-            Assert.That(result.GameDateChanged, Is.True);
+            Assert.That(result.DayBoundaryCrossed, Is.True);
+            Assert.That(result.CompletedDays, Is.EqualTo(new[] { 0 }));
+        }
+
+        [Test]
+        public void GameClockReportsMultipleCompletedDaysWhenLargeDeltaCrossesBoundaries()
+        {
+            var clock = new GameClock();
+
+            var result = clock.Advance(GameConstants.GameScheduleTicksPerDay * 2f);
+
+            Assert.That(clock.TotalScheduleTick, Is.EqualTo(GameConstants.GameScheduleTicksPerDay * 2));
+            Assert.That(clock.CurrentDay, Is.EqualTo(2));
+            Assert.That(result.CompletedDays, Is.EqualTo(new[] { 0, 1 }));
         }
 
         [Test]
@@ -128,7 +141,7 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(result.CurrentScheduleTick, Is.EqualTo(0));
             Assert.That(result.AdvancedScheduleTicks, Is.EqualTo(0));
-            Assert.That(result.GameDateChanged, Is.False);
+            Assert.That(result.DayBoundaryCrossed, Is.False);
             Assert.That(result.ElapsedRealTimeSeconds, Is.EqualTo(0.5f));
             Assert.That(result.ElapsedGameTimeSeconds, Is.EqualTo(0.5f));
             Assert.That(result.IsPaused, Is.False);
@@ -373,4 +386,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

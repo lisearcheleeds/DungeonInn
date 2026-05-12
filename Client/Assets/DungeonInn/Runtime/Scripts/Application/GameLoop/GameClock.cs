@@ -1,5 +1,4 @@
 using System;
-using DungeonInn.Domain.Common;
 
 namespace DungeonInn.Application.GameLoop
 {
@@ -9,8 +8,10 @@ namespace DungeonInn.Application.GameLoop
 
         float scheduleAccumulatorSeconds;
 
-        public int CurrentScheduleTick { get; private set; }
-        public int CurrentDay { get; private set; }
+        public int TotalScheduleTick { get; private set; }
+        public int CurrentScheduleTick => TotalScheduleTick;
+        public int CurrentDay => GameTimeUtility.GetDay(TotalScheduleTick);
+        public int CurrentTickOfDay => GameTimeUtility.GetTickOfDay(TotalScheduleTick);
         public float ElapsedRealTimeSeconds { get; private set; }
         public float ElapsedGameTimeSeconds { get; private set; }
         public float TimeScale { get; private set; } = 1f;
@@ -46,32 +47,27 @@ namespace DungeonInn.Application.GameLoop
             ElapsedRealTimeSeconds += unscaledDeltaTimeSeconds;
             if (IsPaused)
             {
-                return new GameClockAdvanceResult(0, false);
+                return new GameClockAdvanceResult(0, Array.Empty<int>());
             }
 
             var scaledDeltaSeconds = unscaledDeltaTimeSeconds * TimeScale;
             ElapsedGameTimeSeconds += scaledDeltaSeconds;
             scheduleAccumulatorSeconds += scaledDeltaSeconds;
 
+            var previousTotalScheduleTick = TotalScheduleTick;
             var advancedScheduleTicks = 0;
-            var gameDateChanged = false;
             while (ScheduleTickSeconds <= scheduleAccumulatorSeconds)
             {
                 scheduleAccumulatorSeconds -= ScheduleTickSeconds;
-                CurrentScheduleTick++;
+                TotalScheduleTick++;
                 advancedScheduleTicks++;
-
-                var nextDay = CurrentScheduleTick / GameConstants.GameScheduleTicksPerDay;
-                if (nextDay == CurrentDay)
-                {
-                    continue;
-                }
-
-                CurrentDay = nextDay;
-                gameDateChanged = true;
             }
 
-            return new GameClockAdvanceResult(advancedScheduleTicks, gameDateChanged);
+            return new GameClockAdvanceResult(
+                advancedScheduleTicks,
+                GameTimeUtility.GetCompletedDays(
+                    previousTotalScheduleTick,
+                    TotalScheduleTick));
         }
     }
 }

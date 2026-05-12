@@ -54,7 +54,7 @@ namespace DungeonInn.Application.AI
             { ActorAiEventType.EnteredDungeon, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
             { ActorAiEventType.ObjectiveItemCountChanged, ActorAiDirtyFlags.LongTerm | ActorAiDirtyFlags.MidTerm },
             { ActorAiEventType.ObjectiveMonsterDefeated, ActorAiDirtyFlags.LongTerm },
-            { ActorAiEventType.GameDateChanged, ActorAiDirtyFlags.LongTerm | ActorAiDirtyFlags.MidTerm },
+            { ActorAiEventType.DayBoundaryCrossed, ActorAiDirtyFlags.LongTerm | ActorAiDirtyFlags.MidTerm },
             { ActorAiEventType.CurrentActionFailed, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
             { ActorAiEventType.CurrentActionCompleted, ActorAiDirtyFlags.ShortTerm }
         };

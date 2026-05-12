@@ -12,20 +12,23 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void GameEventBusRecordsRecentEventsWithClockSnapshot()
         {
-            var clock = new StubGameClock { CurrentDayValue = 2, CurrentScheduleTickValue = 30 };
+            var clock = new StubGameClock
+            {
+                CurrentScheduleTickValue = GameTimeUtility.GetDayStartTick(2) + 30
+            };
             var history = new GameEventHistoryService(clock);
             using var eventBus = new GameEventBus(history);
             var firstActorId = Guid.NewGuid();
             var secondActorId = Guid.NewGuid();
 
             eventBus.Publish(new ActorStartedReturning(firstActorId));
-            clock.CurrentScheduleTickValue = 31;
+            clock.CurrentScheduleTickValue = GameTimeUtility.GetDayStartTick(2) + 31;
             eventBus.Publish(new ActorStartedReturning(secondActorId));
 
             var entries = history.GetRecent(1);
             Assert.That(entries.Count, Is.EqualTo(1));
-            Assert.That(entries[0].Day, Is.EqualTo(2));
-            Assert.That(entries[0].ScheduleTick, Is.EqualTo(31));
+            Assert.That(GameTimeUtility.GetDay(entries[0].OccurredAtTick), Is.EqualTo(2));
+            Assert.That(entries[0].OccurredAtTick, Is.EqualTo(GameTimeUtility.GetDayStartTick(2) + 31));
             Assert.That(((ActorStartedReturning)entries[0].Event).ActorId, Is.EqualTo(secondActorId));
         }
 
@@ -43,16 +46,29 @@ namespace DungeonInn.Tests.EditMode
 
             var entries = useCase.GetByDayAsync(1).GetAwaiter().GetResult();
             Assert.That(entries.Count, Is.EqualTo(1));
-            Assert.That(entries[0].Day, Is.EqualTo(1));
+            Assert.That(GameTimeUtility.GetDay(entries[0].OccurredAtTick), Is.EqualTo(1));
         }
 
         sealed class StubGameClock : IGameClock
         {
-            public int CurrentScheduleTickValue { get; set; }
-            public int CurrentDayValue { get; set; }
+            int totalScheduleTickValue;
 
-            public int CurrentScheduleTick => CurrentScheduleTickValue;
-            public int CurrentDay => CurrentDayValue;
+            public int CurrentScheduleTickValue
+            {
+                get => totalScheduleTickValue;
+                set => totalScheduleTickValue = value;
+            }
+
+            public int CurrentDayValue
+            {
+                get => CurrentDay;
+                set => totalScheduleTickValue = GameTimeUtility.GetDayStartTick(value);
+            }
+
+            public int TotalScheduleTick => totalScheduleTickValue;
+            public int CurrentScheduleTick => totalScheduleTickValue;
+            public int CurrentDay => GameTimeUtility.GetDay(totalScheduleTickValue);
+            public int CurrentTickOfDay => GameTimeUtility.GetTickOfDay(totalScheduleTickValue);
             public float ElapsedRealTimeSeconds => 0f;
             public float ElapsedGameTimeSeconds => 0f;
             public float TimeScale => 1f;
@@ -72,7 +88,7 @@ namespace DungeonInn.Tests.EditMode
 
             public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
             {
-                return new GameClockAdvanceResult(0, false);
+                return new GameClockAdvanceResult(0, Array.Empty<int>());
             }
         }
     }

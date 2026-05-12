@@ -31,8 +31,7 @@ namespace DungeonInn.Application.Event
 
             entries.Enqueue(new GameEventHistoryEntry(
                 sequence++,
-                gameClock.CurrentDay,
-                gameClock.CurrentScheduleTick,
+                gameClock.TotalScheduleTick,
                 gameEvent));
         }
 
@@ -52,24 +51,24 @@ namespace DungeonInn.Application.Event
 
         public IReadOnlyList<GameEventHistoryEntry> GetByDay(int day)
         {
-            var result = new List<GameEventHistoryEntry>();
-            foreach (var entry in entries)
-            {
-                if (entry.Day == day)
-                {
-                    result.Add(entry);
-                }
-            }
-
-            return result;
+            return GetByTickRange(
+                GameTimeUtility.GetDayStartTick(day),
+                GameTimeUtility.GetDayEndTick(day));
         }
 
         public IReadOnlyList<GameEventHistoryEntry> GetByDayRange(int startDay, int endDay)
         {
+            return GetByTickRange(
+                GameTimeUtility.GetDayStartTick(startDay),
+                GameTimeUtility.GetDayEndTick(endDay));
+        }
+
+        public IReadOnlyList<GameEventHistoryEntry> GetByTickRange(int startTick, int endTick)
+        {
             var result = new List<GameEventHistoryEntry>();
             foreach (var entry in entries)
             {
-                if (startDay <= entry.Day && entry.Day <= endDay)
+                if (startTick <= entry.OccurredAtTick && entry.OccurredAtTick <= endTick)
                 {
                     result.Add(entry);
                 }

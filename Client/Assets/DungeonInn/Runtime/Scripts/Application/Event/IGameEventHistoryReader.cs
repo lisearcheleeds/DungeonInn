@@ -5,6 +5,7 @@ namespace DungeonInn.Application.Event
     public interface IGameEventHistoryReader
     {
         IReadOnlyList<GameEventHistoryEntry> GetRecent(int count);
+        IReadOnlyList<GameEventHistoryEntry> GetByTickRange(int startTick, int endTick);
         IReadOnlyList<GameEventHistoryEntry> GetByDay(int day);
         IReadOnlyList<GameEventHistoryEntry> GetByDayRange(int startDay, int endDay);
     }

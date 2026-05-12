@@ -1,6 +1,5 @@
 using System;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Application.Event;
 using VContainer;
 
 namespace DungeonInn.Application.GameLoop
@@ -9,19 +8,19 @@ namespace DungeonInn.Application.GameLoop
     {
         readonly IGameWorldStateReader worldState;
         readonly IGameClock gameClock;
-        readonly IGameEventHistoryReader historyReader;
+        readonly InnEconomyStatisticsService statisticsService;
         readonly InnEconomyStatusCalculator calculator;
 
         [Inject]
         public GetInnEconomyStatusUseCase(
             IGameWorldStateReader worldState,
             IGameClock gameClock,
-            IGameEventHistoryReader historyReader,
+            InnEconomyStatisticsService statisticsService,
             InnEconomyStatusCalculator calculator)
         {
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
-            this.historyReader = historyReader ?? throw new ArgumentNullException(nameof(historyReader));
+            this.statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
             this.calculator = calculator ?? throw new ArgumentNullException(nameof(calculator));
         }
 
@@ -30,7 +29,7 @@ namespace DungeonInn.Application.GameLoop
             return UniTask.FromResult(calculator.Calculate(
                 worldState,
                 gameClock.CurrentDay,
-                historyReader.GetByDay(gameClock.CurrentDay)));
+                statisticsService.GetByDay(gameClock.CurrentDay)));
         }
     }
 }

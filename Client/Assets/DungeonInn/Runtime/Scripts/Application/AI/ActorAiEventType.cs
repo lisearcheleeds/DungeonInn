@@ -7,7 +7,7 @@ namespace DungeonInn.Application.AI
         EnteredDungeon,
         ObjectiveItemCountChanged,
         ObjectiveMonsterDefeated,
-        GameDateChanged,
+        DayBoundaryCrossed,
         CurrentActionFailed,
         CurrentActionCompleted
     }

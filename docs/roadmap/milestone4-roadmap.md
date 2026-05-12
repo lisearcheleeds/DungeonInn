@@ -257,8 +257,90 @@ Unity 表現が乗った後に副作用の追跡が難しくならないよう�
 
 状態:
 
-- 実装レビュー待ち
+- 完了
 - 実装ログ: `docs/self-review/milestone4-phase7-unity-boundary-review.md`
+
+---
+
+## Phase 8: 時間・日別レポート・イベント履歴の責務整理
+
+Milestone 5 の UI / GameObject 化に入る前に、シミュレーション時間と統計表示の責務を整理する。
+現在の `Day` はゲーム進行の正規状態として扱うには副次的であり、`Exp` と `Level` の関係に近い。
+正規状態はゲーム開始からの累積 Tick とし、日付や日内時刻は表示・集計のために Tick から導出する。
+
+この整理の目的:
+
+- `CurrentDay` と `CurrentScheduleTick` の二重管理を避け、時間状態のズレを防ぐ
+- 「現在状態表示」と「日別レポート」を明確に分ける
+- 日別レポートを表示のたびに再集計するものではなく、一定 Tick 境界で保存されるスナップショットにする
+- イベント履歴を日別レポートの保存責務から切り離し、発生事実の履歴として独立管理する
+- Milestone 5 の UI から、現在状態・日別レポート・イベント履歴をそれぞれ正しい Query で参照できるようにする
+
+時間設計:
+
+```text
+正規状態:
+  TotalScheduleTick = ゲーム開始から累積した Tick
+
+派生値:
+  Day = TotalScheduleTick / GameScheduleTicksPerDay
+  TickOfDay = TotalScheduleTick % GameScheduleTicksPerDay
+```
+
+初期仕様:
+
+- 1 Tick はゲーム内スケジュールの最小進行単位として扱う
+- `GameScheduleTicksPerDay = 1200` は維持する
+- 日付は保存状態ではなく、Tick から計算する派生値として扱う
+- `IGameClock.CurrentDay` は削除、または互換目的の派生プロパティに限定する
+- `GameTimeState` / `GameLoopTickResult` は Tick を正として返し、Day は必要なら計算値として扱う
+- 日付変更判定は `TotalScheduleTick` が日境界を跨いだかで判定する
+- 高倍率や長い delta で複数日を跨いでも、必要な日別スナップショットを取りこぼさない
+
+日別レポート設計:
+
+- 日別レポートは Tick 境界到達時に保存されるスナップショットとする
+- 保存単位は `[day * 1200, (day + 1) * 1200 - 1]` の Tick 範囲
+- レポート保存は副作用のある経営処理ではなく、表示・分析用の記録処理とする
+- レポート保存時に、評判更新・在庫補充・カウンタリセットなどのゲーム状態変更は行わない
+- 評判 `Reputation` は当面利用しないため、既存値のまま表示するだけでよい
+- 現在状態表示は `GetInnCurrentStatusUseCase` 相当の Query とし、保存済み日別レポートとは別に扱う
+- 日別レポート表示は保存済みスナップショットを読む Query とする
+
+イベント履歴設計:
+
+- イベント履歴は `OccurredAtTick` を正として保持する
+- イベント履歴は日別レポート生成のための一次データとして依存しない
+- `GetByDay(day)` のような API が必要な場合も、内部では Tick 範囲へ変換して検索する
+- 日別レポートはイベント履歴から毎回再集計するのではなく、専用の保存済みレポートから取得する
+- イベント履歴は「なぜそうなったか」を追うためのログであり、宿屋統計の永続保存とは責務を分ける
+
+作るもの / 対応するもの:
+
+- `GameClock` の正規時間を累積 Tick に一本化する
+- `GameTimeState` / `GameLoopTickResult` / `GameClockAdvanceResult` の時間表現を見直す
+- `GameTimeUtility` または同等の Tick -> Day / TickOfDay 変換ロジックを用意する
+- 日境界を跨いだ Tick 範囲を列挙する仕組みを用意する
+- `InnDailyReport` を保存する Repository / Store / Service を追加する
+- 日別レポート保存 UseCase を、イベント履歴再集計ではなくスナップショット保存に変更する
+- 現在状態 Query と日別レポート Query を分離する
+- `GameEventHistoryEntry.Day` を廃止し、Tick ベースの参照へ寄せる
+- `GetGameEventHistoryUseCase` の日別参照は Tick 範囲参照へ置き換える、または日別指定を内部変換に限定する
+- `L` キーなどの現在状態表示は、日別レポートではなく現在状態 Query を使い続ける
+
+完了条件:
+
+- `GameClock` の正規状態が累積 Tick になっている
+- Day は Tick から導出され、永続的な進行状態として二重管理されていない
+- 日付境界を跨いだタイミングで日別レポートのスナップショットが保存される
+- 現在状態表示と保存済み日別レポート表示の Query が分かれている
+- イベント履歴は Tick ベースで管理され、日別レポート保存と責務が分離されている
+- 高倍率時に複数日を跨いでもレポート保存漏れがない
+- `uloop.cmd compile --project-path Client` と EditMode テストが成功している
+
+状態:
+
+- 実装レビュー待ち
 
 ---
 
@@ -269,5 +351,6 @@ Unity 表現が乗った後に副作用の追跡が難しくならないよう�
 3. Phase 5: 宿屋経営ループ拡張
 4. Phase 6: AI行動理由ログとイベント履歴
 5. Phase 7: Unity化前の境界整理
+6. Phase 8: 時間・日別レポート・イベント履歴の責務整理
 
 Projectile / Area は実装済みのため、以降はUnity表示に進む前の内部シミュレーション基盤を整える。

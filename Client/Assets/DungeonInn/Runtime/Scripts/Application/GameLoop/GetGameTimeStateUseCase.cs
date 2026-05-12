@@ -17,8 +17,7 @@ namespace DungeonInn.Application.GameLoop
         public UniTask<GameTimeState> ExecuteAsync()
         {
             return UniTask.FromResult(new GameTimeState(
-                gameClock.CurrentScheduleTick,
-                gameClock.CurrentDay,
+                gameClock.TotalScheduleTick,
                 gameClock.ElapsedRealTimeSeconds,
                 gameClock.ElapsedGameTimeSeconds,
                 gameClock.TimeScale,

@@ -24,10 +24,9 @@ namespace DungeonInn.Application.GameLoop
             var advanceResult = gameClock.Advance(request.UnscaledDeltaTimeSeconds);
 
             return UniTask.FromResult(new GameLoopTickResult(
-                gameClock.CurrentScheduleTick,
-                gameClock.CurrentDay,
+                gameClock.TotalScheduleTick,
                 advanceResult.AdvancedScheduleTicks,
-                advanceResult.GameDateChanged,
+                advanceResult.CompletedDays,
                 gameClock.ElapsedRealTimeSeconds,
                 gameClock.ElapsedGameTimeSeconds,
                 gameClock.TimeScale,

@@ -163,8 +163,10 @@ namespace DungeonInn.Tests.EditMode
 
         sealed class FakeGameClock : IGameClock
         {
+            public int TotalScheduleTick => 0;
             public int CurrentScheduleTick => 0;
             public int CurrentDay => 0;
+            public int CurrentTickOfDay => 0;
             public float ElapsedRealTimeSeconds => ElapsedGameTimeSeconds;
             public float ElapsedGameTimeSeconds { get; set; }
             public float TimeScale => 1f;
@@ -173,7 +175,7 @@ namespace DungeonInn.Tests.EditMode
             public void Pause() { }
             public void Resume() { }
             public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
-                => new GameClockAdvanceResult(0, false);
+                => new GameClockAdvanceResult(0, Array.Empty<int>());
         }
 
         static GrantExperienceService CreateGrantExperienceService(IGameEventBus eventBus)
@@ -229,4 +231,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

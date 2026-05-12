@@ -142,6 +142,11 @@ namespace DungeonInn.View.Scene.MainScene.World
                 cancellationToken.ThrowIfCancellationRequested();
                 var frameDeltaGameSeconds = result.IsPaused ? 0f : unscaledDeltaTime * result.TimeScale;
 
+                foreach (var completedDay in result.CompletedDays)
+                {
+                    await publishInnDailyReportUseCase.ExecuteAsync(completedDay);
+                }
+
                 if (0 < result.AdvancedScheduleTicks)
                 {
                     await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
@@ -175,10 +180,6 @@ namespace DungeonInn.View.Scene.MainScene.World
                 cancellationToken.ThrowIfCancellationRequested();
                 await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (result.GameDateChanged)
-                {
-                    await publishInnDailyReportUseCase.ExecuteAsync(Math.Max(0, result.CurrentDay - 1));
-                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

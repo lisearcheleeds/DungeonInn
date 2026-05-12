@@ -1,43 +1,34 @@
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Application.Event;
+using DungeonInn.Domain.Guild;
 using VContainer;
 
 namespace DungeonInn.Application.GameLoop
 {
     public sealed class GetInnEconomyReportUseCase
     {
-        readonly IGameWorldStateReader worldState;
-        readonly IGameEventHistoryReader historyReader;
-        readonly InnEconomyStatusCalculator calculator;
+        readonly InnDailyReportStore reportStore;
 
         [Inject]
-        public GetInnEconomyReportUseCase(
-            IGameWorldStateReader worldState,
-            IGameEventHistoryReader historyReader,
-            InnEconomyStatusCalculator calculator)
+        public GetInnEconomyReportUseCase(InnDailyReportStore reportStore)
         {
-            this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
-            this.historyReader = historyReader ?? throw new ArgumentNullException(nameof(historyReader));
-            this.calculator = calculator ?? throw new ArgumentNullException(nameof(calculator));
+            this.reportStore = reportStore ?? throw new ArgumentNullException(nameof(reportStore));
         }
 
-        public UniTask<InnEconomyReport> GetByDayAsync(int day)
+        public UniTask<InnDailyReport?> TryGetByDayAsync(int day)
         {
-            return UniTask.FromResult(calculator.CalculateReport(
-                worldState,
-                day,
-                day,
-                historyReader.GetByDay(day)));
+            if (!reportStore.TryGet(day, out var report))
+            {
+                return UniTask.FromResult<InnDailyReport?>(null);
+            }
+
+            return UniTask.FromResult<InnDailyReport?>(report);
         }
 
-        public UniTask<InnEconomyReport> GetByDayRangeAsync(int startDay, int endDay)
+        public UniTask<IReadOnlyList<InnDailyReport>> GetByDayRangeAsync(int startDay, int endDay)
         {
-            return UniTask.FromResult(calculator.CalculateReport(
-                worldState,
-                startDay,
-                endDay,
-                historyReader.GetByDayRange(startDay, endDay)));
+            return UniTask.FromResult(reportStore.GetRange(startDay, endDay));
         }
     }
 }

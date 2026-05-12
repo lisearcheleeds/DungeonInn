@@ -60,6 +60,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ToggleGamePauseUseCase>(Lifetime.Scoped);
             builder.Register<GetGameTimeStateUseCase>(Lifetime.Scoped);
             builder.Register<GetGameEventHistoryUseCase>(Lifetime.Scoped);
+            builder.Register<InnEconomyStatisticsService>(Lifetime.Scoped);
+            builder.Register<InnDailyReportStore>(Lifetime.Scoped);
             builder.Register<InnEconomyStatusCalculator>(Lifetime.Scoped);
             builder.Register<GetInnEconomyStatusUseCase>(Lifetime.Scoped);
             builder.Register<GetInnEconomyReportUseCase>(Lifetime.Scoped);

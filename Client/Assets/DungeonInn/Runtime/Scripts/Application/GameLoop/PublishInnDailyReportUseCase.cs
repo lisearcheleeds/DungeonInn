@@ -10,19 +10,22 @@ namespace DungeonInn.Application.GameLoop
     public sealed class PublishInnDailyReportUseCase
     {
         readonly IGameWorldStateReader worldState;
-        readonly IGameEventHistoryReader historyReader;
+        readonly InnEconomyStatisticsService statisticsService;
+        readonly InnDailyReportStore reportStore;
         readonly IEventPublisher eventPublisher;
         readonly InnEconomyStatusCalculator calculator;
 
         [Inject]
         public PublishInnDailyReportUseCase(
             IGameWorldStateReader worldState,
-            IGameEventHistoryReader historyReader,
+            InnEconomyStatisticsService statisticsService,
+            InnDailyReportStore reportStore,
             IEventPublisher eventPublisher,
             InnEconomyStatusCalculator calculator)
         {
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
-            this.historyReader = historyReader ?? throw new ArgumentNullException(nameof(historyReader));
+            this.statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
+            this.reportStore = reportStore ?? throw new ArgumentNullException(nameof(reportStore));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.calculator = calculator ?? throw new ArgumentNullException(nameof(calculator));
         }
@@ -33,7 +36,7 @@ namespace DungeonInn.Application.GameLoop
                 worldState,
                 day,
                 day,
-                historyReader.GetByDay(day));
+                statisticsService.GetByDay(day));
             var dailyReport = new InnDailyReport(
                 report.StartDay,
                 report.Guests,
@@ -49,6 +52,7 @@ namespace DungeonInn.Application.GameLoop
                 report.RookieSwordStock,
                 report.RookieArmorStock);
 
+            reportStore.Save(dailyReport);
             eventPublisher.Publish(new DailyInnReportGenerated(dailyReport));
             return UniTask.FromResult(dailyReport);
         }

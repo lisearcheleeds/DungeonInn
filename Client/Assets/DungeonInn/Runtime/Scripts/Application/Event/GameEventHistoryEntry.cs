@@ -5,15 +5,17 @@ namespace DungeonInn.Application.Event
     public readonly struct GameEventHistoryEntry
     {
         public int Sequence { get; }
-        public int Day { get; }
-        public int ScheduleTick { get; }
+        public int OccurredAtTick { get; }
+        public int ScheduleTick => OccurredAtTick;
         public IGameEvent Event { get; }
 
-        public GameEventHistoryEntry(int sequence, int day, int scheduleTick, IGameEvent gameEvent)
+        public GameEventHistoryEntry(
+            int sequence,
+            int occurredAtTick,
+            IGameEvent gameEvent)
         {
             Sequence = sequence;
-            Day = day;
-            ScheduleTick = scheduleTick;
+            OccurredAtTick = occurredAtTick;
             Event = gameEvent ?? throw new ArgumentNullException(nameof(gameEvent));
         }
     }

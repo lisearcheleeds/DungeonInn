@@ -251,11 +251,24 @@ namespace DungeonInn.Tests.EditMode
 
         sealed class StubGameClock : IGameClock
         {
-            public int CurrentDayValue { get; set; }
-            public int CurrentScheduleTickValue { get; set; }
+            int totalScheduleTickValue;
 
-            public int CurrentScheduleTick => CurrentScheduleTickValue;
-            public int CurrentDay => CurrentDayValue;
+            public int CurrentDayValue
+            {
+                get => CurrentDay;
+                set => totalScheduleTickValue = GameTimeUtility.GetDayStartTick(value);
+            }
+
+            public int CurrentScheduleTickValue
+            {
+                get => totalScheduleTickValue;
+                set => totalScheduleTickValue = value;
+            }
+
+            public int TotalScheduleTick => totalScheduleTickValue;
+            public int CurrentScheduleTick => totalScheduleTickValue;
+            public int CurrentDay => GameTimeUtility.GetDay(totalScheduleTickValue);
+            public int CurrentTickOfDay => GameTimeUtility.GetTickOfDay(totalScheduleTickValue);
             public float ElapsedRealTimeSeconds => 0f;
             public float ElapsedGameTimeSeconds => 0f;
             public float TimeScale => 1f;
@@ -275,7 +288,7 @@ namespace DungeonInn.Tests.EditMode
 
             public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
             {
-                return new GameClockAdvanceResult(0, false);
+                return new GameClockAdvanceResult(0, Array.Empty<int>());
             }
         }
     }
