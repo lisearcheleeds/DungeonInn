@@ -541,3 +541,37 @@ Milestone 5 以降の UI、施設運営、経済バランス、取引機能が�
   - 受け取る側の容量不足
 - `uloop.cmd compile --project-path Client` が成功する。
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。
+### 追加整理対象: Actor 生成系の共通化
+
+Milestone 4 の節目であわせて対応する。`SpawnAdventurerUseCase`、`SpawnMonsterUseCase`、`AdventurerFactory`、`MonsterFactory`、`ActorFactoryCore` は、いずれも Actor 本体の生成と初期化を扱っているため、将来 Pet、NPC、Staff、Boss などが増える前に生成経路を整理する。
+
+目的:
+
+- Actor 本体生成の重複を減らす。
+- Adventurer / Monster などの種別差分を Behavior、Faction、Profile、初期装備、スポーン文脈に分離する。
+- 新人装備支給など、交換 / 在庫整理と関係する初期化処理を明確に分離する。
+- Milestone 5 以降の Actor 表示、生成演出、GameObject 化で、生成元ごとの差分が増えすぎないようにする。
+
+整理方針:
+
+- Actor の基本生成は共通パイプラインへ寄せる。
+- Adventurer / Monster 固有の判断は、個別の request / policy / initializer に残す。
+- 生成後の在庫移動や初期装備支給は、Phase 9 の交換 executor と整合させる。
+- Factory は最低限の Actor 構築に寄せ、探索目的、支給品、スポーンスケジュールなどの業務判断を抱え込ませない。
+
+予定作業:
+
+1. `ActorFactoryCore`、`AdventurerFactory`、`MonsterFactory` の責務を見直す。
+2. 共通の Actor 生成 request / initializer を導入できるか確認する。
+3. `SpawnAdventurerUseCase` と `SpawnMonsterUseCase` の重複を整理する。
+4. 新人装備支給を交換 / 在庫整理後の共通処理へ接続する。
+5. Actor Profile 登録、Faction、Position、Behavior の初期化責務を明文化する。
+
+完了条件:
+
+- Adventurer / Monster の Actor 本体生成が同じ基本経路を通っている。
+- 種別固有の差分が request / policy / initializer として分離されている。
+- 生成時のアイテム支給が交換 / 在庫整理後の方針と矛盾していない。
+- 既存の Adventurer / Monster 生成テストが通る。
+- `uloop.cmd compile --project-path Client` が成功する。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。
