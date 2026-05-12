@@ -75,7 +75,19 @@ namespace DungeonInn.Application.Orchestration
                     FacilityType.Inn,
                     "First Inn",
                     GameConstants.InitialInnBasePrice,
-                    GameConstants.InitialInnCapacity)
+                    GameConstants.InitialInnCapacity),
+                new Facility(
+                    Guid.NewGuid(),
+                    FacilityType.GeneralStore,
+                    "First General Store",
+                    GameConstants.InitialGeneralStoreBasePrice,
+                    GameConstants.InitialShopCapacity),
+                new Facility(
+                    Guid.NewGuid(),
+                    FacilityType.EquipmentShop,
+                    "First Equipment Shop",
+                    GameConstants.InitialEquipmentShopBasePrice,
+                    GameConstants.InitialShopCapacity)
             };
 
             return new AdventurerGuild(Guid.NewGuid(), inventory, facilities);

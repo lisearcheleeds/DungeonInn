@@ -9,6 +9,7 @@ using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
@@ -50,6 +51,89 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(0));
             Assert.That(eventBus.GetEvents<InnSatisfactionChanged>().Count, Is.EqualTo(1));
             Assert.That(eventBus.GetEvents<InnSatisfactionChanged>()[0].Reason, Is.EqualTo(InnSatisfactionChangeReason.CannotPayInnFee));
+        }
+
+        [Test]
+        public void InitializedGuildIncludesTradeFacilities()
+        {
+            var worldState = CreateInitializedWorldState();
+
+            Assert.That(worldState.Guild.Facilities.Any(x => x.Type == FacilityType.Inn), Is.True);
+            Assert.That(worldState.Guild.Facilities.Any(x => x.Type == FacilityType.GeneralStore), Is.True);
+            Assert.That(worldState.Guild.Facilities.Any(x => x.Type == FacilityType.EquipmentShop), Is.True);
+        }
+
+        [Test]
+        public void AutomatedItemSaleTransfersItemsToGuildAndRecordsTransaction()
+        {
+            const int herbItemId = 1001;
+            var worldState = CreateInitializedWorldState();
+            var actor = CreateAdventurer(0);
+            actor.Inventory.Add(new ItemStack(herbItemId, 2));
+            worldState.RegisterActor(actor);
+            var eventBus = new CollectingEventBus();
+            var clock = new StubGameClock { CurrentScheduleTickValue = 123 };
+            var initialGuildGold = worldState.Guild.Inventory.Gold;
+            var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
+            var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus, clock);
+
+            useCase.Execute(worldState);
+
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(10));
+            Assert.That(actor.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
+            Assert.That(worldState.Guild.Inventory.Gold, Is.EqualTo(initialGuildGold - 10));
+            Assert.That(worldState.Guild.Inventory.Has(new ItemStack(herbItemId, 2)), Is.True);
+            Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(1));
+            Assert.That(worldState.Guild.Transactions[0].OurId, Is.EqualTo(actor.Id));
+            Assert.That(worldState.Guild.Transactions[0].TheirId, Is.EqualTo(generalStore.Id));
+            Assert.That(worldState.Guild.Transactions[0].OurGives[0].ItemId, Is.EqualTo(herbItemId));
+            Assert.That(worldState.Guild.Transactions[0].TheirGives[0].Count, Is.EqualTo(10));
+            Assert.That(worldState.Guild.Transactions[0].OccurredAtTick, Is.EqualTo(123));
+            Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<ItemSold>()[0].TotalPrice, Is.EqualTo(10));
+        }
+
+        [Test]
+        public void AutomatedItemSaleSkipsWhenGuildCannotPay()
+        {
+            const int herbItemId = 1001;
+            var worldState = CreateInitializedWorldState();
+            worldState.Guild.Inventory.Remove(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold));
+            var actor = CreateAdventurer(0);
+            actor.Inventory.Add(new ItemStack(herbItemId, 1));
+            worldState.RegisterActor(actor);
+            var eventBus = new CollectingEventBus();
+            var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus);
+
+            useCase.Execute(worldState);
+
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
+            Assert.That(actor.Inventory.Has(new ItemStack(herbItemId, 1)), Is.True);
+            Assert.That(worldState.Guild.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
+            Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(0));
+            Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void AutomatedItemSaleDoesNotSellEquippedEquipment()
+        {
+            const int armorItemId = 3003;
+            var masterRepository = new HardcodedMasterRepository();
+            var worldState = CreateInitializedWorldState();
+            var actor = CreateAdventurer(0);
+            actor.Inventory.Add(new ItemStack(armorItemId, 1));
+            actor.Equip(masterRepository.GetEquipmentMaster(armorItemId));
+            worldState.RegisterActor(actor);
+            var eventBus = new CollectingEventBus();
+            var useCase = new SellItemsUseCase(masterRepository, eventBus);
+
+            useCase.Execute(worldState);
+
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
+            Assert.That(actor.Inventory.Has(new ItemStack(armorItemId, 1)), Is.True);
+            Assert.That(CountItem(worldState, armorItemId), Is.EqualTo(GameConstants.InitialRookieArmorCount));
+            Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(0));
+            Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -279,6 +363,13 @@ namespace DungeonInn.Tests.EditMode
 
             public int TotalScheduleTick => totalScheduleTickValue;
             public int CurrentScheduleTick => totalScheduleTickValue;
+
+            public int CurrentScheduleTickValue
+            {
+                get => totalScheduleTickValue;
+                set => totalScheduleTickValue = value;
+            }
+
             public int CurrentDay => GameTimeUtility.GetDay(totalScheduleTickValue);
             public int CurrentTickOfDay => GameTimeUtility.GetTickOfDay(totalScheduleTickValue);
             public float ElapsedRealTimeSeconds => 0f;

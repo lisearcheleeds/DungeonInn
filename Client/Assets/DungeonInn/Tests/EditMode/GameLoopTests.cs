@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
@@ -186,8 +187,10 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(result.Dungeon, Is.Not.Null);
             Assert.That(result.Dungeon.HasFloor(1), Is.True);
             Assert.That(result.Guild, Is.Not.Null);
-            Assert.That(result.Guild.Facilities.Count, Is.EqualTo(1));
-            Assert.That(result.Guild.Facilities[0].Type, Is.EqualTo(FacilityType.Inn));
+            Assert.That(result.Guild.Facilities.Count, Is.EqualTo(3));
+            Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.Inn), Is.True);
+            Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.GeneralStore), Is.True);
+            Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.EquipmentShop), Is.True);
             Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold) }), Is.True);
         }
 

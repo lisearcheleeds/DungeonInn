@@ -25,5 +25,8 @@ namespace DungeonInn.Domain.Common
 
         // 初期宿屋施設の収容人数。
         public const int InitialInnCapacity = 8;
+        public const int InitialGeneralStoreBasePrice = 10;
+        public const int InitialEquipmentShopBasePrice = 10;
+        public const int InitialShopCapacity = 1;
     }
 }

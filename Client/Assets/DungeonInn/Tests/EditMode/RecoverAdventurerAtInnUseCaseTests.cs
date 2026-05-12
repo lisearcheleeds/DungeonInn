@@ -146,7 +146,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, 0);
-            actor.Inventory.Add(new ItemStack(1001, 1));
+            actor.Inventory.Add(new ItemStack(1001, 2));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus);

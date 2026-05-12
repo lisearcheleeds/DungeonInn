@@ -97,13 +97,15 @@ Projectile / Area 実装で分散し始めた攻撃実行、ダメージ適用�
 - `CombatEffectExecutor`
 - `CombatDamageResolver`
 - `CombatDefeatResolver`
+- `ActorDefeatOrchestrator`
 - `CombatEffectExecutionId` または同等の実行単位ID
 - Projectile / Area / DirectDamage から共通Executorを呼ぶ経路
 
 初期仕様:
 
 - DirectDamage、Projectile、Area のNode解釈をUseCase内の個別分岐から段階的にExecutorへ移す
-- 撃破時の経験値付与、ドロップ、Actor削除、CombatTarget解除を `CombatDefeatResolver` に集約する
+- 撃破時の経験値付与、ドロップ、撃破解決の順序を `ActorDefeatOrchestrator` に集約する
+- Actor削除、CombatTarget解除、`ActorDefeated` 発行は `CombatDefeatResolver` に集約する
 - `Projectile -> Area -> DirectDamage` の連鎖を実行できるようにする
 - イベントには表示用加工値ではなく、実行結果として必要な事実だけを含める
 
@@ -258,7 +260,7 @@ Unity 表現が乗った後に副作用の追跡が難しくならないよう�
 状態:
 
 - 完了
-- 実装ログ: `docs/self-review/milestone4-phase7-unity-boundary-review.md`
+- 実装ログ: `docs/self-review/milestone4-phase7-8-implementation-review.md`
 
 ---
 
@@ -340,7 +342,8 @@ Milestone 5 の UI / GameObject 化に入る前に、シミュレーション時
 
 状態:
 
-- 実装レビュー待ち
+- 完了
+- 実装ログ: `docs/self-review/milestone4-phase7-8-implementation-review.md`
 
 ---
 
@@ -370,20 +373,16 @@ Projectile / Area は実装済みのため、以降はUnity表示に進む前の
 
 対応内容:
 
-- Milestone 4 Phase 3 の撃破解決方針を、現在の `ActorDefeatOrchestrator` + `CombatDefeatResolver` 構成に合わせて更新する。
-  - `ActorDefeatOrchestrator`: 経験値付与、ドロップ、撃破解決の順序を管理する。
-  - `CombatDefeatResolver`: Actor 削除、CombatTarget 解除、`ActorDefeated` 発行を担当する。
-- Milestone 4 Phase 8 の状態を、実装レビュー結果に応じて更新する。
-- Phase 7 の実装ログ参照が実ファイルと一致しているか確認し、不足していれば self-review ログを作成または参照を修正する。
-- Milestone 3 側の古い記述を更新する。
-  - NavMesh 対応は Milestone 4 ではなく Milestone 5 に分離済み。
-  - `LevelMaster` 表記は現在の `LevelTable` に合わせる。
-  - `ItemMaster.SellPrice` 表記は `ItemMaster.BasePrice` + `PricePolicy` に合わせる。
+- 完了済み。Milestone 3 / 4 のロードマップ記述と self-review 参照を現在の実装に合わせて更新した。
 
 完了条件:
 
 - Milestone 3 / 4 のロードマップを読んだとき、現在の実装方針と矛盾しない。
 - `docs/self-review/` の実装ログ参照が存在するファイルを指している。
+
+状態:
+
+- 完了
 
 ### 2. 売却処理をギルド経済へ接続
 
@@ -445,5 +444,100 @@ Projectile / Area は実装済みのため、以降はUnity表示に進む前の
 
 完了条件:
 
+- `uloop.cmd compile --project-path Client` が成功する。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。
+### 5. Completion Update
+
+Status: completed on 2026-05-12.
+
+- `SellItemsUseCase` now routes automated sales through guild gold, guild inventory, trade facilities, `PricePolicy.CalculatePurchasePrice`, `ExchangeTransaction`, and `ItemSold`.
+- Initial guild creation now includes `GeneralStore` and `EquipmentShop` facilities in addition to the inn.
+- EditMode coverage was added for initial trade facilities, successful automated sale transfer, insufficient guild payment, and equipped equipment exclusion.
+- Verification:
+  - `uloop.cmd compile --project-path Client`: passed
+  - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: passed, 210 tests
+
+---
+
+## Phase 9: 交換 / 在庫アーキテクチャ整理
+
+状態: 予定
+
+### 目的
+
+Milestone 4 の節目として、通常の機能実装中には避けたい破壊的変更も含めて、アイテム / お金の移動設計を整理する。
+Milestone 5 以降の UI、施設運営、経済バランス、取引機能が、重複した交換処理の上に積み上がらない状態にする。
+
+### 現状の問題
+
+- アイテム / お金の移動処理が `SellItemsUseCase`、`ProcessAdventurerSaleUseCase`、`ProcessExchangeOfferUseCase`、`ProcessFacilityUsageUseCase`、`PayStaffSalaryUseCase`、`RecruitStaffOrchestrator`、新人装備支給処理に分散している。
+- `ExchangeTransaction` は共通の取引ログとして存在するが、取引実行ルールは中央集約されていない。
+- 現在の `AdventurerGuild.Inventory` はギルド全体の在庫と施設在庫を兼ねており、店舗ごとの在庫、売上、補充、UI 表示を考えると直感的ではない。
+- `ExchangeTransaction.OurId` / `TheirId`、`OurGives` / `TheirGives` は、交換処理を汎用化すると視点が曖昧になる。
+
+### 整理方針
+
+- 施設はそれぞれ `Inventory` を所有してよい。
+- `AdventurerGuild.Inventory` は全施設の暗黙在庫ではなく、ギルド本部 / 共通保管庫として扱う。
+- `Actor`、`Facility`、`AdventurerGuild` は、Domain レベルの共通契約を通じてアイテム / お金の交換に参加できるようにする。
+- 交換の実行処理は Domain / Application の Service に中央集約する。
+- 各 UseCase は、以下のような業務判断を引き続き担当する。
+  - どのアイテムを売却できるか
+  - どの施設が交換を担当するか
+  - 価格計算
+  - 宿泊 / 食事などの施設効果
+  - 取引完了後のイベント発行
+
+### 予定作業
+
+1. 共通の交換参加者契約を追加する。
+   - 候補名: `IExchangeParticipant`
+   - 想定プロパティ: 参加者 ID、Inventory へのアクセス
+   - レビュー後に問題がなければ `Actor`、`Facility`、`AdventurerGuild` に実装する。
+
+2. `Facility` に在庫所有を追加する。
+   - 初期状態の宿屋、雑貨屋、装備屋にそれぞれ Inventory を持たせる。
+   - 初期ギルド在庫は、ギルド共通保管庫としての責務に絞る。
+   - 既存の初期在庫配分を確認し、どの在庫をどの施設に置くか明示的に再配分する。
+
+3. 交換実行を中央集約する executor / service を追加する。
+   - 双方が渡すアイテムを所持していることを検証する。
+   - 双方が受け取るアイテムを追加できることを検証する。
+   - `Remove` / `Add` を安全な順序で適用する。
+   - `ExchangeTransaction` を 1 箇所で生成する。
+
+4. 曖昧な取引ログのフィールド名をリネーム / 置換する。
+   - `OurId` / `TheirId` を `PartyAId` / `PartyBId` などの中立名に置き換える。
+   - `OurGives` / `TheirGives` も対応する中立名に置き換える。
+   - 取引生成箇所とテストを破壊的変更として一括更新する。
+
+5. 交換関連 UseCase を共通 executor へ寄せる。
+   - `SellItemsUseCase`
+   - `ProcessAdventurerSaleUseCase`
+   - `ProcessExchangeOfferUseCase`
+   - `ProcessFacilityUsageUseCase`
+   - `PayStaffSalaryUseCase`
+   - `RecruitStaffOrchestrator`
+   - `SpawnAdventurerUseCase` の新人装備支給処理
+
+6. リファクタ後にイベントとレポートの責務を再確認する。
+   - 既存イベントは UseCase 固有の通知として残す。
+   - 明確な Domain event 方針が定義されるまでは、交換 executor 自体はイベント発行を行わない。
+   - 日次レポートと経済状態表示は、新しい施設別在庫モデルと整合させる。
+
+### 完了条件
+
+- 施設ごとの在庫が Domain 上で表現されている。
+- Actor / Facility / Guild の交換処理が 1 つの実行経路を共有している。
+- 交換 UseCase が取引本体の両側 `Remove` / `Add` を個別に手書きしていない。
+- `ExchangeTransaction` の命名が視点に依存しない。
+- `SellItemsUseCase` と施設購入 / 売却フローが同じ交換 executor を使っている。
+- EditMode テストで以下を確認している。
+  - Actor から Facility への売却
+  - Facility から Actor への購入
+  - Actor と Guild の交換依頼
+  - Guild から Actor への給与 / 装備支給
+  - 渡す側の在庫不足
+  - 受け取る側の容量不足
 - `uloop.cmd compile --project-path Client` が成功する。
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。

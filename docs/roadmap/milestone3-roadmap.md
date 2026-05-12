@@ -26,7 +26,7 @@
 
 - Milestone 2 のゲームループが安定して動作していること
 - View 表示は引き続き不要（ログで確認）
-- NavMesh は使わない（Milestone 4 で対応）
+- NavMesh は使わない（Milestone 5 で対応）
 
 ---
 
@@ -105,7 +105,7 @@
 作るもの:
 
 - `LevelUpUseCase`
-- `LevelMaster`（レベルごとの必要XPと成長値テーブル）
+- `LevelTable`（レベルごとの必要XPテーブル）
 - `ActorParams` の成長反映
 
 完了条件:
@@ -222,7 +222,7 @@
 
 - 帰還して `Recovering` 状態になったタイミングで自動実行
 - 装備中でなく Material / 低品質 Equipment を売却
-- 売却額は `ItemMaster.SellPrice` に基づく
+- 売却額は `ItemMaster.BasePrice` と `PricePolicy` に基づく
 
 完了条件:
 

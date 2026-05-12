@@ -4,6 +4,9 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Commerce;
+using DungeonInn.Domain.Facility;
+using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 using VContainer;
@@ -14,12 +17,23 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IItemMasterRepository masterRepository;
         readonly IEventPublisher eventBus;
+        readonly IGameClock gameClock;
+        readonly PricePolicy pricePolicy = new();
 
         [Inject]
-        public SellItemsUseCase(IItemMasterRepository masterRepository, IEventPublisher eventBus)
+        public SellItemsUseCase(
+            IItemMasterRepository masterRepository,
+            IEventPublisher eventBus,
+            IGameClock gameClock)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
+        }
+
+        public SellItemsUseCase(IItemMasterRepository masterRepository, IEventPublisher eventBus)
+            : this(masterRepository, eventBus, new NullGameClock())
+        {
         }
 
         public void Execute(IGameWorldState worldState)
@@ -43,11 +57,11 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                SellItems(actor);
+                SellItems(worldState.Guild, actor);
             }
         }
 
-        void SellItems(Actor actor)
+        void SellItems(AdventurerGuild guild, Actor actor)
         {
             var toSell = new List<ItemStack>();
 
@@ -82,12 +96,70 @@ namespace DungeonInn.Application.UseCase
             foreach (var stack in toSell)
             {
                 var itemMaster = masterRepository.GetItemMaster(stack.ItemId);
-                var totalPrice = itemMaster.BasePrice * stack.Count;
+                if (!TryFindSaleFacility(guild, itemMaster.Category, out var facility))
+                {
+                    continue;
+                }
 
+                var price = pricePolicy.CalculatePurchasePrice(new[] { stack }, masterRepository.ItemMasters);
+                if (!guild.Inventory.Has(price) ||
+                    !guild.Inventory.CanAdd(stack) ||
+                    !actor.Inventory.CanAdd(price))
+                {
+                    continue;
+                }
+
+                guild.Inventory.Remove(price);
+                actor.Inventory.Add(price);
                 actor.Inventory.Remove(stack);
-                actor.Inventory.AddGold(totalPrice);
+                guild.Inventory.Add(stack);
+                guild.RecordTransaction(
+                    new ExchangeTransaction(
+                        Guid.NewGuid(),
+                        actor.Id,
+                        facility.Id,
+                        new[] { stack },
+                        new[] { price },
+                        gameClock.CurrentScheduleTick));
 
-                eventBus.Publish(new ItemSold(actor.Id, stack, totalPrice, actor.Inventory.Gold));
+                eventBus.Publish(new ItemSold(actor.Id, stack, price.Count, actor.Inventory.Gold));
+            }
+        }
+
+        static bool TryFindSaleFacility(AdventurerGuild guild, ItemCategory itemCategory, out Facility facility)
+        {
+            if (!TryGetSaleFacilityType(itemCategory, out var facilityType))
+            {
+                facility = null;
+                return false;
+            }
+
+            foreach (var candidate in guild.Facilities)
+            {
+                if (candidate.Type == facilityType)
+                {
+                    facility = candidate;
+                    return true;
+                }
+            }
+
+            facility = null;
+            return false;
+        }
+
+        static bool TryGetSaleFacilityType(ItemCategory itemCategory, out FacilityType facilityType)
+        {
+            switch (itemCategory)
+            {
+                case ItemCategory.Material:
+                    facilityType = FacilityType.GeneralStore;
+                    return true;
+                case ItemCategory.Equipment:
+                    facilityType = FacilityType.EquipmentShop;
+                    return true;
+                default:
+                    facilityType = default;
+                    return false;
             }
         }
 
@@ -115,6 +187,35 @@ namespace DungeonInn.Application.UseCase
             }
 
             return false;
+        }
+
+        sealed class NullGameClock : IGameClock
+        {
+            public int TotalScheduleTick => 0;
+            public int CurrentScheduleTick => 0;
+            public int CurrentDay => 0;
+            public int CurrentTickOfDay => 0;
+            public float ElapsedRealTimeSeconds => 0f;
+            public float ElapsedGameTimeSeconds => 0f;
+            public float TimeScale => 1f;
+            public bool IsPaused => false;
+
+            public void SetTimeScale(float timeScale)
+            {
+            }
+
+            public void Pause()
+            {
+            }
+
+            public void Resume()
+            {
+            }
+
+            public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
+            {
+                return new GameClockAdvanceResult(0, Array.Empty<int>());
+            }
         }
     }
 }
