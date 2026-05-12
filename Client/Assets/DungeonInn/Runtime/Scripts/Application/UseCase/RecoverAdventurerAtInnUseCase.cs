@@ -149,7 +149,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                if (!chargeInnFeeService.Execute(actor, guild))
+                if (!chargeInnFeeService.Execute(actor, guild, facility))
                 {
                     behavior.ClearWaitingForInn();
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);

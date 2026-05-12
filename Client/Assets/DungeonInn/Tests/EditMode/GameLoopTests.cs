@@ -191,7 +191,9 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.Inn), Is.True);
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.GeneralStore), Is.True);
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.EquipmentShop), Is.True);
-            Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold) }), Is.True);
+            Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildReserveGold) }), Is.True);
+            Assert.That(result.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore).Inventory.Gold, Is.EqualTo(GameConstants.InitialGeneralStoreGold));
+            Assert.That(result.Guild.Facilities.First(x => x.Type == FacilityType.EquipmentShop).Inventory.Gold, Is.EqualTo(GameConstants.InitialEquipmentShopGold));
         }
 
         [Test]

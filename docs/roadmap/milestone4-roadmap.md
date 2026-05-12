@@ -461,7 +461,7 @@ Status: completed on 2026-05-12.
 
 ## Phase 9: 交換 / 在庫アーキテクチャ整理
 
-状態: 予定
+状態: 実装完了
 
 ### 目的
 
@@ -507,7 +507,7 @@ Milestone 5 以降の UI、施設運営、経済バランス、取引機能が�
    - `ExchangeTransaction` を 1 箇所で生成する。
 
 4. 曖昧な取引ログのフィールド名をリネーム / 置換する。
-   - `OurId` / `TheirId` を `PartyAId` / `PartyBId` などの中立名に置き換える。
+   - `OurId` / `TheirId` を `InitiatorId` / `CounterpartyId` などの中立名に置き換える。
    - `OurGives` / `TheirGives` も対応する中立名に置き換える。
    - 取引生成箇所とテストを破壊的変更として一括更新する。
 
@@ -541,6 +541,19 @@ Milestone 5 以降の UI、施設運営、経済バランス、取引機能が�
   - 受け取る側の容量不足
 - `uloop.cmd compile --project-path Client` が成功する。
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。
+
+実装状況:
+
+- 2026-05-13 完了。
+- `IExchangeParticipant` を追加し、`Actor` / `Facility` / `AdventurerGuild` を交換参加者として扱えるようにした。
+- `Facility` に `Inventory` を追加し、初期資金をギルド共通保管庫、雑貨屋、装備屋へ明示的に分配した。
+- `ExchangeExecutor` を追加し、双方の在庫検証、Remove / Add、`ExchangeTransaction` 生成を 1 箇所へ集約した。
+- `ExchangeTransaction` の `Our*` / `Their*` フィールドを `Initiator*` / `Counterparty*` へリネームした。
+- `SellItemsUseCase`、`ProcessAdventurerSaleUseCase`、`ProcessExchangeOfferUseCase`、`ProcessFacilityUsageUseCase`、`PayStaffSalaryUseCase`、`RecruitStaffOrchestrator`、`SpawnAdventurerUseCase` の在庫移動を共通 executor 経由へ整理した。
+- 宿泊料は宿屋 Facility の在庫へ入り、経済ステータスはギルド共通保管庫と全施設在庫を合算するようにした。
+- `ExchangeExecutorTests` を追加し、双方向交換、満杯在庫でのスロット解放交換、在庫不足、容量不足を確認した。
+- `uloop.cmd compile --project-path Client` 成功。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。215 件 passed。
 ### 追加整理対象: Actor 生成系の共通化
 
 Milestone 4 の節目であわせて対応する。`SpawnAdventurerUseCase`、`SpawnMonsterUseCase`、`AdventurerFactory`、`MonsterFactory`、`ActorFactoryCore` は、いずれも Actor 本体の生成と初期化を扱っているため、将来 Pet、NPC、Staff、Boss などが増える前に生成経路を整理する。
@@ -584,4 +597,4 @@ Milestone 4 の節目であわせて対応する。`SpawnAdventurerUseCase`、`S
 - `SpawnAdventurerUseCase` / `SpawnMonsterUseCase` の Profile 登録と `ActorSpawned` 発行を `ActorSpawnCompletionService` に集約した。
 - `ActorFactoryTests` に共通生成口で Adventurer / Monster を生成するテストを追加した。
 - `uloop.cmd compile --project-path Client` 成功。
-- `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。211 件 passed。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。215 件 passed。

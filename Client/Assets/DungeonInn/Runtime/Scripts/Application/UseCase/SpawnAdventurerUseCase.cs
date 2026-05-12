@@ -17,6 +17,7 @@ namespace DungeonInn.Application.UseCase
         readonly IAdventurerFactory adventurerFactory;
         readonly IMasterRepository masterRepository;
         readonly ActorSpawnCompletionService spawnCompletionService;
+        readonly ExchangeExecutor exchangeExecutor = new();
 
         [Inject]
         public SpawnAdventurerUseCase(
@@ -97,7 +98,7 @@ namespace DungeonInn.Application.UseCase
             }
         }
 
-        static void ProvideRookieEquipment(
+        void ProvideRookieEquipment(
             AdventurerGuild guild,
             Actor actor,
             IReadOnlyList<ItemStack> rookieEquipment,
@@ -113,16 +114,13 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Guild does not have rookie equipment.");
             }
 
-            guild.Inventory.RemoveRange(rookieEquipment);
-            actor.Inventory.AddRange(rookieEquipment);
-            guild.RecordTransaction(
-                new ExchangeTransaction(
-                    Guid.NewGuid(),
-                    guild.Id,
-                    actor.Id,
-                    rookieEquipment,
-                    Array.Empty<ItemStack>(),
-                    occurredAtTick));
+            var transaction = exchangeExecutor.Execute(
+                guild,
+                actor,
+                rookieEquipment,
+                Array.Empty<ItemStack>(),
+                occurredAtTick);
+            guild.RecordTransaction(transaction);
         }
 
         static IReadOnlyList<ItemStack> ToItemStacks(IEnumerable<int> itemIds)

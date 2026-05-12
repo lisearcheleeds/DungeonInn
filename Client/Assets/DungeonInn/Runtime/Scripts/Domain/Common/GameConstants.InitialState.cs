@@ -7,6 +7,9 @@ namespace DungeonInn.Domain.Common
 
         // ゲーム開始時に冒険者ギルドが持つ初期所持金。
         public const int InitialGuildGold = 10000;
+        public const int InitialGeneralStoreGold = 1000;
+        public const int InitialEquipmentShopGold = 1000;
+        public const int InitialGuildReserveGold = InitialGuildGold - InitialGeneralStoreGold - InitialEquipmentShopGold;
 
         // 新米冒険者へ配布する初期武器アイテムID。
         public const int InitialRookieSwordItemId = 3001;

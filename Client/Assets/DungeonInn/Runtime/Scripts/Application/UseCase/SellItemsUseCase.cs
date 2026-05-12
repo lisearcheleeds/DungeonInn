@@ -19,6 +19,7 @@ namespace DungeonInn.Application.UseCase
         readonly IEventPublisher eventBus;
         readonly IGameClock gameClock;
         readonly PricePolicy pricePolicy = new();
+        readonly ExchangeExecutor exchangeExecutor = new();
 
         [Inject]
         public SellItemsUseCase(
@@ -102,25 +103,20 @@ namespace DungeonInn.Application.UseCase
                 }
 
                 var price = pricePolicy.CalculatePurchasePrice(new[] { stack }, masterRepository.ItemMasters);
-                if (!guild.Inventory.Has(price) ||
-                    !guild.Inventory.CanAdd(stack) ||
+                if (!facility.Inventory.Has(price) ||
+                    !facility.Inventory.CanAdd(stack) ||
                     !actor.Inventory.CanAdd(price))
                 {
                     continue;
                 }
 
-                guild.Inventory.Remove(price);
-                actor.Inventory.Add(price);
-                actor.Inventory.Remove(stack);
-                guild.Inventory.Add(stack);
-                guild.RecordTransaction(
-                    new ExchangeTransaction(
-                        Guid.NewGuid(),
-                        actor.Id,
-                        facility.Id,
-                        new[] { stack },
-                        new[] { price },
-                        gameClock.CurrentScheduleTick));
+                var transaction = exchangeExecutor.Execute(
+                    actor,
+                    facility,
+                    new[] { stack },
+                    new[] { price },
+                    gameClock.CurrentScheduleTick);
+                guild.RecordTransaction(transaction);
 
                 eventBus.Publish(new ItemSold(actor.Id, stack, price.Count, actor.Inventory.Gold));
             }

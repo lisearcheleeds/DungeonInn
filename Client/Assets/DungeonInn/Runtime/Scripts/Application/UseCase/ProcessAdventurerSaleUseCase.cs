@@ -15,6 +15,7 @@ namespace DungeonInn.Application.UseCase
     public sealed class ProcessAdventurerSaleUseCase
     {
         readonly PricePolicy pricePolicy = new();
+        readonly ExchangeExecutor exchangeExecutor = new();
 
         /// <summary>
         /// 売却品の買取価格を計算し、冒険者とギルドの在庫交換と取引履歴を更新する。
@@ -32,24 +33,20 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Adventurer does not have sold items.");
             }
 
+            var facility = guild.GetFacility(facilityId);
             var price = pricePolicy.CalculatePurchasePrice(soldItems, itemMasters);
-            if (!guild.Inventory.Has(price))
+            if (!facility.Inventory.Has(price))
             {
-                throw new InvalidOperationException("Guild does not have enough payment item.");
+                throw new InvalidOperationException("Facility does not have enough payment item.");
             }
 
-            guild.Inventory.Remove(price);
-            adventurer.Inventory.Add(price);
-            adventurer.Inventory.RemoveRange(soldItems);
-            guild.Inventory.AddRange(soldItems);
-            guild.RecordTransaction(
-                new ExchangeTransaction(
-                    Guid.NewGuid(),
-                    adventurer.Id,
-                    facilityId,
-                    soldItems,
-                    new[] { price },
-                    occurredAtTick));
+            var transaction = exchangeExecutor.Execute(
+                adventurer,
+                facility,
+                soldItems,
+                new[] { price },
+                occurredAtTick);
+            guild.RecordTransaction(transaction);
 
             return UniTask.CompletedTask;
         }

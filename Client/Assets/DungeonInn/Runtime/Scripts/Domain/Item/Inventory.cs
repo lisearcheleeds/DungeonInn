@@ -157,6 +157,25 @@ namespace DungeonInn.Domain.Item
             return simulatedSlots.Count <= maxSlotCount;
         }
 
+        public bool CanAddAfterRemoving(IEnumerable<ItemStack> removingItemStacks, IEnumerable<ItemStack> addingItemStacks)
+        {
+            var simulatedSlots = slots.ToList();
+            foreach (var itemStack in removingItemStacks ?? throw new ArgumentNullException(nameof(removingItemStacks)))
+            {
+                if (!RemoveFromSimulatedSlots(simulatedSlots, itemStack))
+                {
+                    return false;
+                }
+            }
+
+            foreach (var itemStack in addingItemStacks ?? throw new ArgumentNullException(nameof(addingItemStacks)))
+            {
+                AddToSimulatedSlots(simulatedSlots, itemStack);
+            }
+
+            return simulatedSlots.Count <= maxSlotCount;
+        }
+
         public bool HasAll(IEnumerable<ItemStack> itemStacks)
         {
             var requiredCounts = itemStacks
@@ -216,6 +235,40 @@ namespace DungeonInn.Domain.Item
                 simulatedSlots.Add(new InventorySlot(itemStack.ItemId, addCount));
                 remaining -= addCount;
             }
+        }
+
+        static bool RemoveFromSimulatedSlots(List<InventorySlot> simulatedSlots, ItemStack itemStack)
+        {
+            var totalCount = simulatedSlots
+                .Where(slot => slot.ItemId == itemStack.ItemId)
+                .Sum(slot => slot.Count);
+            if (totalCount < itemStack.Count)
+            {
+                return false;
+            }
+
+            var remaining = itemStack.Count;
+            for (var slotIndex = simulatedSlots.Count - 1; 0 <= slotIndex && 0 < remaining; slotIndex--)
+            {
+                var slot = simulatedSlots[slotIndex];
+                if (slot.ItemId != itemStack.ItemId)
+                {
+                    continue;
+                }
+
+                var removeCount = Math.Min(slot.Count, remaining);
+                remaining -= removeCount;
+                var nextCount = slot.Count - removeCount;
+                if (nextCount == 0)
+                {
+                    simulatedSlots.RemoveAt(slotIndex);
+                    continue;
+                }
+
+                simulatedSlots[slotIndex] = new InventorySlot(slot.ItemId, nextCount);
+            }
+
+            return true;
         }
 
         int GetMaxStackCount(int itemId)

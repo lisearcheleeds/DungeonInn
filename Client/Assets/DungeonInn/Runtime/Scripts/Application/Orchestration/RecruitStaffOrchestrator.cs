@@ -18,6 +18,7 @@ namespace DungeonInn.Application.Orchestration
     public sealed class RecruitStaffOrchestrator
     {
         readonly CalculateScoutCostUseCase calculateScoutCostUseCase;
+        readonly ExchangeExecutor exchangeExecutor = new();
 
         [Inject]
         public RecruitStaffOrchestrator(CalculateScoutCostUseCase calculateScoutCostUseCase)
@@ -41,16 +42,14 @@ namespace DungeonInn.Application.Orchestration
                 throw new InvalidOperationException("Guild does not have scout cost items.");
             }
 
-            guild.Inventory.RemoveRange(scoutCost);
+            var transaction = exchangeExecutor.Execute(
+                guild,
+                candidate,
+                scoutCost,
+                Array.Empty<ItemStack>(),
+                occurredAtTick);
             candidate.ChangeBehavior(new GuildStaffBehavior(staffSalary));
-            guild.RecordTransaction(
-                new ExchangeTransaction(
-                    Guid.NewGuid(),
-                    guild.Id,
-                    candidate.Id,
-                    scoutCost,
-                    Array.Empty<ItemStack>(),
-                    occurredAtTick));
+            guild.RecordTransaction(transaction);
 
             return;
         }

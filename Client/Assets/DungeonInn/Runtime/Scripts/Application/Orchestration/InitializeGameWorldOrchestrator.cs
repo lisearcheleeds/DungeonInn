@@ -75,29 +75,41 @@ namespace DungeonInn.Application.Orchestration
                     FacilityType.Inn,
                     "First Inn",
                     GameConstants.InitialInnBasePrice,
-                    GameConstants.InitialInnCapacity),
+                    GameConstants.InitialInnCapacity,
+                    CreateInventory()),
                 new Facility(
                     Guid.NewGuid(),
                     FacilityType.GeneralStore,
                     "First General Store",
                     GameConstants.InitialGeneralStoreBasePrice,
-                    GameConstants.InitialShopCapacity),
+                    GameConstants.InitialShopCapacity,
+                    CreateInventory(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGeneralStoreGold))),
                 new Facility(
                     Guid.NewGuid(),
                     FacilityType.EquipmentShop,
                     "First Equipment Shop",
                     GameConstants.InitialEquipmentShopBasePrice,
-                    GameConstants.InitialShopCapacity)
+                    GameConstants.InitialShopCapacity,
+                    CreateInventory(new ItemStack(SpecialItemIds.Money, GameConstants.InitialEquipmentShopGold)))
             };
 
             return new AdventurerGuild(Guid.NewGuid(), inventory, facilities);
+        }
+
+        Inventory CreateInventory(params ItemStack[] items)
+        {
+            var inventory = new Inventory(
+                GameConstants.InitialGuildInventorySlotCapacity,
+                stackLimitResolver);
+            inventory.AddRange(items);
+            return inventory;
         }
 
         static IReadOnlyList<ItemStack> CreateInitialInventory()
         {
             return new[]
             {
-                new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold),
+                new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildReserveGold),
                 new ItemStack(GameConstants.InitialRookieSwordItemId, GameConstants.InitialRookieSwordCount),
                 new ItemStack(GameConstants.InitialRookieArmorItemId, GameConstants.InitialRookieArmorCount)
             };

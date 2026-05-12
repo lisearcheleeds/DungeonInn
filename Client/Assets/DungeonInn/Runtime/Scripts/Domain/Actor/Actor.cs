@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Combat;
+using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Actor
 {
-    public sealed class Actor : DungeonInn.Domain.Combat.IWeaponCombatSource
+    public sealed class Actor : DungeonInn.Domain.Combat.IWeaponCombatSource, IExchangeParticipant
     {
         public Guid Id { get; }
         public int ArchetypeId { get; }

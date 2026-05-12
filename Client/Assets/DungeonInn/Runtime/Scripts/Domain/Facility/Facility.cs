@@ -1,9 +1,10 @@
 using System;
+using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Domain.Facility
 {
-    public sealed class Facility
+    public sealed class Facility : IExchangeParticipant
     {
         const int PointsPerLevel = 100;
 
@@ -15,13 +16,15 @@ namespace DungeonInn.Domain.Facility
         public int Level { get; private set; }
         public int Quality { get; private set; }
         public int Capacity { get; private set; }
+        public Inventory Inventory { get; }
 
         public Facility(
             Guid id,
             FacilityType type,
             string name,
             int basePrice,
-            int capacity)
+            int capacity,
+            Inventory inventory)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -43,6 +46,7 @@ namespace DungeonInn.Domain.Facility
             Name = name;
             BasePrice = basePrice;
             Capacity = capacity;
+            Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
             Level = 1;
             Quality = 1;
         }

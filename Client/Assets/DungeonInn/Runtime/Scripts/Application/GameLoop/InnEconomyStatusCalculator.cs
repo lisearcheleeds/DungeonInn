@@ -55,14 +55,34 @@ namespace DungeonInn.Application.GameLoop
                 occupiedRooms,
                 roomCapacity,
                 occupancyPercent,
-                worldState.Guild.Inventory.Gold,
+                CountGold(worldState),
                 CountItem(worldState, GameConstants.InitialRookieSwordItemId),
                 CountItem(worldState, GameConstants.InitialRookieArmorItemId));
         }
 
         static int CountItem(IGameWorldStateReader worldState, int itemId)
         {
-            return worldState.Guild.Inventory.ItemCounts.TryGetValue(itemId, out var count) ? count : 0;
+            var total = worldState.Guild.Inventory.ItemCounts.TryGetValue(itemId, out var guildCount) ? guildCount : 0;
+            foreach (var facility in worldState.Guild.Facilities)
+            {
+                if (facility.Inventory.ItemCounts.TryGetValue(itemId, out var facilityCount))
+                {
+                    total += facilityCount;
+                }
+            }
+
+            return total;
+        }
+
+        static int CountGold(IGameWorldStateReader worldState)
+        {
+            var total = worldState.Guild.Inventory.Gold;
+            foreach (var facility in worldState.Guild.Facilities)
+            {
+                total += facility.Inventory.Gold;
+            }
+
+            return total;
         }
 
         static int CountRoomCapacity(IGameWorldStateReader worldState)

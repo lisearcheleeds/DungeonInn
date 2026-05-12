@@ -515,10 +515,10 @@ Factory は以下を行う。
 `ExchangeTransaction` は以下を持つ。
 
 - `Guid Id`
-- `OurId`
-- `TheirId`
-- `OurGives`
-- `TheirGives`
+- `InitiatorId`
+- `CounterpartyId`
+- `InitiatorItems`
+- `CounterpartyItems`
 - `OccurredAtTick`
 
 取引種別は列挙せず、交換したアイテムの向きで記録する。取引種別が必要になった時点で `TransactionType` を追加する。

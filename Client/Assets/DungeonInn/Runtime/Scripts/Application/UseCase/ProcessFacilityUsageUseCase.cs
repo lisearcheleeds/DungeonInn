@@ -17,6 +17,7 @@ namespace DungeonInn.Application.UseCase
     public sealed class ProcessFacilityUsageUseCase
     {
         readonly IEventPublisher eventBus;
+        readonly ExchangeExecutor exchangeExecutor = new();
 
         [Inject]
         public ProcessFacilityUsageUseCase(IEventPublisher eventBus)
@@ -41,15 +42,14 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Adventurer does not have enough payment item.");
             }
 
-            if (IsPurchase(request) && !guild.Inventory.HasAll(request.PurchasedItems))
+            if (IsPurchase(request) && !facility.Inventory.HasAll(request.PurchasedItems))
             {
-                throw new InvalidOperationException("Guild does not have purchased items.");
+                throw new InvalidOperationException("Facility does not have purchased items.");
             }
 
-            adventurer.Inventory.Remove(price);
-            guild.Inventory.Add(price);
-            ApplyFacilityEffect(guild, adventurer, facility, request);
-            RecordTransaction(guild, adventurer, facilityId, request, price, occurredAtTick);
+            var transaction = Exchange(adventurer, facility, request, price, occurredAtTick);
+            ApplyFacilityEffect(adventurer, facility, request);
+            guild.RecordTransaction(transaction);
             eventBus.Publish(new ActorAiDecisionRecorded(
                 adventurer.Id,
                 AiDecisionType.UseFacility,
@@ -65,7 +65,6 @@ namespace DungeonInn.Application.UseCase
         }
 
         static void ApplyFacilityEffect(
-            AdventurerGuild guild,
             Actor adventurer,
             Facility facility,
             FacilityUsageRequest request)
@@ -82,8 +81,6 @@ namespace DungeonInn.Application.UseCase
                     return;
                 case FacilityUsageType.BuyItem:
                 case FacilityUsageType.BuyEquipment:
-                    guild.Inventory.RemoveRange(request.PurchasedItems);
-                    adventurer.Inventory.AddRange(request.PurchasedItems);
                     return;
                 case FacilityUsageType.Meal:
                     adventurer.Recover(
@@ -98,10 +95,9 @@ namespace DungeonInn.Application.UseCase
             }
         }
 
-        static void RecordTransaction(
-            AdventurerGuild guild,
+        ExchangeTransaction Exchange(
             Actor adventurer,
-            Guid facilityId,
+            Facility facility,
             FacilityUsageRequest request,
             ItemStack price,
             int occurredAtTick)
@@ -110,26 +106,20 @@ namespace DungeonInn.Application.UseCase
             {
                 case FacilityUsageType.Rest:
                 case FacilityUsageType.Meal:
-                    guild.RecordTransaction(
-                        new ExchangeTransaction(
-                            Guid.NewGuid(),
-                            adventurer.Id,
-                            facilityId,
-                            new[] { price },
-                            Array.Empty<ItemStack>(),
-                            occurredAtTick));
-                    return;
+                    return exchangeExecutor.Execute(
+                        adventurer,
+                        facility,
+                        new[] { price },
+                        Array.Empty<ItemStack>(),
+                        occurredAtTick);
                 case FacilityUsageType.BuyItem:
                 case FacilityUsageType.BuyEquipment:
-                    guild.RecordTransaction(
-                        new ExchangeTransaction(
-                            Guid.NewGuid(),
-                            adventurer.Id,
-                            facilityId,
-                            new[] { price },
-                            request.PurchasedItems,
-                            occurredAtTick));
-                    return;
+                    return exchangeExecutor.Execute(
+                        adventurer,
+                        facility,
+                        new[] { price },
+                        request.PurchasedItems,
+                        occurredAtTick);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(request));
             }

@@ -12,6 +12,8 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class ProcessExchangeOfferUseCase
     {
+        readonly ExchangeExecutor exchangeExecutor = new();
+
         /// <summary>
         /// 交換条件を検証し、要求品と報酬品を交換して取引履歴を記録する。
         /// </summary>
@@ -36,23 +38,19 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Adventurer does not have requested items.");
             }
 
-            if (!guild.Inventory.HasAll(exchangeOffer.RewardItems))
+            var facility = guild.GetFacility(exchangeOffer.FacilityId);
+            if (!facility.Inventory.HasAll(exchangeOffer.RewardItems))
             {
-                throw new InvalidOperationException("Guild does not have reward items.");
+                throw new InvalidOperationException("Facility does not have reward items.");
             }
 
-            adventurer.Inventory.RemoveRange(exchangeOffer.RequestedItems);
-            guild.Inventory.AddRange(exchangeOffer.RequestedItems);
-            guild.Inventory.RemoveRange(exchangeOffer.RewardItems);
-            adventurer.Inventory.AddRange(exchangeOffer.RewardItems);
-            guild.RecordTransaction(
-                new ExchangeTransaction(
-                    Guid.NewGuid(),
-                    adventurer.Id,
-                    exchangeOffer.FacilityId,
-                    exchangeOffer.RequestedItems,
-                    exchangeOffer.RewardItems,
-                    occurredAtTick));
+            var transaction = exchangeExecutor.Execute(
+                adventurer,
+                facility,
+                exchangeOffer.RequestedItems,
+                exchangeOffer.RewardItems,
+                occurredAtTick);
+            guild.RecordTransaction(transaction);
 
             return UniTask.CompletedTask;
         }

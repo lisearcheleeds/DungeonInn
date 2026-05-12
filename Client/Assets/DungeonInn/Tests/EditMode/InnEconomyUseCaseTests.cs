@@ -64,7 +64,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void AutomatedItemSaleTransfersItemsToGuildAndRecordsTransaction()
+        public void AutomatedItemSaleTransfersItemsToFacilityAndRecordsTransaction()
         {
             const int herbItemId = 1001;
             var worldState = CreateInitializedWorldState();
@@ -73,32 +73,34 @@ namespace DungeonInn.Tests.EditMode
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var clock = new StubGameClock { CurrentScheduleTickValue = 123 };
-            var initialGuildGold = worldState.Guild.Inventory.Gold;
             var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
+            var initialGeneralStoreGold = generalStore.Inventory.Gold;
             var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus, clock);
 
             useCase.Execute(worldState);
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(10));
             Assert.That(actor.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
-            Assert.That(worldState.Guild.Inventory.Gold, Is.EqualTo(initialGuildGold - 10));
-            Assert.That(worldState.Guild.Inventory.Has(new ItemStack(herbItemId, 2)), Is.True);
+            Assert.That(worldState.Guild.Inventory.Gold, Is.EqualTo(GameConstants.InitialGuildReserveGold));
+            Assert.That(generalStore.Inventory.Gold, Is.EqualTo(initialGeneralStoreGold - 10));
+            Assert.That(generalStore.Inventory.Has(new ItemStack(herbItemId, 2)), Is.True);
             Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(1));
-            Assert.That(worldState.Guild.Transactions[0].OurId, Is.EqualTo(actor.Id));
-            Assert.That(worldState.Guild.Transactions[0].TheirId, Is.EqualTo(generalStore.Id));
-            Assert.That(worldState.Guild.Transactions[0].OurGives[0].ItemId, Is.EqualTo(herbItemId));
-            Assert.That(worldState.Guild.Transactions[0].TheirGives[0].Count, Is.EqualTo(10));
+            Assert.That(worldState.Guild.Transactions[0].InitiatorId, Is.EqualTo(actor.Id));
+            Assert.That(worldState.Guild.Transactions[0].CounterpartyId, Is.EqualTo(generalStore.Id));
+            Assert.That(worldState.Guild.Transactions[0].InitiatorItems[0].ItemId, Is.EqualTo(herbItemId));
+            Assert.That(worldState.Guild.Transactions[0].CounterpartyItems[0].Count, Is.EqualTo(10));
             Assert.That(worldState.Guild.Transactions[0].OccurredAtTick, Is.EqualTo(123));
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(1));
             Assert.That(eventBus.GetEvents<ItemSold>()[0].TotalPrice, Is.EqualTo(10));
         }
 
         [Test]
-        public void AutomatedItemSaleSkipsWhenGuildCannotPay()
+        public void AutomatedItemSaleSkipsWhenFacilityCannotPay()
         {
             const int herbItemId = 1001;
             var worldState = CreateInitializedWorldState();
-            worldState.Guild.Inventory.Remove(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildGold));
+            var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
+            generalStore.Inventory.Remove(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGeneralStoreGold));
             var actor = CreateAdventurer(0);
             actor.Inventory.Add(new ItemStack(herbItemId, 1));
             worldState.RegisterActor(actor);
@@ -109,7 +111,7 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
             Assert.That(actor.Inventory.Has(new ItemStack(herbItemId, 1)), Is.True);
-            Assert.That(worldState.Guild.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
+            Assert.That(generalStore.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
             Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(0));
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(0));
         }

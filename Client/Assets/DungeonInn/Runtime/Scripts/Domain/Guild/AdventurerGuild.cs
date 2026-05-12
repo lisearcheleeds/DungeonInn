@@ -9,7 +9,7 @@ using ActorEntity = DungeonInn.Domain.Actor.Actor;
 
 namespace DungeonInn.Domain.Guild
 {
-    public sealed class AdventurerGuild
+    public sealed class AdventurerGuild : IExchangeParticipant
     {
         readonly List<DungeonInn.Domain.Facility.Facility> facilities = new();
         readonly List<GuildStaffAssignment> staffAssignments = new();

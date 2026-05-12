@@ -7,25 +7,25 @@ namespace DungeonInn.Domain.Commerce
     public sealed class ExchangeTransaction
     {
         public Guid Id { get; }
-        public Guid OurId { get; }
-        public Guid TheirId { get; }
-        public IReadOnlyList<ItemStack> OurGives { get; }
-        public IReadOnlyList<ItemStack> TheirGives { get; }
+        public Guid InitiatorId { get; }
+        public Guid CounterpartyId { get; }
+        public IReadOnlyList<ItemStack> InitiatorItems { get; }
+        public IReadOnlyList<ItemStack> CounterpartyItems { get; }
         public int OccurredAtTick { get; }
 
         public ExchangeTransaction(
             Guid id,
-            Guid ourId,
-            Guid theirId,
-            IReadOnlyList<ItemStack> ourGives,
-            IReadOnlyList<ItemStack> theirGives,
+            Guid initiatorId,
+            Guid counterpartyId,
+            IReadOnlyList<ItemStack> initiatorItems,
+            IReadOnlyList<ItemStack> counterpartyItems,
             int occurredAtTick)
         {
             Id = id;
-            OurId = ourId;
-            TheirId = theirId;
-            OurGives = ourGives ?? throw new ArgumentNullException(nameof(ourGives));
-            TheirGives = theirGives ?? throw new ArgumentNullException(nameof(theirGives));
+            InitiatorId = initiatorId;
+            CounterpartyId = counterpartyId;
+            InitiatorItems = initiatorItems ?? throw new ArgumentNullException(nameof(initiatorItems));
+            CounterpartyItems = counterpartyItems ?? throw new ArgumentNullException(nameof(counterpartyItems));
             OccurredAtTick = occurredAtTick;
         }
     }

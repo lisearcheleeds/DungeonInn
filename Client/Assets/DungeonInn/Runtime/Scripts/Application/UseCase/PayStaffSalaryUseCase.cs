@@ -14,6 +14,8 @@ namespace DungeonInn.Application.UseCase
     /// </summary>
     public sealed class PayStaffSalaryUseCase
     {
+        readonly ExchangeExecutor exchangeExecutor = new();
+
         /// <summary>
         /// 雇用中スタッフの給与をギルド在庫から支払い、取引履歴を記録する。
         /// </summary>
@@ -39,17 +41,14 @@ namespace DungeonInn.Application.UseCase
                 }
 
                 var salary = staff.RequireBehavior<GuildStaffBehavior>().Salary;
-                guild.Inventory.RemoveRange(salary);
-                staff.Inventory.AddRange(salary);
+                var transaction = exchangeExecutor.Execute(
+                    guild,
+                    staff,
+                    salary,
+                    Array.Empty<ItemStack>(),
+                    occurredAtTick);
                 paidItems.AddRange(salary);
-                guild.RecordTransaction(
-                    new ExchangeTransaction(
-                        Guid.NewGuid(),
-                        guild.Id,
-                        staff.Id,
-                        salary,
-                        Array.Empty<ItemStack>(),
-                        occurredAtTick));
+                guild.RecordTransaction(transaction);
             }
 
             return UniTask.FromResult<IReadOnlyList<ItemStack>>(paidItems);
