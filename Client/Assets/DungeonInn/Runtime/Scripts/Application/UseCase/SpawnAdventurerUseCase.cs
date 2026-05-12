@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Application.Event;
-using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.Factory;
-using DungeonInn.Application.Profiles;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Guild;
@@ -19,20 +16,29 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IAdventurerFactory adventurerFactory;
         readonly IMasterRepository masterRepository;
-        readonly IActorProfileRegistry profileRegistry;
-        readonly IEventPublisher eventBus;
+        readonly ActorSpawnCompletionService spawnCompletionService;
 
         [Inject]
         public SpawnAdventurerUseCase(
             IAdventurerFactory adventurerFactory,
             IMasterRepository masterRepository,
-            IActorProfileRegistry profileRegistry,
-            IEventPublisher eventBus)
+            ActorSpawnCompletionService spawnCompletionService)
         {
             this.adventurerFactory = adventurerFactory ?? throw new ArgumentNullException(nameof(adventurerFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
-            this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.spawnCompletionService = spawnCompletionService ?? throw new ArgumentNullException(nameof(spawnCompletionService));
+        }
+
+        public SpawnAdventurerUseCase(
+            IAdventurerFactory adventurerFactory,
+            IMasterRepository masterRepository,
+            DungeonInn.Application.Profiles.IActorProfileRegistry profileRegistry,
+            DungeonInn.Application.Event.IEventPublisher eventBus)
+            : this(
+                adventurerFactory,
+                masterRepository,
+                new ActorSpawnCompletionService(profileRegistry, eventBus))
+        {
         }
 
         public UniTask<Actor> ExecuteAsync(AdventurerGuild guild, AdventurerCreateRequest request, int occurredAtTick)
@@ -66,16 +72,7 @@ namespace DungeonInn.Application.UseCase
             }
 
             EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
-            var displayName = string.IsNullOrWhiteSpace(request.DisplayName)
-                ? archetypeMaster.Name
-                : request.DisplayName;
-            profileRegistry.Register(
-                actor.Id,
-                displayName,
-                archetypeMaster.Id,
-                archetypeMaster.SpeciesId,
-                archetypeMaster.BehaviorType);
-            eventBus.Publish(new ActorSpawned(actor.Id));
+            spawnCompletionService.Complete(actor, archetypeMaster, request.DisplayName);
             return UniTask.FromResult(actor);
         }
 

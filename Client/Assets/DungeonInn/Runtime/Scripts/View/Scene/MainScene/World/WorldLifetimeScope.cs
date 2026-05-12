@@ -67,6 +67,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<GetInnEconomyReportUseCase>(Lifetime.Scoped);
             builder.Register<AssignStaffUseCase>(Lifetime.Scoped);
             builder.Register<CalculateScoutCostUseCase>(Lifetime.Scoped);
+            builder.Register<ActorSpawnCompletionService>(Lifetime.Scoped);
             builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<SpawnMonsterUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledAdventurerOrchestrator>(Lifetime.Scoped);

@@ -7,12 +7,17 @@ namespace DungeonInn.Application.Factory
 {
     public sealed class AdventurerFactory : IAdventurerFactory
     {
-        readonly IMasterRepository masterRepository;
+        readonly IActorFactory actorFactory;
 
         [Inject]
-        public AdventurerFactory(IMasterRepository masterRepository)
+        public AdventurerFactory(IActorFactory actorFactory)
         {
-            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.actorFactory = actorFactory ?? throw new ArgumentNullException(nameof(actorFactory));
+        }
+
+        public AdventurerFactory(IMasterRepository masterRepository)
+            : this(new ActorFactory(masterRepository))
+        {
         }
 
         public Actor Create(AdventurerCreateRequest request)
@@ -22,24 +27,13 @@ namespace DungeonInn.Application.Factory
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
-            if (archetypeMaster.BehaviorType != ActorBehaviorType.Adventurer)
-            {
-                throw new InvalidOperationException("Adventurer factory requires adventurer actor archetype.");
-            }
-
-            var levelTable = masterRepository.GetLevelTable(archetypeMaster.LevelTableId);
-            var actor = ActorFactoryCore.CreateActor(
+            return actorFactory.Create(new ActorFactoryRequest(
+                request.ArchetypeId,
                 request.ActorId,
-                archetypeMaster,
-                levelTable,
                 request.Position,
                 request.Faction,
                 request.PreferenceSeed,
-                new AdventurerBehavior(0, AdventurerLifecycleState.Arrived),
-                masterRepository);
-            actor.Inventory.AddRange(archetypeMaster.InitialInventoryItemIds);
-            return actor;
+                ActorBehaviorType.Adventurer));
         }
     }
 }

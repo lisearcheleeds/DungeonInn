@@ -57,6 +57,32 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void ActorFactoryBuildsAdventurerAndMonsterThroughCommonEntry()
+        {
+            var factory = new ActorFactory(new HardcodedMasterRepository());
+
+            var adventurer = factory.Create(new ActorFactoryRequest(
+                1,
+                Guid.NewGuid(),
+                new LayerPosition(MapLayerId.Ground, 0, 0),
+                new ActorFaction(1, "Adventurer"),
+                123,
+                ActorBehaviorType.Adventurer));
+            var monster = factory.Create(new ActorFactoryRequest(
+                2,
+                Guid.NewGuid(),
+                new LayerPosition(MapLayerId.DungeonFloor(1), 10, 10),
+                new ActorFaction(2, "Monster"),
+                456,
+                ActorBehaviorType.Monster));
+
+            Assert.That(adventurer.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
+            Assert.That(adventurer.Inventory.Has(new ItemStack(2001, 1)), Is.True);
+            Assert.That(monster.RequireBehavior<MonsterBehavior>().SpeciesId, Is.EqualTo(1));
+            Assert.That(monster.NaturalWeaponType, Is.EqualTo(WeaponType.Claws));
+        }
+
+        [Test]
         public void SpawnAdventurerUsesGuildInventoryForRookieEquipment()
         {
             var repository = new HardcodedMasterRepository();

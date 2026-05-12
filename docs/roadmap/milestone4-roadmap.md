@@ -575,3 +575,13 @@ Milestone 4 の節目であわせて対応する。`SpawnAdventurerUseCase`、`S
 - 既存の Adventurer / Monster 生成テストが通る。
 - `uloop.cmd compile --project-path Client` が成功する。
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。
+
+実装状況:
+
+- 2026-05-13 完了。
+- 共通生成口として `ActorFactory` / `IActorFactory` / `ActorFactoryRequest` を追加した。
+- `AdventurerFactory` / `MonsterFactory` は、共通 `ActorFactory` を呼ぶ種別別アダプタに整理した。
+- `SpawnAdventurerUseCase` / `SpawnMonsterUseCase` の Profile 登録と `ActorSpawned` 発行を `ActorSpawnCompletionService` に集約した。
+- `ActorFactoryTests` に共通生成口で Adventurer / Monster を生成するテストを追加した。
+- `uloop.cmd compile --project-path Client` 成功。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。211 件 passed。

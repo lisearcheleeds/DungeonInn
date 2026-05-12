@@ -92,6 +92,7 @@ namespace DungeonInn.Core
                     .As<IMasterRepository>()
                     .As<IItemMasterRepository>()
                     .As<IItemStackLimitResolver>();
+                builder.Register<ActorFactory>(Lifetime.Singleton).As<IActorFactory>();
                 builder.Register<AdventurerFactory>(Lifetime.Singleton).As<IAdventurerFactory>();
                 builder.Register<MonsterFactory>(Lifetime.Singleton).As<IMonsterFactory>();
                 builder.Register<ScoutCostPolicy>(Lifetime.Singleton);

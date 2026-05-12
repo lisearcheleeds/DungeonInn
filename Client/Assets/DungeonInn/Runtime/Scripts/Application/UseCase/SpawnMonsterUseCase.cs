@@ -1,9 +1,6 @@
 using System;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Application.Event;
-using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.Factory;
-using DungeonInn.Application.Profiles;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
 using VContainer;
@@ -14,20 +11,29 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IMonsterFactory monsterFactory;
         readonly IMasterRepository masterRepository;
-        readonly IActorProfileRegistry profileRegistry;
-        readonly IEventPublisher eventBus;
+        readonly ActorSpawnCompletionService spawnCompletionService;
 
         [Inject]
         public SpawnMonsterUseCase(
             IMonsterFactory monsterFactory,
             IMasterRepository masterRepository,
-            IActorProfileRegistry profileRegistry,
-            IEventPublisher eventBus)
+            ActorSpawnCompletionService spawnCompletionService)
         {
             this.monsterFactory = monsterFactory ?? throw new ArgumentNullException(nameof(monsterFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
-            this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.spawnCompletionService = spawnCompletionService ?? throw new ArgumentNullException(nameof(spawnCompletionService));
+        }
+
+        public SpawnMonsterUseCase(
+            IMonsterFactory monsterFactory,
+            IMasterRepository masterRepository,
+            DungeonInn.Application.Profiles.IActorProfileRegistry profileRegistry,
+            DungeonInn.Application.Event.IEventPublisher eventBus)
+            : this(
+                monsterFactory,
+                masterRepository,
+                new ActorSpawnCompletionService(profileRegistry, eventBus))
+        {
         }
 
         public UniTask<Actor> ExecuteAsync(MonsterCreateRequest request)
@@ -39,13 +45,7 @@ namespace DungeonInn.Application.UseCase
 
             var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
             var actor = monsterFactory.Create(request);
-            profileRegistry.Register(
-                actor.Id,
-                archetypeMaster.Name,
-                archetypeMaster.Id,
-                archetypeMaster.SpeciesId,
-                archetypeMaster.BehaviorType);
-            eventBus.Publish(new ActorSpawned(actor.Id));
+            spawnCompletionService.Complete(actor, archetypeMaster, string.Empty);
             return UniTask.FromResult(actor);
         }
     }
