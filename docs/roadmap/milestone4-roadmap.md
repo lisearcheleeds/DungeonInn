@@ -354,3 +354,96 @@ Milestone 5 の UI / GameObject 化に入る前に、シミュレーション時
 6. Phase 8: 時間・日別レポート・イベント履歴の責務整理
 
 Projectile / Area は実装済みのため、以降はUnity表示に進む前の内部シミュレーション基盤を整える。
+
+---
+
+## 追加修正予定: Milestone 3 / 4 実装確認後の整合性修正
+
+2026-05-12 時点の Milestone 3 / 4 実装確認で、実装自体は概ね到達目標を満たしているが、ドキュメント追従漏れと売却処理の経済接続不足が見つかった。
+以下を Milestone 5 に進む前の補正作業として扱う。
+
+### 1. ドキュメント更新
+
+目的:
+
+- 現在の実装方針とロードマップ記述のずれを解消し、次作業の判断基準を揃える。
+
+対応内容:
+
+- Milestone 4 Phase 3 の撃破解決方針を、現在の `ActorDefeatOrchestrator` + `CombatDefeatResolver` 構成に合わせて更新する。
+  - `ActorDefeatOrchestrator`: 経験値付与、ドロップ、撃破解決の順序を管理する。
+  - `CombatDefeatResolver`: Actor 削除、CombatTarget 解除、`ActorDefeated` 発行を担当する。
+- Milestone 4 Phase 8 の状態を、実装レビュー結果に応じて更新する。
+- Phase 7 の実装ログ参照が実ファイルと一致しているか確認し、不足していれば self-review ログを作成または参照を修正する。
+- Milestone 3 側の古い記述を更新する。
+  - NavMesh 対応は Milestone 4 ではなく Milestone 5 に分離済み。
+  - `LevelMaster` 表記は現在の `LevelTable` に合わせる。
+  - `ItemMaster.SellPrice` 表記は `ItemMaster.BasePrice` + `PricePolicy` に合わせる。
+
+完了条件:
+
+- Milestone 3 / 4 のロードマップを読んだとき、現在の実装方針と矛盾しない。
+- `docs/self-review/` の実装ログ参照が存在するファイルを指している。
+
+### 2. 売却処理をギルド経済へ接続
+
+目的:
+
+- 自動売却処理が冒険者の所持金だけを増やす状態を解消し、ギルド在庫・ギルド資金・取引履歴を通した経済循環にする。
+
+現状の問題:
+
+- `SellItemsUseCase` は `ItemMaster.BasePrice * Count` を冒険者へ直接付与している。
+- ギルド在庫から Gold が減らない。
+- ギルド在庫へ売却アイテムが入らない。
+- `ExchangeTransaction` が記録されない。
+- 正式な売却処理である `ProcessAdventurerSaleUseCase` / `PricePolicy.CalculatePurchasePrice` と価格・責務がずれている。
+
+対応方針:
+
+- `SellItemsUseCase` は自動売却候補の選定責務に寄せる。
+- 実際の売買は `PricePolicy.CalculatePurchasePrice` とギルド在庫を通す。
+- 売却後は以下を満たす。
+  - 冒険者 Inventory から売却品が除去される。
+  - ギルド Inventory に売却品が追加される。
+  - ギルド Inventory から Gold が支払われる。
+  - 冒険者 Inventory に Gold が追加される。
+  - `ExchangeTransaction` が記録される。
+  - `ItemSold` イベントが発行される。
+
+### 3. 売却先施設の扱いを確定
+
+目的:
+
+- 自動売却がどの施設・どの取引主体を通るかを明確にする。
+
+推奨方針:
+
+- 初期ギルドに `GeneralStore` と `EquipmentShop` の最小 Facility を追加する。
+- Material は `GeneralStore`、Equipment は `EquipmentShop` へ売却する。
+- 施設を増やさない場合は、「ギルド直買い取り窓口」を仕様として明記し、FacilityId の扱いを別途定義する。
+
+確認事項:
+
+- 初期ギルドに Inn 以外の施設を追加することはゲーム仕様上問題ないか。
+- 初期状態で各施設が持つ在庫・資金・取引ログ上の表示名をどう扱うか。
+
+### 4. テスト追加・更新
+
+目的:
+
+- 売却処理の経済整合性を EditMode テストで保証する。
+
+追加・更新するテスト:
+
+- 自動売却後、冒険者 Gold が買取価格分だけ増える。
+- 自動売却後、ギルド Gold が買取価格分だけ減る。
+- 自動売却後、ギルド在庫に売却品が追加される。
+- 自動売却後、`ExchangeTransaction` が記録される。
+- ギルド資金不足時は売却しない。
+- 売却不可アイテム、装備中アイテム、対象外カテゴリは売却されない。
+
+完了条件:
+
+- `uloop.cmd compile --project-path Client` が成功する。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。
