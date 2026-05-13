@@ -9,6 +9,11 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class MapMeshBuildService
     {
         readonly MapTileVisualConfig tileVisualConfig;
+        readonly List<Vector3> vertices = new();
+        readonly List<Vector2> uv = new();
+        readonly Dictionary<TileVisualKind, List<int>> trianglesByKind = new();
+        readonly List<Material> materials = new();
+        readonly List<TileVisualKind> visualKinds = new();
 
         public MapMeshBuildService(MapTileVisualConfig tileVisualConfig)
         {
@@ -28,11 +33,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 throw new ArgumentNullException(nameof(resolveVisualKind));
             }
 
-            var vertices = new List<Vector3>();
-            var uv = new List<Vector2>();
-            var trianglesByKind = new Dictionary<TileVisualKind, List<int>>();
-            var materials = new List<Material>();
-            var visualKinds = new List<TileVisualKind>();
+            ClearBuffers();
+            EnsureBufferCapacity(width * height);
 
             for (var z = startZ; z < startZ + height; z++)
             {
@@ -41,7 +43,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                     var position = new GridPosition(x, z);
                     var visualKind = resolveVisualKind(position);
                     var visualDefinition = tileVisualConfig.Get(visualKind);
-                    AddPlane(position, visualDefinition, vertices, uv, trianglesByKind, materials, visualKinds);
+                    AddPlane(position, visualDefinition);
                 }
             }
 
@@ -60,17 +62,56 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
-            return new MapChunkMesh(mesh, materials);
+            return new MapChunkMesh(mesh, ToMaterialArray());
         }
 
-        static void AddPlane(
+        void ClearBuffers()
+        {
+            vertices.Clear();
+            uv.Clear();
+            materials.Clear();
+            visualKinds.Clear();
+
+            foreach (var triangles in trianglesByKind.Values)
+            {
+                triangles.Clear();
+            }
+        }
+
+        void EnsureBufferCapacity(int tileCount)
+        {
+            EnsureCapacity(vertices, tileCount * 4);
+            EnsureCapacity(uv, tileCount * 4);
+
+            var triangleCount = tileCount * 6;
+            foreach (var triangles in trianglesByKind.Values)
+            {
+                EnsureCapacity(triangles, triangleCount);
+            }
+        }
+
+        Material[] ToMaterialArray()
+        {
+            var result = new Material[materials.Count];
+            for (var index = 0; index < materials.Count; index++)
+            {
+                result[index] = materials[index];
+            }
+
+            return result;
+        }
+
+        static void EnsureCapacity<T>(List<T> list, int capacity)
+        {
+            if (list.Capacity < capacity)
+            {
+                list.Capacity = capacity;
+            }
+        }
+
+        void AddPlane(
             GridPosition position,
-            TileVisualDefinition visualDefinition,
-            List<Vector3> vertices,
-            List<Vector2> uv,
-            Dictionary<TileVisualKind, List<int>> trianglesByKind,
-            List<Material> materials,
-            List<TileVisualKind> visualKinds)
+            TileVisualDefinition visualDefinition)
         {
             var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
             var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
@@ -91,6 +132,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 triangles = new List<int>();
                 trianglesByKind.Add(visualDefinition.Kind, triangles);
+            }
+
+            if (triangles.Count == 0)
+            {
                 visualKinds.Add(visualDefinition.Kind);
                 materials.Add(visualDefinition.RequireMaterial());
             }

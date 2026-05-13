@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using UnityEngine;
 
@@ -11,10 +12,11 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly IWorldMapViewDataProvider viewDataProvider;
         readonly MapLayerViewRegistry layerViewRegistry;
         readonly MapMeshBuildService mapMeshBuildService;
-        readonly HashSet<int> builtLayerIds = new();
+        readonly HashSet<int> scheduledLayerIds = new();
+        readonly HashSet<int> completedLayerIds = new();
+        readonly Dictionary<int, int> remainingChunkCountsByLayer = new();
+        readonly Queue<MapChunkBuildRequest> pendingChunkBuilds = new();
         readonly List<Mesh> generatedMeshes = new();
-
-        const int ChunkTileSize = 16;
 
         public WorldMapView(
             IWorldMapViewDataProvider viewDataProvider,
@@ -28,7 +30,13 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void UpdateVisuals()
         {
-            BuildMissingLayerTiles();
+            EnqueueMissingLayerTiles();
+            BuildQueuedChunks(GameConstants.MapChunkBuildsPerFrame);
+        }
+
+        public bool IsTileBuildCompleted(MapLayerId layerId)
+        {
+            return completedLayerIds.Contains(layerId.Value);
         }
 
         public void Dispose()
@@ -42,32 +50,46 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             generatedMeshes.Clear();
+            pendingChunkBuilds.Clear();
+            scheduledLayerIds.Clear();
+            completedLayerIds.Clear();
+            remainingChunkCountsByLayer.Clear();
         }
 
-        void BuildMissingLayerTiles()
+        void EnqueueMissingLayerTiles()
         {
             foreach (var layerData in viewDataProvider.GetLayers())
             {
-                if (builtLayerIds.Contains(layerData.LayerId.Value))
+                if (scheduledLayerIds.Contains(layerData.LayerId.Value))
                 {
                     continue;
                 }
 
-                BuildLayerTiles(layerData);
-                builtLayerIds.Add(layerData.LayerId.Value);
+                EnqueueLayerChunks(layerData);
+                scheduledLayerIds.Add(layerData.LayerId.Value);
             }
         }
 
-        void BuildLayerTiles(WorldMapLayerViewData layerData)
+        void EnqueueLayerChunks(WorldMapLayerViewData layerData)
         {
             var layerRoot = CreateLayerRoot(layerData.LayerName, layerData.LayerId);
-            BuildLayerChunks(
-                layerRoot,
-                layerData.LayerId,
-                layerData.LayerName,
-                layerData.Width,
-                layerData.Height,
-                position => ToTileVisualKind(layerData.GetCellKind(position)));
+            var chunkCount = 0;
+            for (var z = 0; z < layerData.Height; z += GameConstants.MapChunkTileSize)
+            {
+                for (var x = 0; x < layerData.Width; x += GameConstants.MapChunkTileSize)
+                {
+                    chunkCount++;
+                    pendingChunkBuilds.Enqueue(new MapChunkBuildRequest(
+                        layerRoot,
+                        layerData,
+                        x,
+                        z,
+                        Math.Min(GameConstants.MapChunkTileSize, layerData.Width - x),
+                        Math.Min(GameConstants.MapChunkTileSize, layerData.Height - z)));
+                }
+            }
+
+            remainingChunkCountsByLayer[layerData.LayerId.Value] = chunkCount;
         }
 
         Transform CreateLayerRoot(string layerName, MapLayerId layerId)
@@ -75,31 +97,50 @@ namespace DungeonInn.View.Scene.MainScene.World
             return layerViewRegistry.GetOrCreateTileRoot(layerId, layerName);
         }
 
-        void BuildLayerChunks(
-            Transform layerRoot,
-            MapLayerId layerId,
-            string layerName,
-            int layerWidth,
-            int layerHeight,
-            Func<GridPosition, TileVisualKind> resolveVisualKind)
+        void BuildQueuedChunks(int maxChunkCount)
         {
-            for (var z = 0; z < layerHeight; z += ChunkTileSize)
+            for (var count = 0; count < maxChunkCount && pendingChunkBuilds.Count > 0; count++)
             {
-                for (var x = 0; x < layerWidth; x += ChunkTileSize)
-                {
-                    var width = Math.Min(ChunkTileSize, layerWidth - x);
-                    var height = Math.Min(ChunkTileSize, layerHeight - z);
-                    var chunkMesh = mapMeshBuildService.BuildChunk(
-                        layerId,
-                        x,
-                        z,
-                        width,
-                        height,
-                        resolveVisualKind);
-
-                    CreateChunkObject(layerRoot, layerName, x, z, chunkMesh);
-                }
+                BuildQueuedChunk(pendingChunkBuilds.Dequeue());
             }
+        }
+
+        void BuildQueuedChunk(MapChunkBuildRequest request)
+        {
+            var chunkMesh = mapMeshBuildService.BuildChunk(
+                request.LayerData.LayerId,
+                request.StartX,
+                request.StartZ,
+                request.Width,
+                request.Height,
+                position => ToTileVisualKind(request.LayerData.GetCellKind(position)));
+
+            CreateChunkObject(
+                request.LayerRoot,
+                request.LayerData.LayerName,
+                request.StartX,
+                request.StartZ,
+                chunkMesh);
+            CompleteChunkBuild(request.LayerData.LayerId);
+        }
+
+        void CompleteChunkBuild(MapLayerId layerId)
+        {
+            var layerIdValue = layerId.Value;
+            if (!remainingChunkCountsByLayer.TryGetValue(layerIdValue, out var remainingCount))
+            {
+                return;
+            }
+
+            remainingCount--;
+            if (remainingCount > 0)
+            {
+                remainingChunkCountsByLayer[layerIdValue] = remainingCount;
+                return;
+            }
+
+            remainingChunkCountsByLayer.Remove(layerIdValue);
+            completedLayerIds.Add(layerIdValue);
         }
 
         static TileVisualKind ToTileVisualKind(WorldMapCellViewKind cellViewKind)
@@ -139,18 +180,33 @@ namespace DungeonInn.View.Scene.MainScene.World
             generatedMeshes.Add(chunkMesh.Mesh);
 
             var meshRenderer = chunkObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterials = ToMaterialArray(chunkMesh.Materials);
+            meshRenderer.sharedMaterials = chunkMesh.Materials;
         }
 
-        static Material[] ToMaterialArray(IReadOnlyList<Material> materials)
+        readonly struct MapChunkBuildRequest
         {
-            var result = new Material[materials.Count];
-            for (var index = 0; index < materials.Count; index++)
+            public MapChunkBuildRequest(
+                Transform layerRoot,
+                WorldMapLayerViewData layerData,
+                int startX,
+                int startZ,
+                int width,
+                int height)
             {
-                result[index] = materials[index];
+                LayerRoot = layerRoot;
+                LayerData = layerData;
+                StartX = startX;
+                StartZ = startZ;
+                Width = width;
+                Height = height;
             }
 
-            return result;
+            public Transform LayerRoot { get; }
+            public WorldMapLayerViewData LayerData { get; }
+            public int StartX { get; }
+            public int StartZ { get; }
+            public int Width { get; }
+            public int Height { get; }
         }
     }
 }

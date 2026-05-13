@@ -1084,3 +1084,34 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（228 passed）
 - 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
+
+## Codex対応ログ 2026-05-13（続き10）
+
+対応項目:
+
+- パフォーマンスレビュー5: `WorldMapView` が未構築 layer の全 chunk mesh を同一フレームで同期生成していた問題を修正した。
+- `WorldMapView.UpdateVisuals()` は未構築 layer の chunk build request をキューへ積み、1フレームあたり `GameConstants.MapChunkBuildsPerFrame` 件だけ生成するようにした。
+- 既存の `ChunkTileSize` は調整値のため `GameConstants.MapChunkTileSize` へ移した。
+- `MapMeshBuildService` は chunk ごとに頂点 / UV / triangle 用の `List` と `Dictionary` を作らず、インスタンス内の作業バッファを `Clear()` して再利用するようにした。
+- `MapChunkMesh.Materials` を `Material[]` にし、`WorldMapView` 側で chunk 生成時に material 配列を再コピーしないようにした。
+
+差分許可モデル:
+
+- `WorldMapView` の chunk build queue 追加は、既存の同期一括生成をフレーム分割するための責務内変更として許可する。
+- `MapChunkMesh.Materials` の型変更は View 内部の mesh renderer 受け渡しに閉じた変更で、テスト都合の API 追加ではない。
+- `GameConstants.MapView.cs` の追加は、調整可能値をクラス直書きにしないガイドラインに沿うための配置変更として許可する。
+
+完了条件チェック:
+
+- [x] `WorldMapView.UpdateVisuals()` が layer の全 chunk を同一フレームで同期生成しない
+- [x] chunk 生成数が `GameConstants.MapChunkBuildsPerFrame` で制御されている
+- [x] chunk tile size が `GameConstants.MapChunkTileSize` に移されている
+- [x] `MapMeshBuildService` が頂点 / UV / triangle バッファを必要に応じて再利用している
+- [x] chunk material 配列が `WorldMapView` 側で再コピーされない
+- [x] `uloop.cmd compile --project-path Client` が成功している
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（228 passed）
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
