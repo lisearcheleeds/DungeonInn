@@ -13,22 +13,19 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly IGameWorldStateReader gameWorldState;
         readonly WorldViewRoot viewRoot;
         readonly LayerPositionViewMapper positionMapper;
+        readonly MapTileVisualConfig tileVisualConfig;
         readonly HashSet<int> builtLayerIds = new();
-        readonly Material groundWalkableMaterial;
-        readonly Material groundBlockedMaterial;
-        readonly Material dungeonWalkableMaterial;
 
         public WorldMapView(
             IGameWorldStateReader gameWorldState,
             WorldViewRoot viewRoot,
-            LayerPositionViewMapper positionMapper)
+            LayerPositionViewMapper positionMapper,
+            MapTileVisualConfig tileVisualConfig)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.viewRoot = viewRoot ?? throw new ArgumentNullException(nameof(viewRoot));
             this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
-            groundWalkableMaterial = WorldDebugMaterialFactory.Create(new Color(0.24f, 0.32f, 0.24f, 0.45f));
-            groundBlockedMaterial = WorldDebugMaterialFactory.Create(new Color(0.25f, 0.25f, 0.25f, 0.65f));
-            dungeonWalkableMaterial = WorldDebugMaterialFactory.Create(new Color(0.18f, 0.20f, 0.26f, 0.65f));
+            this.tileVisualConfig = tileVisualConfig ?? throw new ArgumentNullException(nameof(tileVisualConfig));
         }
 
         public void UpdateVisuals()
@@ -38,9 +35,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void Dispose()
         {
-            WorldDebugMaterialFactory.Dispose(groundWalkableMaterial);
-            WorldDebugMaterialFactory.Dispose(groundBlockedMaterial);
-            WorldDebugMaterialFactory.Dispose(dungeonWalkableMaterial);
         }
 
         void BuildMissingLayerTiles()
@@ -73,10 +67,10 @@ namespace DungeonInn.View.Scene.MainScene.World
                 for (var x = 0; x < layer.Width; x++)
                 {
                     var position = new GridPosition(x, z);
-                    var material = gameWorldState.GroundMap.IsWalkable(position)
-                        ? groundWalkableMaterial
-                        : groundBlockedMaterial;
-                    CreateTile(layerRoot, layer, position, material);
+                    var visualKind = gameWorldState.GroundMap.IsWalkable(position)
+                        ? TileVisualKind.GroundWalkable
+                        : TileVisualKind.GroundBlocked;
+                    CreateTile(layerRoot, layer, position, tileVisualConfig.Get(visualKind));
                 }
             }
         }
@@ -94,7 +88,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                         continue;
                     }
 
-                    CreateTile(layerRoot, floor.Layer, position, dungeonWalkableMaterial);
+                    CreateTile(layerRoot, floor.Layer, position, tileVisualConfig.Get(TileVisualKind.DungeonWalkable));
                 }
             }
         }
@@ -106,7 +100,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 new Vector3(0f, positionMapper.ResolveLayerY(layerId), 0f));
         }
 
-        void CreateTile(Transform layerRoot, MapLayer layer, GridPosition position, Material material)
+        void CreateTile(Transform layerRoot, MapLayer layer, GridPosition position, TileVisualDefinition visualDefinition)
         {
             var tile = GameObject.CreatePrimitive(PrimitiveType.Plane);
             tile.name = $"Tile_{position.X}_{position.Z}";
@@ -114,7 +108,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             tile.transform.position = positionMapper.ToUnityPosition(layer.GetCellCenter(position));
             tile.transform.localScale = Vector3.one * (GameConstants.MapCellSizeMeters / 10f);
             RemoveCollider(tile);
-            ApplyMaterial(tile, material);
+            ApplyMaterial(tile, visualDefinition.RequireMaterial());
         }
 
         static void ApplyMaterial(GameObject target, Material material)

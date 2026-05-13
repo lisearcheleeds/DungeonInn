@@ -188,6 +188,17 @@ UI 表示:
 - map mesh 生成と Actor sprite 表示が同じ config 基盤を参照できる。
 - asset 未設定でも PlayMode が落ちず、fallback 表示できる。
 
+実装状況:
+
+- 2026-05-13 完了。
+- `TileVisualKind` / `TileMeshShapeKind` / `TileVisualDefinition` を追加し、map tile の見た目を実体 prefab ではなく mesh 生成向け定義として扱う入口を作った。
+- `MapMaterialSet` / `MapTileVisualConfig` を追加し、床、壁、階段、施設予定地の placeholder material と tile 定義を DI で参照できるようにした。
+- `ActorSpriteVisualConfig` を追加し、Actor 種別ごとの placeholder 表示定義を DI で参照できるようにした。現時点では既存 Sphere 表示用 material を返し、Phase 6 で SpriteRenderer / sprite 参照へ拡張する。
+- `WorldMapView` と `WorldActorPresenter` は直書き material 生成をやめ、VisualConfig 経由で placeholder 表示を取得するようにした。
+- `uloop.cmd compile --project-path Client` 成功。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。215 件 passed。
+- PlayMode を短時間起動し、VisualConfig の DI 解決と初期化ログを確認。Error 0 件。
+
 ## Phase 3: 座標変換 / 表示 Layer 管理
 
 目的:
