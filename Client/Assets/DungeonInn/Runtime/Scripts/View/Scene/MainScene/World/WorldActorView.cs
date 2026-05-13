@@ -18,8 +18,9 @@ namespace DungeonInn.View.Scene.MainScene.World
         public LayerPosition LastPosition { get; private set; }
         public bool HasLastPosition { get; private set; }
 
-        public void UpdateFacing(LayerPosition position)
+        public bool UpdateFacing(LayerPosition position)
         {
+            var previousFacing = Facing;
             if (HasLastPosition && LastPosition.LayerId.Equals(position.LayerId))
             {
                 var movement = new Vector2(
@@ -33,6 +34,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             LastPosition = position;
             HasLastPosition = true;
+            return !previousFacing.Equals(Facing);
         }
     }
 }

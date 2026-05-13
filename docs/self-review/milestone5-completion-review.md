@@ -203,7 +203,7 @@ Phase 7 後も `WorldActorDebugVisualizer` が DI 登録され、毎フレーム
 | `milestone5-performance-review.md` | Area target 全走査 | Milestone 6へ延期 |
 | `milestone5-performance-review.md` | Combat / Projectile / AreaEffect の毎フレーム List 複製 | 対応済み |
 | `milestone5-performance-review.md` | `WorldActorPresenter` の毎フレーム `HashSet` 生成 | 対応済み |
-| `milestone5-performance-review.md` | Actor 表示の全 Actor 毎フレーム更新 | Milestone 6へ延期 |
+| `milestone5-performance-review.md` | Actor 表示の全 Actor 毎フレーム更新 | 対応済み |
 | `milestone5-performance-review.md` | Chunk mesh 同期生成スパイク | Milestone 6へ延期 |
 | `milestone5-general-review.md` | 表示アセット差し替え基盤 | Milestone 6へ延期 |
 | `milestone5-general-review.md` | 暫定 TODO / Master data 整理 | Milestone 6へ延期 |
@@ -324,7 +324,7 @@ Layer 別・セル別の Spatial Index を導入し、近傍セルだけ探索�
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/GameLoop/GameLoopTickRequest.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/GameLoop/GameWorldFrameBuffer.cs`
 
-### 4. Actor 表示が全 Actor を毎フレーム更新する
+### 4. Actor 表示が全 Actor を毎フレーム更新する（対応済み）
 
 重大度: 中
 
@@ -339,6 +339,10 @@ Actor 数に比例して、毎フレーム `SpriteRenderer.sprite`、parent確�
 解決案:
 
 spawn / despawn / layer移動 / 位置変更 / camera yaw変更を dirty 化し、変更 Actor だけ更新する。sprite は変化時のみ設定し、削除バッファは Registry の field で再利用する。
+
+対応:
+
+`WorldActorPresenter` は Actor ごとの表示済み位置と前回 camera yaw を比較し、生成直後・位置/Layer 変更・camera yaw 変更時だけ Transform / parent / flip を更新するようにした。`WorldActorViewRegistry.GetOrCreateActorView()` は既存 view の sprite が変わった場合だけ `SpriteRenderer.sprite` を設定する。欠損 Actor の削除は Registry の view 数と active Actor 数がずれた場合だけ実行し、削除候補 buffer は Registry field として再利用する。
 
 根拠:
 

@@ -12,17 +12,24 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly Dictionary<Guid, WorldActorView> actorViews = new();
         readonly List<Guid> removeActorIds = new();
 
+        public int Count => actorViews.Count;
+
         [Inject]
         public WorldActorViewRegistry(MapLayerViewRegistry layerViewRegistry)
         {
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
         }
 
-        public WorldActorView GetOrCreateActorView(Actor actor, Sprite sprite)
+        public WorldActorView GetOrCreateActorView(Actor actor, Sprite sprite, out bool created)
         {
             if (actorViews.TryGetValue(actor.Id, out var actorView))
             {
-                actorView.SpriteRenderer.sprite = sprite;
+                created = false;
+                if (actorView.SpriteRenderer.sprite != sprite)
+                {
+                    actorView.SpriteRenderer.sprite = sprite;
+                }
+
                 return actorView;
             }
 
@@ -34,6 +41,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             actorView = new WorldActorView(actorObject, spriteRenderer);
             actorViews.Add(actor.Id, actorView);
             SetActorLayer(actorView, actor);
+            created = true;
             return actorView;
         }
 

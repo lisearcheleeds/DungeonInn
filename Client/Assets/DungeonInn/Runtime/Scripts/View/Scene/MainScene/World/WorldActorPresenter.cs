@@ -13,6 +13,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly ActorSpriteVisualConfig actorSpriteVisualConfig;
         readonly WorldCameraController worldCameraController;
         readonly HashSet<Guid> activeActorIds = new();
+        bool hasLastCameraYawDegrees;
+        float lastCameraYawDegrees;
 
         [Inject]
         public WorldActorPresenter(
@@ -32,29 +34,68 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void UpdateVisuals()
         {
             activeActorIds.Clear();
+            var cameraYawDegrees = worldCameraController.CurrentYawDegrees;
+            var cameraYawChanged = !hasLastCameraYawDegrees ||
+                !UnityEngine.Mathf.Approximately(lastCameraYawDegrees, cameraYawDegrees);
+
             foreach (var actor in gameWorldState.Actors)
             {
                 activeActorIds.Add(actor.Id);
                 var actorView = actorViewRegistry.GetOrCreateActorView(
                     actor,
-                    actorSpriteVisualConfig.GetPlaceholderSprite(actor));
-                actorViewRegistry.SetActorLayer(actorView, actor);
-                actorView.ActorObject.transform.localPosition = positionMapper.ToActorLayerLocalPosition(actor.Position);
-                actorView.ActorObject.transform.rotation = UnityEngine.Quaternion.Euler(0f, worldCameraController.CurrentYawDegrees, 0f);
-                actorView.UpdateFacing(actor.Position);
-                ApplyCameraRelativeFlip(actorView);
+                    actorSpriteVisualConfig.GetPlaceholderSprite(actor),
+                    out var created);
+
+                var positionChanged = created ||
+                    !actorView.HasLastPosition ||
+                    !IsSamePosition(actorView.LastPosition, actor.Position);
+                var facingChanged = false;
+                if (positionChanged)
+                {
+                    if (!created && !actorView.LastPosition.LayerId.Equals(actor.Position.LayerId))
+                    {
+                        actorViewRegistry.SetActorLayer(actorView, actor);
+                    }
+
+                    actorView.ActorObject.transform.localPosition =
+                        positionMapper.ToActorLayerLocalPosition(actor.Position);
+                    facingChanged = actorView.UpdateFacing(actor.Position);
+                }
+
+                if (created || positionChanged || cameraYawChanged)
+                {
+                    actorView.ActorObject.transform.rotation = UnityEngine.Quaternion.Euler(0f, cameraYawDegrees, 0f);
+                }
+
+                if (created || facingChanged || cameraYawChanged)
+                {
+                    ApplyCameraRelativeFlip(actorView, cameraYawDegrees);
+                }
             }
 
-            actorViewRegistry.RemoveMissingActorObjects(activeActorIds);
+            if (actorViewRegistry.Count != activeActorIds.Count)
+            {
+                actorViewRegistry.RemoveMissingActorObjects(activeActorIds);
+            }
+
+            lastCameraYawDegrees = cameraYawDegrees;
+            hasLastCameraYawDegrees = true;
         }
 
         public void Dispose()
         {
         }
 
-        void ApplyCameraRelativeFlip(WorldActorView actorView)
+        static bool IsSamePosition(DungeonInn.Domain.Map.LayerPosition first, DungeonInn.Domain.Map.LayerPosition second)
         {
-            var yawRotation = UnityEngine.Quaternion.Euler(0f, worldCameraController.CurrentYawDegrees, 0f);
+            return first.LayerId.Equals(second.LayerId) &&
+                UnityEngine.Mathf.Approximately(first.X, second.X) &&
+                UnityEngine.Mathf.Approximately(first.Z, second.Z);
+        }
+
+        void ApplyCameraRelativeFlip(WorldActorView actorView, float cameraYawDegrees)
+        {
+            var yawRotation = UnityEngine.Quaternion.Euler(0f, cameraYawDegrees, 0f);
             var cameraRight = yawRotation * UnityEngine.Vector3.right;
             var facing = new UnityEngine.Vector3(actorView.Facing.x, 0f, actorView.Facing.y);
             actorView.SpriteRenderer.flipX = UnityEngine.Vector3.Dot(cameraRight, facing) < 0f;
