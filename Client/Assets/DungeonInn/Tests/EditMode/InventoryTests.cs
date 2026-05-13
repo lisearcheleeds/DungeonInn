@@ -1,5 +1,7 @@
 ﻿using System;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Facility;
+using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using NUnit.Framework;
 
@@ -101,6 +103,17 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(inventory.Slots.Count, Is.EqualTo(1));
             Assert.That(inventory.Slots[0].Count, Is.EqualTo(6));
             Assert.That(inventory.ItemCounts[1001], Is.EqualTo(6));
+        }
+
+        [Test]
+        public void GuildAndFacilityExposeReadOnlyInventory()
+        {
+            Assert.That(
+                typeof(AdventurerGuild).GetProperty(nameof(AdventurerGuild.Inventory))?.PropertyType,
+                Is.EqualTo(typeof(IReadOnlyInventory)));
+            Assert.That(
+                typeof(Facility).GetProperty(nameof(Facility.Inventory))?.PropertyType,
+                Is.EqualTo(typeof(IReadOnlyInventory)));
         }
     }
 }

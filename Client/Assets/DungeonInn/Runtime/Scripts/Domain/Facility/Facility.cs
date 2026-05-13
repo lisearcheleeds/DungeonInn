@@ -8,6 +8,7 @@ namespace DungeonInn.Domain.Facility
     public sealed class Facility : IExchangeParticipant
     {
         const int PointsPerLevel = 100;
+        readonly Inventory inventory;
 
         public Guid Id { get; }
         public FacilityType Type { get; }
@@ -17,7 +18,7 @@ namespace DungeonInn.Domain.Facility
         public int Level { get; private set; }
         public int Quality { get; private set; }
         public int Capacity { get; private set; }
-        public Inventory Inventory { get; }
+        public IReadOnlyInventory Inventory => inventory;
 
         public Facility(
             Guid id,
@@ -47,7 +48,7 @@ namespace DungeonInn.Domain.Facility
             Name = name;
             BasePrice = basePrice;
             Capacity = capacity;
-            Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
+            this.inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
             Level = 1;
             Quality = 1;
         }
@@ -66,44 +67,49 @@ namespace DungeonInn.Domain.Facility
             return new ItemStack(SpecialItemIds.Money, BasePrice * multiplier * Level);
         }
 
+        public void ReceiveUsageFee(int amount)
+        {
+            inventory.AddGold(amount);
+        }
+
         bool IExchangeParticipant.HasAll(IReadOnlyList<ItemStack> items)
         {
-            return Inventory.HasAll(items);
+            return inventory.HasAll(items);
         }
 
         bool IExchangeParticipant.Has(ItemStack item)
         {
-            return Inventory.Has(item);
+            return inventory.Has(item);
         }
 
         bool IExchangeParticipant.CanAddAfterRemoving(ItemStack toRemove, ItemStack toAdd)
         {
-            return Inventory.CanAddAfterRemoving(toRemove, toAdd);
+            return inventory.CanAddAfterRemoving(toRemove, toAdd);
         }
 
         bool IExchangeParticipant.CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
         {
-            return Inventory.CanAddAfterRemoving(toRemove, toAdd);
+            return inventory.CanAddAfterRemoving(toRemove, toAdd);
         }
 
         void IExchangeParticipant.Remove(ItemStack item)
         {
-            Inventory.Remove(item);
+            inventory.Remove(item);
         }
 
         void IExchangeParticipant.RemoveRange(IReadOnlyList<ItemStack> items)
         {
-            Inventory.RemoveRange(items);
+            inventory.RemoveRange(items);
         }
 
         void IExchangeParticipant.Add(ItemStack item)
         {
-            Inventory.Add(item);
+            inventory.Add(item);
         }
 
         void IExchangeParticipant.AddRange(IReadOnlyList<ItemStack> items)
         {
-            Inventory.AddRange(items);
+            inventory.AddRange(items);
         }
     }
 }

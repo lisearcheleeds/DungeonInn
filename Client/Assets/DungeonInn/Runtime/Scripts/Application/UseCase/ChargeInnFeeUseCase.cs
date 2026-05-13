@@ -67,7 +67,7 @@ namespace DungeonInn.Application.UseCase
                 return false;
             }
 
-            facility.Inventory.AddGold(fee);
+            facility.ReceiveUsageFee(fee);
             eventPublisher.Publish(new InnFeeCharged(actor.Id, fee, actor.Inventory.Gold, facility.Inventory.Gold));
             eventPublisher.Publish(new InnSatisfactionChanged(
                 actor.Id,

@@ -8,6 +8,7 @@ using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Orchestration;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Facility;
@@ -101,7 +102,7 @@ namespace DungeonInn.Tests.EditMode
             const int herbItemId = 1001;
             var worldState = CreateInitializedWorldState();
             var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
-            generalStore.Inventory.Remove(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGeneralStoreGold));
+            ((IExchangeParticipant)generalStore).Remove(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGeneralStoreGold));
             var actor = CreateAdventurer(0);
             actor.GainItem(new ItemStack(herbItemId, 1));
             worldState.RegisterActor(actor);
@@ -292,7 +293,7 @@ namespace DungeonInn.Tests.EditMode
 
         static void RemoveStock(GameWorldState worldState, int itemId, int count)
         {
-            worldState.Guild.Inventory.Remove(new ItemStack(itemId, count));
+            ((IExchangeParticipant)worldState.Guild).Remove(new ItemStack(itemId, count));
         }
 
         static int CountItem(GameWorldState worldState, int itemId)

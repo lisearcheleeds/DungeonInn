@@ -602,12 +602,12 @@ UI 用 status と履歴用 report の互換 API を維持するため、共通 s
 
 完了条件:
 
-- [ ] `AdventurerGuild.Inventory` の公開型が `IReadOnlyInventory` または読み取り専用 API になっている
-- [ ] `Facility.Inventory` の公開型が `IReadOnlyInventory` または読み取り専用 API になっている
-- [ ] Guild / Facility の在庫変更が集約メソッドまたは `IExchangeParticipant` 操作メソッド経由に限定されている
-- [ ] 外部コードが Guild / Facility の `Inventory.Add` / `Remove` / `TrySpendGold` を直接呼んでいない
-- [ ] Guild / Facility の取引・補充・支払いの EditMode test がある
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+- [x] `AdventurerGuild.Inventory` の公開型が `IReadOnlyInventory` または読み取り専用 API になっている
+- [x] `Facility.Inventory` の公開型が `IReadOnlyInventory` または読み取り専用 API になっている
+- [x] Guild / Facility の在庫変更が集約メソッドまたは `IExchangeParticipant` 操作メソッド経由に限定されている
+- [x] 外部コードが Guild / Facility の `Inventory.Add` / `Remove` / `TrySpendGold` を直接呼んでいない
+- [x] Guild / Facility の取引・補充・支払いの EditMode test がある
+- [x] `uloop.cmd compile --project-path Client` が成功している
 
 ### 5. `IMasterRepository` が広すぎる
 
@@ -1186,6 +1186,44 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（231 passed）
 - 対象ファイルの LINQ / `ToArray()` / `ToList()` / `Sum()` / `Count()` 検索: 該当なし
 - `git diff --check`: 問題なし
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` bootstrap / reboot 例外、`UniTask<T>`、`UnityWebRequest.Result`、LighthouseGenerated のみ。
+
+## Codex対応ログ 2026-05-14（続き14）
+
+対応項目:
+
+- 設計重複レビュー9: `AdventurerGuild` / `Facility` が可変 `Inventory` を公開している問題を修正した。
+
+対応内容:
+
+- `AdventurerGuild` / `Facility` は内部に `Inventory` を保持し、公開プロパティは `IReadOnlyInventory` に変更した。
+- `IExchangeParticipant` の明示実装は内部 `Inventory` を操作する形に変更し、取引経路の書き込みは既存の `ExchangeExecutor` 境界に残した。
+- `ChargeInnFeeUseCase` の宿泊料入金は `facility.Inventory.AddGold(...)` ではなく、用途名を持つ `Facility.ReceiveUsageFee(...)` 経由に変更した。
+- テストの状態作成で Guild / Facility 在庫を調整する箇所は、公開 `Inventory` 直接変更ではなく `IExchangeParticipant` 経由に変更した。
+- `InventoryTests` に `AdventurerGuild.Inventory` / `Facility.Inventory` の公開型が `IReadOnlyInventory` であることを検証するテストを追加した。
+
+差分許可モデル:
+
+- `ReceiveUsageFee` は宿泊料を施設が受け取る Domain 用途名付きメソッドであり、汎用的な `AddItem` / `RemoveItem` の公開ではないため、集約外から任意に在庫を書き換える経路を広げていない。
+- `IExchangeParticipant` は既存の取引境界であり、売買・支給・給与支払いの在庫移動を `ExchangeExecutor` に集約するために維持する。
+- テストでの `IExchangeParticipant` キャストは fixture setup のための状態調整であり、production code の公開 `Inventory` 直接変更経路ではない。
+
+完了条件チェック:
+
+- [x] `AdventurerGuild.Inventory` の公開型が `IReadOnlyInventory` になっている。
+- [x] `Facility.Inventory` の公開型が `IReadOnlyInventory` になっている。
+- [x] Guild / Facility の在庫変更が `Facility.ReceiveUsageFee` または `IExchangeParticipant` 操作メソッド経由に限定されている。
+- [x] Runtime / Tests に Guild / Facility の `Inventory.Add` / `Remove` / `TrySpendGold` 直接呼び出しが残っていない。
+- [x] Guild / Facility の公開 Inventory 型を検証する EditMode test がある。
+- [x] `uloop.cmd compile --project-path Client` が成功している。
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（232 passed）
+- `public Inventory Inventory` 検索: Runtime 該当なし
+- Guild / Facility の `Inventory.Add` / `Remove` / `TrySpendGold` 直接呼び出し検索: Runtime / Tests 該当なし
+- `git diff --check`: whitespace error なし（既存ファイルの改行コード警告のみ）
 - 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` bootstrap / reboot 例外、`UniTask<T>`、`UnityWebRequest.Result`、LighthouseGenerated のみ。
 
 ## Codex対応ログ 2026-05-14（続き13）
