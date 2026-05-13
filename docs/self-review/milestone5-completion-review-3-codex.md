@@ -815,3 +815,34 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `Task` / `ValueTask`: 追加なし
 - DI登録: 追加なし
 - `LighthouseGenerated` 以下: 編集なし
+
+## Codex対応ログ 2026-05-13（続き3）
+
+対応項目:
+
+- 設計レビュー3: 戦闘イベントが UseCase のトランザクション完了前に即時 publish される問題を修正した。
+- `BufferedEventPublisher` を追加し、戦闘系 UseCase 内では `CombatAttackOccurred` / `ProjectileHit` / `AreaEffectHit` / `ActorDefeated` などを一時収集して、UseCase の最後にまとめて publish するようにした。
+- `CombatDamageResolver`、`CombatDefeatResolver`、`CombatEffectExecutor`、`ActorDefeatOrchestrator`、`GrantExperienceService`、`DropItemService` に、発行先 `IEventPublisher` を明示的に受け取る経路を追加した。
+- `AdvanceCombatUseCase`、`AdvanceProjectileUseCase`、`AdvanceAreaEffectUseCase` で buffered publisher を使い、ダメージ、linked effect、死亡解決、報酬、ドロップ、Actor 除去の後にイベントが外部購読者へ届くようにした。
+- `AdvanceCombatUseCaseTests` に、`ActorDefeated` の publish 時点で対象 Actor が world から除去済み、combat target が解消済みであることを確認する回帰テストを追加した。
+
+完了条件チェック:
+
+- [x] `ProjectileHit` / `AreaEffectHit` がダメージ・linked effect 適用前に外部 publish されていない
+- [x] `CombatAttackOccurred` は死亡解決・報酬・ドロップ・Actor 除去が同一 UseCase 内で完了した後に外部 publish される
+- [x] 確定通知は `BufferedEventPublisher` 経由で一時収集され、UseCase 終了時に publish される
+- [x] 戦闘処理中に発生したイベントを収集し、トランザクション完了後に publish する経路がある
+- [x] Projectile / AreaEffect / 通常攻撃のイベント発行順を検証する EditMode test がある
+- [x] `docs/design/game-event-design.md` は「UseCase 完了後にまとめてイベントを発行する」方針を既に定義しており、今回の実装はその方針に合わせた
+- [x] `uloop.cmd compile --project-path Client` が成功している
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（220 passed）
+- 禁止API検索: 今回追加差分による新規違反なし。既存の `ProductAssetLoader.cs` の `Resources.LoadAsync` と `Launcher.cs` の `SceneManager.LoadSceneAsync` は継続検出。
+- `Addressables.LoadAssetAsync`: 追加なし
+- `Resources.Load` / `Resource.Load`: 追加なし
+- `Task` / `ValueTask`: 追加なし
+- DI登録: 新規登録なし。既存 `IEventPublisher` 登録を既存 UseCase コンストラクタへ追加注入。
+- `LighthouseGenerated` 以下: 編集なし

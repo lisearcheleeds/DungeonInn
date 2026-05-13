@@ -23,6 +23,11 @@ namespace DungeonInn.Application.Combat
 
         public void Resolve(IGameWorldState worldState, Actor attacker, Actor target)
         {
+            Resolve(worldState, attacker, target, eventBus);
+        }
+
+        public void Resolve(IGameWorldState worldState, Actor attacker, Actor target, IEventPublisher eventPublisher)
+        {
             if (worldState == null)
             {
                 throw new ArgumentNullException(nameof(worldState));
@@ -33,15 +38,20 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(target));
             }
 
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
+            }
+
             foreach (var attackerId in actorCombatService.GetAttackers(target.Id))
             {
-                eventBus.Publish(new CombatEncounterEnded(attackerId));
+                eventPublisher.Publish(new CombatEncounterEnded(attackerId));
             }
 
             worldState.RemoveActor(target.Id);
             actorCombatService.ClearTargetsReferencing(target.Id);
             actorCombatService.RemoveState(target.Id);
-            eventBus.Publish(new ActorDefeated(target.Id, attacker?.Id, DeathCause.Combat));
+            eventPublisher.Publish(new ActorDefeated(target.Id, attacker?.Id, DeathCause.Combat));
         }
     }
 }

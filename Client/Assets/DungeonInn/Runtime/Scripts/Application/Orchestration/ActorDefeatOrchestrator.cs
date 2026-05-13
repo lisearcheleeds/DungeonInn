@@ -1,5 +1,6 @@
 using System;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
@@ -33,6 +34,22 @@ namespace DungeonInn.Application.Orchestration
 
             dropItemService.Execute(target, worldState);
             combatDefeatResolver.Resolve(worldState, attacker, target);
+        }
+
+        public void Execute(IGameWorldState worldState, Actor attacker, Actor target, IEventPublisher eventPublisher)
+        {
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
+            }
+
+            if (attacker != null)
+            {
+                grantExperienceService.Execute(attacker, target, eventPublisher);
+            }
+
+            dropItemService.Execute(target, worldState, eventPublisher);
+            combatDefeatResolver.Resolve(worldState, attacker, target, eventPublisher);
         }
     }
 }

@@ -63,11 +63,12 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingGameEventBus();
             var executor = CreateCombatEffectExecutor(combatService, eventBus);
             var actorDefeatOrchestrator = CreateActorDefeatOrchestrator(combatService, eventBus);
-            var projectileUseCase = new AdvanceProjectileUseCase(executor, actorDefeatOrchestrator);
+            var projectileUseCase = new AdvanceProjectileUseCase(executor, actorDefeatOrchestrator, eventBus);
             var areaUseCase = new AdvanceAreaEffectUseCase(
                 new AttackAreaTargetResolver(),
                 executor,
-                actorDefeatOrchestrator);
+                actorDefeatOrchestrator,
+                eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             var attackSpec = CreateProjectileAreaDamageAttackSpec(6);
@@ -186,7 +187,8 @@ namespace DungeonInn.Tests.EditMode
         {
             return new AdvanceProjectileUseCase(
                 CreateCombatEffectExecutor(combatService, eventBus),
-                CreateActorDefeatOrchestrator(combatService, eventBus));
+                CreateActorDefeatOrchestrator(combatService, eventBus),
+                eventBus);
         }
 
         static WeaponAttackSpec CreateProjectileAreaDamageAttackSpec(int damage)

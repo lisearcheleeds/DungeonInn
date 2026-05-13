@@ -22,6 +22,11 @@ namespace DungeonInn.Application.UseCase
 
         public void Execute(Actor defeatedActor, IGameWorldState worldState)
         {
+            Execute(defeatedActor, worldState, eventPublisher);
+        }
+
+        public void Execute(Actor defeatedActor, IGameWorldState worldState, IEventPublisher eventPublisher)
+        {
             if (defeatedActor == null)
             {
                 throw new ArgumentNullException(nameof(defeatedActor));
@@ -30,6 +35,11 @@ namespace DungeonInn.Application.UseCase
             if (worldState == null)
             {
                 throw new ArgumentNullException(nameof(worldState));
+            }
+
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
             }
 
             if (defeatedActor.Behavior is not IActorDropSource dropSource)

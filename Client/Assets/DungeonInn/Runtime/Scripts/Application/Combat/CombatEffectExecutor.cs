@@ -29,6 +29,16 @@ namespace DungeonInn.Application.Combat
             Actor target,
             WeaponAttackSpec attackSpec)
         {
+            return ExecuteAttack(worldState, attacker, target, attackSpec, eventBus);
+        }
+
+        public bool ExecuteAttack(
+            IGameWorldState worldState,
+            Actor attacker,
+            Actor target,
+            WeaponAttackSpec attackSpec,
+            IEventPublisher eventPublisher)
+        {
             if (worldState == null)
             {
                 throw new ArgumentNullException(nameof(worldState));
@@ -49,6 +59,11 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(attackSpec));
             }
 
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
+            }
+
             var executionId = CombatEffectExecutionId.New();
             var targetDefeated = false;
             foreach (var rootNodeId in attackSpec.RootNodeIds)
@@ -60,7 +75,8 @@ namespace DungeonInn.Application.Combat
                     target.Position,
                     attackSpec,
                     FindNode(attackSpec, rootNodeId),
-                    executionId);
+                    executionId,
+                    eventPublisher);
             }
 
             return targetDefeated;
@@ -70,6 +86,15 @@ namespace DungeonInn.Application.Combat
             IGameWorldState worldState,
             ProjectileInstance projectile,
             Actor target)
+        {
+            return ExecuteProjectileHit(worldState, projectile, target, eventBus);
+        }
+
+        public bool ExecuteProjectileHit(
+            IGameWorldState worldState,
+            ProjectileInstance projectile,
+            Actor target,
+            IEventPublisher eventPublisher)
         {
             if (worldState == null)
             {
@@ -86,8 +111,13 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(target));
             }
 
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
+            }
+
             var attacker = worldState.FindActor(projectile.AttackerActorId);
-            eventBus.Publish(new ProjectileHit(projectile.Id, projectile.AttackerActorId, target.Id, projectile.Damage));
+            eventPublisher.Publish(new ProjectileHit(projectile.Id, projectile.AttackerActorId, target.Id, projectile.Damage));
             if (projectile.AttackSpec == null || projectile.SourceNodeId <= 0)
             {
                 return damageResolver.ApplyDamage(
@@ -95,7 +125,8 @@ namespace DungeonInn.Application.Combat
                     projectile.AttackerActorId,
                     attacker,
                     target,
-                    projectile.Damage);
+                    projectile.Damage,
+                    eventPublisher);
             }
 
             return ExecuteLinks(
@@ -107,13 +138,23 @@ namespace DungeonInn.Application.Combat
                 projectile.AttackSpec,
                 FindNode(projectile.AttackSpec, projectile.SourceNodeId),
                 CombatEffectTriggerType.OnHit,
-                projectile.ExecutionId);
+                projectile.ExecutionId,
+                eventPublisher);
         }
 
         public bool ExecuteAreaHit(
             IGameWorldState worldState,
             AreaEffectInstance areaEffect,
             Actor target)
+        {
+            return ExecuteAreaHit(worldState, areaEffect, target, eventBus);
+        }
+
+        public bool ExecuteAreaHit(
+            IGameWorldState worldState,
+            AreaEffectInstance areaEffect,
+            Actor target,
+            IEventPublisher eventPublisher)
         {
             if (worldState == null)
             {
@@ -130,8 +171,13 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(target));
             }
 
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
+            }
+
             var attacker = worldState.FindActor(areaEffect.AttackerActorId);
-            eventBus.Publish(new AreaEffectHit(areaEffect.Id, areaEffect.AttackerActorId, target.Id, areaEffect.Damage));
+            eventPublisher.Publish(new AreaEffectHit(areaEffect.Id, areaEffect.AttackerActorId, target.Id, areaEffect.Damage));
             if (areaEffect.AttackSpec == null || areaEffect.SourceNodeId <= 0)
             {
                 return damageResolver.ApplyDamage(
@@ -139,7 +185,8 @@ namespace DungeonInn.Application.Combat
                     areaEffect.AttackerActorId,
                     attacker,
                     target,
-                    areaEffect.Damage);
+                    areaEffect.Damage,
+                    eventPublisher);
             }
 
             return ExecuteLinks(
@@ -151,7 +198,8 @@ namespace DungeonInn.Application.Combat
                 areaEffect.AttackSpec,
                 FindNode(areaEffect.AttackSpec, areaEffect.SourceNodeId),
                 CombatEffectTriggerType.OnHit,
-                areaEffect.ExecutionId);
+                areaEffect.ExecutionId,
+                eventPublisher);
         }
 
         bool ExecuteLinks(
@@ -163,7 +211,8 @@ namespace DungeonInn.Application.Combat
             WeaponAttackSpec attackSpec,
             CombatEffectNodeSpec sourceNode,
             CombatEffectTriggerType triggerType,
-            CombatEffectExecutionId executionId)
+            CombatEffectExecutionId executionId,
+            IEventPublisher eventPublisher)
         {
             var targetDefeated = false;
             foreach (var link in sourceNode.Links)
@@ -181,7 +230,8 @@ namespace DungeonInn.Application.Combat
                     effectPosition,
                     attackSpec,
                     FindNode(attackSpec, link.TargetNodeId),
-                    executionId);
+                    executionId,
+                    eventPublisher);
             }
 
             return targetDefeated;
@@ -194,9 +244,10 @@ namespace DungeonInn.Application.Combat
             LayerPosition effectPosition,
             WeaponAttackSpec attackSpec,
             CombatEffectNodeSpec node,
-            CombatEffectExecutionId executionId)
+            CombatEffectExecutionId executionId,
+            IEventPublisher eventPublisher)
         {
-            return ExecuteNode(worldState, attacker, attacker.Id, target, effectPosition, attackSpec, node, executionId);
+            return ExecuteNode(worldState, attacker, attacker.Id, target, effectPosition, attackSpec, node, executionId, eventPublisher);
         }
 
         bool ExecuteNode(
@@ -207,7 +258,8 @@ namespace DungeonInn.Application.Combat
             LayerPosition effectPosition,
             WeaponAttackSpec attackSpec,
             CombatEffectNodeSpec node,
-            CombatEffectExecutionId executionId)
+            CombatEffectExecutionId executionId,
+            IEventPublisher eventPublisher)
         {
             switch (node.Type)
             {
@@ -217,12 +269,13 @@ namespace DungeonInn.Application.Combat
                         attackerActorId,
                         attacker,
                         target,
-                        node.DamageSpec.Amount);
+                        node.DamageSpec.Amount,
+                        eventPublisher);
                 case CombatEffectNodeType.Projectile:
-                    CreateProjectile(worldState, attackerActorId, target, effectPosition, attackSpec, node, executionId);
+                    CreateProjectile(worldState, attackerActorId, target, effectPosition, attackSpec, node, executionId, eventPublisher);
                     return false;
                 case CombatEffectNodeType.Area:
-                    CreateAreaEffect(worldState, attackerActorId, attacker, target, effectPosition, attackSpec, node, executionId);
+                    CreateAreaEffect(worldState, attackerActorId, attacker, target, effectPosition, attackSpec, node, executionId, eventPublisher);
                     return false;
                 case CombatEffectNodeType.ApplyStatus:
                     throw new InvalidOperationException("ApplyStatus combat effect node is not supported yet.");
@@ -238,7 +291,8 @@ namespace DungeonInn.Application.Combat
             LayerPosition effectPosition,
             WeaponAttackSpec attackSpec,
             CombatEffectNodeSpec node,
-            CombatEffectExecutionId executionId)
+            CombatEffectExecutionId executionId,
+            IEventPublisher eventPublisher)
         {
             var projectile = new ProjectileInstance(
                 Guid.NewGuid(),
@@ -253,7 +307,7 @@ namespace DungeonInn.Application.Combat
                 node.ProjectileSpec.SpeedMetersPerSecond,
                 node.ProjectileSpec.MaxDistanceMeters);
             worldState.AddProjectile(projectile);
-            eventBus.Publish(new ProjectileFired(projectile.Id, attackerActorId, target.Id));
+            eventPublisher.Publish(new ProjectileFired(projectile.Id, attackerActorId, target.Id));
         }
 
         void CreateAreaEffect(
@@ -264,7 +318,8 @@ namespace DungeonInn.Application.Combat
             LayerPosition effectPosition,
             WeaponAttackSpec attackSpec,
             CombatEffectNodeSpec node,
-            CombatEffectExecutionId executionId)
+            CombatEffectExecutionId executionId,
+            IEventPublisher eventPublisher)
         {
             var sourceFactionId = attacker == null ? target.Faction.Id : attacker.Faction.Id;
             var areaEffect = new AreaEffectInstance(
@@ -278,7 +333,7 @@ namespace DungeonInn.Application.Combat
                 node.AreaSpec,
                 CalculateLinkedDirectDamage(attackSpec, node, CombatEffectTriggerType.OnHit));
             worldState.AddAreaEffect(areaEffect);
-            eventBus.Publish(new AreaEffectCreated(
+            eventPublisher.Publish(new AreaEffectCreated(
                 areaEffect.Id,
                 attackerActorId,
                 areaEffect.CenterPosition,

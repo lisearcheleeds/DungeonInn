@@ -22,6 +22,16 @@ namespace DungeonInn.Application.UseCase
 
         public void Execute(Actor killer, Actor defeated)
         {
+            Execute(killer, defeated, eventPublisher);
+        }
+
+        public void Execute(Actor killer, Actor defeated, IEventPublisher eventPublisher)
+        {
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
+            }
+
             if (killer.ArchetypeId <= 0)
             {
                 return;

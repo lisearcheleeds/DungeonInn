@@ -33,10 +33,21 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(attacker));
             }
 
-            return ApplyDamage(worldState, attacker.Id, attacker, target, damage);
+            return ApplyDamage(worldState, attacker.Id, attacker, target, damage, eventBus);
         }
 
         public bool ApplyDamage(IGameWorldState worldState, Guid attackerActorId, Actor attacker, Actor target, int damage)
+        {
+            return ApplyDamage(worldState, attackerActorId, attacker, target, damage, eventBus);
+        }
+
+        public bool ApplyDamage(
+            IGameWorldState worldState,
+            Guid attackerActorId,
+            Actor attacker,
+            Actor target,
+            int damage,
+            IEventPublisher eventPublisher)
         {
             if (worldState == null)
             {
@@ -48,6 +59,11 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(target));
             }
 
+            if (eventPublisher == null)
+            {
+                throw new ArgumentNullException(nameof(eventPublisher));
+            }
+
             var resolvedDamage = Math.Max(0, damage);
             target.ReceiveDamage(resolvedDamage);
             if (attacker != null)
@@ -56,7 +72,7 @@ namespace DungeonInn.Application.Combat
             }
 
             actorCombatService.MarkCombatParticipation(target.Id);
-            eventBus.Publish(new CombatAttackOccurred(
+            eventPublisher.Publish(new CombatAttackOccurred(
                 attackerActorId,
                 target.Id,
                 resolvedDamage,

@@ -94,6 +94,39 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void DefeatEventsArePublishedAfterDefeatTransactionCompletes()
+        {
+            var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
+            var worldState = new GameWorldState();
+            var combatService = new ActorCombatService();
+            var eventBus = new CollectingGameEventBus();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
+            var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
+            var observedDefeatEvent = false;
+            worldState.RegisterActor(attacker);
+            worldState.RegisterActor(target);
+            combatService.SetTarget(attacker.Id, target.Id);
+            combatService.SetTarget(target.Id, attacker.Id);
+            eventBus.OnPublish = gameEvent =>
+            {
+                if (gameEvent is not ActorDefeated)
+                {
+                    return;
+                }
+
+                observedDefeatEvent = true;
+                Assert.That(worldState.FindActor(target.Id), Is.Null);
+                Assert.That(combatService.HasTarget(attacker.Id), Is.False);
+                Assert.That(combatService.HasTarget(target.Id), Is.False);
+            };
+
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            Assert.That(observedDefeatEvent, Is.True);
+        }
+
+        [Test]
         public void AreaAttackCreatesAreaEffectWithoutImmediateDamage()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
@@ -122,8 +155,13 @@ namespace DungeonInn.Tests.EditMode
         sealed class CollectingGameEventBus : IGameEventBus
         {
             readonly List<IGameEvent> events = new();
+            public Action<IGameEvent> OnPublish { get; set; }
 
-            public void Publish(IGameEvent gameEvent) => events.Add(gameEvent);
+            public void Publish(IGameEvent gameEvent)
+            {
+                events.Add(gameEvent);
+                OnPublish?.Invoke(gameEvent);
+            }
 
             public Observable<T> OnEvent<T>() where T : class, IGameEvent
                 => throw new NotSupportedException();
@@ -217,7 +255,8 @@ namespace DungeonInn.Tests.EditMode
                 clock,
                 new GameWorldFrameBuffer(),
                 CreateCombatEffectExecutor(combatService, eventBus),
-                CreateActorDefeatOrchestrator(combatService, eventBus));
+                CreateActorDefeatOrchestrator(combatService, eventBus),
+                eventBus);
         }
 
         sealed class ZeroGameRandom : IGameRandom

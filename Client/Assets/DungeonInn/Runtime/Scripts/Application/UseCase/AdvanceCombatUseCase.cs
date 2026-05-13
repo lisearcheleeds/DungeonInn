@@ -1,6 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Orchestration;
 using DungeonInn.Domain.Actor;
@@ -17,6 +18,7 @@ namespace DungeonInn.Application.UseCase
         readonly GameWorldFrameBuffer frameBuffer;
         readonly CombatEffectExecutor combatEffectExecutor;
         readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
+        readonly IEventPublisher eventPublisher;
 
         [Inject]
         public AdvanceCombatUseCase(
@@ -24,7 +26,8 @@ namespace DungeonInn.Application.UseCase
             IGameClock gameClock,
             GameWorldFrameBuffer frameBuffer,
             CombatEffectExecutor combatEffectExecutor,
-            ActorDefeatOrchestrator actorDefeatOrchestrator)
+            ActorDefeatOrchestrator actorDefeatOrchestrator,
+            IEventPublisher eventPublisher)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -36,6 +39,7 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(combatEffectExecutor));
             this.actorDefeatOrchestrator = actorDefeatOrchestrator
                 ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
+            this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -47,6 +51,7 @@ namespace DungeonInn.Application.UseCase
 
             var currentGameTimeSeconds = gameClock.ElapsedGameTimeSeconds;
             var actors = frameBuffer.CopyActors(worldState.Actors);
+            var bufferedEventPublisher = new BufferedEventPublisher(eventPublisher);
 
             foreach (var actor in actors)
             {
@@ -83,16 +88,18 @@ namespace DungeonInn.Application.UseCase
                     worldState,
                     actor,
                     target,
-                    actor.WeaponCombatParams.AttackSpec);
+                    actor.WeaponCombatParams.AttackSpec,
+                    bufferedEventPublisher);
                 if (targetDefeated && worldState.FindActor(target.Id) != null)
                 {
-                    actorDefeatOrchestrator.Execute(worldState, actor, target);
+                    actorDefeatOrchestrator.Execute(worldState, actor, target, bufferedEventPublisher);
                 }
 
                 combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
                 actorCombatService.MarkCombatParticipation(actor.Id);
             }
 
+            bufferedEventPublisher.Flush();
             return UniTask.CompletedTask;
         }
 

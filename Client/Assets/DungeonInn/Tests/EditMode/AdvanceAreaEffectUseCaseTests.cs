@@ -28,7 +28,8 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new AdvanceAreaEffectUseCase(
                 new AttackAreaTargetResolver(),
                 CreateCombatEffectExecutor(combatService, eventBus),
-                CreateActorDefeatOrchestrator(combatService, eventBus));
+                CreateActorDefeatOrchestrator(combatService, eventBus),
+                eventBus);
             var attacker = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var enemyA = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             var enemyB = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 7f, 5f), 50);
