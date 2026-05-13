@@ -85,7 +85,7 @@ namespace DungeonInn.Application.UseCase
                 var stack = new ItemStack(itemId, 1);
                 if (actor.Inventory.Has(stack))
                 {
-                    actor.Inventory.Remove(stack);
+                    actor.RemoveItem(stack);
                 }
 
                 if (equipmentMaster.Slot == EquipmentSlot.Weapon)

@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Service;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;

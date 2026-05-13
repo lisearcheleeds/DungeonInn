@@ -5,12 +5,12 @@ using VContainer;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Service
 {
     public sealed class AdventurerRecoveryStateService : IDisposable
     {
         readonly Dictionary<Guid, float> accumulatedHp = new();
-        readonly IDisposable deathSubscription;
+        DisposableBag bag;
 
         [Inject]
         public AdventurerRecoveryStateService(IEventSubscriber eventSubscriber)
@@ -20,8 +20,12 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(eventSubscriber));
             }
 
-            deathSubscription = eventSubscriber.OnEvent<ActorDefeated>()
-                .Subscribe(gameEvent => { Remove(gameEvent.ActorId); });
+            eventSubscriber.OnEvent<ActorDefeated>()
+                .Subscribe(gameEvent => { Remove(gameEvent.ActorId); })
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ActorDeparted>()
+                .Subscribe(gameEvent => { Remove(gameEvent.ActorId); })
+                .AddTo(ref bag);
         }
 
         public float GetAccumulatedHp(Guid actorId)
@@ -43,7 +47,7 @@ namespace DungeonInn.Application.UseCase
 
         public void Dispose()
         {
-            deathSubscription.Dispose();
+            bag.Dispose();
         }
     }
 }

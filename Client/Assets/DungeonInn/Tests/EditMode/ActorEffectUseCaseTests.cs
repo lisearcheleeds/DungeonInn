@@ -23,7 +23,7 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var useCase = new UseConsumableItemUseCase(repository);
             var actor = CreateAdventurer(20);
-            actor.Inventory.Add(new ItemStack(2001, 1));
+            actor.GainItem(new ItemStack(2001, 1));
 
             var used = useCase.ExecuteAsync(actor, 2001).GetAwaiter().GetResult();
 
@@ -41,7 +41,7 @@ namespace DungeonInn.Tests.EditMode
             var advanceUseCase = new AdvanceActorEffectsUseCase();
             var worldState = new GameWorldState();
             var actor = CreateAdventurer(20);
-            actor.Inventory.Add(new ItemStack(2001, 1));
+            actor.GainItem(new ItemStack(2001, 1));
             worldState.RegisterActor(actor);
 
             useItemUseCase.ExecuteAsync(actor, 2001).GetAwaiter().GetResult();
@@ -63,7 +63,7 @@ namespace DungeonInn.Tests.EditMode
             var advanceUseCase = new AdvanceActorEffectsUseCase();
             var worldState = new GameWorldState();
             var actor = CreateAdventurer(0);
-            actor.Inventory.Add(new ItemStack(2001, 2));
+            actor.GainItem(new ItemStack(2001, 2));
             worldState.RegisterActor(actor);
 
             useItemUseCase.ExecuteAsync(actor, 2001).GetAwaiter().GetResult();
@@ -84,7 +84,7 @@ namespace DungeonInn.Tests.EditMode
             var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(repository, useConsumableItemUseCase, eventBus);
             var worldState = new GameWorldState();
             var actor = CreateAdventurer(30);
-            actor.Inventory.Add(new ItemStack(2001, 1));
+            actor.GainItem(new ItemStack(2001, 1));
             worldState.RegisterActor(actor);
 
             useRecoveryItemUseCase.ExecuteAsync(worldState).GetAwaiter().GetResult();

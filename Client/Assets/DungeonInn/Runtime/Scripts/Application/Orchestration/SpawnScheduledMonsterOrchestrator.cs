@@ -1,10 +1,9 @@
 using System;
-using DungeonInn.Application.UseCase;
-using DungeonInn.Application.Combat;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Master;
@@ -58,10 +57,14 @@ namespace DungeonInn.Application.Orchestration
             var room = floor.Rooms[currentScheduleTick % floor.Rooms.Count];
             var position = floor.Layer.GetCellCenter(room.Center);
 
-            // TODO: SpawnTableMasterから重み付き抽選に変更する
             var floorExplorationMaster = masterRepository.GetDungeonFloorExplorationMaster(floor.FloorIndex);
             var spawnTable = masterRepository.GetSpawnTableMaster(floorExplorationMaster.MonsterSpawnTableId);
-            var entry = spawnTable.Entries[0];
+            if (spawnTable.TargetType != SpawnTableTargetType.ActorArchetype)
+            {
+                throw new InvalidOperationException("Monster schedule requires actor archetype spawn table.");
+            }
+
+            var entry = SelectMonsterSpawnEntry(spawnTable);
 
             // TODO: FactionをFactionMasterから取得する
             var faction = new ActorFaction(2, "Monster");
@@ -76,6 +79,23 @@ namespace DungeonInn.Application.Orchestration
             var actor = await spawnMonsterUseCase.ExecuteAsync(request);
             worldState.RegisterActor(actor);
             return actor;
+        }
+
+        SpawnTableEntryMaster SelectMonsterSpawnEntry(SpawnTableMaster spawnTable)
+        {
+            var totalWeight = spawnTable.Entries.Sum(entry => entry.Weight);
+            var roll = gameRandom.Next(totalWeight);
+            var currentWeight = 0;
+            foreach (var entry in spawnTable.Entries)
+            {
+                currentWeight += entry.Weight;
+                if (roll < currentWeight)
+                {
+                    return entry;
+                }
+            }
+
+            return spawnTable.Entries[spawnTable.Entries.Count - 1];
         }
     }
 }

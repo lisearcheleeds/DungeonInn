@@ -36,7 +36,7 @@ namespace DungeonInn.Application.UseCase
                 return UniTask.FromResult(false);
             }
 
-            actor.Inventory.Remove(itemStack);
+            actor.RemoveItem(itemStack);
             actor.AddActorEffect(masterRepository.GetActorEffectMaster(itemMaster.ActorEffectMasterId));
             return UniTask.FromResult(true);
         }

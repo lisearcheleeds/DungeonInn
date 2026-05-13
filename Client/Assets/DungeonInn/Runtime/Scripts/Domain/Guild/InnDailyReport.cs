@@ -3,18 +3,19 @@ namespace DungeonInn.Domain.Guild
     public readonly struct InnDailyReport
     {
         public int Day { get; }
-        public int Guests { get; }
-        public int RejectedGuests { get; }
-        public int Demand { get; }
-        public int Sales { get; }
-        public int SatisfactionDelta { get; }
-        public int Reputation { get; }
-        public int OccupiedRooms { get; }
-        public int RoomCapacity { get; }
-        public int OccupancyPercent { get; }
-        public int GuildGold { get; }
-        public int RookieSwordStock { get; }
-        public int RookieArmorStock { get; }
+        public InnEconomySummary Summary { get; }
+        public int Guests => Summary.Guests;
+        public int RejectedGuests => Summary.RejectedGuests;
+        public int Demand => Summary.Demand;
+        public int Sales => Summary.Sales;
+        public int SatisfactionDelta => Summary.SatisfactionDelta;
+        public int Reputation => Summary.Reputation;
+        public int OccupiedRooms => Summary.OccupiedRooms;
+        public int RoomCapacity => Summary.RoomCapacity;
+        public int OccupancyPercent => Summary.OccupancyPercent;
+        public int GuildGold => Summary.GuildGold;
+        public int RookieSwordStock => Summary.RookieSwordStock;
+        public int RookieArmorStock => Summary.RookieArmorStock;
 
         public InnDailyReport(
             int day,
@@ -32,18 +33,19 @@ namespace DungeonInn.Domain.Guild
             int rookieArmorStock)
         {
             Day = day;
-            Guests = guests;
-            RejectedGuests = rejectedGuests;
-            Demand = demand;
-            Sales = sales;
-            SatisfactionDelta = satisfactionDelta;
-            Reputation = reputation;
-            OccupiedRooms = occupiedRooms;
-            RoomCapacity = roomCapacity;
-            OccupancyPercent = occupancyPercent;
-            GuildGold = guildGold;
-            RookieSwordStock = rookieSwordStock;
-            RookieArmorStock = rookieArmorStock;
+            Summary = new InnEconomySummary(
+                guests,
+                rejectedGuests,
+                demand,
+                sales,
+                satisfactionDelta,
+                reputation,
+                occupiedRooms,
+                roomCapacity,
+                occupancyPercent,
+                guildGold,
+                rookieSwordStock,
+                rookieArmorStock);
         }
     }
 }

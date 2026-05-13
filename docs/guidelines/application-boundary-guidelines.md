@@ -15,6 +15,15 @@
 | **Service** | 長期状態を保持する。`IDisposable` を実装。イベントを購読して状態を更新する | UseCase を注入して呼ぶ |
 | **Orchestrator** | UseCase を定義された順序で呼ぶ。順序制御上の分岐は持ってよい | Domain 判断・業務ルール計算を自身に抱え込む |
 
+DungeonInn では、新規実装の命名を以下に統一する。
+
+- `XxxUseCase`: 入力を受け取り、1回のトランザクションとしてDomainを変更し、必要なEventを発行するステートレスな処理。
+- `XxxStateService`: `Dictionary` / `HashSet` などの長期状態を保持し、必要に応じてEventを購読して状態を更新・破棄するService。
+- `XxxService`: Repository / Registry相当の状態管理、計算補助、または複数UseCaseから共有される補助処理。単発のDomain変更コマンドには使わない。
+- `XxxOrchestrator`: 複数UseCase / Serviceを、明示された順序で呼び出す調整役。Domainルールそのものは持たない。
+
+既存の `ChargeInnFeeService` / `GrantExperienceService` / `DropItemService` / `DespawnAdventurerService` は、現時点では互換性維持のため即時リネームしない。Milestone 6 以降で触る場合は、実態がステートレスな単発コマンドであれば `XxxUseCase` へ改名し、長期状態を持つ場合のみ `XxxStateService` / `XxxService` に残す。
+
 Orchestrator が持ってよい分岐は「成功・失敗に応じた次 UseCase の選択」程度に留める。
 戦闘勝敗の判定・料金計算・ビジネスルールの評価を Orchestrator 内で直接計算するのは NG。
 

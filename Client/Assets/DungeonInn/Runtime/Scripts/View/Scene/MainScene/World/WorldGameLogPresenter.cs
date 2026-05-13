@@ -34,6 +34,11 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void Initialize()
         {
+            if (!Debug.isDebugBuild)
+            {
+                return;
+            }
+
             eventSubscriber.OnEvent<ActorSpawned>()
                 .Subscribe(OnActorSpawned)
                 .AddTo(ref bag);

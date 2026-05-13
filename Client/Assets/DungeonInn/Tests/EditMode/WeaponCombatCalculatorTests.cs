@@ -187,7 +187,13 @@ namespace DungeonInn.Tests.EditMode
         {
             actor.Equip(
                 new EquipmentMaster(itemId, EquipmentSlot.Weapon, 0),
-                new WeaponMaster(itemId, weaponType, attack, rangeModifierMeters, attackIntervalModifierSeconds));
+                new WeaponMaster(
+                    itemId,
+                    weaponType,
+                    WeaponTypeCombatMasterCatalog.Get(weaponType),
+                    attack,
+                    rangeModifierMeters,
+                    attackIntervalModifierSeconds));
         }
     }
 }

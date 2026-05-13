@@ -58,7 +58,7 @@ namespace DungeonInn.Application.UseCase
 
             var fee = GameConstants.InnFeePerStay;
 
-            if (!actor.Inventory.TrySpendGold(fee))
+            if (!actor.TrySpendGold(fee))
             {
                 eventPublisher.Publish(new InnSatisfactionChanged(
                     actor.Id,

@@ -69,7 +69,7 @@ namespace DungeonInn.Tests.EditMode
             const int herbItemId = 1001;
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(0);
-            actor.Inventory.Add(new ItemStack(herbItemId, 2));
+            actor.GainItem(new ItemStack(herbItemId, 2));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var clock = new StubGameClock { CurrentScheduleTickValue = 123 };
@@ -102,7 +102,7 @@ namespace DungeonInn.Tests.EditMode
             var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
             generalStore.Inventory.Remove(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGeneralStoreGold));
             var actor = CreateAdventurer(0);
-            actor.Inventory.Add(new ItemStack(herbItemId, 1));
+            actor.GainItem(new ItemStack(herbItemId, 1));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus);
@@ -123,7 +123,7 @@ namespace DungeonInn.Tests.EditMode
             var masterRepository = new HardcodedMasterRepository();
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(0);
-            actor.Inventory.Add(new ItemStack(armorItemId, 1));
+            actor.GainItem(new ItemStack(armorItemId, 1));
             actor.Equip(masterRepository.GetEquipmentMaster(armorItemId));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();

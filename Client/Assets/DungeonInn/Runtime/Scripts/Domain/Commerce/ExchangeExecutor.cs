@@ -27,30 +27,30 @@ namespace DungeonInn.Domain.Commerce
             var normalizedInitiatorItems = NormalizeItems(initiatorItems);
             var normalizedCounterpartyItems = NormalizeItems(counterpartyItems);
 
-            if (!initiator.Inventory.HasAll(normalizedInitiatorItems))
+            if (!initiator.HasAll(normalizedInitiatorItems))
             {
                 throw new InvalidOperationException("Initiator does not have enough exchange items.");
             }
 
-            if (!counterparty.Inventory.HasAll(normalizedCounterpartyItems))
+            if (!counterparty.HasAll(normalizedCounterpartyItems))
             {
                 throw new InvalidOperationException("Counterparty does not have enough exchange items.");
             }
 
-            if (!initiator.Inventory.CanAddAfterRemoving(normalizedInitiatorItems, normalizedCounterpartyItems))
+            if (!initiator.CanAddAfterRemoving(normalizedInitiatorItems, normalizedCounterpartyItems))
             {
                 throw new InvalidOperationException("Initiator cannot receive exchange items.");
             }
 
-            if (!counterparty.Inventory.CanAddAfterRemoving(normalizedCounterpartyItems, normalizedInitiatorItems))
+            if (!counterparty.CanAddAfterRemoving(normalizedCounterpartyItems, normalizedInitiatorItems))
             {
                 throw new InvalidOperationException("Counterparty cannot receive exchange items.");
             }
 
-            initiator.Inventory.RemoveRange(normalizedInitiatorItems);
-            counterparty.Inventory.RemoveRange(normalizedCounterpartyItems);
-            initiator.Inventory.AddRange(normalizedCounterpartyItems);
-            counterparty.Inventory.AddRange(normalizedInitiatorItems);
+            initiator.RemoveRange(normalizedInitiatorItems);
+            counterparty.RemoveRange(normalizedCounterpartyItems);
+            initiator.AddRange(normalizedCounterpartyItems);
+            counterparty.AddRange(normalizedInitiatorItems);
 
             return new ExchangeTransaction(
                 Guid.NewGuid(),

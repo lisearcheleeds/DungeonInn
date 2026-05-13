@@ -14,5 +14,6 @@ namespace DungeonInn.Application.GameLoop
             GridPosition goalGrid);
 
         void InvalidatePath(Guid actorId);
+        void RemovePathState(Guid actorId);
     }
 }

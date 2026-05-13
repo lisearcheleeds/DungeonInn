@@ -5,6 +5,7 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Orchestration;
+using DungeonInn.Application.Service;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
@@ -146,7 +147,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, 0);
-            actor.Inventory.Add(new ItemStack(1001, 2));
+            actor.GainItem(new ItemStack(1001, 2));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus);

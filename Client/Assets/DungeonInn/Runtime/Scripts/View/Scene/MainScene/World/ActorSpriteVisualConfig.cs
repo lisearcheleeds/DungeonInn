@@ -23,9 +23,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             Add(ActorBehaviorType.None, new Color(1f, 0.85f, 0.1f, 1f));
         }
 
-        public Sprite GetPlaceholderSprite(Actor actor)
+        public Sprite GetPlaceholderSprite(ActorBehaviorType behaviorType)
         {
-            var behaviorType = ResolveBehaviorType(actor);
             if (!placeholderSprites.TryGetValue(behaviorType, out var sprite))
             {
                 return placeholderSprites[ActorBehaviorType.None];
@@ -54,21 +53,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             placeholderSprites.Clear();
             placeholderTextures.Clear();
-        }
-
-        static ActorBehaviorType ResolveBehaviorType(Actor actor)
-        {
-            if (actor.Behavior is AdventurerBehavior)
-            {
-                return ActorBehaviorType.Adventurer;
-            }
-
-            if (actor.Behavior is MonsterBehavior)
-            {
-                return ActorBehaviorType.Monster;
-            }
-
-            return ActorBehaviorType.None;
         }
 
         void Add(ActorBehaviorType behaviorType, Color color)

@@ -164,5 +164,25 @@ namespace DungeonInn.Domain.Guild
         {
             transactions.Add(transaction ?? throw new ArgumentNullException(nameof(transaction)));
         }
+
+        bool IExchangeParticipant.HasAll(IReadOnlyList<ItemStack> items)
+        {
+            return Inventory.HasAll(items);
+        }
+
+        bool IExchangeParticipant.CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
+        {
+            return Inventory.CanAddAfterRemoving(toRemove, toAdd);
+        }
+
+        void IExchangeParticipant.RemoveRange(IReadOnlyList<ItemStack> items)
+        {
+            Inventory.RemoveRange(items);
+        }
+
+        void IExchangeParticipant.AddRange(IReadOnlyList<ItemStack> items)
+        {
+            Inventory.AddRange(items);
+        }
     }
 }

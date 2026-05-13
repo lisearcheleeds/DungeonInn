@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
 using UnityEngine;
 
@@ -9,7 +8,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldMapView : IDisposable
     {
-        readonly IGameWorldStateReader gameWorldState;
+        readonly IWorldMapViewDataProvider viewDataProvider;
         readonly MapLayerViewRegistry layerViewRegistry;
         readonly MapMeshBuildService mapMeshBuildService;
         readonly HashSet<int> builtLayerIds = new();
@@ -18,11 +17,11 @@ namespace DungeonInn.View.Scene.MainScene.World
         const int ChunkTileSize = 16;
 
         public WorldMapView(
-            IGameWorldStateReader gameWorldState,
+            IWorldMapViewDataProvider viewDataProvider,
             MapLayerViewRegistry layerViewRegistry,
             MapMeshBuildService mapMeshBuildService)
         {
-            this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
+            this.viewDataProvider = viewDataProvider ?? throw new ArgumentNullException(nameof(viewDataProvider));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.mapMeshBuildService = mapMeshBuildService ?? throw new ArgumentNullException(nameof(mapMeshBuildService));
         }
@@ -47,46 +46,28 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void BuildMissingLayerTiles()
         {
-            if (!builtLayerIds.Contains(MapLayerId.Ground.Value))
+            foreach (var layerData in viewDataProvider.GetLayers())
             {
-                BuildGroundTiles();
-                builtLayerIds.Add(MapLayerId.Ground.Value);
-            }
-
-            foreach (var pair in gameWorldState.Dungeon.Floors)
-            {
-                var layerId = MapLayerId.DungeonFloor(pair.Key).Value;
-                if (builtLayerIds.Contains(layerId))
+                if (builtLayerIds.Contains(layerData.LayerId.Value))
                 {
                     continue;
                 }
 
-                BuildDungeonTiles(pair.Value);
-                builtLayerIds.Add(layerId);
+                BuildLayerTiles(layerData);
+                builtLayerIds.Add(layerData.LayerId.Value);
             }
         }
 
-        void BuildGroundTiles()
+        void BuildLayerTiles(WorldMapLayerViewData layerData)
         {
-            var layer = gameWorldState.GroundMap.Layer;
-            var layerRoot = CreateLayerRoot("Ground", layer.Id);
+            var layerRoot = CreateLayerRoot(layerData.LayerName, layerData.LayerId);
             BuildLayerChunks(
                 layerRoot,
-                layer,
-                "Ground",
-                position => gameWorldState.GroundMap.IsWalkable(position)
-                    ? TileVisualKind.GroundWalkable
-                    : TileVisualKind.GroundBlocked);
-        }
-
-        void BuildDungeonTiles(DungeonFloor floor)
-        {
-            var layerRoot = CreateLayerRoot($"DungeonFloor{floor.FloorIndex}", floor.Layer.Id);
-            BuildLayerChunks(
-                layerRoot,
-                floor.Layer,
-                $"DungeonFloor{floor.FloorIndex}",
-                position => ResolveDungeonVisualKind(floor, position));
+                layerData.LayerId,
+                layerData.LayerName,
+                layerData.Width,
+                layerData.Height,
+                position => ToTileVisualKind(layerData.GetCellKind(position)));
         }
 
         Transform CreateLayerRoot(string layerName, MapLayerId layerId)
@@ -96,22 +77,24 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void BuildLayerChunks(
             Transform layerRoot,
-            MapLayer layer,
+            MapLayerId layerId,
             string layerName,
+            int layerWidth,
+            int layerHeight,
             Func<GridPosition, TileVisualKind> resolveVisualKind)
         {
-            for (var z = 0; z < layer.Depth; z += ChunkTileSize)
+            for (var z = 0; z < layerHeight; z += ChunkTileSize)
             {
-                for (var x = 0; x < layer.Width; x += ChunkTileSize)
+                for (var x = 0; x < layerWidth; x += ChunkTileSize)
                 {
-                    var width = Math.Min(ChunkTileSize, layer.Width - x);
-                    var depth = Math.Min(ChunkTileSize, layer.Depth - z);
+                    var width = Math.Min(ChunkTileSize, layerWidth - x);
+                    var height = Math.Min(ChunkTileSize, layerHeight - z);
                     var chunkMesh = mapMeshBuildService.BuildChunk(
-                        layer,
+                        layerId,
                         x,
                         z,
                         width,
-                        depth,
+                        height,
                         resolveVisualKind);
 
                     CreateChunkObject(layerRoot, layerName, x, z, chunkMesh);
@@ -119,21 +102,25 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
         }
 
-        static TileVisualKind ResolveDungeonVisualKind(DungeonFloor floor, GridPosition position)
+        static TileVisualKind ToTileVisualKind(WorldMapCellViewKind cellViewKind)
         {
-            if (floor.IsStairPosition(position, DungeonStairType.Up))
+            switch (cellViewKind)
             {
-                return TileVisualKind.StairUp;
+                case WorldMapCellViewKind.GroundWalkable:
+                    return TileVisualKind.GroundWalkable;
+                case WorldMapCellViewKind.GroundBlocked:
+                    return TileVisualKind.GroundBlocked;
+                case WorldMapCellViewKind.DungeonWalkable:
+                    return TileVisualKind.DungeonWalkable;
+                case WorldMapCellViewKind.DungeonBlocked:
+                    return TileVisualKind.DungeonBlocked;
+                case WorldMapCellViewKind.StairUp:
+                    return TileVisualKind.StairUp;
+                case WorldMapCellViewKind.StairDown:
+                    return TileVisualKind.StairDown;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(cellViewKind));
             }
-
-            if (floor.IsStairPosition(position, DungeonStairType.Down))
-            {
-                return TileVisualKind.StairDown;
-            }
-
-            return floor.IsWalkable(position)
-                ? TileVisualKind.DungeonWalkable
-                : TileVisualKind.DungeonBlocked;
         }
 
         void CreateChunkObject(

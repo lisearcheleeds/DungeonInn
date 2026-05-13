@@ -7,7 +7,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldActorPresenter : IDisposable
     {
-        readonly IGameWorldStateReader gameWorldState;
+        readonly IActorViewDataProvider viewDataProvider;
         readonly LayerPositionViewMapper positionMapper;
         readonly WorldActorViewRegistry actorViewRegistry;
         readonly ActorSpriteVisualConfig actorSpriteVisualConfig;
@@ -18,13 +18,13 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         [Inject]
         public WorldActorPresenter(
-            IGameWorldStateReader gameWorldState,
+            IActorViewDataProvider viewDataProvider,
             LayerPositionViewMapper positionMapper,
             WorldActorViewRegistry actorViewRegistry,
             ActorSpriteVisualConfig actorSpriteVisualConfig,
             WorldCameraController worldCameraController)
         {
-            this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
+            this.viewDataProvider = viewDataProvider ?? throw new ArgumentNullException(nameof(viewDataProvider));
             this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
             this.actorViewRegistry = actorViewRegistry ?? throw new ArgumentNullException(nameof(actorViewRegistry));
             this.actorSpriteVisualConfig = actorSpriteVisualConfig ?? throw new ArgumentNullException(nameof(actorSpriteVisualConfig));
@@ -38,12 +38,13 @@ namespace DungeonInn.View.Scene.MainScene.World
             var cameraYawChanged = !hasLastCameraYawDegrees ||
                 !UnityEngine.Mathf.Approximately(lastCameraYawDegrees, cameraYawDegrees);
 
-            foreach (var actor in gameWorldState.Actors)
+            foreach (var actor in viewDataProvider.GetActors())
             {
-                activeActorIds.Add(actor.Id);
+                activeActorIds.Add(actor.ActorId);
                 var actorView = actorViewRegistry.GetOrCreateActorView(
-                    actor,
-                    actorSpriteVisualConfig.GetPlaceholderSprite(actor),
+                    actor.ActorId,
+                    actor.Position,
+                    actorSpriteVisualConfig.GetPlaceholderSprite(actor.BehaviorType),
                     out var created);
 
                 var positionChanged = created ||
@@ -54,7 +55,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 {
                     if (!created && !actorView.LastPosition.LayerId.Equals(actor.Position.LayerId))
                     {
-                        actorViewRegistry.SetActorLayer(actorView, actor);
+                        actorViewRegistry.SetActorLayer(actorView, actor.Position);
                     }
 
                     actorView.ActorObject.transform.localPosition =

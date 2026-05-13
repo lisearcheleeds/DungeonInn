@@ -63,7 +63,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                actor.Inventory.Add(item.Stack);
+                actor.GainItem(item.Stack);
                 worldState.RemoveItem(item.InstanceId);
                 eventBus.Publish(new ItemPickedUp(actor.Id, item));
             }

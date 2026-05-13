@@ -180,13 +180,13 @@ namespace DungeonInn.Master
             }.ToDictionary(x => x.ItemId);
         }
 
-        static IReadOnlyDictionary<int, WeaponMaster> CreateWeaponMasters()
+        IReadOnlyDictionary<int, WeaponMaster> CreateWeaponMasters()
         {
             return new[]
             {
-                new WeaponMaster(3001, WeaponType.Sword, 8, 0, 0),
-                new WeaponMaster(3002, WeaponType.Bow, 7, 0, 0),
-                new WeaponMaster(3004, WeaponType.Sword, 10, 0, 0)
+                new WeaponMaster(3001, WeaponType.Sword, GetWeaponTypeCombatMaster(WeaponType.Sword), 8, 0, 0),
+                new WeaponMaster(3002, WeaponType.Bow, GetWeaponTypeCombatMaster(WeaponType.Bow), 7, 0, 0),
+                new WeaponMaster(3004, WeaponType.Sword, GetWeaponTypeCombatMaster(WeaponType.Sword), 10, 0, 0)
             }.ToDictionary(x => x.ItemId);
         }
 

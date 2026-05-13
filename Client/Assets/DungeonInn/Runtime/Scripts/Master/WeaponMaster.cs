@@ -15,22 +15,6 @@ namespace DungeonInn.Master
         public WeaponMaster(
             int itemId,
             WeaponType weaponType,
-            int attack,
-            float rangeModifierMeters,
-            float attackIntervalModifierSeconds)
-            : this(
-                itemId,
-                weaponType,
-                WeaponTypeCombatMasterCatalog.Get(weaponType),
-                attack,
-                rangeModifierMeters,
-                attackIntervalModifierSeconds)
-        {
-        }
-
-        public WeaponMaster(
-            int itemId,
-            WeaponType weaponType,
             WeaponTypeCombatMaster weaponTypeCombatMaster,
             int attack,
             float rangeModifierMeters,

@@ -24,7 +24,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         [SerializeField] Camera worldCamera;
 
         IWorldPresenter worldPresenter;
-        IGameWorldStateReader gameWorldState;
         ToggleGamePauseUseCase toggleGamePauseUseCase;
         GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
         WorldCameraController worldCameraController;
@@ -41,14 +40,12 @@ namespace DungeonInn.View.Scene.MainScene.World
         [Inject]
         public void Construct(
             IWorldPresenter worldPresenter,
-            IGameWorldStateReader gameWorldState,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
             WorldCameraController worldCameraController,
             WorldLayerViewController worldLayerViewController)
         {
             this.worldPresenter = worldPresenter;
-            this.gameWorldState = gameWorldState;
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
             this.worldCameraController = worldCameraController;
@@ -65,7 +62,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             return new WorldSceneInputLayer(
                 inputActions,
-                gameWorldState,
                 toggleGamePauseUseCase,
                 getInnEconomyStatusUseCase,
                 worldCameraController,

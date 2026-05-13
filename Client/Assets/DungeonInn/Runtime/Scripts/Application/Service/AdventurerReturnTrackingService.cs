@@ -6,7 +6,7 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.Profiles;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Service
 {
     public sealed class AdventurerReturnTrackingService : IDisposable
     {
@@ -42,6 +42,9 @@ namespace DungeonInn.Application.UseCase
                 .AddTo(ref bag);
             eventSubscriber.OnEvent<ActorEnteredDungeon>()
                 .Subscribe(gameEvent => MarkDirty(gameEvent.ActorId))
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ActorDeparted>()
+                .Subscribe(OnActorDeparted)
                 .AddTo(ref bag);
         }
 
@@ -88,6 +91,12 @@ namespace DungeonInn.Application.UseCase
         void MarkDirty(Guid actorId)
         {
             dirtyActorIds.Add(actorId);
+        }
+
+        void OnActorDeparted(ActorDeparted gameEvent)
+        {
+            dirtyActorIds.Remove(gameEvent.ActorId);
+            defeatedMonsterCountsByActor.Remove(gameEvent.ActorId);
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)

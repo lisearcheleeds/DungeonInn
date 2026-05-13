@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Item;
 using NUnit.Framework;
@@ -110,6 +111,26 @@ namespace DungeonInn.Tests.EditMode
 
             public Guid Id { get; }
             public Inventory Inventory { get; }
+
+            public bool HasAll(IReadOnlyList<ItemStack> items)
+            {
+                return Inventory.HasAll(items);
+            }
+
+            public bool CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
+            {
+                return Inventory.CanAddAfterRemoving(toRemove, toAdd);
+            }
+
+            public void RemoveRange(IReadOnlyList<ItemStack> items)
+            {
+                Inventory.RemoveRange(items);
+            }
+
+            public void AddRange(IReadOnlyList<ItemStack> items)
+            {
+                Inventory.AddRange(items);
+            }
         }
     }
 }

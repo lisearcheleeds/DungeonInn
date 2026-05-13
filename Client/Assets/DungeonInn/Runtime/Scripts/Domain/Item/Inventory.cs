@@ -5,7 +5,7 @@ using DungeonInn.Domain.Common;
 
 namespace DungeonInn.Domain.Item
 {
-    public sealed class Inventory
+    public sealed class Inventory : IReadOnlyInventory
     {
         readonly List<InventorySlot> slots = new();
         readonly int maxSlotCount;

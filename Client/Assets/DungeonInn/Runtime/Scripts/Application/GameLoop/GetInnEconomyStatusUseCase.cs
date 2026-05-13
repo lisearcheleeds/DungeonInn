@@ -24,6 +24,8 @@ namespace DungeonInn.Application.GameLoop
             this.calculator = calculator ?? throw new ArgumentNullException(nameof(calculator));
         }
 
+        public bool CanExecute => worldState.IsInitialized;
+
         public UniTask<InnEconomyStatus> ExecuteAsync()
         {
             return UniTask.FromResult(calculator.Calculate(

@@ -39,7 +39,7 @@ namespace DungeonInn.Application.Factory
                 masterRepository,
                 naturalWeaponTypeCombatMaster);
 
-            actor.Inventory.AddRange(archetypeMaster.InitialInventoryItemIds);
+            actor.GainItems(archetypeMaster.InitialInventoryItemIds);
             return actor;
         }
 

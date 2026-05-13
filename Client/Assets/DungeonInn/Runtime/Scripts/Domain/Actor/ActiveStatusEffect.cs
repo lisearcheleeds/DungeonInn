@@ -5,11 +5,12 @@ namespace DungeonInn.Domain.Actor
 {
     public sealed class ActiveStatusEffect
     {
-        public StatusEffectType Type { get; }
-        public StatusEffectAggregationPolicy AggregationPolicy { get; }
+        public StatusEffectSpec Spec { get; }
+        public StatusEffectType Type => Spec.Type;
+        public StatusEffectAggregationPolicy AggregationPolicy => Spec.AggregationPolicy;
+        public float TickIntervalSeconds => Spec.TickIntervalSeconds;
         public int Amount { get; private set; }
         public float DurationSeconds { get; private set; }
-        public float TickIntervalSeconds { get; }
         public float ElapsedSeconds { get; private set; }
         public int AppliedAmount { get; private set; }
         public bool IsExpired => DurationSeconds <= ElapsedSeconds;
@@ -21,11 +22,9 @@ namespace DungeonInn.Domain.Actor
                 throw new ArgumentNullException(nameof(spec));
             }
 
-            Type = spec.Type;
+            Spec = spec;
             Amount = spec.Amount;
             DurationSeconds = spec.DurationSeconds;
-            TickIntervalSeconds = spec.TickIntervalSeconds;
-            AggregationPolicy = spec.AggregationPolicy;
         }
 
         public int Advance(float deltaSeconds)

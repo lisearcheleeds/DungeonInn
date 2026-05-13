@@ -565,3 +565,12 @@ AIが攻撃定義やArea選択まで直接判断すると肥大化する。
 
 - `CombatActionSelector` をApplication/Combatに置く
 - AIは「攻撃するか」を決め、戦闘詳細はCombat側へ委譲する
+
+## Weapon calculator separation policy
+
+`IWeaponCalculator` and `IWeaponCombatCalculator` are intentionally separated.
+
+- `IWeaponCalculator`: resolves attack power from actor stats, equipment, behavior, level, and stat bonuses. It changes when damage scaling or parameter formulas change.
+- `IWeaponCombatCalculator`: resolves combat behavior definition such as range, attack interval, and attack spec from `WeaponTypeCombatMaster` / `WeaponMaster`. It changes when tactical combat behavior or weapon definition changes.
+
+The two calculators may be used together by `Actor`, but their reasons to change differ. Keep them separate unless a future design proves that attack power and combat behavior must be versioned and replaced as one contract.

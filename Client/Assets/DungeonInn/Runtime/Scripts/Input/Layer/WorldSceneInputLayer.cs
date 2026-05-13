@@ -17,7 +17,6 @@ namespace DungeonInn.Input.Layer
         readonly InputAction worldCameraZoomAction;
         readonly InputAction previousWorldLayerAction;
         readonly InputAction nextWorldLayerAction;
-        readonly IGameWorldStateReader worldState;
         readonly ToggleGamePauseUseCase toggleGamePauseUseCase;
         readonly GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
         readonly WorldCameraController worldCameraController;
@@ -25,7 +24,6 @@ namespace DungeonInn.Input.Layer
 
         public WorldSceneInputLayer(
             InputActions inputActions,
-            IGameWorldStateReader worldState,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
             WorldCameraController worldCameraController,
@@ -39,7 +37,6 @@ namespace DungeonInn.Input.Layer
             worldCameraZoomAction = inputActions.Scene.Get().FindAction("WorldCameraZoom", true);
             previousWorldLayerAction = inputActions.Scene.Get().FindAction("PreviousWorldLayer", true);
             nextWorldLayerAction = inputActions.Scene.Get().FindAction("NextWorldLayer", true);
-            this.worldState = worldState;
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
             this.worldCameraController = worldCameraController;
@@ -105,7 +102,7 @@ namespace DungeonInn.Input.Layer
 
             if (callbackContext.action.id == showInnStatusAction.id)
             {
-                if (!worldState.IsInitialized)
+                if (!getInnEconomyStatusUseCase.CanExecute)
                 {
                     return true;
                 }

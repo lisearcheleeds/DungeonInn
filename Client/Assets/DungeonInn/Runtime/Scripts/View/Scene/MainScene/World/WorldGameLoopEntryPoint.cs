@@ -18,6 +18,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         InitializeGameWorldOrchestrator initializeGameWorldUseCase;
         SpawnScheduledAdventurerOrchestrator spawnScheduledAdventurerUseCase;
         SpawnScheduledMonsterOrchestrator spawnScheduledMonsterUseCase;
+        AdvanceActorAiOrchestrator advanceActorAiOrchestrator;
         AdvanceActorLifecycleOrchestrator advanceActorSimpleLifecycleUseCase;
         DetectCombatEncounterUseCase detectCombatEncounterUseCase;
         AdvanceCombatUseCase advanceCombatUseCase;
@@ -39,6 +40,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         bool isExecuting;
         bool isInitialized;
+        int aiEvaluationFrameId;
 
         [Inject]
         public void Construct(
@@ -47,6 +49,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             InitializeGameWorldOrchestrator initializeGameWorldUseCase,
             SpawnScheduledAdventurerOrchestrator spawnScheduledAdventurerUseCase,
             SpawnScheduledMonsterOrchestrator spawnScheduledMonsterUseCase,
+            AdvanceActorAiOrchestrator advanceActorAiOrchestrator,
             AdvanceActorLifecycleOrchestrator advanceActorSimpleLifecycleUseCase,
             DetectCombatEncounterUseCase detectCombatEncounterUseCase,
             AdvanceCombatUseCase advanceCombatUseCase,
@@ -69,6 +72,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.initializeGameWorldUseCase = initializeGameWorldUseCase ?? throw new ArgumentNullException(nameof(initializeGameWorldUseCase));
             this.spawnScheduledAdventurerUseCase = spawnScheduledAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledAdventurerUseCase));
             this.spawnScheduledMonsterUseCase = spawnScheduledMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledMonsterUseCase));
+            this.advanceActorAiOrchestrator = advanceActorAiOrchestrator ?? throw new ArgumentNullException(nameof(advanceActorAiOrchestrator));
             this.advanceActorSimpleLifecycleUseCase = advanceActorSimpleLifecycleUseCase ?? throw new ArgumentNullException(nameof(advanceActorSimpleLifecycleUseCase));
             this.detectCombatEncounterUseCase = detectCombatEncounterUseCase ?? throw new ArgumentNullException(nameof(detectCombatEncounterUseCase));
             this.advanceCombatUseCase = advanceCombatUseCase ?? throw new ArgumentNullException(nameof(advanceCombatUseCase));
@@ -167,6 +171,17 @@ namespace DungeonInn.View.Scene.MainScene.World
                     await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, scheduleDeltaGameSeconds);
                     cancellationToken.ThrowIfCancellationRequested();
                     await recoverAdventurerAtInnUseCase.EnsureReservationsAsync(gameWorldState, result.CurrentScheduleTick);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
+                {
+                    aiEvaluationFrameId++;
+                    await advanceActorAiOrchestrator.ExecuteAsync(
+                        gameWorldState.Actors,
+                        result.ElapsedGameTimeSeconds,
+                        aiEvaluationFrameId,
+                        0f);
                     cancellationToken.ThrowIfCancellationRequested();
                 }
 

@@ -6,12 +6,12 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Domain.Map;
 
-namespace DungeonInn.Application.UseCase
+namespace DungeonInn.Application.Service
 {
     public sealed class AdventurerExplorationStateService : IDisposable
     {
         readonly Dictionary<Guid, LayerPosition> destinations = new();
-        readonly IDisposable deathSubscription;
+        DisposableBag bag;
 
         [Inject]
         public AdventurerExplorationStateService(IEventSubscriber eventSubscriber)
@@ -21,8 +21,12 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(eventSubscriber));
             }
 
-            deathSubscription = eventSubscriber.OnEvent<ActorDefeated>()
-                .Subscribe(gameEvent => { RemoveDestination(gameEvent.ActorId); });
+            eventSubscriber.OnEvent<ActorDefeated>()
+                .Subscribe(gameEvent => { RemoveDestination(gameEvent.ActorId); })
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ActorDeparted>()
+                .Subscribe(gameEvent => { RemoveDestination(gameEvent.ActorId); })
+                .AddTo(ref bag);
         }
 
         public bool TryGetDestination(Guid actorId, out LayerPosition destination)
@@ -42,7 +46,7 @@ namespace DungeonInn.Application.UseCase
 
         public void Dispose()
         {
-            deathSubscription.Dispose();
+            bag.Dispose();
         }
     }
 }

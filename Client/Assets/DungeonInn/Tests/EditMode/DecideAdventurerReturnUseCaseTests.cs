@@ -7,6 +7,7 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Profiles;
+using DungeonInn.Application.Service;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
@@ -46,7 +47,7 @@ namespace DungeonInn.Tests.EditMode
             using var useCase = CreateUseCase(combatService, eventBus);
             var worldState = new GameWorldState();
             var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
-            actor.Inventory.Add(new ItemStack(1002, 2));
+            actor.GainItem(new ItemStack(1002, 2));
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
@@ -163,7 +164,7 @@ namespace DungeonInn.Tests.EditMode
             using var useCase = CreateUseCase(combatService, eventBus);
             var worldState = new GameWorldState();
             var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), 39);
-            actor.Inventory.Add(new ItemStack(2001, 1));
+            actor.GainItem(new ItemStack(2001, 1));
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
@@ -182,7 +183,7 @@ namespace DungeonInn.Tests.EditMode
             using var useCase = CreateUseCase(combatService, eventBus);
             var worldState = new GameWorldState();
             var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), 19);
-            actor.Inventory.Add(new ItemStack(2001, 1));
+            actor.GainItem(new ItemStack(2001, 1));
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 

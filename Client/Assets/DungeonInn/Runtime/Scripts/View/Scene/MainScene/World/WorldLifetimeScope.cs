@@ -5,6 +5,7 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Orchestration;
 using DungeonInn.Application.UseCase;
+using DungeonInn.Application.Service;
 using DungeonInn.Domain.Common;
 using UnityEngine;
 using VContainer;
@@ -61,6 +62,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .As<IGameWorldState>()
                 .As<IGameWorldStateReader>()
                 .As<IGameWorldStateWriter>();
+            builder.Register<WorldMapViewDataProvider>(Lifetime.Scoped).As<IWorldMapViewDataProvider>();
+            builder.Register<ActorViewDataProvider>(Lifetime.Scoped).As<IActorViewDataProvider>();
             builder.Register<GameWorldFrameBuffer>(Lifetime.Scoped);
             builder.Register<InitializeWorldMapUseCase>(Lifetime.Scoped);
             builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Scoped);

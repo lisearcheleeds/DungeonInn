@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Map;
 using UnityEngine;
 using VContainer;
 
@@ -20,9 +20,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
         }
 
-        public WorldActorView GetOrCreateActorView(Actor actor, Sprite sprite, out bool created)
+        public WorldActorView GetOrCreateActorView(Guid actorId, LayerPosition position, Sprite sprite, out bool created)
         {
-            if (actorViews.TryGetValue(actor.Id, out var actorView))
+            if (actorViews.TryGetValue(actorId, out var actorView))
             {
                 created = false;
                 if (actorView.SpriteRenderer.sprite != sprite)
@@ -33,21 +33,21 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return actorView;
             }
 
-            var actorObject = new GameObject($"Actor_{actor.Id}");
-            actorObject.name = $"Actor_{actor.Id}";
+            var actorObject = new GameObject($"Actor_{actorId}");
+            actorObject.name = $"Actor_{actorId}";
             actorObject.layer = WorldRenderingLayer.Layer;
             var spriteRenderer = actorObject.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = sprite;
             actorView = new WorldActorView(actorObject, spriteRenderer);
-            actorViews.Add(actor.Id, actorView);
-            SetActorLayer(actorView, actor);
+            actorViews.Add(actorId, actorView);
+            SetActorLayer(actorView, position);
             created = true;
             return actorView;
         }
 
-        public void SetActorLayer(WorldActorView actorView, Actor actor)
+        public void SetActorLayer(WorldActorView actorView, LayerPosition position)
         {
-            var actorRoot = layerViewRegistry.GetOrCreateActorRoot(actor.Position.LayerId);
+            var actorRoot = layerViewRegistry.GetOrCreateActorRoot(position.LayerId);
             if (actorView.ActorObject.transform.parent != actorRoot)
             {
                 actorView.ActorObject.transform.SetParent(actorRoot, false);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DungeonInn.Domain.Commerce;
 using DungeonInn.Domain.Item;
 
@@ -63,6 +64,26 @@ namespace DungeonInn.Domain.Facility
         {
             var multiplier = request.PurchasedItems.Count == 0 ? 1 : request.PurchasedItems.Count;
             return new ItemStack(SpecialItemIds.Money, BasePrice * multiplier * Level);
+        }
+
+        bool IExchangeParticipant.HasAll(IReadOnlyList<ItemStack> items)
+        {
+            return Inventory.HasAll(items);
+        }
+
+        bool IExchangeParticipant.CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
+        {
+            return Inventory.CanAddAfterRemoving(toRemove, toAdd);
+        }
+
+        void IExchangeParticipant.RemoveRange(IReadOnlyList<ItemStack> items)
+        {
+            Inventory.RemoveRange(items);
+        }
+
+        void IExchangeParticipant.AddRange(IReadOnlyList<ItemStack> items)
+        {
+            Inventory.AddRange(items);
         }
     }
 }

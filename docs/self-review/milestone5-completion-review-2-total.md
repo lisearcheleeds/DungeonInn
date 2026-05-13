@@ -782,3 +782,95 @@ Effect 実行中に Resolver / Executor がその場で event を publish して
 |---|---|
 | Lighthouse 禁止 API（Resources.LoadAsync / SceneManager.LoadSceneAsync） | 既存違反・今回追加なし |
 | 重複6: ID 型統一 | 方針決定のみ先行 |
+
+---
+
+## Codex対応ログ 2026-05-13
+
+対応項目:
+
+- 整合性3: 宿泊費不足時の状態遷移は現行挙動（`Preparing` に戻す）を正とし、`docs/roadmap/milestone3-roadmap.md` の Phase 5 / Phase 12 記述を更新した。
+- 整合性1: `WorldGameLoopEntryPoint.TickAsync()` に `AdvanceActorAiOrchestrator.ExecuteAsync()` を接続した。既存の `WorldLifetimeScope` 登録を利用し、DI注入を追加した。
+- 整合性2: `SpawnScheduledMonsterOrchestrator` の `spawnTable.Entries[0]` 固定参照を、`Weight` に基づく重み付き抽選へ変更した。`SpawnTableTargetType.ActorArchetype` 検証も追加した。
+- 重複5: `docs/guidelines/application-boundary-guidelines.md` に DungeonInn の UseCase / Service / StateService / Orchestrator 命名規則を追記した。既存クラスのリネームは互換性維持のため今回行わない方針を明記した。
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- 追加差分に対する禁止API検索: 追加なし
+- `Addressables.LoadAssetAsync`: 追加なし
+- `Resources.Load` / `Resource.Load`: 追加なし
+- `Task` / `ValueTask`: 追加なし
+- DI登録: `AdvanceActorAiOrchestrator` は既存の `WorldLifetimeScope` 登録を利用
+- `LighthouseGenerated` 以下: 編集なし
+
+## Claude Code対応ログ 2026-05-13（続き）
+
+ユーザー指示により、推奨対応順の「Milestone 5 完了前」4項目完了後、「Milestone 6 開始前」10項目をCodexへ1項目ずつ送付して対応。
+
+### 設計1: Inventory 集約境界（ユーザー追加指示）
+
+- `IExchangeParticipant.Inventory { get; }` を削除し、`HasAll` / `CanAddAfterRemoving` / `RemoveRange` / `AddRange` の4メソッドに置き換えた
+- `Actor.cs`: `public Inventory` を `public IReadOnlyInventory` に変更、4メソッドの明示的実装を追加（`GainItem` / `GainItems` / `RemoveItem` / `RemoveItems` / `TrySpendGold` も追加）
+- `AdventurerGuild.cs`: 同様に4メソッドの明示的実装を追加
+- `Facility.cs`: 同様に4メソッドの明示的実装を追加
+- `ExchangeExecutor.cs`: `initiator.Inventory.HasAll()` → `initiator.HasAll()` 等に全面置き換え
+- `Actor.RefreshParams()`: `public` → `private`（整合性8 Option A と同時対応）
+
+### 設計2: Domain static Catalog 依存
+
+- 確認の結果、`WeaponCombatCalculatorFactory` はすでに `WeaponTypeCombatMaster` をパラメータで受け取る形に修正済みだった（本セッション前に対応済み）
+- `WeaponMaster` コンストラクタも同様に外部注入形式になっていた
+- 対応不要と判断
+
+### 総合1: ActorDeparted 時の state cleanup 漏れ
+
+- `AdventurerRecoveryStateService` / `AdventurerExplorationStateService`: `ActorDeparted` イベントの購読と cleanup を追加
+- `ActorNavigationService`: `IDisposable` 実装追加、`ActorDeparted` / `ActorDefeated` 購読追加、`RemovePathState()` 追加
+- 上記3クラスを `Application/UseCase/` から `Application/Service/` へ移動（設計4と同時対応）
+
+### 整合性4: 武器計算インターフェース設計判断確定
+
+- 「攻撃力計算（IWeaponCalculator）」と「戦闘性能（IWeaponCombatCalculator）」の分離を維持する判断を確定
+- `docs/design/combat-domain-design.md` に分離方針と使い分け根拠を追記
+
+### 整合性8: RefreshParams() キャッシュポリシー確定
+
+- Option A（Entity 内部で自動更新）を採用
+- `Actor.RefreshParams()` を `private` に変更（設計1対応の中で実施）
+
+### 設計3: View の IGameWorldStateReader 依存（ユーザー追加指示）
+
+- `WorldMapLayerViewData` から `MapLayer Layer` プロパティを除去し、`Width` / `Height` を追加
+- `WorldMapViewDataProvider` を新設して View へは DTO のみを渡す構造に変更
+- `WorldMapView.cs`: `IGameWorldStateReader` 依存を `IWorldMapViewDataProvider` に置き換え
+- `MapMeshBuildService.BuildChunk()` を `MapLayer` → `MapLayerId` 引数に変更、`layer.GetCellCenter()` を `GameConstants.MapCellSizeMeters` で置き換え
+- `WorldGameLogPresenter` は debug build 限定（`Debug.isDebugBuild` ガード済み）のため許容
+
+### 設計4: 状態保持 Service のフォルダ整理
+
+- `AdventurerRecoveryStateService` / `AdventurerExplorationStateService` / `AdventurerReturnTrackingService` を `Application/UseCase/` → `Application/Service/` へ移動
+- namespace を `DungeonInn.Application.Service` に変更
+
+### パフォーマンス2: WorldGameLogPresenter の常時購読
+
+- 確認の結果、`Initialize()` 冒頭に `if (!Debug.isDebugBuild) return;` ガードがすでに実装済みだった
+- 対応不要と判断
+
+### 重複1: InnEconomyStatus / InnDailyReport 整理
+
+- `Domain/Guild/InnEconomySummary.cs` を新設（共通フィールドを保持する値型）
+- `InnEconomyStatus` が `InnEconomySummary Current` を内包する形に変更
+- 既存プロパティ（`GuestsToday` 等）は `Current.` 経由の委譲に変更（外部 API 互換を維持）
+
+### 重複2: ActiveStatusEffect の runtime/spec 分離
+
+- `ActiveStatusEffect` に `public StatusEffectSpec Spec { get; }` を追加
+- `Type` / `AggregationPolicy` / `TickIntervalSeconds` は `Spec` への委譲に変更
+- 再付与時に変わる可変値（`Amount` / `DurationSeconds` / `ElapsedSeconds` / `AppliedAmount`）のみ runtime state として保持
+
+### 最終検証（全対応完了後）
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- 禁止API追加なし（Addressables.LoadAssetAsync / Resources.Load / Task / ValueTask）
+- LighthouseGenerated 以下: 編集なし

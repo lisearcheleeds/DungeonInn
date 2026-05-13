@@ -5,6 +5,7 @@ using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Service;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Item;

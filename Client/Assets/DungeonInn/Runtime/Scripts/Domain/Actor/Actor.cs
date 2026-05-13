@@ -16,9 +16,10 @@ namespace DungeonInn.Domain.Actor
         public ActorStats Stats { get; private set; }
         public ActorParams Params { get; private set; }
         readonly ActorEquipment equipment;
+        readonly Inventory inventory;
 
         public IReadOnlyActorEquipment Equipment => equipment;
-        public Inventory Inventory { get; }
+        public IReadOnlyInventory Inventory => inventory;
         public int Level { get; private set; }
         public int Experience { get; private set; }
         public int Hp { get; private set; }
@@ -66,7 +67,7 @@ namespace DungeonInn.Domain.Actor
             Id = id;
             ArchetypeId = archetypeId;
             Stats = stats ?? throw new ArgumentNullException(nameof(stats));
-            Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
+            this.inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
             equipment = new ActorEquipment();
             Level = level;
             Experience = Math.Max(0, experience);
@@ -231,6 +232,51 @@ namespace DungeonInn.Domain.Actor
             }
         }
 
+        public void GainItem(ItemStack itemStack)
+        {
+            inventory.Add(itemStack);
+        }
+
+        public void GainItems(IEnumerable<ItemStack> itemStacks)
+        {
+            inventory.AddRange(itemStacks);
+        }
+
+        public void RemoveItem(ItemStack itemStack)
+        {
+            inventory.Remove(itemStack);
+        }
+
+        public void RemoveItems(IEnumerable<ItemStack> itemStacks)
+        {
+            inventory.RemoveRange(itemStacks);
+        }
+
+        public bool TrySpendGold(int amount)
+        {
+            return inventory.TrySpendGold(amount);
+        }
+
+        bool IExchangeParticipant.HasAll(IReadOnlyList<ItemStack> items)
+        {
+            return inventory.HasAll(items);
+        }
+
+        bool IExchangeParticipant.CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
+        {
+            return inventory.CanAddAfterRemoving(toRemove, toAdd);
+        }
+
+        void IExchangeParticipant.RemoveRange(IReadOnlyList<ItemStack> items)
+        {
+            inventory.RemoveRange(items);
+        }
+
+        void IExchangeParticipant.AddRange(IReadOnlyList<ItemStack> items)
+        {
+            inventory.AddRange(items);
+        }
+
         public bool HasActorEffect(int actorEffectMasterId)
         {
             return TryFindActorEffect(actorEffectMasterId, out _);
@@ -299,8 +345,7 @@ namespace DungeonInn.Domain.Actor
             RefreshWeaponCombatParams();
         }
 
-        // Intentionally public: UseCase can trigger cache refresh when needed (e.g., after applying buffs/debuffs externally).
-        public void RefreshParams()
+        void RefreshParams()
         {
             Params = new ActorParamCalculator().Calculate(Stats, Equipment.All, Behavior, Level);
             RefreshWeaponAttack();

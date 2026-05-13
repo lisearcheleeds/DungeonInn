@@ -144,10 +144,10 @@ namespace DungeonInn.Application.UseCase
             if (currentEquipment != null)
             {
                 actor.Unequip(slot);
-                actor.Inventory.Add(new ItemStack(currentEquipment.ItemId, 1));
+                actor.GainItem(new ItemStack(currentEquipment.ItemId, 1));
             }
 
-            actor.Inventory.Remove(new ItemStack(bestCandidate.ItemId, 1));
+            actor.RemoveItem(new ItemStack(bestCandidate.ItemId, 1));
 
             if (slot == EquipmentSlot.Weapon)
             {

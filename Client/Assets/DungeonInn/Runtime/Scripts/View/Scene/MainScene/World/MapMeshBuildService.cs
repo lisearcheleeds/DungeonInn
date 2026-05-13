@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using UnityEngine;
 
@@ -15,18 +16,13 @@ namespace DungeonInn.View.Scene.MainScene.World
         }
 
         public MapChunkMesh BuildChunk(
-            MapLayer layer,
+            MapLayerId layerId,
             int startX,
             int startZ,
             int width,
-            int depth,
+            int height,
             Func<GridPosition, TileVisualKind> resolveVisualKind)
         {
-            if (layer == null)
-            {
-                throw new ArgumentNullException(nameof(layer));
-            }
-
             if (resolveVisualKind == null)
             {
                 throw new ArgumentNullException(nameof(resolveVisualKind));
@@ -38,25 +34,20 @@ namespace DungeonInn.View.Scene.MainScene.World
             var materials = new List<Material>();
             var visualKinds = new List<TileVisualKind>();
 
-            for (var z = startZ; z < startZ + depth; z++)
+            for (var z = startZ; z < startZ + height; z++)
             {
                 for (var x = startX; x < startX + width; x++)
                 {
                     var position = new GridPosition(x, z);
-                    if (!layer.Contains(position))
-                    {
-                        continue;
-                    }
-
                     var visualKind = resolveVisualKind(position);
                     var visualDefinition = tileVisualConfig.Get(visualKind);
-                    AddPlane(layer, position, visualDefinition, vertices, uv, trianglesByKind, materials, visualKinds);
+                    AddPlane(position, visualDefinition, vertices, uv, trianglesByKind, materials, visualKinds);
                 }
             }
 
             var mesh = new Mesh
             {
-                name = $"MapChunk_{layer.Id.Value}_{startX}_{startZ}"
+                name = $"MapChunk_{layerId.Value}_{startX}_{startZ}"
             };
             mesh.SetVertices(vertices);
             mesh.SetUVs(0, uv);
@@ -73,7 +64,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         }
 
         static void AddPlane(
-            MapLayer layer,
             GridPosition position,
             TileVisualDefinition visualDefinition,
             List<Vector3> vertices,
@@ -82,14 +72,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             List<Material> materials,
             List<TileVisualKind> visualKinds)
         {
-            var cellCenter = layer.GetCellCenter(position);
-            var halfSize = layer.CellSizeMeters * 0.5f;
+            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
+            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
+            var halfSize = GameConstants.MapCellSizeMeters * 0.5f;
             var vertexStart = vertices.Count;
 
-            vertices.Add(new Vector3(cellCenter.X - halfSize, 0f, cellCenter.Z - halfSize));
-            vertices.Add(new Vector3(cellCenter.X - halfSize, 0f, cellCenter.Z + halfSize));
-            vertices.Add(new Vector3(cellCenter.X + halfSize, 0f, cellCenter.Z + halfSize));
-            vertices.Add(new Vector3(cellCenter.X + halfSize, 0f, cellCenter.Z - halfSize));
+            vertices.Add(new Vector3(cellCenterX - halfSize, 0f, cellCenterZ - halfSize));
+            vertices.Add(new Vector3(cellCenterX - halfSize, 0f, cellCenterZ + halfSize));
+            vertices.Add(new Vector3(cellCenterX + halfSize, 0f, cellCenterZ + halfSize));
+            vertices.Add(new Vector3(cellCenterX + halfSize, 0f, cellCenterZ - halfSize));
 
             uv.Add(new Vector2(0f, 0f));
             uv.Add(new Vector2(0f, 1f));

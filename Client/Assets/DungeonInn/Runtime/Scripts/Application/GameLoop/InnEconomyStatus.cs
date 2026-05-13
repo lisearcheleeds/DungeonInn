@@ -1,20 +1,23 @@
 namespace DungeonInn.Application.GameLoop
 {
+    using DungeonInn.Domain.Guild;
+
     public readonly struct InnEconomyStatus
     {
         public int CurrentDay { get; }
-        public int GuestsToday { get; }
-        public int RejectedGuestsToday { get; }
-        public int DemandToday { get; }
-        public int SalesToday { get; }
-        public int SatisfactionDeltaToday { get; }
-        public int Reputation { get; }
-        public int OccupiedRooms { get; }
-        public int RoomCapacity { get; }
-        public int OccupancyPercent { get; }
-        public int GuildGold { get; }
-        public int RookieSwordStock { get; }
-        public int RookieArmorStock { get; }
+        public InnEconomySummary Current { get; }
+        public int GuestsToday => Current.Guests;
+        public int RejectedGuestsToday => Current.RejectedGuests;
+        public int DemandToday => Current.Demand;
+        public int SalesToday => Current.Sales;
+        public int SatisfactionDeltaToday => Current.SatisfactionDelta;
+        public int Reputation => Current.Reputation;
+        public int OccupiedRooms => Current.OccupiedRooms;
+        public int RoomCapacity => Current.RoomCapacity;
+        public int OccupancyPercent => Current.OccupancyPercent;
+        public int GuildGold => Current.GuildGold;
+        public int RookieSwordStock => Current.RookieSwordStock;
+        public int RookieArmorStock => Current.RookieArmorStock;
 
         public InnEconomyStatus(
             int currentDay,
@@ -32,18 +35,19 @@ namespace DungeonInn.Application.GameLoop
             int rookieArmorStock)
         {
             CurrentDay = currentDay;
-            GuestsToday = guestsToday;
-            RejectedGuestsToday = rejectedGuestsToday;
-            DemandToday = demandToday;
-            SalesToday = salesToday;
-            SatisfactionDeltaToday = satisfactionDeltaToday;
-            Reputation = reputation;
-            OccupiedRooms = occupiedRooms;
-            RoomCapacity = roomCapacity;
-            OccupancyPercent = occupancyPercent;
-            GuildGold = guildGold;
-            RookieSwordStock = rookieSwordStock;
-            RookieArmorStock = rookieArmorStock;
+            Current = new InnEconomySummary(
+                guestsToday,
+                rejectedGuestsToday,
+                demandToday,
+                salesToday,
+                satisfactionDeltaToday,
+                reputation,
+                occupiedRooms,
+                roomCapacity,
+                occupancyPercent,
+                guildGold,
+                rookieSwordStock,
+                rookieArmorStock);
         }
     }
 }
