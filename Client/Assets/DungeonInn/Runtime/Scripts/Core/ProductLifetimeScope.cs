@@ -1,11 +1,12 @@
 using DungeonInn.Application.Factory;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
-using DungeonInn.Infrastructure.AssetLoader;
+using DungeonInn.Infrastructure.TextTable;
 using DungeonInn.Input;
 using DungeonInn.Master;
 using Lighthouse.Scene;
 using Lighthouse.Scene.SceneCamera;
+using LighthouseExtends.Addressable;
 using LighthouseExtends.Font;
 using LighthouseExtends.InputLayer;
 using LighthouseExtends.Language;
@@ -87,7 +88,8 @@ namespace DungeonInn.Core
                     builder.Register<InputLayerController>(Lifetime.Singleton).AsImplementedInterfaces();
                 }
 
-                builder.Register<ProductAssetLoader>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<AssetManager>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<ProductTextTableLoader>(Lifetime.Singleton).As<ITextTableLoader>();
                 builder.Register<HardcodedMasterRepository>(Lifetime.Singleton)
                     .As<IMasterRepository>()
                     .As<IItemMasterRepository>()

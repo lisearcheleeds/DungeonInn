@@ -5,35 +5,22 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using LighthouseExtends.Font;
-using LighthouseExtends.ScreenStack;
 using LighthouseExtends.TextTable;
 using UnityEngine;
 using VContainer;
-using VContainer.Unity;
 
-namespace DungeonInn.Infrastructure.AssetLoader
+namespace DungeonInn.Infrastructure.TextTable
 {
-    public sealed class ProductAssetLoader : IScreenStackInstanceFactory, ITextTableLoader
+    public sealed class ProductTextTableLoader : ITextTableLoader
     {
         const string TsvSubFolder = "TextTables";
 
-        readonly IObjectResolver objectResolver;
         readonly IFontService fontService;
 
         [Inject]
-        public ProductAssetLoader(IObjectResolver objectResolver, IFontService fontService)
+        public ProductTextTableLoader(IFontService fontService)
         {
-            this.objectResolver = objectResolver;
-            this.fontService = fontService;
-        }
-
-        async UniTask<TScreenStack> IScreenStackInstanceFactory.CreateScreenStackInstance<TScreenStack>(string screenStackAddress, IScreenStackData data, CancellationToken ct)
-        {
-            var request = Resources.LoadAsync<GameObject>(screenStackAddress);
-            await request.ToUniTask(cancellationToken: ct);
-            var prefab = request.asset as GameObject;
-            var gameObject = objectResolver.Instantiate(prefab);
-            return gameObject.GetComponents<MonoBehaviour>().OfType<TScreenStack>().First();
+            this.fontService = fontService ?? throw new ArgumentNullException(nameof(fontService));
         }
 
 #if UNITY_WEBGL && !UNITY_EDITOR

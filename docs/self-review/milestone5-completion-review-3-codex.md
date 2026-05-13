@@ -846,3 +846,35 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `Task` / `ValueTask`: 追加なし
 - DI登録: 新規登録なし。既存 `IEventPublisher` 登録を既存 UseCase コンストラクタへ追加注入。
 - `LighthouseGenerated` 以下: 編集なし
+
+## Codex対応ログ 2026-05-13（続き4）
+
+対応項目:
+
+- その他レビュー1: `ProductAssetLoader` に残っていた `Resources.LoadAsync` の直接使用を排除した。
+- `ProductAssetLoader` は ScreenStack 読み込みと TextTable 読み込みを product singleton に集約しすぎており、`IAssetScope` の寿命を機能単位に閉じる方針と合わないため削除した。
+- ScreenStack 読み込みは `ScreenStackInstanceFactory` に分離し、`ScreenStackLifetimeScope` に scoped 登録した。factory が `IAssetManager.CreateScope()` で作った `IAssetScope` を保持し、ScreenStack module scope の破棄時に解放する。
+- TextTable 読み込みは `ProductTextTableLoader` に分離し、`ProductLifetimeScope` では `ITextTableLoader` として登録した。TextTable は StreamingAssets 読み込みと font atlas prewarm の責務のみを持つ。
+- `ProductLifetimeScope` に `LighthouseExtends.Addressable.AssetManager` を singleton 登録した。
+- `DungeonInn.Runtime.asmdef` に `LighthouseExtends.Addressable.Runtime` と関連 Runtime assembly 参照を追加し、Addressable 拡張をプロジェクト Runtime assembly から利用できるようにした。
+- `Launcher` の `SceneManager.LoadSceneAsync` は、Lighthouse の MainScene / ModuleScene 遷移ではなく root/bootstrap scene の再ロード用途であり、VContainer / Lighthouse の起動土台を作り直す経路のため、今回の置換対象から外して明文化された例外として追跡する。
+
+完了条件チェック:
+
+- [x] `ProductAssetLoader` が `Resources.LoadAsync` を直接使用していない
+- [x] ScreenStack prefab 読み込みが ScreenStack module scope の `IAssetScope` 経由に乗っている
+- [x] TextTable 読み込みが専用 `ITextTableLoader` 実装に分離されている
+- [x] `AssetManager` が `ProductLifetimeScope` に DI 登録されている
+- [x] `Launcher` の `SceneManager.LoadSceneAsync` は bootstrap / reboot 例外として理由が記録されている
+- [x] `uloop.cmd compile --project-path Client` が成功している
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（220 passed）
+- 禁止API検索: `Resources.Load` / `Addressables.LoadAssetAsync` のプロジェクト直接使用なし。`ProductTextTableLoader` の `UnityWebRequest.Result` / `request.result` は `.Result` 検索の false positive。`Launcher.cs` の `SceneManager.LoadSceneAsync` は bootstrap / reboot 例外として継続検出。
+- `Addressables.LoadAssetAsync`: 追加なし
+- `Resources.Load` / `Resource.Load`: 追加なし
+- `Task` / `ValueTask`: 追加なし
+- DI登録: `AssetManager` を singleton 登録
+- `LighthouseGenerated` 以下: 編集なし

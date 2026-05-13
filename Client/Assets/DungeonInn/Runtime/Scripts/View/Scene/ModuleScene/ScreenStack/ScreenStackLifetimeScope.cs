@@ -14,6 +14,7 @@ namespace DungeonInn.View.Scene.ModuleScene.ScreenStack
             base.Configure(builder);
 
             builder.Register<ScreenStackEntityFactory>(Lifetime.Singleton).AsImplementedInterfaces();
+            builder.Register<ScreenStackInstanceFactory>(Lifetime.Scoped).AsImplementedInterfaces();
 
             builder.RegisterComponentInNewPrefab(screenStackBackgroundInputBlockerPrefab, Lifetime.Singleton).AsImplementedInterfaces();
         }

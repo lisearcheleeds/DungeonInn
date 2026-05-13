@@ -58,6 +58,59 @@ public async UniTask<WorldConfigData> LoadAsync()
 }
 ```
 
+**AssetScope の寿命ルール**:
+
+- `IAssetScope` は「そのアセットを必要とする機能・画面・サービスの寿命」に合わせて保持する。
+- Product 全体の singleton loader に複数機能のロード責務を集約しない。
+- ScreenStack prefab は ScreenStack の LifetimeScope / factory が scope を持つ。
+- TextTable は TextTable 専用 loader に分離し、ScreenStack や汎用 asset loader と混ぜない。
+
+```csharp
+// NG: Product 全体の singleton loader が複数責務を抱え、scope 寿命も機能寿命と一致しない
+public sealed class ProductAssetLoader : IScreenStackInstanceFactory, ITextTableLoader, IDisposable
+{
+    readonly Dictionary<string, (IAssetScope scope, GameObject prefab)> screenStackPrefabCache = new();
+
+    public async UniTask<TScreenStack> CreateScreenStackInstance<TScreenStack>(...)
+    {
+        var scope = assetManager.CreateScope();
+        var handle = await scope.LoadAsync<GameObject>(screenStackAddress, ct);
+        screenStackPrefabCache.Add(screenStackAddress, (scope, handle.Asset));
+        ...
+    }
+
+    public UniTask<IReadOnlyDictionary<string, string>> LoadAsync(...) { ... }
+}
+
+// OK: ScreenStack module scope の中で ScreenStack 用 factory が scope を持つ
+public sealed class ScreenStackInstanceFactory : IScreenStackInstanceFactory, IDisposable
+{
+    readonly IAssetScope assetScope;
+
+    public ScreenStackInstanceFactory(IAssetManager assetManager)
+    {
+        assetScope = assetManager.CreateScope();
+    }
+
+    public async UniTask<TScreenStack> CreateScreenStackInstance<TScreenStack>(...)
+    {
+        var handle = await assetScope.LoadAsync<GameObject>(screenStackAddress, ct);
+        ...
+    }
+
+    public void Dispose() => assetScope.Dispose();
+}
+```
+
+**サンプル / 一時的な仮実装の例外**:
+
+学習用サンプル、検証用プロトタイプ、段階的移行中の仮実装では、責務が広い loader や仮の `Resources.Load` 経路を一時的に置いてよい。ただし、必ず TODO コメントで「なぜ一時的か」「正式対応でどこへ移すか」を書くこと。
+
+```csharp
+// TODO(milestoneX): Prototype only. Replace with ScreenStackInstanceFactory
+// scoped to ScreenStackLifetimeScope before production use.
+```
+
 #### 2. SceneManager 直接呼び出し禁止
 
 ```csharp
@@ -72,6 +125,25 @@ SceneManager.LoadSceneAsync("WorldScene");
 // OK
 await sceneManager.TransitionScene(new WorldScene.WorldTransitionData());
 await sceneManager.BackScene();
+```
+
+**例外: bootstrap / reboot 用 Launcher**
+
+`Launcher` のように、VContainer / Lighthouse の root を起動・再起動する bootstrap scene では、Lighthouse の MainScene / ModuleScene 遷移がまだ利用できない、または作り直し対象そのものになる。この場合に限り、`SceneManager.LoadSceneAsync` を例外として許可する。
+
+例外として許可する条件:
+
+- root / bootstrap scene のロードまたは reboot 経路である
+- 通常のゲーム画面遷移、MainScene 遷移、ModuleScene 遷移ではない
+- 例外理由をコメントまたは設計ドキュメントに明記している
+- 将来 Lighthouse 側に正式な bootstrap API が用意された場合の移行 TODO を残している
+
+```csharp
+// OK: bootstrap / reboot exception.
+// TODO: Replace with Lighthouse bootstrap API if the framework provides one.
+await UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(
+    LauncherSceneName,
+    UnityEngine.SceneManagement.LoadSceneMode.Single);
 ```
 
 #### 3. Task / ValueTask 禁止
