@@ -22,6 +22,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
             builder.Register<WorldViewRoot>(Lifetime.Scoped);
+            builder.RegisterInstance(new LayerPositionViewSettings()).AsSelf();
             builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
             builder.Register<MapMaterialSet>(Lifetime.Scoped);
             builder.Register<MapTileVisualConfig>(Lifetime.Scoped);

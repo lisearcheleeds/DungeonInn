@@ -10,6 +10,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly LayerPositionViewMapper positionMapper;
         readonly WorldActorViewRegistry actorViewRegistry;
         readonly ActorSpriteVisualConfig actorSpriteVisualConfig;
+        readonly HashSet<Guid> activeActorIds = new();
 
         public WorldActorPresenter(
             IGameWorldStateReader gameWorldState,
@@ -25,7 +26,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void UpdateVisuals()
         {
-            var activeActorIds = new HashSet<Guid>();
+            activeActorIds.Clear();
             foreach (var actor in gameWorldState.Actors)
             {
                 activeActorIds.Add(actor.Id);

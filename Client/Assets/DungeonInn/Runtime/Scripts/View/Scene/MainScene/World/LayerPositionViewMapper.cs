@@ -1,13 +1,20 @@
+using System;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class LayerPositionViewMapper
     {
-        const float LayerHeightOffset = -240f;
-        const float ActorHeightOffset = 1.5f;
+        readonly LayerPositionViewSettings settings;
+
+        [Inject]
+        public LayerPositionViewMapper(LayerPositionViewSettings settings)
+        {
+            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        }
 
         public Vector3 ToUnityPosition(LayerPosition position)
         {
@@ -16,12 +23,12 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public Vector3 ToActorUnityPosition(LayerPosition position)
         {
-            return ToUnityPosition(position) + Vector3.up * ActorHeightOffset;
+            return ToUnityPosition(position) + Vector3.up * settings.ActorHeightOffset;
         }
 
         public float ResolveLayerY(MapLayerId layerId)
         {
-            return layerId.Value * LayerHeightOffset;
+            return layerId.Value * settings.LayerHeightOffset;
         }
     }
 }

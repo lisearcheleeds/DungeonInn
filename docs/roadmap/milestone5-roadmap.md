@@ -152,6 +152,7 @@ UI 表示:
 - `WorldActorDebugVisualizer` は互換用ファサードとして残し、map 表示を `WorldMapView`、Actor 表示を `WorldActorPresenter` / `WorldActorViewRegistry`、root 管理を `WorldViewRoot`、座標変換を `LayerPositionViewMapper` へ分離した。
 - `WorldCameraController` を登録し、Phase 5 の camera control 実装先を確保した。
 - 既存の debug Sphere / Plane 表示は維持しており、Phase 4 / Phase 6 で正式表示へ置き換える。
+- `WorldActorDebugVisualizer` は Phase 7 まで互換用ファサードとして残す。Feature Flag による切り替えではなく、正式 View への委譲先を固定し、Phase 7 で debug primitive 生成を撤去する。
 - `uloop.cmd compile --project-path Client` 成功。
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。215 件 passed。
 - PlayMode を短時間起動し、`WorldGameLoop` 初期化、Actor spawn、AI ログを確認。Error 0 件。
@@ -198,6 +199,27 @@ UI 表示:
 - `uloop.cmd compile --project-path Client` 成功。
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。215 件 passed。
 - PlayMode を短時間起動し、VisualConfig の DI 解決と初期化ログを確認。Error 0 件。
+
+## Phase 2.5: Phase 3 前レビュー対応
+
+目的:
+
+- `docs/self-review/milestone5-phase2-review-response.md` で Phase 3 前に対応すると判断した小さな設計負債を解消する。
+- Phase 3 の座標変換 / 表示 Layer 管理に入る前に、表示座標の調整点と毎フレーム更新処理を整える。
+
+対応内容:
+
+- `LayerPositionViewMapper` の固定値を `LayerPositionViewSettings` へ移す。
+- `WorldActorPresenter` の毎フレーム `HashSet<Guid>` 生成をやめ、フィールドを再利用する。
+- `WorldDebugMaterialFactory` の Shader フォールバックを安全化する。
+- `WorldActorDebugVisualizer` は互換用ファサードとして Phase 7 まで残す方針を明記する。
+
+完了条件:
+
+- 表示座標の高さ調整値が設定クラスから注入されている。
+- Actor 表示更新で不要な `HashSet<Guid>` 生成が残っていない。
+- Debug Material 用 Shader が見つからない場合の挙動が明確である。
+- `uloop.cmd compile --project-path Client` が成功する。
 
 ## Phase 3: 座標変換 / 表示 Layer 管理
 
