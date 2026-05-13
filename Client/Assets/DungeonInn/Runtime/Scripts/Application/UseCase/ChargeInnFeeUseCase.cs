@@ -9,12 +9,12 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class ChargeInnFeeService
+    public sealed class ChargeInnFeeUseCase
     {
         readonly IEventPublisher eventPublisher;
 
         [Inject]
-        public ChargeInnFeeService(IEventPublisher eventPublisher)
+        public ChargeInnFeeUseCase(IEventPublisher eventPublisher)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }

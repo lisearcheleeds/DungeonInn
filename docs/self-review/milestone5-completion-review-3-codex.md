@@ -878,3 +878,32 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `Task` / `ValueTask`: 追加なし
 - DI登録: `AssetManager` を singleton 登録
 - `LighthouseGenerated` 以下: 編集なし
+
+## Codex対応ログ 2026-05-13（続き5）
+
+対応項目:
+
+- 設計レビュー4: `UseCase / Service` の命名と配置が混在していた問題を修正した。
+- 長期状態を持たず、Domain 変更と Event 発行を行う単発コマンドを `XxxUseCase` に統一した。
+- `ActorSpawnCompletionService` は責務名を `CompleteActorSpawnUseCase` に変更した。
+- `ChargeInnFeeService` / `DespawnAdventurerService` / `GrantExperienceService` / `DropItemService` は、それぞれ `ChargeInnFeeUseCase` / `DespawnAdventurerUseCase` / `GrantExperienceUseCase` / `DropItemUseCase` に変更した。
+- `WorldLifetimeScope` の DI 登録、UseCase / Orchestrator の注入型、EditMode テストの生成箇所を新しい責務名へ更新した。
+- `DropItemServiceTests` は `DropItemUseCaseTests` に変更した。
+- `docs/guidelines/application-boundary-guidelines.md` の暫定リネーム方針を、現行の `XxxUseCase` 統一済み方針へ更新した。
+
+完了条件チェック:
+
+- [x] `ChargeInnFeeService` / `GrantExperienceService` / `DropItemService` / `DespawnAdventurerService` がコード上に残っていない
+- [x] `CompleteActorSpawnUseCase` / `ChargeInnFeeUseCase` / `DespawnAdventurerUseCase` / `GrantExperienceUseCase` / `DropItemUseCase` が `Application/UseCase` 配下に配置されている
+- [x] `WorldLifetimeScope` の DI 登録が新しい責務名に更新されている
+- [x] テスト内の型名・ヘルパー名が新しい責務名に更新されている
+- [x] `docs/guidelines/application-boundary-guidelines.md` が現行名に更新されている
+
+検証:
+
+- `rg "ActorSpawnCompletionService|ChargeInnFeeService|DespawnAdventurerService|DropItemService|GrantExperienceService" Client/Assets/DungeonInn -g "*.cs"`: 該当なし
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（220 passed）
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap/reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
+- DI 登録: `WorldLifetimeScope` に新責務名で登録済み。
+- `LighthouseGenerated` 以下: 編集なし。

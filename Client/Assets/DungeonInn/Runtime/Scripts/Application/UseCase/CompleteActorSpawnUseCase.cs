@@ -8,13 +8,13 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class ActorSpawnCompletionService
+    public sealed class CompleteActorSpawnUseCase
     {
         readonly IActorProfileRegistry profileRegistry;
         readonly IEventPublisher eventBus;
 
         [Inject]
-        public ActorSpawnCompletionService(
+        public CompleteActorSpawnUseCase(
             IActorProfileRegistry profileRegistry,
             IEventPublisher eventBus)
         {

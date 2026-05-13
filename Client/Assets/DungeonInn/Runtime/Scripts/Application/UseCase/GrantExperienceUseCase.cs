@@ -8,13 +8,13 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class GrantExperienceService
+    public sealed class GrantExperienceUseCase
     {
         readonly IMasterRepository masterRepository;
         readonly IEventPublisher eventPublisher;
 
         [Inject]
-        public GrantExperienceService(IMasterRepository masterRepository, IEventPublisher eventPublisher)
+        public GrantExperienceUseCase(IMasterRepository masterRepository, IEventPublisher eventPublisher)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));

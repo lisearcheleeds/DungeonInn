@@ -85,7 +85,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<GetInnEconomyReportUseCase>(Lifetime.Scoped);
             builder.Register<AssignStaffUseCase>(Lifetime.Scoped);
             builder.Register<CalculateScoutCostUseCase>(Lifetime.Scoped);
-            builder.Register<ActorSpawnCompletionService>(Lifetime.Scoped);
+            builder.Register<CompleteActorSpawnUseCase>(Lifetime.Scoped);
             builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<SpawnMonsterUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledAdventurerOrchestrator>(Lifetime.Scoped);
@@ -98,8 +98,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<AdvanceActorLifecycleOrchestrator>(Lifetime.Scoped);
             builder.Register<CombatEncounterTargetResolver>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
-            builder.Register<GrantExperienceService>(Lifetime.Scoped);
-            builder.Register<DropItemService>(Lifetime.Scoped);
+            builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);
+            builder.Register<DropItemUseCase>(Lifetime.Scoped);
             builder.Register<PickUpItemUseCase>(Lifetime.Scoped);
             builder.Register<UpdateEquipmentUseCase>(Lifetime.Scoped);
             builder.Register<SellItemsUseCase>(Lifetime.Scoped);
@@ -115,8 +115,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<AdvanceProjectileUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceAreaEffectUseCase>(Lifetime.Scoped);
             builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
-            builder.Register<ChargeInnFeeService>(Lifetime.Scoped);
-            builder.Register<DespawnAdventurerService>(Lifetime.Scoped);
+            builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);
+            builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<RecoverAdventurerAtInnUseCase>(Lifetime.Scoped);
             builder.Register<PublishInnDailyReportUseCase>(Lifetime.Scoped);
             builder.Register<PayStaffSalaryUseCase>(Lifetime.Scoped);

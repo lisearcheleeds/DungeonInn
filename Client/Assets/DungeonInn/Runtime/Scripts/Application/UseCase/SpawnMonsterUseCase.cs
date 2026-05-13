@@ -11,17 +11,17 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IMonsterFactory monsterFactory;
         readonly IMasterRepository masterRepository;
-        readonly ActorSpawnCompletionService spawnCompletionService;
+        readonly CompleteActorSpawnUseCase completeActorSpawnUseCase;
 
         [Inject]
         public SpawnMonsterUseCase(
             IMonsterFactory monsterFactory,
             IMasterRepository masterRepository,
-            ActorSpawnCompletionService spawnCompletionService)
+            CompleteActorSpawnUseCase completeActorSpawnUseCase)
         {
             this.monsterFactory = monsterFactory ?? throw new ArgumentNullException(nameof(monsterFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
-            this.spawnCompletionService = spawnCompletionService ?? throw new ArgumentNullException(nameof(spawnCompletionService));
+            this.completeActorSpawnUseCase = completeActorSpawnUseCase ?? throw new ArgumentNullException(nameof(completeActorSpawnUseCase));
         }
 
         public SpawnMonsterUseCase(
@@ -32,7 +32,7 @@ namespace DungeonInn.Application.UseCase
             : this(
                 monsterFactory,
                 masterRepository,
-                new ActorSpawnCompletionService(profileRegistry, eventBus))
+                new CompleteActorSpawnUseCase(profileRegistry, eventBus))
         {
         }
 
@@ -45,7 +45,7 @@ namespace DungeonInn.Application.UseCase
 
             var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
             var actor = monsterFactory.Create(request);
-            spawnCompletionService.Complete(actor, archetypeMaster, string.Empty);
+            completeActorSpawnUseCase.Complete(actor, archetypeMaster, string.Empty);
             return UniTask.FromResult(actor);
         }
     }

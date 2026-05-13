@@ -7,12 +7,12 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class DespawnAdventurerService
+    public sealed class DespawnAdventurerUseCase
     {
         readonly IEventPublisher eventPublisher;
 
         [Inject]
-        public DespawnAdventurerService(IEventPublisher eventPublisher)
+        public DespawnAdventurerUseCase(IEventPublisher eventPublisher)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }

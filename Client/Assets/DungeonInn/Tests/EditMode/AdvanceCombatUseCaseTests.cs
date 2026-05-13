@@ -216,14 +216,14 @@ namespace DungeonInn.Tests.EditMode
                 => new GameClockAdvanceResult(0, Array.Empty<int>());
         }
 
-        static GrantExperienceService CreateGrantExperienceService(IGameEventBus eventBus)
+        static GrantExperienceUseCase CreateGrantExperienceUseCase(IGameEventBus eventBus)
         {
-            return new GrantExperienceService(new ThrowingMasterRepository(), eventBus);
+            return new GrantExperienceUseCase(new ThrowingMasterRepository(), eventBus);
         }
 
-        static DropItemService CreateDropItemService(IGameEventBus eventBus)
+        static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
         {
-            return new DropItemService(new ZeroGameRandom(), eventBus);
+            return new DropItemUseCase(new ZeroGameRandom(), eventBus);
         }
 
         static CombatEffectExecutor CreateCombatEffectExecutor(
@@ -241,8 +241,8 @@ namespace DungeonInn.Tests.EditMode
         {
             return new ActorDefeatOrchestrator(
                 new CombatDefeatResolver(combatService, eventBus),
-                CreateGrantExperienceService(eventBus),
-                CreateDropItemService(eventBus));
+                CreateGrantExperienceUseCase(eventBus),
+                CreateDropItemUseCase(eventBus));
         }
 
         static AdvanceCombatUseCase CreateAdvanceCombatUseCase(

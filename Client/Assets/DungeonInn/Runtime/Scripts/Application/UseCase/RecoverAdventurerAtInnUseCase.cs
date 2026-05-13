@@ -17,22 +17,22 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IEventPublisher eventPublisher;
         readonly IGameClock gameClock;
-        readonly ChargeInnFeeService chargeInnFeeService;
-        readonly DespawnAdventurerService despawnAdventurerService;
+        readonly ChargeInnFeeUseCase chargeInnFeeUseCase;
+        readonly DespawnAdventurerUseCase despawnAdventurerUseCase;
         readonly AdventurerRecoveryStateService recoveryStateService;
 
         [Inject]
         public RecoverAdventurerAtInnUseCase(
             IEventPublisher eventPublisher,
             IGameClock gameClock,
-            ChargeInnFeeService chargeInnFeeService,
-            DespawnAdventurerService despawnAdventurerService,
+            ChargeInnFeeUseCase chargeInnFeeUseCase,
+            DespawnAdventurerUseCase despawnAdventurerUseCase,
             AdventurerRecoveryStateService recoveryStateService)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
-            this.chargeInnFeeService = chargeInnFeeService ?? throw new ArgumentNullException(nameof(chargeInnFeeService));
-            this.despawnAdventurerService = despawnAdventurerService ?? throw new ArgumentNullException(nameof(despawnAdventurerService));
+            this.chargeInnFeeUseCase = chargeInnFeeUseCase ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
+            this.despawnAdventurerUseCase = despawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(despawnAdventurerUseCase));
             this.recoveryStateService = recoveryStateService ?? throw new ArgumentNullException(nameof(recoveryStateService));
         }
 
@@ -133,7 +133,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                if (!chargeInnFeeService.Execute(actor, guild, facility))
+                if (!chargeInnFeeUseCase.Execute(actor, guild, facility))
                 {
                     behavior.ClearWaitingForInn();
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
@@ -160,7 +160,7 @@ namespace DungeonInn.Application.UseCase
             var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;
             if (GameConstants.AdventurerInnWaitDepartureDays <= waitedDays)
             {
-                despawnAdventurerService.Execute(worldState, actor, waitedDays);
+                despawnAdventurerUseCase.Execute(worldState, actor, waitedDays);
                 return;
             }
 

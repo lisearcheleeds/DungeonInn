@@ -8,13 +8,13 @@ using VContainer;
 
 namespace DungeonInn.Application.UseCase
 {
-    public sealed class DropItemService
+    public sealed class DropItemUseCase
     {
         readonly IGameRandom gameRandom;
         readonly IEventPublisher eventPublisher;
 
         [Inject]
-        public DropItemService(IGameRandom gameRandom, IEventPublisher eventPublisher)
+        public DropItemUseCase(IGameRandom gameRandom, IEventPublisher eventPublisher)
         {
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));

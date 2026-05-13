@@ -22,7 +22,7 @@ DungeonInn では、新規実装の命名を以下に統一する。
 - `XxxService`: Repository / Registry相当の状態管理、計算補助、または複数UseCaseから共有される補助処理。単発のDomain変更コマンドには使わない。
 - `XxxOrchestrator`: 複数UseCase / Serviceを、明示された順序で呼び出す調整役。Domainルールそのものは持たない。
 
-既存の `ChargeInnFeeService` / `GrantExperienceService` / `DropItemService` / `DespawnAdventurerService` は、現時点では互換性維持のため即時リネームしない。Milestone 6 以降で触る場合は、実態がステートレスな単発コマンドであれば `XxxUseCase` へ改名し、長期状態を持つ場合のみ `XxxStateService` / `XxxService` に残す。
+既存の単発コマンドは `ChargeInnFeeUseCase` / `GrantExperienceUseCase` / `DropItemUseCase` / `DespawnAdventurerUseCase` として `XxxUseCase` に統一する。長期状態を持つ場合のみ `XxxStateService` / `XxxService` に残す。
 
 Orchestrator が持ってよい分岐は「成功・失敗に応じた次 UseCase の選択」程度に留める。
 戦闘勝敗の判定・料金計算・ビジネスルールの評価を Orchestrator 内で直接計算するのは NG。

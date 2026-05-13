@@ -11,28 +11,28 @@ namespace DungeonInn.Application.Orchestration
     public sealed class ActorDefeatOrchestrator
     {
         readonly CombatDefeatResolver combatDefeatResolver;
-        readonly GrantExperienceService grantExperienceService;
-        readonly DropItemService dropItemService;
+        readonly GrantExperienceUseCase grantExperienceUseCase;
+        readonly DropItemUseCase dropItemUseCase;
 
         [Inject]
         public ActorDefeatOrchestrator(
             CombatDefeatResolver combatDefeatResolver,
-            GrantExperienceService grantExperienceService,
-            DropItemService dropItemService)
+            GrantExperienceUseCase grantExperienceUseCase,
+            DropItemUseCase dropItemUseCase)
         {
             this.combatDefeatResolver = combatDefeatResolver ?? throw new ArgumentNullException(nameof(combatDefeatResolver));
-            this.grantExperienceService = grantExperienceService ?? throw new ArgumentNullException(nameof(grantExperienceService));
-            this.dropItemService = dropItemService ?? throw new ArgumentNullException(nameof(dropItemService));
+            this.grantExperienceUseCase = grantExperienceUseCase ?? throw new ArgumentNullException(nameof(grantExperienceUseCase));
+            this.dropItemUseCase = dropItemUseCase ?? throw new ArgumentNullException(nameof(dropItemUseCase));
         }
 
         public void Execute(IGameWorldState worldState, Actor attacker, Actor target)
         {
             if (attacker != null)
             {
-                grantExperienceService.Execute(attacker, target);
+                grantExperienceUseCase.Execute(attacker, target);
             }
 
-            dropItemService.Execute(target, worldState);
+            dropItemUseCase.Execute(target, worldState);
             combatDefeatResolver.Resolve(worldState, attacker, target);
         }
 
@@ -45,10 +45,10 @@ namespace DungeonInn.Application.Orchestration
 
             if (attacker != null)
             {
-                grantExperienceService.Execute(attacker, target, eventPublisher);
+                grantExperienceUseCase.Execute(attacker, target, eventPublisher);
             }
 
-            dropItemService.Execute(target, worldState, eventPublisher);
+            dropItemUseCase.Execute(target, worldState, eventPublisher);
             combatDefeatResolver.Resolve(worldState, attacker, target, eventPublisher);
         }
     }

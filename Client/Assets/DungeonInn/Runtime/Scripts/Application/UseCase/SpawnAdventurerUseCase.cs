@@ -16,18 +16,18 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IAdventurerFactory adventurerFactory;
         readonly IMasterRepository masterRepository;
-        readonly ActorSpawnCompletionService spawnCompletionService;
+        readonly CompleteActorSpawnUseCase completeActorSpawnUseCase;
         readonly ExchangeExecutor exchangeExecutor = new();
 
         [Inject]
         public SpawnAdventurerUseCase(
             IAdventurerFactory adventurerFactory,
             IMasterRepository masterRepository,
-            ActorSpawnCompletionService spawnCompletionService)
+            CompleteActorSpawnUseCase completeActorSpawnUseCase)
         {
             this.adventurerFactory = adventurerFactory ?? throw new ArgumentNullException(nameof(adventurerFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
-            this.spawnCompletionService = spawnCompletionService ?? throw new ArgumentNullException(nameof(spawnCompletionService));
+            this.completeActorSpawnUseCase = completeActorSpawnUseCase ?? throw new ArgumentNullException(nameof(completeActorSpawnUseCase));
         }
 
         public SpawnAdventurerUseCase(
@@ -38,7 +38,7 @@ namespace DungeonInn.Application.UseCase
             : this(
                 adventurerFactory,
                 masterRepository,
-                new ActorSpawnCompletionService(profileRegistry, eventBus))
+                new CompleteActorSpawnUseCase(profileRegistry, eventBus))
         {
         }
 
@@ -73,7 +73,7 @@ namespace DungeonInn.Application.UseCase
             }
 
             EquipInitialEquipment(actor, archetypeMaster.InitialEquipmentItemIds);
-            spawnCompletionService.Complete(actor, archetypeMaster, request.DisplayName);
+            completeActorSpawnUseCase.Complete(actor, archetypeMaster, request.DisplayName);
             return UniTask.FromResult(actor);
         }
 

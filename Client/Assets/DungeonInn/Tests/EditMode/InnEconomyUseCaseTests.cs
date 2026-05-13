@@ -26,9 +26,9 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(GameConstants.InnFeePerStay);
             var eventBus = new CollectingEventBus();
-            var service = new ChargeInnFeeService(eventBus);
+            var useCase = new ChargeInnFeeUseCase(eventBus);
 
-            var charged = service.Execute(actor, worldState.Guild);
+            var charged = useCase.Execute(actor, worldState.Guild);
 
             Assert.That(charged, Is.True);
             Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(1));
@@ -43,9 +43,9 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(0);
             var eventBus = new CollectingEventBus();
-            var service = new ChargeInnFeeService(eventBus);
+            var useCase = new ChargeInnFeeUseCase(eventBus);
 
-            var charged = service.Execute(actor, worldState.Guild);
+            var charged = useCase.Execute(actor, worldState.Guild);
 
             Assert.That(charged, Is.False);
             Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(0));
@@ -148,7 +148,7 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var statisticsService = new InnEconomyStatisticsService(eventBus, clock);
             var reportStore = new InnDailyReportStore();
-            new ChargeInnFeeService(eventBus).Execute(actor, worldState.Guild);
+            new ChargeInnFeeUseCase(eventBus).Execute(actor, worldState.Guild);
             var useCase = new PublishInnDailyReportUseCase(
                 worldState,
                 statisticsService,
@@ -199,7 +199,7 @@ namespace DungeonInn.Tests.EditMode
             var clock = new StubGameClock { CurrentDayValue = 2 };
             var eventBus = new CollectingEventBus();
             var statisticsService = new InnEconomyStatisticsService(eventBus, clock);
-            new ChargeInnFeeService(eventBus).Execute(actor, worldState.Guild);
+            new ChargeInnFeeUseCase(eventBus).Execute(actor, worldState.Guild);
             var useCase = new GetInnEconomyStatusUseCase(
                 worldState,
                 clock,
