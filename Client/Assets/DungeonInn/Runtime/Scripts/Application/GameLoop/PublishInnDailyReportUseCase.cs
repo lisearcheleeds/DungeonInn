@@ -32,25 +32,10 @@ namespace DungeonInn.Application.GameLoop
 
         public UniTask<InnDailyReport> ExecuteAsync(int day)
         {
-            var report = calculator.CalculateReport(
+            var dailyReport = calculator.CalculateDailyReport(
                 worldState,
                 day,
-                day,
                 statisticsService.GetByDay(day));
-            var dailyReport = new InnDailyReport(
-                report.StartDay,
-                report.Guests,
-                report.RejectedGuests,
-                report.Demand,
-                report.Sales,
-                report.SatisfactionDelta,
-                report.Reputation,
-                report.OccupiedRooms,
-                report.RoomCapacity,
-                report.OccupancyPercent,
-                report.GuildGold,
-                report.RookieSwordStock,
-                report.RookieArmorStock);
 
             reportStore.Save(dailyReport);
             eventPublisher.Publish(new DailyInnReportGenerated(dailyReport));

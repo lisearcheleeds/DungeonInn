@@ -41,7 +41,7 @@ LifetimeScope / DI / ゲームループの配置方針は `docs/lifetime-scope-g
 - `InnFacility` / `TavernFacility` / `GeneralStoreFacility` / `EquipmentShopFacility` は独立クラスではなく、`Facility` + `FacilityType` で表現している。
 - `GuildTransaction` / `TransactionType` は未実装で、現状は `ExchangeTransaction` によって「こちらが渡すもの」「相手が渡すもの」を記録する。
 - Application/AI は初期実装済み。短期・中期・長期の AI 判断状態と Dirty 制御を持つ。
-- `EntityIdentity` / `EntityIdentityRegistry` が追加されており、表示名、種別、有効/削除状態を Domain 側で管理できる。
+- 表示名など表示用プロフィールは Domain ではなく Application/Actor の `ActorProfile` / `ActorProfileRegistry` で管理している。
 - 冒険者ライフサイクル、宿屋居住権、探索目的、交換項目は初期 Domain/UseCase として実装済み。
 - `ItemMaster`、`EquipmentMaster`、`WeaponMaster`、`ActorArchetypeMaster`、`SpeciesMaster`、`SpawnTableMaster` は `Master/` に分離済み。
 
@@ -558,27 +558,10 @@ Factory は以下を行う。
 
 Behavior は単一のため、スタッフ化した Actor は冒険者ではなくなる。
 
-## EntityIdentity Domain
+## Actor Profile
 
-実装では、ゲーム内エンティティの表示・有効状態を管理するために `EntityIdentity` が追加されている。
-
-`EntityIdentity` は以下を持つ。
-
-- `Guid Id`
-- `EntityKind`
-- 表示名
-- 有効状態
-- 削除 tick
-
-`EntityKind` は以下を持つ。
-
-- `Guild`
-- `Adventurer`
-- `Staff`
-- `Facility`
-- `Merchant`
-
-`EntityIdentityRegistry` は ID から `EntityIdentity` を登録・解決し、削除状態を記録する。
+実装では、ゲーム内 Actor の表示名を `ActorProfile` と `ActorProfileRegistry` が Application 層で管理する。
+Domain はゲームルールに必要な Actor 状態だけを持ち、表示用プロフィールや削除済み表示状態は Domain の責務に含めない。
 
 ## Application/AI の役割
 
@@ -808,10 +791,6 @@ Domain/
 ├── Common/
 │   ├── DomainMath
 │   └── GameConstants
-└── EntityIdentity/
-    ├── EntityIdentity
-    ├── EntityIdentityRegistry
-    └── EntityKind
 
 Master/
 ├── ItemMaster
@@ -845,10 +824,8 @@ Application/
     ├── SpawnAdventurerUseCase
     ├── SpawnAdventurerFromMasterUseCase
     ├── SpawnMonsterFromMasterUseCase
-    ├── ReserveInnUseCase
-    ├── ReleaseInnReservationUseCase
     ├── SelectDungeonExplorationGoalUseCase
-    └── AdvanceAdventurerLifecycleUseCase
+    └── AdvanceActorLifecycleOrchestrator
 ```
 
 ## 先に実装できる UseCase 候補

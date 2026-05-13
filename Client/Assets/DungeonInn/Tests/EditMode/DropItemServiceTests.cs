@@ -14,7 +14,7 @@ using R3;
 
 namespace DungeonInn.Tests.EditMode
 {
-    public sealed class DropItemUseCaseTests
+    public sealed class DropItemServiceTests
     {
         [Test]
         public void EmptyDropTableProducesNoItems()
@@ -118,13 +118,13 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(eventBus.GetEvents<ItemDropped>().Count, Is.EqualTo(0));
         }
 
-        (DropItemUseCase, GameWorldState, CollectingEventBus, FixedGameRandom) CreateContext(int fixedRoll)
+        (DropItemService, GameWorldState, CollectingEventBus, FixedGameRandom) CreateContext(int fixedRoll)
         {
             var eventBus = new CollectingEventBus();
             var random = new FixedGameRandom(fixedRoll);
-            var useCase = new DropItemUseCase(random, eventBus);
+            var service = new DropItemService(random, eventBus);
             var worldState = new GameWorldState();
-            return (useCase, worldState, eventBus, random);
+            return (service, worldState, eventBus, random);
         }
 
         static Actor CreateMonsterActor(LayerPosition position, IReadOnlyList<ActorDropEntry> dropTable)

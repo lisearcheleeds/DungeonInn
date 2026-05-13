@@ -147,7 +147,7 @@ interface IActorDropSource { IReadOnlyList<ActorDropEntry> DropTable; }
 `MonsterBehavior` と `AdventurerBehavior` の両方が実装する。
 冒険者は現在 `DropTable` が空。将来的に冒険者ドロップを追加する場合は `DropTable` にエントリを追加するだけでよい。
 
-### DropItemUseCase（Application/UseCase）
+### DropItemService（Application/UseCase）
 
 ```
 actor.Behavior is IActorDropSource → 各エントリを確率ロール → パスしたものを ItemInstance として WorldState に追加 → ItemDropped イベント発行

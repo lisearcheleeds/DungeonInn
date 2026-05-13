@@ -67,7 +67,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var repository = new HardcodedMasterRepository();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new GrantExperienceUseCase(repository, eventBus);
+            var service = new GrantExperienceService(repository, eventBus);
 
             var killerArchetype = repository.GetActorArchetypeMaster(1);
             var levelTable = repository.GetLevelTable(killerArchetype.LevelTableId);
@@ -79,8 +79,8 @@ namespace DungeonInn.Tests.EditMode
             var defeatedInitialXp = monsterTable.GetExperienceForLevel(1);
             var defeated = CreateActorWithArchetype(2, defeatedInitialXp);
 
-            useCase.Execute(killer, defeated);
-            useCase.Execute(killer, defeated);
+            service.Execute(killer, defeated);
+            service.Execute(killer, defeated);
 
             var levelUps = eventBus.GetEvents<ActorLeveledUp>();
             Assert.That(levelUps.Count, Is.EqualTo(1));
@@ -93,11 +93,11 @@ namespace DungeonInn.Tests.EditMode
         {
             var repository = new HardcodedMasterRepository();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new GrantExperienceUseCase(repository, eventBus);
+            var service = new GrantExperienceService(repository, eventBus);
             var killer = CreateActor(experience: 0);
             var defeated = CreateActorWithArchetype(2, 100);
 
-            useCase.Execute(killer, defeated);
+            service.Execute(killer, defeated);
 
             Assert.That(eventBus.GetEvents<ExperienceGranted>(), Is.Empty);
         }
@@ -107,12 +107,12 @@ namespace DungeonInn.Tests.EditMode
         {
             var repository = new HardcodedMasterRepository();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new GrantExperienceUseCase(repository, eventBus);
+            var service = new GrantExperienceService(repository, eventBus);
             var killerInitialXp = repository.GetLevelTable(repository.GetActorArchetypeMaster(1).LevelTableId).GetExperienceForLevel(1);
             var killer = CreateActorWithArchetype(1, killerInitialXp);
             var defeated = CreateActorWithArchetype(2, 0);
 
-            useCase.Execute(killer, defeated);
+            service.Execute(killer, defeated);
 
             var granted = eventBus.GetEvents<ExperienceGranted>();
             Assert.That(granted.Count, Is.EqualTo(1));

@@ -167,8 +167,8 @@ namespace DungeonInn.Tests.EditMode
             return new RecoverAdventurerAtInnUseCase(
                 eventBus,
                 gameClock,
-                new ChargeInnFeeUseCase(eventBus),
-                new DespawnAdventurerUseCase(eventBus),
+                new ChargeInnFeeService(eventBus),
+                new DespawnAdventurerService(eventBus),
                 new AdventurerRecoveryStateService(eventBus));
         }
 

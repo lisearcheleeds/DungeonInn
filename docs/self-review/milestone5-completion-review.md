@@ -504,3 +504,13 @@ Milestone 6 開始前に「暫定定数の正式 Master 化」または「Milest
 2. AI docs の旧名更新。（対応済み）
 3. Spawn / Faction / Move speed などの TODO 整理。
 4. URP 軽量 Renderer / Quality の検討。
+
+## 重複整理対応メモ
+
+2026-05-13 対応。
+
+- `ChargeInnFeeUseCase` / `DespawnAdventurerUseCase` / `GrantExperienceUseCase` / `DropItemUseCase` は、同名 Service への薄い委譲のみだったため削除し、呼び出し元を Service 参照へ統一した。
+- `ReserveInnUseCase` / `ReleaseInnReservationUseCase` は、宿予約の確保・解放が `RecoverAdventurerAtInnUseCase` に統合されており呼び出し元が残っていなかったため削除した。
+- `AdvanceAdventurerLifecycleUseCase` / `CanMoveOnMapLayerUseCase` / `Application/Navigation` / `Domain/EntityIdentity` は未使用または現行構成と重複していたため削除した。
+- `InnEconomyReport` は `InnDailyReport` と用途が重複していたため、`InnEconomyStatusCalculator` が直接 `InnDailyReport` を返す形へ統合した。
+- 設計 docs の古い型名は、現行の `ActorProfile` / `ActorNavigationService` / `GrantExperienceService` / `DropItemService` / Orchestrator 名に更新した。

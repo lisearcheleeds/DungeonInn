@@ -95,9 +95,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<CombatEncounterTargetResolver>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
             builder.Register<GrantExperienceService>(Lifetime.Scoped);
-            builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);
             builder.Register<DropItemService>(Lifetime.Scoped);
-            builder.Register<DropItemUseCase>(Lifetime.Scoped);
             builder.Register<PickUpItemUseCase>(Lifetime.Scoped);
             builder.Register<UpdateEquipmentUseCase>(Lifetime.Scoped);
             builder.Register<SellItemsUseCase>(Lifetime.Scoped);
@@ -114,13 +112,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<AdvanceAreaEffectUseCase>(Lifetime.Scoped);
             builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
             builder.Register<ChargeInnFeeService>(Lifetime.Scoped);
-            builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);
             builder.Register<DespawnAdventurerService>(Lifetime.Scoped);
-            builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<RecoverAdventurerAtInnUseCase>(Lifetime.Scoped);
             builder.Register<PublishInnDailyReportUseCase>(Lifetime.Scoped);
-            builder.Register<ReleaseInnReservationUseCase>(Lifetime.Scoped);
-            builder.Register<ReserveInnUseCase>(Lifetime.Scoped);
             builder.Register<PayStaffSalaryUseCase>(Lifetime.Scoped);
             builder.Register<ProcessAdventurerSaleUseCase>(Lifetime.Scoped);
             builder.Register<ProcessExchangeOfferUseCase>(Lifetime.Scoped);

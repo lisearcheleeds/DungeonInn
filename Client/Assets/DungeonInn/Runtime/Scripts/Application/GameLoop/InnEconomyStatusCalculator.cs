@@ -1,5 +1,6 @@
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
+using DungeonInn.Domain.Guild;
 
 namespace DungeonInn.Application.GameLoop
 {
@@ -10,9 +11,8 @@ namespace DungeonInn.Application.GameLoop
             int currentDay,
             InnEconomyStatistics statistics)
         {
-            var report = CalculateReport(
+            var report = CalculateDailyReport(
                 worldState,
-                currentDay,
                 currentDay,
                 statistics);
 
@@ -32,10 +32,9 @@ namespace DungeonInn.Application.GameLoop
                 report.RookieArmorStock);
         }
 
-        public InnEconomyReport CalculateReport(
+        public InnDailyReport CalculateDailyReport(
             IGameWorldStateReader worldState,
-            int startDay,
-            int endDay,
+            int day,
             InnEconomyStatistics statistics)
         {
             var economy = worldState.InnEconomy;
@@ -43,9 +42,8 @@ namespace DungeonInn.Application.GameLoop
             var occupiedRooms = CountOccupiedRooms(worldState);
             var occupancyPercent = roomCapacity <= 0 ? 0 : occupiedRooms * 100 / roomCapacity;
 
-            return new InnEconomyReport(
-                startDay,
-                endDay,
+            return new InnDailyReport(
+                day,
                 statistics.Guests,
                 statistics.RejectedGuests,
                 statistics.Guests + statistics.RejectedGuests,

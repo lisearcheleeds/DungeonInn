@@ -35,21 +35,6 @@ namespace DungeonInn.Application.UseCase
             this.recoveryStateService = recoveryStateService ?? throw new ArgumentNullException(nameof(recoveryStateService));
         }
 
-        public RecoverAdventurerAtInnUseCase(
-            IEventPublisher eventPublisher,
-            IGameClock gameClock,
-            ChargeInnFeeUseCase chargeInnFeeUseCase,
-            DespawnAdventurerUseCase despawnAdventurerUseCase,
-            AdventurerRecoveryStateService recoveryStateService)
-            : this(
-                eventPublisher,
-                gameClock,
-                new ChargeInnFeeService(eventPublisher),
-                new DespawnAdventurerService(eventPublisher),
-                recoveryStateService)
-        {
-        }
-
         public UniTask EnsureReservationsAsync(IGameWorldState worldState, int currentTick)
         {
             if (worldState == null)

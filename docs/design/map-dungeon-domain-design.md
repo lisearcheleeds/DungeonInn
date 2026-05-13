@@ -30,18 +30,20 @@ Domain / Application は UnityEngine、GameObject、NavMesh に依存しない�
   - `DungeonStairType`
   - `DungeonFloorGenerationSettings`
   - `DungeonDepthBandConfig`
-- `Application/Navigation`
-  - `INavigationPathProvider`
-  - `NavigationPath`
-  - `NavigationPathRequest`
-  - `NavigationPathResult`
+- `Application/Pathfinding`
+  - `AStarPathfinder`
+  - `PathfindingPath`
+  - `PathfindingNode`
+- `Application/GameLoop`
+  - `IActorNavigationService`
+  - `ActorNavigationService`
 - `Application/UseCase`
   - `InitializeWorldMapUseCase`
-  - `InitializeDungeonUseCase`
+  - `InitializeDungeonOrchestrator`
   - `GenerateDungeonFloorUseCase`
-  - `EnsureDungeonFloorGeneratedUseCase`
-  - `CanMoveOnMapLayerUseCase`
-  - `UseDungeonStairUseCase`
+  - `EnsureDungeonFloorGeneratedOrchestrator`
+  - `MoveActorTowardDestinationUseCase`
+  - `UseDungeonStairOrchestrator`
 
 ダンジョン生成は、旧 DungeonMaker のコンセプトだけを採用した DungeonInn 向けの再設計実装である。
 
@@ -345,72 +347,15 @@ public sealed class DungeonFloorGenerationSettings
 
 NavMesh 経路取得はゲームルールそのものではなく、表示中環境で高品質な経路を得るための外部能力である。そのため、インターフェースは Domain ではなく Application 側に置く。
 
-## Application Navigation Interface
+## Application Navigation
 
-Application 側に、経路取得の抽象インターフェースを定義する。
-
-```csharp
-public interface INavigationPathProvider
-{
-    bool CanProvidePath(MapLayerId layerId);
-
-    NavigationPathResult TryFindPath(NavigationPathRequest request);
-}
-```
-
-```csharp
-public sealed class NavigationPathRequest
-{
-    public LayerPosition From { get; }
-    public LayerPosition To { get; }
-    public float AgentRadius { get; }
-}
-```
-
-```csharp
-public sealed class NavigationPathResult
-{
-    public bool Success { get; }
-    public NavigationPath Path { get; }
-}
-```
-
-```csharp
-public sealed class NavigationPath
-{
-    public IReadOnlyList<LayerPosition> Points { get; }
-}
-```
-
-View または Infrastructure 側で Unity 実装を持つ。
-
-```csharp
-public sealed class UnityNavMeshPathProvider : INavigationPathProvider
-{
-    public bool CanProvidePath(MapLayerId layerId)
-    {
-        // 現在表示中で NavMesh が存在する layer のみ true
-    }
-
-    public NavigationPathResult TryFindPath(NavigationPathRequest request)
-    {
-        // LayerPosition を UnityEngine.Vector3 に変換する
-        // NavMesh.CalculatePath を呼ぶ
-        // Vector3[] を LayerPosition[] に戻す
-    }
-}
-```
+現在の実装では、Application 側の `ActorNavigationService` が `ActorPathState` と `AStarPathfinder` を使って経路を更新する。
+旧 `Application/Navigation` の `INavigationPathProvider` / `NavigationPath*` は削除済みで、表示側 NavMesh 連携を再導入する場合は現行の `IActorNavigationService` 契約へ統合する。
 
 ## 移動 UseCase 方針
 
-移動 UseCase は以下の優先順位で経路を決定する。
-
-1. `INavigationPathProvider.CanProvidePath(layerId)` が true の場合
-   - NavMesh 経路を使う。
-2. false の場合
-   - Domain のセル情報としきい値判定を使う。
-
-NavMesh は表示中の高品質経路であり、ゲーム進行に必須ではない。
+`ActorNavigationService` は Domain のセル情報をもとに A* 経路を取得し、移動目標を更新する。
+NavMesh は表示品質向上の候補であり、ゲーム進行の必須契約には含めない。
 
 ## レイヤー責務
 
@@ -429,7 +374,7 @@ NavMesh は表示中の高品質経路であり、ゲーム進行に必須では
 ### Application
 
 - 移動 UseCase
-- 経路取得インターフェース
+- 経路更新 Service
 - NavMesh が使える場合と使えない場合の切り替え
 - フロア生成 UseCase
 - 階段利用 UseCase
@@ -463,9 +408,8 @@ NavMesh は表示中の高品質経路であり、ゲーム進行に必須では
 ## UseCase 候補
 
 - `InitializeWorldMapUseCase`
-- `InitializeDungeonUseCase`
+- `InitializeDungeonOrchestrator`
 - `GenerateDungeonFloorUseCase`
-- `EnsureDungeonFloorGeneratedUseCase`
-- `CanMoveOnMapLayerUseCase`
-- `MoveMapActorUseCase`
-- `UseDungeonStairUseCase`
+- `EnsureDungeonFloorGeneratedOrchestrator`
+- `MoveActorTowardDestinationUseCase`
+- `UseDungeonStairOrchestrator`
