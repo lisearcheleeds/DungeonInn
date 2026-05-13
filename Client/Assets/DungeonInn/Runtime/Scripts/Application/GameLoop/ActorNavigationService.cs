@@ -12,11 +12,12 @@ namespace DungeonInn.Application.GameLoop
     public sealed class ActorNavigationService : IActorNavigationService, IDisposable
     {
         readonly Dictionary<Guid, ActorPathState> pathStates = new();
+        readonly List<GridPosition> openSet = new();
+        readonly Dictionary<GridPosition, GridPosition> cameFrom = new();
+        readonly Dictionary<GridPosition, int> gScore = new();
+        readonly Dictionary<GridPosition, int> fScore = new();
+        readonly List<GridPosition> pathBuffer = new();
         DisposableBag bag;
-
-        public ActorNavigationService()
-        {
-        }
 
         [Inject]
         public ActorNavigationService(IEventSubscriber eventSubscriber)
@@ -52,14 +53,22 @@ namespace DungeonInn.Application.GameLoop
                 return state;
             }
 
-            var path = AStarPathfinder.FindPath(layer, isWalkable, startGrid, goalGrid);
-            if (path == null)
+            if (!AStarPathfinder.TryFindPath(
+                layer,
+                isWalkable,
+                startGrid,
+                goalGrid,
+                openSet,
+                cameFrom,
+                gScore,
+                fScore,
+                pathBuffer))
             {
                 state.MarkFailed();
             }
             else
             {
-                state.SetPath(path, goalGrid);
+                state.SetPath(pathBuffer, goalGrid);
             }
 
             return state;

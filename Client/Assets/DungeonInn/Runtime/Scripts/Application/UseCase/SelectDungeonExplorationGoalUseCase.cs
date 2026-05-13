@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Commerce;
@@ -55,8 +54,13 @@ namespace DungeonInn.Application.UseCase
 
         static void AddCollectItemGoals(AdventurerGuild guild, List<DungeonExplorationGoal> candidates)
         {
-            foreach (var exchangeOffer in guild.ExchangeOffers.Where(x => x.IsActive))
+            foreach (var exchangeOffer in guild.ExchangeOffers)
             {
+                if (!exchangeOffer.IsActive)
+                {
+                    continue;
+                }
+
                 var facility = guild.GetFacility(exchangeOffer.FacilityId);
                 if (!CanUseExchangeOfferForExplorationGoal(facility.Type))
                 {

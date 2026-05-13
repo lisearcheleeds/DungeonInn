@@ -1148,3 +1148,42 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（230 passed）
 - 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
+
+## Codex対応ログ 2026-05-14（続き12）
+
+対応項目:
+
+- パフォーマンス6: 経路探索とダンジョン階層選択で LINQ / コレクション生成が残っている
+
+対応内容:
+
+- `ActorNavigationService` に A* 探索用の `List` / `Dictionary` 作業バッファを持たせ、経路再計算ごとに `openSet` / `cameFrom` / `gScore` / `fScore` / `path` を生成しないようにした。
+- `AStarPathfinder` に呼び出し元バッファへ結果を書き込む `TryFindPath(...)` を追加し、既存の `FindPath(...)` は互換用に残した。
+- `ActorPathState` は受け取った経路を自身の内部 `List<GridPosition>` にコピーして保持する形にし、`ActorNavigationService` の再利用バッファを次回探索で `Clear()` しても既存 Actor の waypoint が壊れないようにした。
+- `SelectDungeonTargetFloorUseCase` の `Select` / `OrderByDescending` / `Where` / `FirstOrDefault` / `OrderBy` / `Sum` / `ToArray` を明示ループへ置き換えた。
+- `SelectDungeonExplorationGoalUseCase` の active exchange offer 抽出を `Where` から明示ループへ置き換えた。
+- `SpawnScheduledMonsterOrchestrator` の monster count、生成済み floor のソート配列化、spawn table weight 合計を明示ループへ置き換えた。
+- `AdvanceActorAiOrchestrator.ResolvePolicy()` の `FirstOrDefault` を明示ループへ置き換えた。
+- `ActorNavigationService()` のテスト用既定 constructor を削除し、テスト側も production と同じ `IEventSubscriber` 依存を明示して生成する形にした。
+
+差分許可モデル:
+
+- `AStarPathfinder.TryFindPath(...)` の追加は production 経路探索で作業バッファを再利用するための API 追加であり、テスト都合だけの surface ではない。
+- `ActorNavigationService` の作業バッファは Service が保持する長期状態であり、`application-boundary-guidelines.md` の Service 定義に沿う。
+- `ActorPathState` の内部経路 `List` は Actor ごとの navigation state 本体であり、探索作業バッファとは所有者・寿命・更新契機が異なるため統合しない。
+
+完了条件チェック:
+
+- [x] 経路探索の production 経路で、探索ごとの `openSet` / `cameFrom` / `gScore` / `fScore` / `path` 生成が発生していない。
+- [x] `SelectDungeonTargetFloorUseCase` に LINQ chain / `ToArray()` / 一時 `FloorDifficulty[]` が残っていない。
+- [x] `SelectDungeonExplorationGoalUseCase` / `SpawnScheduledMonsterOrchestrator` / `AdvanceActorAiOrchestrator` の対象ホットパスに `Where` / `OrderBy` / `FirstOrDefault` / `Sum` が残っていない。
+- [x] `ActorPathState` が `ActorNavigationService` の再利用バッファを直接保持していないことを EditMode test で検証している。
+- [x] Runtime 側にテスト都合だけの `ActorNavigationService()` constructor が残っていない。
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（231 passed）
+- 対象ファイルの LINQ / `ToArray()` / `ToList()` / `Sum()` / `Count()` 検索: 該当なし
+- `git diff --check`: 問題なし
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` bootstrap / reboot 例外、`UniTask<T>`、`UnityWebRequest.Result`、LighthouseGenerated のみ。

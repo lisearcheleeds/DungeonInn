@@ -205,7 +205,7 @@ namespace DungeonInn.Tests.EditMode
             var actor = CreateExploringAdventurer(floor.GetArrivalPosition(DungeonStairType.Up));
             worldState.RegisterActor(actor);
 
-            var navigationService = new ActorNavigationService();
+            var navigationService = new ActorNavigationService(new NoOpGameEventBus());
             var spatialIndex = new ActorSpatialIndexService();
             var actorViewDataStore = new ActorViewDataStore();
             var useCase = new AdvanceActorLifecycleOrchestrator(
@@ -242,7 +242,7 @@ namespace DungeonInn.Tests.EditMode
             var actor = CreateExploringAdventurer(floor.GetArrivalPosition(DungeonStairType.Up));
             worldState.RegisterActor(actor);
 
-            var navigationService = new ActorNavigationService();
+            var navigationService = new ActorNavigationService(new NoOpGameEventBus());
             var spatialIndex = new ActorSpatialIndexService();
             var actorViewDataStore = new ActorViewDataStore();
             var useCase = new AdvanceActorLifecycleOrchestrator(
@@ -314,6 +314,31 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
         }
 
+        [Test]
+        public void ActorNavigationServiceKeepsActorPathWhenSearchBufferIsReused()
+        {
+            var service = new ActorNavigationService(new NoOpGameEventBus());
+            var layer = new MapLayer(MapLayerId.Ground, 4, 4, 1f);
+
+            var firstState = service.GetOrComputePathState(
+                Guid.NewGuid(),
+                layer,
+                position => true,
+                new GridPosition(0, 0),
+                new GridPosition(2, 0));
+            var secondState = service.GetOrComputePathState(
+                Guid.NewGuid(),
+                layer,
+                position => true,
+                new GridPosition(0, 0),
+                new GridPosition(0, 2));
+
+            Assert.That(firstState.TryGetCurrentWaypoint(out var firstWaypoint), Is.True);
+            Assert.That(secondState.TryGetCurrentWaypoint(out var secondWaypoint), Is.True);
+            Assert.That(firstWaypoint, Is.EqualTo(new GridPosition(1, 0)));
+            Assert.That(secondWaypoint, Is.EqualTo(new GridPosition(0, 1)));
+        }
+
         static GameWorldState CreateInitializedWorldState()
         {
             var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
@@ -364,7 +389,7 @@ namespace DungeonInn.Tests.EditMode
 
         static AdvanceActorLifecycleOrchestrator CreateLifecycleUseCase()
         {
-            var navigationService = new ActorNavigationService();
+            var navigationService = new ActorNavigationService(new NoOpGameEventBus());
             var spatialIndex = new ActorSpatialIndexService();
             var actorViewDataStore = new ActorViewDataStore();
             return new AdvanceActorLifecycleOrchestrator(

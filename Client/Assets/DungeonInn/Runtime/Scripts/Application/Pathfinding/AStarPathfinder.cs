@@ -14,20 +14,46 @@ namespace DungeonInn.Application.Pathfinding
             GridPosition start,
             GridPosition goal)
         {
+            var openSet = new List<GridPosition>();
+            var cameFrom = new Dictionary<GridPosition, GridPosition>();
+            var gScore = new Dictionary<GridPosition, int>();
+            var fScore = new Dictionary<GridPosition, int>();
+            var path = new List<GridPosition>();
+            return TryFindPath(layer, isWalkable, start, goal, openSet, cameFrom, gScore, fScore, path)
+                ? path
+                : null;
+        }
+
+        public static bool TryFindPath(
+            MapLayer layer,
+            Func<GridPosition, bool> isWalkable,
+            GridPosition start,
+            GridPosition goal,
+            List<GridPosition> openSet,
+            Dictionary<GridPosition, GridPosition> cameFrom,
+            Dictionary<GridPosition, int> gScore,
+            Dictionary<GridPosition, int> fScore,
+            List<GridPosition> path)
+        {
+            openSet.Clear();
+            cameFrom.Clear();
+            gScore.Clear();
+            fScore.Clear();
+            path.Clear();
+
             if (start.Equals(goal))
             {
-                return Array.Empty<GridPosition>();
+                return true;
             }
 
             if (!isWalkable(goal))
             {
-                return null;
+                return false;
             }
 
-            var openSet = new List<GridPosition> { start };
-            var cameFrom = new Dictionary<GridPosition, GridPosition>();
-            var gScore = new Dictionary<GridPosition, int> { [start] = 0 };
-            var fScore = new Dictionary<GridPosition, int> { [start] = Heuristic(start, goal) };
+            openSet.Add(start);
+            gScore[start] = 0;
+            fScore[start] = Heuristic(start, goal);
 
             while (openSet.Count > 0)
             {
@@ -35,11 +61,13 @@ namespace DungeonInn.Application.Pathfinding
 
                 if (current.Equals(goal))
                 {
-                    return ReconstructPath(cameFrom, current);
+                    ReconstructPath(cameFrom, current, path);
+                    return true;
                 }
 
-                foreach (var (dx, dz) in Directions)
+                for (var i = 0; i < Directions.Length; i++)
                 {
+                    var (dx, dz) = Directions[i];
                     var neighbor = new GridPosition(current.X + dx, current.Z + dz);
                     if (!layer.Contains(neighbor) || !isWalkable(neighbor))
                     {
@@ -62,7 +90,7 @@ namespace DungeonInn.Application.Pathfinding
                 }
             }
 
-            return null;
+            return false;
         }
 
         static GridPosition PopLowestF(List<GridPosition> openSet, Dictionary<GridPosition, int> fScore)
@@ -84,18 +112,18 @@ namespace DungeonInn.Application.Pathfinding
             return result;
         }
 
-        static IReadOnlyList<GridPosition> ReconstructPath(
+        static void ReconstructPath(
             Dictionary<GridPosition, GridPosition> cameFrom,
-            GridPosition current)
+            GridPosition current,
+            List<GridPosition> path)
         {
-            var path = new List<GridPosition>();
             while (cameFrom.ContainsKey(current))
             {
                 path.Add(current);
                 current = cameFrom[current];
             }
+
             path.Reverse();
-            return path;
         }
 
         static int Heuristic(GridPosition first, GridPosition second)

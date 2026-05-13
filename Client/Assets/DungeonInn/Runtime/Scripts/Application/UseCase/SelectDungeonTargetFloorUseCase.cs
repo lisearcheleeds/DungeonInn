@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
@@ -35,16 +34,24 @@ namespace DungeonInn.Application.UseCase
             }
 
             var actorCombatPower = combatPowerCalculator.Calculate(actor);
-            var floors = masterRepository.DungeonFloorExplorationMasters.Values
-                .Select(master => new FloorDifficulty(master, CalculateFloorDifficulty(master)))
-                .OrderByDescending(score => score.Master.FloorIndex)
-                .ToArray();
+            DungeonFloorExplorationMaster selectedFloor = null;
+            DungeonFloorExplorationMaster lowestFloor = null;
+            foreach (var floorMaster in masterRepository.DungeonFloorExplorationMasters.Values)
+            {
+                if (lowestFloor == null || floorMaster.FloorIndex < lowestFloor.FloorIndex)
+                {
+                    lowestFloor = floorMaster;
+                }
 
-            var selected = floors
-                .Where(score => score.Difficulty <= actorCombatPower)
-                .OrderByDescending(score => score.Master.FloorIndex)
-                .FirstOrDefault();
-            if (selected.Master != null)
+                var difficulty = CalculateFloorDifficulty(floorMaster);
+                if (difficulty <= actorCombatPower
+                    && (selectedFloor == null || selectedFloor.FloorIndex < floorMaster.FloorIndex))
+                {
+                    selectedFloor = floorMaster;
+                }
+            }
+
+            if (selectedFloor != null)
             {
                 eventBus.Publish(new ActorAiDecisionRecorded(
                     actor.Id,
@@ -54,14 +61,16 @@ namespace DungeonInn.Application.UseCase
                     default,
                     0,
                     0,
-                    selected.Master.FloorIndex,
+                    selectedFloor.FloorIndex,
                     0));
-                return UniTask.FromResult(selected.Master.FloorIndex);
+                return UniTask.FromResult(selectedFloor.FloorIndex);
             }
 
-            selected = floors
-                .OrderBy(score => score.Master.FloorIndex)
-                .First();
+            if (lowestFloor == null)
+            {
+                throw new InvalidOperationException("Dungeon floor exploration master does not exist.");
+            }
+
             eventBus.Publish(new ActorAiDecisionRecorded(
                 actor.Id,
                 AiDecisionType.SelectDungeonFloor,
@@ -70,9 +79,9 @@ namespace DungeonInn.Application.UseCase
                 default,
                 0,
                 0,
-                selected.Master.FloorIndex,
+                lowestFloor.FloorIndex,
                 0));
-            return UniTask.FromResult(selected.Master.FloorIndex);
+            return UniTask.FromResult(lowestFloor.FloorIndex);
         }
 
         float CalculateFloorDifficulty(DungeonFloorExplorationMaster floorMaster)
@@ -83,25 +92,17 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Dungeon floor exploration requires actor archetype spawn table.");
             }
 
-            var totalWeight = spawnTable.Entries.Sum(entry => entry.Weight);
-            var averageCombatPower = spawnTable.Entries.Sum(entry =>
+            var totalWeight = 0;
+            var weightedCombatPower = 0f;
+            foreach (var entry in spawnTable.Entries)
             {
+                totalWeight += entry.Weight;
                 var archetypeMaster = masterRepository.GetActorArchetypeMaster(entry.TargetMasterId);
-                return combatPowerCalculator.Calculate(archetypeMaster) * entry.Weight;
-            }) / (float)totalWeight;
-            return averageCombatPower * floorMaster.DifficultyCoefficient;
-        }
-
-        readonly struct FloorDifficulty
-        {
-            public DungeonFloorExplorationMaster Master { get; }
-            public float Difficulty { get; }
-
-            public FloorDifficulty(DungeonFloorExplorationMaster master, float difficulty)
-            {
-                Master = master;
-                Difficulty = difficulty;
+                weightedCombatPower += combatPowerCalculator.Calculate(archetypeMaster) * entry.Weight;
             }
+
+            var averageCombatPower = weightedCombatPower / totalWeight;
+            return averageCombatPower * floorMaster.DifficultyCoefficient;
         }
     }
 }

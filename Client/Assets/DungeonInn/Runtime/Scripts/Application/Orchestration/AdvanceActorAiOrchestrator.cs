@@ -3,7 +3,6 @@ using DungeonInn.Application.UseCase;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Combat;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.AI;
 using DungeonInn.Domain.Actor;
@@ -91,13 +90,15 @@ namespace DungeonInn.Application.Orchestration
 
         IActorAiPolicy ResolvePolicy(Actor actor)
         {
-            var policy = policies.FirstOrDefault(x => x.CanHandle(actor));
-            if (policy == null)
+            foreach (var policy in policies)
             {
-                throw new InvalidOperationException("Actor AI policy does not exist.");
+                if (policy.CanHandle(actor))
+                {
+                    return policy;
+                }
             }
 
-            return policy;
+            throw new InvalidOperationException("Actor AI policy does not exist.");
         }
 
         static ActorAiDecision Evaluate(IActorAiPolicy policy, ActorAiContext context, ActorAiDirtyFlags dirty)

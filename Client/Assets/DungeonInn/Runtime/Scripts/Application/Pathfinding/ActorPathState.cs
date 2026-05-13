@@ -5,7 +5,7 @@ namespace DungeonInn.Application.Pathfinding
 {
     public sealed class ActorPathState
     {
-        IReadOnlyList<GridPosition> path;
+        readonly List<GridPosition> path = new();
 
         public GridPosition CachedGoal { get; private set; }
         public bool IsDirty { get; private set; } = true;
@@ -20,7 +20,7 @@ namespace DungeonInn.Application.Pathfinding
 
         public bool TryGetCurrentWaypoint(out GridPosition waypoint)
         {
-            if (path == null || waypointIndex >= path.Count)
+            if (waypointIndex >= path.Count)
             {
                 waypoint = default;
                 return false;
@@ -37,7 +37,12 @@ namespace DungeonInn.Application.Pathfinding
 
         public void SetPath(IReadOnlyList<GridPosition> newPath, GridPosition goal)
         {
-            path = newPath;
+            path.Clear();
+            for (var i = 0; i < newPath.Count; i++)
+            {
+                path.Add(newPath[i]);
+            }
+
             CachedGoal = goal;
             waypointIndex = 0;
             IsDirty = false;
@@ -46,7 +51,7 @@ namespace DungeonInn.Application.Pathfinding
 
         public void MarkFailed()
         {
-            path = null;
+            path.Clear();
             IsDirty = false;
             HasFailed = true;
         }

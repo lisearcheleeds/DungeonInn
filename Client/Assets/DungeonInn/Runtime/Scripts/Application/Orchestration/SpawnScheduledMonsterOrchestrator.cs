@@ -1,11 +1,11 @@
 using System;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Factory;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Dungeon;
 using DungeonInn.Master;
 using VContainer;
 
@@ -44,16 +44,22 @@ namespace DungeonInn.Application.Orchestration
             worldState.SpawnSchedule.LastMonsterSpawnTick = currentScheduleTick;
 
             // TODO: 上限をSpawnTableMasterから取得する
-            var monsterCount = worldState.Actors.Count(x => x.Behavior is MonsterBehavior);
+            var monsterCount = 0;
+            foreach (var worldActor in worldState.Actors)
+            {
+                if (worldActor.Behavior is MonsterBehavior)
+                {
+                    monsterCount++;
+                }
+            }
+
             if (monsterCount >= GameConstants.InitialMaxMonsterCount)
             {
                 return null;
             }
 
-            var generatedFloors = worldState.Dungeon.Floors.Values
-                .OrderBy(floor => floor.FloorIndex)
-                .ToArray();
-            var floor = generatedFloors[gameRandom.Next(generatedFloors.Length)];
+            var selectedFloorIndex = gameRandom.Next(worldState.Dungeon.Floors.Count);
+            var floor = SelectFloor(worldState, selectedFloorIndex);
             var room = floor.Rooms[currentScheduleTick % floor.Rooms.Count];
             var position = floor.Layer.GetCellCenter(room.Center);
 
@@ -83,7 +89,12 @@ namespace DungeonInn.Application.Orchestration
 
         SpawnTableEntryMaster SelectMonsterSpawnEntry(SpawnTableMaster spawnTable)
         {
-            var totalWeight = spawnTable.Entries.Sum(entry => entry.Weight);
+            var totalWeight = 0;
+            foreach (var entry in spawnTable.Entries)
+            {
+                totalWeight += entry.Weight;
+            }
+
             var roll = gameRandom.Next(totalWeight);
             var currentWeight = 0;
             foreach (var entry in spawnTable.Entries)
@@ -96,6 +107,22 @@ namespace DungeonInn.Application.Orchestration
             }
 
             return spawnTable.Entries[spawnTable.Entries.Count - 1];
+        }
+
+        static DungeonFloor SelectFloor(IGameWorldState worldState, int selectionIndex)
+        {
+            var currentIndex = 0;
+            foreach (var floor in worldState.Dungeon.Floors.Values)
+            {
+                if (currentIndex == selectionIndex)
+                {
+                    return floor;
+                }
+
+                currentIndex++;
+            }
+
+            throw new InvalidOperationException("Generated dungeon floor does not exist.");
         }
     }
 }
