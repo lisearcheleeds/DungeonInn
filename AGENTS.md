@@ -66,6 +66,7 @@ docs/
 | `docs/guidelines/domain-design-guidelines.md` | Domain / Entity / Calculator / DTO の設計判断基準 |
 | `docs/guidelines/application-boundary-guidelines.md` | UseCase / Service / Event / Aggregate / ゲームループの境界ルール |
 | `docs/guidelines/implementation-quality-guidelines.md` | 命名・DI・テスト・定数・TODO 管理の判断基準 |
+| `docs/guidelines/self-review-preset.md` | マイルストーン完了レビュー・全体レビューの標準プロンプトと出力ルール |
 
 ### プロジェクト固有ドキュメント
 

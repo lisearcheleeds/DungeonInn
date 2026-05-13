@@ -71,6 +71,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<InitializeDungeonOrchestrator>(Lifetime.Scoped);
             builder.Register<InitializeGameWorldOrchestrator>(Lifetime.Scoped);
             builder.Register<GameLoopUseCase>(Lifetime.Scoped).As<IGameLoopUseCase>();
+            builder.Register<WorldSimulationOrchestrator>(Lifetime.Scoped).As<IWorldSimulationOrchestrator>();
             builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
             builder.Register<PauseGameTimeUseCase>(Lifetime.Scoped);
             builder.Register<ResumeGameTimeUseCase>(Lifetime.Scoped);
