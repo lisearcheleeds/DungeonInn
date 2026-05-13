@@ -447,6 +447,9 @@ Milestone 6 候補:
 - Actor の NavMesh 経路追従
 - NavMesh がない layer での Domain/Application 移動 fallback
 - ダンジョン再生成時の NavMesh rebuild
+- Actor SpriteAnimation の正式実装
+  - Milestone 5 では SpriteRenderer placeholder 表示、位置同期、向き、カメラ相対反転までを完了範囲とする。
+  - idle / walk / combat / hit / dead の animation、frame 切替、正式 sprite 差し替えは Milestone 6 以降の作業として扱う。
 
 理由:
 
