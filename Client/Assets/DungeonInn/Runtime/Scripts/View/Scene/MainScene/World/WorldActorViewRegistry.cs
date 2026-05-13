@@ -2,51 +2,52 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldActorViewRegistry : IDisposable
     {
-        const float ActorSphereDiameterMeters = 3f;
-
         readonly MapLayerViewRegistry layerViewRegistry;
-        readonly Dictionary<Guid, GameObject> actorObjects = new();
+        readonly Dictionary<Guid, WorldActorView> actorViews = new();
 
+        [Inject]
         public WorldActorViewRegistry(MapLayerViewRegistry layerViewRegistry)
         {
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
         }
 
-        public GameObject GetOrCreateActorObject(Actor actor, Material material)
+        public WorldActorView GetOrCreateActorView(Actor actor, Sprite sprite)
         {
-            if (actorObjects.TryGetValue(actor.Id, out var actorObject))
+            if (actorViews.TryGetValue(actor.Id, out var actorView))
             {
-                return actorObject;
+                actorView.SpriteRenderer.sprite = sprite;
+                return actorView;
             }
 
-            actorObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            var actorObject = new GameObject($"Actor_{actor.Id}");
             actorObject.name = $"Actor_{actor.Id}";
-            actorObject.transform.localScale = Vector3.one * ActorSphereDiameterMeters;
-            RemoveCollider(actorObject);
-            ApplyMaterial(actorObject, material);
-            actorObjects.Add(actor.Id, actorObject);
-            SetActorLayer(actorObject, actor);
-            return actorObject;
+            var spriteRenderer = actorObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = sprite;
+            actorView = new WorldActorView(actorObject, spriteRenderer);
+            actorViews.Add(actor.Id, actorView);
+            SetActorLayer(actorView, actor);
+            return actorView;
         }
 
-        public void SetActorLayer(GameObject actorObject, Actor actor)
+        public void SetActorLayer(WorldActorView actorView, Actor actor)
         {
             var actorRoot = layerViewRegistry.GetOrCreateActorRoot(actor.Position.LayerId);
-            if (actorObject.transform.parent != actorRoot)
+            if (actorView.ActorObject.transform.parent != actorRoot)
             {
-                actorObject.transform.SetParent(actorRoot, true);
+                actorView.ActorObject.transform.SetParent(actorRoot, true);
             }
         }
 
         public void RemoveMissingActorObjects(HashSet<Guid> activeActorIds)
         {
             var removeActorIds = new List<Guid>();
-            foreach (var pair in actorObjects)
+            foreach (var pair in actorViews)
             {
                 if (!activeActorIds.Contains(pair.Key))
                 {
@@ -56,40 +57,22 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             foreach (var actorId in removeActorIds)
             {
-                UnityEngine.Object.Destroy(actorObjects[actorId]);
-                actorObjects.Remove(actorId);
+                UnityEngine.Object.Destroy(actorViews[actorId].ActorObject);
+                actorViews.Remove(actorId);
             }
         }
 
         public void Dispose()
         {
-            foreach (var actorObject in actorObjects.Values)
+            foreach (var actorView in actorViews.Values)
             {
-                if (actorObject != null)
+                if (actorView.ActorObject != null)
                 {
-                    UnityEngine.Object.Destroy(actorObject);
+                    UnityEngine.Object.Destroy(actorView.ActorObject);
                 }
             }
 
-            actorObjects.Clear();
-        }
-
-        static void ApplyMaterial(GameObject target, Material material)
-        {
-            var renderer = target.GetComponent<MeshRenderer>();
-            if (renderer != null)
-            {
-                renderer.sharedMaterial = material;
-            }
-        }
-
-        static void RemoveCollider(GameObject target)
-        {
-            var collider = target.GetComponent<Collider>();
-            if (collider != null)
-            {
-                UnityEngine.Object.Destroy(collider);
-            }
+            actorViews.Clear();
         }
     }
 }

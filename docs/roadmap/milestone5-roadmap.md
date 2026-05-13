@@ -388,6 +388,22 @@ UI 表示:
 - カメラ回転時に sprite の向きが大きく破綻しない。
 - Domain Actor が GameObject / SpriteRenderer 参照を持っていない。
 
+方針メモ:
+
+- Actor の向きは当面 View 側で直近移動方向を保持する。
+- Milestone 5 では `idle / walk` 相当までを対象にし、`combat / hit / dead` は Milestone 6 で扱う。
+- Sprite 方向は左右反転中心の最小構成から始める。
+- placeholder sprite は Actor 種別ごとの単色生成 Sprite とする。
+
+実装状況:
+
+- 2026-05-13 完了。
+- `WorldActorView` を追加し、Actor GameObject / SpriteRenderer / View 側 facing / 直近位置を管理するようにした。
+- `WorldActorViewRegistry` は debug Sphere 生成をやめ、`SpriteRenderer` GameObject を生成する。
+- `ActorSpriteVisualConfig` は Actor 種別ごとの placeholder Texture / Sprite を生成し、正式 sprite 差し替え前の表示入口になった。
+- `WorldActorPresenter` は Actor の直近移動方向から facing を更新し、camera yaw に対して左右反転を適用する。
+- Actor sprite は camera yaw に追従して回転し、カメラ回転時に表示方向が大きく破綻しないようにした。
+
 ## Phase 7: Debug Sphere / Plane の撤去
 
 目的:
@@ -407,6 +423,13 @@ UI 表示:
 - Error / Warning なしで一定時間 PlayMode 実行できる。
 - `uloop.cmd compile --project-path Client` が成功する。
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功する。
+
+実装状況:
+
+- 2026-05-13 完了。
+- Actor 表示は `SpriteRenderer` に移行し、debug Sphere 生成を撤去した。
+- Map 表示は Phase 4 の chunk mesh に移行済みであり、debug Plane 生成は通常表示経路に残っていない。
+- `WorldActorDebugVisualizer` は互換用 facade として `WorldMapView` / `WorldActorPresenter` を更新するだけの役割に留める。
 
 ## Milestone 6 へ移動する項目
 

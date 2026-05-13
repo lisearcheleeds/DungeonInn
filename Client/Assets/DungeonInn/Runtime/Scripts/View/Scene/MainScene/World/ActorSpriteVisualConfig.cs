@@ -2,13 +2,20 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class ActorSpriteVisualConfig : IDisposable
     {
-        readonly Dictionary<ActorBehaviorType, Material> debugMaterials = new();
+        const int SpriteWidth = 32;
+        const int SpriteHeight = 48;
+        const float PixelsPerUnit = 16f;
 
+        readonly Dictionary<ActorBehaviorType, Sprite> placeholderSprites = new();
+        readonly List<Texture2D> placeholderTextures = new();
+
+        [Inject]
         public ActorSpriteVisualConfig()
         {
             Add(ActorBehaviorType.Adventurer, new Color(0.1f, 0.45f, 1f, 1f));
@@ -16,25 +23,37 @@ namespace DungeonInn.View.Scene.MainScene.World
             Add(ActorBehaviorType.None, new Color(1f, 0.85f, 0.1f, 1f));
         }
 
-        public Material GetDebugMaterial(Actor actor)
+        public Sprite GetPlaceholderSprite(Actor actor)
         {
             var behaviorType = ResolveBehaviorType(actor);
-            if (!debugMaterials.TryGetValue(behaviorType, out var material))
+            if (!placeholderSprites.TryGetValue(behaviorType, out var sprite))
             {
-                return debugMaterials[ActorBehaviorType.None];
+                return placeholderSprites[ActorBehaviorType.None];
             }
 
-            return material;
+            return sprite;
         }
 
         public void Dispose()
         {
-            foreach (var material in debugMaterials.Values)
+            foreach (var sprite in placeholderSprites.Values)
             {
-                WorldDebugMaterialFactory.Dispose(material);
+                if (sprite != null)
+                {
+                    UnityEngine.Object.Destroy(sprite);
+                }
             }
 
-            debugMaterials.Clear();
+            foreach (var texture in placeholderTextures)
+            {
+                if (texture != null)
+                {
+                    UnityEngine.Object.Destroy(texture);
+                }
+            }
+
+            placeholderSprites.Clear();
+            placeholderTextures.Clear();
         }
 
         static ActorBehaviorType ResolveBehaviorType(Actor actor)
@@ -54,7 +73,32 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void Add(ActorBehaviorType behaviorType, Color color)
         {
-            debugMaterials.Add(behaviorType, WorldDebugMaterialFactory.Create(color));
+            var texture = CreatePlaceholderTexture(color);
+            var sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, SpriteWidth, SpriteHeight),
+                new Vector2(0.5f, 0f),
+                PixelsPerUnit);
+            placeholderTextures.Add(texture);
+            placeholderSprites.Add(behaviorType, sprite);
+        }
+
+        static Texture2D CreatePlaceholderTexture(Color color)
+        {
+            var texture = new Texture2D(SpriteWidth, SpriteHeight, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            var pixels = new Color[SpriteWidth * SpriteHeight];
+            for (var index = 0; index < pixels.Length; index++)
+            {
+                pixels[index] = color;
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+            return texture;
         }
     }
 }

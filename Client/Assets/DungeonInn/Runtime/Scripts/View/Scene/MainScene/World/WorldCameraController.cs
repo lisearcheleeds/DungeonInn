@@ -18,6 +18,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         bool initialized;
         float yawDegrees;
 
+        public float CurrentYawDegrees => yawDegrees;
+
         [Inject]
         public WorldCameraController(ISceneCameraManager sceneCameraManager, WorldCameraSettings settings)
         {
