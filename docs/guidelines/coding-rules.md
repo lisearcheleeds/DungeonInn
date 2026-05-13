@@ -490,3 +490,32 @@ room.PlaceBed(bed);
 // アドレスごとにスコープを保持し、ProductAssetLoader 破棄時にまとめて解放する
 readonly Dictionary<string, (IAssetScope scope, GameObject prefab)> prefabCache = new();
 ```
+
+### 15-4. DI 注入点は `[Inject]` を明示する
+
+VContainer で生成・注入されるクラスは、注入に使う constructor または `Construct` method に `[Inject]` を付ける。
+
+```csharp
+// OK: 通常の C# class
+public sealed class WorldCameraController
+{
+    [Inject]
+    public WorldCameraController(ISceneCameraManager sceneCameraManager)
+    {
+    }
+}
+
+// OK: MonoBehaviour / Unity component
+public sealed class WorldGameLoopEntryPoint : MonoBehaviour
+{
+    [Inject]
+    public void Construct(IGameLoopUseCase gameLoopUseCase)
+    {
+    }
+}
+```
+
+理由:
+- VContainer は public constructor が 1 つなら `[Inject]` なしでも解決できるが、依存解決の入口が読み取りにくくなる。
+- constructor が増えた場合の解決先の揺れを防ぐ。
+- このプロジェクトでは、DI で解決される依存は明示性を優先する。

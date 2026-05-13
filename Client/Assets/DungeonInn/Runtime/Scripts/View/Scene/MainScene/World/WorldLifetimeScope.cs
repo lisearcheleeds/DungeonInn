@@ -29,6 +29,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<MapTileVisualConfig>(Lifetime.Scoped);
             builder.Register<MapMeshBuildService>(Lifetime.Scoped);
             builder.Register<ActorSpriteVisualConfig>(Lifetime.Scoped);
+            builder.RegisterInstance(new WorldCameraSettings()).AsSelf();
             builder.Register<WorldMapView>(Lifetime.Scoped);
             builder.Register<WorldActorViewRegistry>(Lifetime.Scoped);
             builder.Register<WorldActorPresenter>(Lifetime.Scoped);

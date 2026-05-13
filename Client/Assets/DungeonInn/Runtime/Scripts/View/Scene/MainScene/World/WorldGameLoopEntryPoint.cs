@@ -32,6 +32,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
         PublishInnDailyReportUseCase publishInnDailyReportUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
+        WorldCameraController worldCameraController;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
 
@@ -58,7 +59,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
             PublishInnDailyReportUseCase publishInnDailyReportUseCase,
-            WorldActorDebugVisualizer worldActorDebugVisualizer)
+            WorldActorDebugVisualizer worldActorDebugVisualizer,
+            WorldCameraController worldCameraController)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
@@ -79,6 +81,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
             this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
+            this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
         }
 
         void Start()
@@ -100,6 +103,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
+            worldCameraController.UpdateCamera(Time.unscaledDeltaTime);
             worldActorDebugVisualizer.UpdateVisuals();
 
             if (isExecuting)

@@ -339,6 +339,16 @@ UI 表示:
 - マウスでカメラを回転できる。
 - カメラ回転後も map / actor の表示関係が読める。
 
+実装状況:
+
+- 2026-05-13 完了。
+- `WorldCameraSettings` を追加し、初期位置、yaw、pitch、移動速度、回転感度、orthographic size を設定化した。
+- `WorldCameraController` は Lighthouse の `ISceneCameraManager.BaseCamera` を取得して操作する。`Camera.main` は使わない。
+- カメラは orthographic に設定し、WASD / 矢印キーで camera yaw に沿った平面移動を行う。
+- 右クリック中の mouse delta で yaw 回転する。
+- mouse wheel で orthographic size を変更する。
+- カメラ操作は表示操作であり、Domain / Application のゲーム進行には影響させない。
+
 ## Phase 6: Actor SpriteRenderer 表示
 
 目的:
