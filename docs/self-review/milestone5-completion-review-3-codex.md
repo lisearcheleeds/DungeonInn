@@ -786,3 +786,32 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `Task` / `ValueTask`: 追加なし
 - DI登録: 追加なし
 - `LighthouseGenerated` 以下: 編集なし
+
+## Codex対応ログ 2026-05-13（続き2）
+
+対応項目:
+
+- パフォーマンスレビュー1: `WorldSimulationOrchestrator` 内で毎フレーム実行されていた schedule tick / event-driven 寄りの処理を schedule tick ブロックへ移した。
+- `updateEquipmentUseCase.Execute()`、`sellItemsUseCase.Execute()`、`useRecoveryItemUseCase.ExecuteAsync()`、`decideAdventurerReturnUseCase.ExecuteAsync()` を `AdvanceFrameAsync()` 直下から削除し、`AdvanceScheduleSystemsAsync()` 内で schedule tick が進んだ時だけ実行するようにした。
+- `WorldGameLoopEntryPointArchitectureTests` に、上記4処理が `AdvanceFrameAsync()` に残っておらず `AdvanceScheduleSystemsAsync()` 側に存在することを確認するアーキテクチャテストを追加した。
+
+完了条件チェック:
+
+- [x] ゲーム進行処理が `FrameLoop` / `ScheduleTick` / `EventDriven` に分類されている
+- [x] `UpdateEquipmentUseCase.Execute()` が毎フレーム無条件で呼ばれていない
+- [x] `SellItemsUseCase.Execute()` が毎フレーム無条件で呼ばれていない
+- [x] `UseRecoveryItemOrchestrator.ExecuteAsync()` が毎フレーム無条件で呼ばれていない
+- [x] `DecideAdventurerReturnUseCase.ExecuteAsync()` が毎フレーム無条件で呼ばれていない、または毎フレーム実行が必要な理由が明文化されている
+- [x] dirty flag / schedule tick / event-driven 化した処理の回帰テストがある
+- [x] `uloop.cmd compile --project-path Client` が成功している
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（219 passed）
+- 禁止API検索: 今回追加差分による新規違反なし。既存の `ProductAssetLoader.cs` の `Resources.LoadAsync` と `Launcher.cs` の `SceneManager.LoadSceneAsync` は継続検出。
+- `Addressables.LoadAssetAsync`: 追加なし
+- `Resources.Load` / `Resource.Load`: 追加なし
+- `Task` / `ValueTask`: 追加なし
+- DI登録: 追加なし
+- `LighthouseGenerated` 以下: 編集なし

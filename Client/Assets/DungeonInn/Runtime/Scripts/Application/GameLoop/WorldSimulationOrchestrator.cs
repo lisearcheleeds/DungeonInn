@@ -144,19 +144,12 @@ namespace DungeonInn.Application.GameLoop
             {
                 pickUpItemUseCase.Execute(gameWorldState);
             }
-
-            updateEquipmentUseCase.Execute(gameWorldState);
-            sellItemsUseCase.Execute(gameWorldState);
-            await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
-            request.CancellationToken.ThrowIfCancellationRequested();
             if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
             {
                 await advanceActorEffectsUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 request.CancellationToken.ThrowIfCancellationRequested();
             }
 
-            await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
-            request.CancellationToken.ThrowIfCancellationRequested();
             if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
             {
                 await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
@@ -177,6 +170,13 @@ namespace DungeonInn.Application.GameLoop
             await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, scheduleDeltaGameSeconds);
             cancellationToken.ThrowIfCancellationRequested();
             await recoverAdventurerAtInnUseCase.EnsureReservationsAsync(gameWorldState, result.CurrentScheduleTick);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            updateEquipmentUseCase.Execute(gameWorldState);
+            sellItemsUseCase.Execute(gameWorldState);
+            await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
+            cancellationToken.ThrowIfCancellationRequested();
+            await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
             cancellationToken.ThrowIfCancellationRequested();
         }
     }

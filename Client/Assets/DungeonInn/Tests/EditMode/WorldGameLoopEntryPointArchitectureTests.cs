@@ -1,4 +1,6 @@
+using System.IO;
 using System.Linq;
+using UnityEngine;
 using DungeonInn.View.Scene.MainScene.World;
 using NUnit.Framework;
 
@@ -28,6 +30,36 @@ namespace DungeonInn.Tests.EditMode
                 .ToArray();
 
             Assert.That(forbiddenDependencies, Is.Empty);
+        }
+
+        [Test]
+        public void NonFrameSimulationSystemsRunOnlyFromScheduleTickBlock()
+        {
+            var sourcePath = Path.Combine(
+                UnityEngine.Application.dataPath,
+                "DungeonInn/Runtime/Scripts/Application/GameLoop/WorldSimulationOrchestrator.cs");
+            var source = File.ReadAllText(sourcePath);
+            var frameMethodStart = source.IndexOf("public async UniTask AdvanceFrameAsync", System.StringComparison.Ordinal);
+            var scheduleMethodStart = source.IndexOf("async UniTask AdvanceScheduleSystemsAsync", System.StringComparison.Ordinal);
+
+            Assert.That(frameMethodStart, Is.GreaterThanOrEqualTo(0));
+            Assert.That(scheduleMethodStart, Is.GreaterThan(frameMethodStart));
+
+            var frameMethodBody = source.Substring(frameMethodStart, scheduleMethodStart - frameMethodStart);
+            var scheduleMethodBody = source.Substring(scheduleMethodStart);
+            var scheduleOnlyCalls = new[]
+            {
+                "updateEquipmentUseCase.Execute",
+                "sellItemsUseCase.Execute",
+                "useRecoveryItemUseCase.ExecuteAsync",
+                "decideAdventurerReturnUseCase.ExecuteAsync"
+            };
+
+            foreach (var call in scheduleOnlyCalls)
+            {
+                Assert.That(frameMethodBody, Does.Not.Contain(call));
+                Assert.That(scheduleMethodBody, Does.Contain(call));
+            }
         }
     }
 }
