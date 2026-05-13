@@ -257,7 +257,10 @@ UI 表示:
 - 各 layer root 配下に `Tiles` と `Actors` を分け、map 表示と Actor 表示が同じ layer root と座標変換基準を共有するようにした。
 - `WorldMapView` は layer root 配下へ local position で tile を配置し、layer 高さを二重適用しないようにした。
 - `WorldActorViewRegistry` は Actor の所属 layer に応じて Actor GameObject の parent を切り替える。
-- 現時点では生成済み layer はすべて表示する。表示切り替えが必要になった場合は `MapLayerViewRegistry` に active layer 制御を追加する。
+- 2026-05-13 修正: 地上 / ダンジョンを縦にずらして同時表示するのは debug 表示の名残のため廃止した。
+- すべての layer root は world 原点に置き、`MapLayerViewRegistry` が active layer だけを表示する。
+- `WorldLayerViewController` を追加し、Q / E で表示 layer を循環切り替えできるようにした。
+- Actor は所属 layer の `Actors` root 配下で local position 更新され、現在表示中の layer だけに表示される。
 
 ## Phase 4: Map Chunk Mesh 生成基盤
 

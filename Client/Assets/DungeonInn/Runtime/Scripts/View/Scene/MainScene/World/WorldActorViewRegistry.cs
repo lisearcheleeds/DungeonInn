@@ -40,7 +40,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             var actorRoot = layerViewRegistry.GetOrCreateActorRoot(actor.Position.LayerId);
             if (actorView.ActorObject.transform.parent != actorRoot)
             {
-                actorView.ActorObject.transform.SetParent(actorRoot, true);
+                actorView.ActorObject.transform.SetParent(actorRoot, false);
             }
         }
 

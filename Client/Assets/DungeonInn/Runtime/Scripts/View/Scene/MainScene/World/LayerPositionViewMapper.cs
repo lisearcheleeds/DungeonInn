@@ -26,6 +26,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             return ToUnityPosition(position) + Vector3.up * settings.ActorHeightOffset;
         }
 
+        public Vector3 ToLayerLocalPosition(LayerPosition position)
+        {
+            return new Vector3(position.X, 0f, position.Z);
+        }
+
+        public Vector3 ToActorLayerLocalPosition(LayerPosition position)
+        {
+            return ToLayerLocalPosition(position) + Vector3.up * settings.ActorHeightOffset;
+        }
+
         public float ResolveLayerY(MapLayerId layerId)
         {
             return layerId.Value * settings.LayerHeightOffset;

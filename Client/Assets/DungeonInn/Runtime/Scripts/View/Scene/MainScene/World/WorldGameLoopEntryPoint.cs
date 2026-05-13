@@ -33,6 +33,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         PublishInnDailyReportUseCase publishInnDailyReportUseCase;
         WorldActorDebugVisualizer worldActorDebugVisualizer;
         WorldCameraController worldCameraController;
+        WorldLayerViewController worldLayerViewController;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
 
@@ -60,7 +61,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
             PublishInnDailyReportUseCase publishInnDailyReportUseCase,
             WorldActorDebugVisualizer worldActorDebugVisualizer,
-            WorldCameraController worldCameraController)
+            WorldCameraController worldCameraController,
+            WorldLayerViewController worldLayerViewController)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
@@ -82,6 +84,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
             this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
+            this.worldLayerViewController = worldLayerViewController ?? throw new ArgumentNullException(nameof(worldLayerViewController));
         }
 
         void Start()
@@ -105,6 +108,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             worldCameraController.UpdateCamera(Time.unscaledDeltaTime);
             worldActorDebugVisualizer.UpdateVisuals();
+            worldLayerViewController.UpdateLayerSelection();
 
             if (isExecuting)
             {

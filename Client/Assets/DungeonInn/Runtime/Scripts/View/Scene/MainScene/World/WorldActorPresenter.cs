@@ -39,7 +39,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                     actor,
                     actorSpriteVisualConfig.GetPlaceholderSprite(actor));
                 actorViewRegistry.SetActorLayer(actorView, actor);
-                actorView.ActorObject.transform.position = positionMapper.ToActorUnityPosition(actor.Position);
+                actorView.ActorObject.transform.localPosition = positionMapper.ToActorLayerLocalPosition(actor.Position);
                 actorView.ActorObject.transform.rotation = UnityEngine.Quaternion.Euler(0f, worldCameraController.CurrentYawDegrees, 0f);
                 actorView.UpdateFacing(actor.Position);
                 ApplyCameraRelativeFlip(actorView);

@@ -2,19 +2,22 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Map;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class MapLayerViewRegistry : IDisposable
     {
         readonly WorldViewRoot viewRoot;
-        readonly LayerPositionViewMapper positionMapper;
         readonly Dictionary<int, MapLayerViewRoot> layerRoots = new();
+        readonly List<int> orderedLayerIds = new();
 
-        public MapLayerViewRegistry(WorldViewRoot viewRoot, LayerPositionViewMapper positionMapper)
+        int? activeLayerId;
+
+        [Inject]
+        public MapLayerViewRegistry(WorldViewRoot viewRoot)
         {
             this.viewRoot = viewRoot ?? throw new ArgumentNullException(nameof(viewRoot));
-            this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
         }
 
         public Transform GetOrCreateTileRoot(MapLayerId layerId, string layerName)
@@ -27,9 +30,20 @@ namespace DungeonInn.View.Scene.MainScene.World
             return GetOrCreateLayerRoot(layerId, ResolveFallbackLayerName(layerId)).ActorRoot;
         }
 
+        public void SelectNextLayer()
+        {
+            SelectRelativeLayer(1);
+        }
+
+        public void SelectPreviousLayer()
+        {
+            SelectRelativeLayer(-1);
+        }
+
         public void Dispose()
         {
             layerRoots.Clear();
+            orderedLayerIds.Clear();
         }
 
         MapLayerViewRoot GetOrCreateLayerRoot(MapLayerId layerId, string layerName)
@@ -42,9 +56,60 @@ namespace DungeonInn.View.Scene.MainScene.World
             layerRoot = viewRoot.CreateLayerRoot(
                 layerId,
                 layerName,
-                new Vector3(0f, positionMapper.ResolveLayerY(layerId), 0f));
+                Vector3.zero);
             layerRoots.Add(layerId.Value, layerRoot);
+            AddOrderedLayerId(layerId.Value);
+            activeLayerId ??= layerId.Value;
+            ApplyLayerVisibility(layerRoot, layerId.Value);
             return layerRoot;
+        }
+
+        void SelectRelativeLayer(int direction)
+        {
+            if (orderedLayerIds.Count == 0)
+            {
+                return;
+            }
+
+            var currentIndex = ResolveActiveLayerIndex();
+            var nextIndex = (currentIndex + direction + orderedLayerIds.Count) % orderedLayerIds.Count;
+            activeLayerId = orderedLayerIds[nextIndex];
+            ApplyLayerVisibility();
+        }
+
+        int ResolveActiveLayerIndex()
+        {
+            if (!activeLayerId.HasValue)
+            {
+                return 0;
+            }
+
+            var currentIndex = orderedLayerIds.IndexOf(activeLayerId.Value);
+            return currentIndex < 0 ? 0 : currentIndex;
+        }
+
+        void AddOrderedLayerId(int layerId)
+        {
+            var insertIndex = 0;
+            while (insertIndex < orderedLayerIds.Count && orderedLayerIds[insertIndex] < layerId)
+            {
+                insertIndex++;
+            }
+
+            orderedLayerIds.Insert(insertIndex, layerId);
+        }
+
+        void ApplyLayerVisibility()
+        {
+            foreach (var pair in layerRoots)
+            {
+                ApplyLayerVisibility(pair.Value, pair.Key);
+            }
+        }
+
+        void ApplyLayerVisibility(MapLayerViewRoot layerRoot, int layerId)
+        {
+            layerRoot.Root.gameObject.SetActive(activeLayerId.HasValue && activeLayerId.Value == layerId);
         }
 
         static string ResolveFallbackLayerName(MapLayerId layerId)
