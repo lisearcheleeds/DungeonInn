@@ -295,6 +295,24 @@ UI 表示:
 - material 分割単位。
 - 壁、階段、施設予定地を最初の mesh topology でどこまで表現するか。
 
+方針メモ:
+
+- chunk サイズは `16 x 16 tiles` とする。
+- 1 chunk は 1 GameObject + 1 Mesh とし、`TileVisualKind` ごとに submesh を分ける。
+- Phase 4 の mesh topology は床の平面 Quad までに限定する。
+- `TileMeshShapeKind` は将来の topology 差し替え用の設計入口として維持する。
+- 壁、階段、施設予定地、草、柵、装飾物のような非立方体表現は、後続 Phase で `TileMeshShapeKind` ごとの geometry builder または custom mesh 参照として拡張する。
+- この段階では、`Block` / `Ramp` / `Marker` 等の見た目種別も footprint の平面 Quad として描画し、material と visual kind だけを先に分ける。
+
+実装状況:
+
+- 2026-05-13 完了。
+- `MapMeshBuildService` / `MapChunkMesh` を追加し、MapLayer から chunk mesh を生成する構成にした。
+- `WorldMapView` は tile ごとの `GameObject.CreatePrimitive` をやめ、layer root 配下に chunk GameObject を生成する。
+- 1 chunk 内では `TileVisualKind` ごとに submesh を分け、`MapMaterialSet` 由来の shared material を割り当てる。
+- Ground / Dungeon ともに 16x16 chunk 単位で表示する。
+- Dungeon の stair up / stair down は専用 `TileVisualKind` として submesh / material を分けるが、topology は Phase 4 では平面 Quad のままとする。
+
 ## Phase 5: Orthographic Camera 操作
 
 目的:
