@@ -149,6 +149,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 var result = await gameLoopUseCase.ExecuteAsync(new GameLoopTickRequest(unscaledDeltaTime));
                 cancellationToken.ThrowIfCancellationRequested();
                 var frameDeltaGameSeconds = result.IsPaused ? 0f : unscaledDeltaTime * result.TimeScale;
+                var shouldAdvanceTimeDependentSystems = !result.IsPaused && 0f < frameDeltaGameSeconds;
 
                 foreach (var completedDay in result.CompletedDays)
                 {
@@ -171,23 +172,46 @@ namespace DungeonInn.View.Scene.MainScene.World
 
                 await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
                 cancellationToken.ThrowIfCancellationRequested();
-                await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
-                cancellationToken.ThrowIfCancellationRequested();
-                await advanceProjectileUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
-                cancellationToken.ThrowIfCancellationRequested();
-                await advanceAreaEffectUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
-                cancellationToken.ThrowIfCancellationRequested();
-                pickUpItemUseCase.Execute(gameWorldState);
+                if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
+                {
+                    await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Projectiles.Count)
+                {
+                    await advanceProjectileUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.AreaEffects.Count)
+                {
+                    await advanceAreaEffectUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                if (0 < gameWorldState.Items.Count)
+                {
+                    pickUpItemUseCase.Execute(gameWorldState);
+                }
+
                 updateEquipmentUseCase.Execute(gameWorldState);
                 sellItemsUseCase.Execute(gameWorldState);
                 await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
                 cancellationToken.ThrowIfCancellationRequested();
-                await advanceActorEffectsUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
-                cancellationToken.ThrowIfCancellationRequested();
+                if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
+                {
+                    await advanceActorEffectsUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
                 await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
                 cancellationToken.ThrowIfCancellationRequested();
-                await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
-                cancellationToken.ThrowIfCancellationRequested();
+                if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
+                {
+                    await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

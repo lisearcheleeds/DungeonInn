@@ -244,7 +244,7 @@ AI 関連 docs に `AdvanceActorAiUseCase` の記述が残っている一方、�
 
 ## パフォーマンスレビュー
 
-### 1. 毎フレームでゲーム進行全体が走る
+### 1. 毎フレームでゲーム進行全体が走る（一部対応済み）
 
 重大度: 高
 
@@ -259,6 +259,10 @@ AI 関連 docs に `AdvanceActorAiUseCase` の記述が残っている一方、�
 解決案:
 
 表示更新、リアルタイム戦闘、スケジュール tick、イベント駆動処理を分離する。pause 時は camera 以外を止める。戦闘・Projectile・AreaEffect は対象が存在する時だけ回す。
+
+対応:
+
+pause 中も UI 操作や非時間依存の自動判断は許可する方針とし、`GameLoopUseCase` と View 更新は従来通り毎フレーム実行する。`WorldGameLoopEntryPoint` では、pause 中に Actor 移動 / 戦闘進行 / Projectile / AreaEffect / ActorEffect / 宿回復のような時間進行系のみをスキップする。あわせて、Projectile / AreaEffect / Item が存在しない場合の明確に副作用がない呼び出しを省く。ゲーム進行パイプラインを Application 層へ移す大きな責務整理は Milestone 6 へ残す。
 
 根拠:
 
