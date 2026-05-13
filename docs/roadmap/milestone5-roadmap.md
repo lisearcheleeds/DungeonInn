@@ -146,6 +146,16 @@ UI 表示:
 - Domain / Application に Unity 表示責務が漏れていない。
 - 既存 PlayMode 起動が壊れていない。
 
+実装状況:
+
+- 2026-05-13 完了。
+- `WorldActorDebugVisualizer` は互換用ファサードとして残し、map 表示を `WorldMapView`、Actor 表示を `WorldActorPresenter` / `WorldActorViewRegistry`、root 管理を `WorldViewRoot`、座標変換を `LayerPositionViewMapper` へ分離した。
+- `WorldCameraController` を登録し、Phase 5 の camera control 実装先を確保した。
+- 既存の debug Sphere / Plane 表示は維持しており、Phase 4 / Phase 6 で正式表示へ置き換える。
+- `uloop.cmd compile --project-path Client` 成功。
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode` 成功。215 件 passed。
+- PlayMode を短時間起動し、`WorldGameLoop` 初期化、Actor spawn、AI ログを確認。Error 0 件。
+
 ## Phase 2: Placeholder Asset / Visual Config 最小基盤
 
 目的:

@@ -21,6 +21,12 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterComponent(worldScene);
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
+            builder.Register<WorldViewRoot>(Lifetime.Scoped);
+            builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
+            builder.Register<WorldMapView>(Lifetime.Scoped);
+            builder.Register<WorldActorViewRegistry>(Lifetime.Scoped);
+            builder.Register<WorldActorPresenter>(Lifetime.Scoped);
+            builder.Register<WorldCameraController>(Lifetime.Scoped);
             builder.Register<WorldActorDebugVisualizer>(Lifetime.Scoped);
             builder.RegisterEntryPoint<WorldGameLogPresenter>(Lifetime.Scoped);
 
