@@ -63,9 +63,9 @@ docs/
 |---|---|
 | `docs/guidelines/lighthouse-patterns.md` | Lighthouse ルール・禁止事項・実装パターン集 |
 | `docs/guidelines/coding-rules.md` | C# コーディング規約 |
-| `docs/guidelines/domain-usecase-design-guidelines.md` | Domain / UseCase の設計判断基準 |
-| `docs/guidelines/usecase-boundary-guidelines.md` | UseCase / Event / Aggregate 境界の追加設計ルール |
-| `docs/guidelines/review-policy-guideline.md` | コードレビューの方針・判断基準 |
+| `docs/guidelines/domain-design-guidelines.md` | Domain / Entity / Calculator / DTO の設計判断基準 |
+| `docs/guidelines/application-boundary-guidelines.md` | UseCase / Service / Event / Aggregate / ゲームループの境界ルール |
+| `docs/guidelines/implementation-quality-guidelines.md` | 命名・DI・テスト・定数・TODO 管理の判断基準 |
 
 ### プロジェクト固有ドキュメント
 
@@ -216,7 +216,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 - コーディングルールを必ず守ること
   - 実装時、レビュー時に `docs/guidelines/coding-rules.md` を参照すること
 - UseCase / Event / Aggregate 境界ルールを必ず守ること
-  - 次回以降の新規実装では `docs/guidelines/usecase-boundary-guidelines.md` を参照すること
+  - 次回以降の新規実装では `docs/guidelines/application-boundary-guidelines.md` を参照すること
   - UseCase のステートレス性、UseCase 間呼び出し、イベント購読による状態変更、Aggregate 境界、Publisher/Subscriber 分離方針を確認すること
   - 既存コードに違反がある場合は作業範囲内で悪化させず、必要に応じてリファクタタスクとして扱うこと
 
@@ -253,7 +253,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 
 - [ ] 禁止 API が追加されていないことを検索で確認した
 - [ ] LifetimeScope / Installer への DI 登録漏れがないことを確認した
-- [ ] 公開インターフェース・イベント設計が `docs/guidelines/review-policy-guideline.md` の方針に沿っている
+- [ ] 公開インターフェース・イベント設計が `docs/guidelines/application-boundary-guidelines.md` の方針に沿っている
 - [ ] コンパイルが通っている（uloop compile または Codex ログで確認）
 
 ```powershell
@@ -269,7 +269,7 @@ rg "Addressables\.LoadAssetAsync|Resources\.Load|Resource\.Load|SceneManager\.Lo
 
 - [ ] `docs/guidelines/lighthouse-patterns.md` を確認した（または今回のタスクで参照が不要であることを確認した）
 - [ ] `docs/guidelines/coding-rules.md` を確認した（または今回のタスクで参照が不要であることを確認した）
-- [ ] `docs/guidelines/usecase-boundary-guidelines.md` を確認した（または今回のタスクで参照が不要であることを確認した）
+- [ ] `docs/guidelines/application-boundary-guidelines.md` を確認した（または今回のタスクで参照が不要であることを確認した）
 - [ ] タスクの目的・スコープを理解した
 - [ ] 仕様ドキュメントに記載のない設計判断が発生していないことを確認した
 - [ ] 「作業を止めてユーザーに確認する条件」に該当する状況がないことを確認した
