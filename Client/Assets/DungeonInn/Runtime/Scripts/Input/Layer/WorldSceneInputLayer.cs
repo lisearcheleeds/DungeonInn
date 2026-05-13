@@ -1,5 +1,6 @@
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.View.Scene.MainScene.World;
 using LighthouseExtends.InputLayer;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,32 +11,92 @@ namespace DungeonInn.Input.Layer
     {
         readonly InputAction togglePauseAction;
         readonly InputAction showInnStatusAction;
+        readonly InputAction worldCameraMoveAction;
+        readonly InputAction worldCameraLookAction;
+        readonly InputAction worldCameraRotateAction;
+        readonly InputAction worldCameraZoomAction;
+        readonly InputAction previousWorldLayerAction;
+        readonly InputAction nextWorldLayerAction;
         readonly IGameWorldStateReader worldState;
         readonly ToggleGamePauseUseCase toggleGamePauseUseCase;
         readonly GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
+        readonly WorldCameraController worldCameraController;
+        readonly WorldLayerViewController worldLayerViewController;
 
         public WorldSceneInputLayer(
             InputActions inputActions,
             IGameWorldStateReader worldState,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
-            GetInnEconomyStatusUseCase getInnEconomyStatusUseCase)
+            GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
+            WorldCameraController worldCameraController,
+            WorldLayerViewController worldLayerViewController)
         {
             togglePauseAction = inputActions.Scene.Get().FindAction("TogglePause", true);
             showInnStatusAction = inputActions.Scene.Get().FindAction("ShowInnStatus", true);
+            worldCameraMoveAction = inputActions.Scene.Get().FindAction("WorldCameraMove", true);
+            worldCameraLookAction = inputActions.Scene.Get().FindAction("WorldCameraLook", true);
+            worldCameraRotateAction = inputActions.Scene.Get().FindAction("WorldCameraRotate", true);
+            worldCameraZoomAction = inputActions.Scene.Get().FindAction("WorldCameraZoom", true);
+            previousWorldLayerAction = inputActions.Scene.Get().FindAction("PreviousWorldLayer", true);
+            nextWorldLayerAction = inputActions.Scene.Get().FindAction("NextWorldLayer", true);
             this.worldState = worldState;
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
+            this.worldCameraController = worldCameraController;
+            this.worldLayerViewController = worldLayerViewController;
         }
 
         public bool BlocksAllInput => false;
 
         public bool OnActionStarted(InputAction.CallbackContext callbackContext)
         {
+            if (callbackContext.action.id == worldCameraRotateAction.id)
+            {
+                worldCameraController.SetRotating(true);
+                return true;
+            }
+
             return false;
         }
 
         public bool OnActionPerformed(InputAction.CallbackContext callbackContext)
         {
+            if (callbackContext.action.id == worldCameraMoveAction.id)
+            {
+                worldCameraController.SetMoveInput(callbackContext.ReadValue<Vector2>());
+                return true;
+            }
+
+            if (callbackContext.action.id == worldCameraLookAction.id)
+            {
+                worldCameraController.AddLookDelta(callbackContext.ReadValue<Vector2>());
+                return true;
+            }
+
+            if (callbackContext.action.id == worldCameraRotateAction.id)
+            {
+                worldCameraController.SetRotating(true);
+                return true;
+            }
+
+            if (callbackContext.action.id == worldCameraZoomAction.id)
+            {
+                worldCameraController.AddZoomDelta(callbackContext.ReadValue<Vector2>());
+                return true;
+            }
+
+            if (callbackContext.action.id == previousWorldLayerAction.id)
+            {
+                worldLayerViewController.SelectPreviousLayer();
+                return true;
+            }
+
+            if (callbackContext.action.id == nextWorldLayerAction.id)
+            {
+                worldLayerViewController.SelectNextLayer();
+                return true;
+            }
+
             if (callbackContext.action.id == togglePauseAction.id)
             {
                 TogglePauseAsync().Forget();
@@ -58,6 +119,18 @@ namespace DungeonInn.Input.Layer
 
         public bool OnActionCanceled(InputAction.CallbackContext callbackContext)
         {
+            if (callbackContext.action.id == worldCameraMoveAction.id)
+            {
+                worldCameraController.SetMoveInput(Vector2.zero);
+                return true;
+            }
+
+            if (callbackContext.action.id == worldCameraRotateAction.id)
+            {
+                worldCameraController.SetRotating(false);
+                return true;
+            }
+
             return false;
         }
 

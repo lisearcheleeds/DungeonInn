@@ -24,6 +24,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         ToggleGamePauseUseCase toggleGamePauseUseCase;
         GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
         WorldCameraController worldCameraController;
+        WorldLayerViewController worldLayerViewController;
         WorldSceneCamera worldSceneCamera;
         bool isFallbackWorldCamera;
 
@@ -40,13 +41,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             IGameWorldStateReader gameWorldState,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
-            WorldCameraController worldCameraController)
+            WorldCameraController worldCameraController,
+            WorldLayerViewController worldLayerViewController)
         {
             this.worldPresenter = worldPresenter;
             this.gameWorldState = gameWorldState;
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
             this.worldCameraController = worldCameraController;
+            this.worldLayerViewController = worldLayerViewController;
         }
 
         public override ISceneCamera[] GetSceneCameraList()
@@ -61,7 +64,9 @@ namespace DungeonInn.View.Scene.MainScene.World
                 inputActions,
                 gameWorldState,
                 toggleGamePauseUseCase,
-                getInnEconomyStatusUseCase);
+                getInnEconomyStatusUseCase,
+                worldCameraController,
+                worldLayerViewController);
         }
 
         protected override InputActionMap GetInputLayerActionMap(InputActions inputActions)
@@ -83,6 +88,12 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             worldPresenter.OnEnter();
             return UniTask.CompletedTask;
+        }
+
+        protected override async UniTask OnLeave(ISceneTransitionContext context, CancellationToken cancelToken)
+        {
+            worldCameraController.ResetInputState();
+            await base.OnLeave(context, cancelToken);
         }
 
         void EnsureWorldSceneCamera()

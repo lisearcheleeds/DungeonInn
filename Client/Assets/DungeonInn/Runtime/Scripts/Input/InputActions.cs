@@ -135,6 +135,60 @@ namespace DungeonInn.Input
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""WorldCameraMove"",
+                    ""type"": ""Value"",
+                    ""id"": ""00000000-0000-0000-0002-000000000005"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""WorldCameraLook"",
+                    ""type"": ""Value"",
+                    ""id"": ""00000000-0000-0000-0002-000000000006"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""WorldCameraRotate"",
+                    ""type"": ""Button"",
+                    ""id"": ""00000000-0000-0000-0002-000000000007"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""WorldCameraZoom"",
+                    ""type"": ""Value"",
+                    ""id"": ""00000000-0000-0000-0002-000000000008"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""PreviousWorldLayer"",
+                    ""type"": ""Button"",
+                    ""id"": ""00000000-0000-0000-0002-000000000009"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""NextWorldLayer"",
+                    ""type"": ""Button"",
+                    ""id"": ""00000000-0000-0000-0002-000000000010"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -190,6 +244,171 @@ namespace DungeonInn.Input
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""ShowInnStatus"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""2DVector"",
+                    ""id"": ""00000000-0000-0000-0002-000000000106"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""00000000-0000-0000-0002-000000000107"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""00000000-0000-0000-0002-000000000108"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""00000000-0000-0000-0002-000000000109"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""00000000-0000-0000-0002-000000000110"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""2DVector"",
+                    ""id"": ""00000000-0000-0000-0002-000000000111"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""00000000-0000-0000-0002-000000000112"",
+                    ""path"": ""<Keyboard>/upArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""00000000-0000-0000-0002-000000000113"",
+                    ""path"": ""<Keyboard>/downArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""00000000-0000-0000-0002-000000000114"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""00000000-0000-0000-0002-000000000115"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000116"",
+                    ""path"": ""<Mouse>/delta"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraLook"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000117"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraRotate"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000118"",
+                    ""path"": ""<Mouse>/scroll"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldCameraZoom"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000119"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PreviousWorldLayer"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000120"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""NextWorldLayer"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -307,6 +526,12 @@ namespace DungeonInn.Input
             m_Scene_Cancel = m_Scene.FindAction("Cancel", throwIfNotFound: true);
             m_Scene_TogglePause = m_Scene.FindAction("TogglePause", throwIfNotFound: true);
             m_Scene_ShowInnStatus = m_Scene.FindAction("ShowInnStatus", throwIfNotFound: true);
+            m_Scene_WorldCameraMove = m_Scene.FindAction("WorldCameraMove", throwIfNotFound: true);
+            m_Scene_WorldCameraLook = m_Scene.FindAction("WorldCameraLook", throwIfNotFound: true);
+            m_Scene_WorldCameraRotate = m_Scene.FindAction("WorldCameraRotate", throwIfNotFound: true);
+            m_Scene_WorldCameraZoom = m_Scene.FindAction("WorldCameraZoom", throwIfNotFound: true);
+            m_Scene_PreviousWorldLayer = m_Scene.FindAction("PreviousWorldLayer", throwIfNotFound: true);
+            m_Scene_NextWorldLayer = m_Scene.FindAction("NextWorldLayer", throwIfNotFound: true);
             // ScreenStack
             m_ScreenStack = asset.FindActionMap("ScreenStack", throwIfNotFound: true);
             m_ScreenStack_Back = m_ScreenStack.FindAction("Back", throwIfNotFound: true);
@@ -483,6 +708,12 @@ namespace DungeonInn.Input
         private readonly InputAction m_Scene_Cancel;
         private readonly InputAction m_Scene_TogglePause;
         private readonly InputAction m_Scene_ShowInnStatus;
+        private readonly InputAction m_Scene_WorldCameraMove;
+        private readonly InputAction m_Scene_WorldCameraLook;
+        private readonly InputAction m_Scene_WorldCameraRotate;
+        private readonly InputAction m_Scene_WorldCameraZoom;
+        private readonly InputAction m_Scene_PreviousWorldLayer;
+        private readonly InputAction m_Scene_NextWorldLayer;
         /// <summary>
         /// Provides access to input actions defined in input action map "Scene".
         /// </summary>
@@ -510,6 +741,30 @@ namespace DungeonInn.Input
             /// Provides access to the underlying input action "Scene/ShowInnStatus".
             /// </summary>
             public InputAction @ShowInnStatus => m_Wrapper.m_Scene_ShowInnStatus;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/WorldCameraMove".
+            /// </summary>
+            public InputAction @WorldCameraMove => m_Wrapper.m_Scene_WorldCameraMove;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/WorldCameraLook".
+            /// </summary>
+            public InputAction @WorldCameraLook => m_Wrapper.m_Scene_WorldCameraLook;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/WorldCameraRotate".
+            /// </summary>
+            public InputAction @WorldCameraRotate => m_Wrapper.m_Scene_WorldCameraRotate;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/WorldCameraZoom".
+            /// </summary>
+            public InputAction @WorldCameraZoom => m_Wrapper.m_Scene_WorldCameraZoom;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/PreviousWorldLayer".
+            /// </summary>
+            public InputAction @PreviousWorldLayer => m_Wrapper.m_Scene_PreviousWorldLayer;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/NextWorldLayer".
+            /// </summary>
+            public InputAction @NextWorldLayer => m_Wrapper.m_Scene_NextWorldLayer;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -548,6 +803,24 @@ namespace DungeonInn.Input
                 @ShowInnStatus.started += instance.OnShowInnStatus;
                 @ShowInnStatus.performed += instance.OnShowInnStatus;
                 @ShowInnStatus.canceled += instance.OnShowInnStatus;
+                @WorldCameraMove.started += instance.OnWorldCameraMove;
+                @WorldCameraMove.performed += instance.OnWorldCameraMove;
+                @WorldCameraMove.canceled += instance.OnWorldCameraMove;
+                @WorldCameraLook.started += instance.OnWorldCameraLook;
+                @WorldCameraLook.performed += instance.OnWorldCameraLook;
+                @WorldCameraLook.canceled += instance.OnWorldCameraLook;
+                @WorldCameraRotate.started += instance.OnWorldCameraRotate;
+                @WorldCameraRotate.performed += instance.OnWorldCameraRotate;
+                @WorldCameraRotate.canceled += instance.OnWorldCameraRotate;
+                @WorldCameraZoom.started += instance.OnWorldCameraZoom;
+                @WorldCameraZoom.performed += instance.OnWorldCameraZoom;
+                @WorldCameraZoom.canceled += instance.OnWorldCameraZoom;
+                @PreviousWorldLayer.started += instance.OnPreviousWorldLayer;
+                @PreviousWorldLayer.performed += instance.OnPreviousWorldLayer;
+                @PreviousWorldLayer.canceled += instance.OnPreviousWorldLayer;
+                @NextWorldLayer.started += instance.OnNextWorldLayer;
+                @NextWorldLayer.performed += instance.OnNextWorldLayer;
+                @NextWorldLayer.canceled += instance.OnNextWorldLayer;
             }
 
             /// <summary>
@@ -571,6 +844,24 @@ namespace DungeonInn.Input
                 @ShowInnStatus.started -= instance.OnShowInnStatus;
                 @ShowInnStatus.performed -= instance.OnShowInnStatus;
                 @ShowInnStatus.canceled -= instance.OnShowInnStatus;
+                @WorldCameraMove.started -= instance.OnWorldCameraMove;
+                @WorldCameraMove.performed -= instance.OnWorldCameraMove;
+                @WorldCameraMove.canceled -= instance.OnWorldCameraMove;
+                @WorldCameraLook.started -= instance.OnWorldCameraLook;
+                @WorldCameraLook.performed -= instance.OnWorldCameraLook;
+                @WorldCameraLook.canceled -= instance.OnWorldCameraLook;
+                @WorldCameraRotate.started -= instance.OnWorldCameraRotate;
+                @WorldCameraRotate.performed -= instance.OnWorldCameraRotate;
+                @WorldCameraRotate.canceled -= instance.OnWorldCameraRotate;
+                @WorldCameraZoom.started -= instance.OnWorldCameraZoom;
+                @WorldCameraZoom.performed -= instance.OnWorldCameraZoom;
+                @WorldCameraZoom.canceled -= instance.OnWorldCameraZoom;
+                @PreviousWorldLayer.started -= instance.OnPreviousWorldLayer;
+                @PreviousWorldLayer.performed -= instance.OnPreviousWorldLayer;
+                @PreviousWorldLayer.canceled -= instance.OnPreviousWorldLayer;
+                @NextWorldLayer.started -= instance.OnNextWorldLayer;
+                @NextWorldLayer.performed -= instance.OnNextWorldLayer;
+                @NextWorldLayer.canceled -= instance.OnNextWorldLayer;
             }
 
             /// <summary>
@@ -765,6 +1056,48 @@ namespace DungeonInn.Input
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnShowInnStatus(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "WorldCameraMove" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnWorldCameraMove(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "WorldCameraLook" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnWorldCameraLook(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "WorldCameraRotate" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnWorldCameraRotate(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "WorldCameraZoom" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnWorldCameraZoom(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "PreviousWorldLayer" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnPreviousWorldLayer(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "NextWorldLayer" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnNextWorldLayer(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "ScreenStack" which allows adding and removing callbacks.

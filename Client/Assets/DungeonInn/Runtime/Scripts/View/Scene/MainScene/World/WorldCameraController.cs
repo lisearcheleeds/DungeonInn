@@ -1,21 +1,20 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
-    public sealed class WorldCameraController : IDisposable
+    public sealed class WorldCameraController
     {
         readonly WorldCameraSettings settings;
-        readonly InputAction moveAction;
-        readonly InputAction lookAction;
-        readonly InputAction rotateAction;
-        readonly InputAction zoomAction;
 
         Camera camera;
         bool applyInitialState;
         bool initialized;
+        bool isRotating;
+        Vector2 moveInput;
+        Vector2 lookDelta;
+        Vector2 zoomDelta;
         float yawDegrees;
         float pitchDegrees;
 
@@ -27,14 +26,6 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             yawDegrees = settings.InitialYawDegrees;
             pitchDegrees = settings.PitchDegrees;
-            moveAction = CreateMoveAction();
-            lookAction = new InputAction("WorldCameraLook", InputActionType.Value, "<Mouse>/delta");
-            rotateAction = new InputAction("WorldCameraRotate", InputActionType.Button, "<Mouse>/rightButton");
-            zoomAction = new InputAction("WorldCameraZoom", InputActionType.Value, "<Mouse>/scroll");
-            moveAction.Enable();
-            lookAction.Enable();
-            rotateAction.Enable();
-            zoomAction.Enable();
         }
 
         public void BindCamera(Camera camera, bool applyInitialState)
@@ -42,6 +33,34 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.camera = camera ?? throw new ArgumentNullException(nameof(camera));
             this.applyInitialState = applyInitialState;
             initialized = false;
+        }
+
+        public void SetMoveInput(Vector2 value)
+        {
+            moveInput = value;
+        }
+
+        public void SetRotating(bool value)
+        {
+            isRotating = value;
+        }
+
+        public void AddLookDelta(Vector2 value)
+        {
+            lookDelta += value;
+        }
+
+        public void AddZoomDelta(Vector2 value)
+        {
+            zoomDelta += value;
+        }
+
+        public void ResetInputState()
+        {
+            moveInput = Vector2.zero;
+            lookDelta = Vector2.zero;
+            zoomDelta = Vector2.zero;
+            isRotating = false;
         }
 
         public void UpdateCamera(float deltaSeconds)
@@ -60,14 +79,6 @@ namespace DungeonInn.View.Scene.MainScene.World
             UpdatePosition(camera, deltaSeconds);
             UpdateZoom(camera);
             ApplyRotation(camera);
-        }
-
-        public void Dispose()
-        {
-            moveAction.Dispose();
-            lookAction.Dispose();
-            rotateAction.Dispose();
-            zoomAction.Dispose();
         }
 
         void InitializeCamera(Camera camera)
@@ -92,18 +103,18 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void UpdateRotation()
         {
-            if (!rotateAction.IsPressed())
+            if (!isRotating)
             {
+                lookDelta = Vector2.zero;
                 return;
             }
 
-            var lookDelta = lookAction.ReadValue<Vector2>();
             yawDegrees += lookDelta.x * settings.RotationSensitivity;
+            lookDelta = Vector2.zero;
         }
 
         void UpdatePosition(Camera camera, float deltaSeconds)
         {
-            var moveInput = moveAction.ReadValue<Vector2>();
             if (moveInput.sqrMagnitude <= 0f)
             {
                 return;
@@ -118,37 +129,21 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void UpdateZoom(Camera camera)
         {
-            var scroll = zoomAction.ReadValue<Vector2>();
-            if (scroll.sqrMagnitude <= 0f)
+            if (zoomDelta.sqrMagnitude <= 0f)
             {
                 return;
             }
 
             camera.orthographicSize = Mathf.Clamp(
-                camera.orthographicSize - scroll.y * settings.ZoomSensitivity,
+                camera.orthographicSize - zoomDelta.y * settings.ZoomSensitivity,
                 settings.MinOrthographicSize,
                 settings.MaxOrthographicSize);
+            zoomDelta = Vector2.zero;
         }
 
         void ApplyRotation(Camera camera)
         {
             camera.transform.rotation = Quaternion.Euler(pitchDegrees, yawDegrees, 0f);
-        }
-
-        static InputAction CreateMoveAction()
-        {
-            var action = new InputAction("WorldCameraMove", InputActionType.Value);
-            action.AddCompositeBinding("2DVector")
-                .With("Up", "<Keyboard>/w")
-                .With("Down", "<Keyboard>/s")
-                .With("Left", "<Keyboard>/a")
-                .With("Right", "<Keyboard>/d");
-            action.AddCompositeBinding("2DVector")
-                .With("Up", "<Keyboard>/upArrow")
-                .With("Down", "<Keyboard>/downArrow")
-                .With("Left", "<Keyboard>/leftArrow")
-                .With("Right", "<Keyboard>/rightArrow");
-            return action;
         }
     }
 }

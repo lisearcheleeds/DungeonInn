@@ -1,42 +1,26 @@
 using System;
-using UnityEngine.InputSystem;
 using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
-    public sealed class WorldLayerViewController : IDisposable
+    public sealed class WorldLayerViewController
     {
         readonly MapLayerViewRegistry layerViewRegistry;
-        readonly InputAction previousLayerAction;
-        readonly InputAction nextLayerAction;
 
         [Inject]
         public WorldLayerViewController(MapLayerViewRegistry layerViewRegistry)
         {
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
-            previousLayerAction = new InputAction("PreviousWorldLayer", InputActionType.Button, "<Keyboard>/q");
-            nextLayerAction = new InputAction("NextWorldLayer", InputActionType.Button, "<Keyboard>/e");
-            previousLayerAction.Enable();
-            nextLayerAction.Enable();
         }
 
-        public void UpdateLayerSelection()
+        public void SelectPreviousLayer()
         {
-            if (previousLayerAction.WasPressedThisFrame())
-            {
-                layerViewRegistry.SelectPreviousLayer();
-            }
-
-            if (nextLayerAction.WasPressedThisFrame())
-            {
-                layerViewRegistry.SelectNextLayer();
-            }
+            layerViewRegistry.SelectPreviousLayer();
         }
 
-        public void Dispose()
+        public void SelectNextLayer()
         {
-            previousLayerAction.Dispose();
-            nextLayerAction.Dispose();
+            layerViewRegistry.SelectNextLayer();
         }
     }
 }
