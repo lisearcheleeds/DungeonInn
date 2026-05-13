@@ -91,6 +91,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Scoped);
             builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorLifecycleOrchestrator>(Lifetime.Scoped);
+            builder.Register<CombatEncounterTargetResolver>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
             builder.Register<GrantExperienceService>(Lifetime.Scoped);
             builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);

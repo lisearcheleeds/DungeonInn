@@ -199,7 +199,8 @@ Phase 7 後も `WorldActorDebugVisualizer` が DI 登録され、毎フレーム
 | `milestone5-consistency-review.md` | 既存 `Resources.LoadAsync` / `SceneManager.LoadSceneAsync` | 別タスクとして追跡 |
 | `milestone5-consistency-review.md` | `AdvanceActorAiUseCase` 旧名 | 対応済み |
 | `milestone5-consistency-review.md` / `milestone5-general-review.md` | `WorldActorDebugVisualizer` の互換 facade | 対応済み |
-| `milestone5-performance-review.md` | 戦闘探索 O(n^2) / Area target 全走査 | Milestone 6へ延期 |
+| `milestone5-performance-review.md` | 戦闘探索 O(n^2) / Line of Sight サンプリング | 対応済み |
+| `milestone5-performance-review.md` | Area target 全走査 | Milestone 6へ延期 |
 | `milestone5-performance-review.md` | Combat / Projectile / AreaEffect の毎フレーム List 複製 | 要対応 |
 | `milestone5-performance-review.md` | `WorldActorPresenter` の毎フレーム `HashSet` 生成 | 対応済み |
 | `milestone5-performance-review.md` | Actor 表示の全 Actor 毎フレーム更新 | Milestone 6へ延期 |
@@ -269,7 +270,7 @@ pause 中も UI 操作や非時間依存の自動判断は許可する方針と�
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldGameLoopEntryPoint.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/GameLoop/GameLoopTickRequest.cs`
 
-### 2. 戦闘検出が O(n^2) + Line of Sight サンプリングになっている
+### 2. 戦闘検出が O(n^2) + Line of Sight サンプリングになっている（対応済み）
 
 重大度: 高
 
@@ -285,9 +286,14 @@ Actor 数が増えると、毎フレーム全 Actor 同士を走査し、候補�
 
 Layer 別・セル別の Spatial Index を導入し、近傍セルだけ探索する。戦闘候補は dirty / event / 一定間隔で再評価し、全 Actor 毎フレーム検出を避ける。Line of Sight 結果は短時間キャッシュする。
 
+対応:
+
+`DetectCombatEncounterUseCase` の全 Actor 総当たり探索を `CombatEncounterTargetResolver` へ分離し、毎回の検出開始時に Layer 別・セル別の Spatial Index を一度だけ再構築して、探索対象を同一 Layer の近傍セルに限定する。Line of Sight は成功した Actor ペアのみ `IGameClock.CurrentScheduleTick` が進むまでキャッシュし、同一 schedule tick 内の再サンプリングを避ける。戦闘検出自体の dirty / event 化はゲーム進行パイプライン整理と合わせて Milestone 6 へ残す。
+
 根拠:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/DetectCombatEncounterUseCase.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat/CombatEncounterTargetResolver.cs`
 
 ### 3. 毎フレーム GC Alloc と O(n) 削除が複数ある
 
@@ -479,7 +485,7 @@ Milestone 6 開始前に「暫定定数の正式 Master 化」または「Milest
 
 1. World camera / layer 操作を `WorldSceneInputLayer` 経由へ移す。
 2. `WorldGameLoopEntryPoint` からゲーム進行パイプラインを Application 層へ移す。
-3. 毎フレーム GC Alloc と O(n^2) 戦闘検出を改善する。
+3. 毎フレーム GC Alloc と Area target 全走査を改善する。
 4. Asset 差し替え基盤を serialized config / ScriptableObject 化する。
 
 ### 別タスクとして追跡
