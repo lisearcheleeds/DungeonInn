@@ -11,6 +11,7 @@
         "LighthouseExtends.ScreenStack.Runtime",
         "LighthouseExtends.UIComponent.Runtime",
         "LighthouseExtends.TextTable.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
         "UniTask",
         "R3.Unity",
         "VContainer",

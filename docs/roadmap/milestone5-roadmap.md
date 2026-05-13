@@ -346,7 +346,9 @@ UI 表示:
 
 - 2026-05-13 完了。
 - `WorldCameraSettings` を追加し、初期位置、yaw、pitch、移動速度、回転感度、orthographic size を設定化した。
-- `WorldCameraController` は Lighthouse の `ISceneCameraManager.BaseCamera` を取得して操作する。`Camera.main` は使わない。
+- 2026-05-13 修正: CanvasSceneObject の横断 UI 用 camera を World 描画用として操作していたため、WorldScene 固有の `WorldCamera` を生成して操作対象に変更した。
+- `WorldScene.GetSceneCameraList()` は World 固有の `WorldSceneCamera` を返し、Lighthouse の camera stack では World camera が Base、UI camera が Overlay になる。
+- `WorldCameraController` は WorldScene から bind された World camera だけを操作する。`Camera.main` は使わない。
 - カメラは orthographic に設定し、WASD / 矢印キーで camera yaw に沿った平面移動を行う。
 - 右クリック中の mouse delta で yaw 回転する。
 - mouse wheel で orthographic size を変更する。

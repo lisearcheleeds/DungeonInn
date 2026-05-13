@@ -1,5 +1,4 @@
 using System;
-using Lighthouse.Scene.SceneCamera;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VContainer;
@@ -8,24 +7,26 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldCameraController : IDisposable
     {
-        readonly ISceneCameraManager sceneCameraManager;
         readonly WorldCameraSettings settings;
         readonly InputAction moveAction;
         readonly InputAction lookAction;
         readonly InputAction rotateAction;
         readonly InputAction zoomAction;
 
+        Camera camera;
+        bool applyInitialState;
         bool initialized;
         float yawDegrees;
+        float pitchDegrees;
 
         public float CurrentYawDegrees => yawDegrees;
 
         [Inject]
-        public WorldCameraController(ISceneCameraManager sceneCameraManager, WorldCameraSettings settings)
+        public WorldCameraController(WorldCameraSettings settings)
         {
-            this.sceneCameraManager = sceneCameraManager ?? throw new ArgumentNullException(nameof(sceneCameraManager));
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             yawDegrees = settings.InitialYawDegrees;
+            pitchDegrees = settings.PitchDegrees;
             moveAction = CreateMoveAction();
             lookAction = new InputAction("WorldCameraLook", InputActionType.Value, "<Mouse>/delta");
             rotateAction = new InputAction("WorldCameraRotate", InputActionType.Button, "<Mouse>/rightButton");
@@ -36,15 +37,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             zoomAction.Enable();
         }
 
+        public void BindCamera(Camera camera, bool applyInitialState)
+        {
+            this.camera = camera ?? throw new ArgumentNullException(nameof(camera));
+            this.applyInitialState = applyInitialState;
+            initialized = false;
+        }
+
         public void UpdateCamera(float deltaSeconds)
         {
-            var sceneCamera = sceneCameraManager.BaseCamera;
-            if (sceneCamera == null)
-            {
-                return;
-            }
-
-            var camera = sceneCamera.GetCamera();
             if (camera == null)
             {
                 return;
@@ -71,9 +72,20 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void InitializeCamera(Camera camera)
         {
-            camera.orthographic = true;
-            camera.orthographicSize = settings.InitialOrthographicSize;
-            camera.transform.position = settings.InitialPosition;
+            if (applyInitialState)
+            {
+                camera.orthographic = true;
+                camera.orthographicSize = settings.InitialOrthographicSize;
+                camera.transform.position = settings.InitialPosition;
+                yawDegrees = settings.InitialYawDegrees;
+                pitchDegrees = settings.PitchDegrees;
+            }
+            else
+            {
+                yawDegrees = camera.transform.eulerAngles.y;
+                pitchDegrees = camera.transform.eulerAngles.x;
+            }
+
             ApplyRotation(camera);
             initialized = true;
         }
@@ -120,7 +132,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void ApplyRotation(Camera camera)
         {
-            camera.transform.rotation = Quaternion.Euler(settings.PitchDegrees, yawDegrees, 0f);
+            camera.transform.rotation = Quaternion.Euler(pitchDegrees, yawDegrees, 0f);
         }
 
         static InputAction CreateMoveAction()

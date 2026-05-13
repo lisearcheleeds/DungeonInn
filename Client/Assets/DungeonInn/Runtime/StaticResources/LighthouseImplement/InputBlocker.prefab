@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7815242351208817270}
   - component: {fileID: 76967035017298935}
   - component: {fileID: 837865825279836631}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Blocker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -87,7 +87,7 @@ GameObject:
   - component: {fileID: 5615969552310052047}
   - component: {fileID: 7817602708484941074}
   - component: {fileID: 4632363801719688527}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -187,7 +187,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7712380146281671867}
   - component: {fileID: 8513117433606315473}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: InputBlocker
   m_TagString: Untagged
   m_Icon: {fileID: 0}

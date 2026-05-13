@@ -27,6 +27,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             var actorObject = new GameObject($"Actor_{actor.Id}");
             actorObject.name = $"Actor_{actor.Id}";
+            actorObject.layer = WorldRenderingLayer.Layer;
             var spriteRenderer = actorObject.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = sprite;
             actorView = new WorldActorView(actorObject, spriteRenderer);

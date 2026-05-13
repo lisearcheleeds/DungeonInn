@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6487496622203589007}
   - component: {fileID: 4168883553258485054}
   - component: {fileID: -9010357780472267736}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ScreenStackBackgroundInputBlocker
   m_TagString: Untagged
   m_Icon: {fileID: 0}

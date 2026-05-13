@@ -144,6 +144,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             MapChunkMesh chunkMesh)
         {
             var chunkObject = new GameObject($"{layerName}_Chunk_{startX}_{startZ}");
+            chunkObject.layer = WorldRenderingLayer.Layer;
             chunkObject.transform.SetParent(layerRoot, false);
 
             var meshFilter = chunkObject.AddComponent<MeshFilter>();

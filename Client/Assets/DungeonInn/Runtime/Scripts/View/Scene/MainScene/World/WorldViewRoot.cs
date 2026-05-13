@@ -12,7 +12,9 @@ namespace DungeonInn.View.Scene.MainScene.World
         public WorldViewRoot()
         {
             root = new GameObject("WorldViewRoot");
+            root.layer = WorldRenderingLayer.Layer;
             layersRoot = new GameObject("Layers");
+            layersRoot.layer = WorldRenderingLayer.Layer;
             layersRoot.transform.SetParent(root.transform, false);
         }
 
@@ -21,13 +23,16 @@ namespace DungeonInn.View.Scene.MainScene.World
         public MapLayerViewRoot CreateLayerRoot(MapLayerId layerId, string layerName, Vector3 position)
         {
             var layerRoot = new GameObject($"{layerName}_{layerId.Value}");
+            layerRoot.layer = WorldRenderingLayer.Layer;
             layerRoot.transform.position = position;
             layerRoot.transform.SetParent(LayersRoot, true);
 
             var tileRoot = new GameObject("Tiles");
+            tileRoot.layer = WorldRenderingLayer.Layer;
             tileRoot.transform.SetParent(layerRoot.transform, false);
 
             var actorRoot = new GameObject("Actors");
+            actorRoot.layer = WorldRenderingLayer.Layer;
             actorRoot.transform.SetParent(layerRoot.transform, false);
 
             return new MapLayerViewRoot(layerRoot.transform, tileRoot.transform, actorRoot.transform);
