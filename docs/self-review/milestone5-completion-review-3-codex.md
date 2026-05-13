@@ -756,3 +756,33 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `Task` / `ValueTask`: 追加なし
 - DI登録: `WorldSimulationOrchestrator` を `IWorldSimulationOrchestrator` として `WorldLifetimeScope` に登録
 - `LighthouseGenerated` 以下: 編集なし
+
+## Codex対応ログ 2026-05-13（続き）
+
+対応項目:
+
+- 設計レビュー2: `WorldMapLayerViewData` が Domain オブジェクトへの遅延参照を持っていた問題を修正した。
+- `WorldMapLayerViewData` から `Func<GridPosition, WorldMapCellViewKind>` を削除し、cell kind の値スナップショット配列を保持する形に変更した。
+- `WorldMapViewDataProvider` は `GroundMap` / `DungeonFloor` を読み、Provider 内で cell kind 配列を構築してから View DTO を返すようにした。
+- `WorldMapView` は引き続き `WorldMapLayerViewData.GetCellKind()` を呼ぶが、参照先は Domain 判定ではなく DTO 内の配列値だけになった。
+- `WorldMapLayerViewDataTests.cs` を追加し、DTO が入力配列をコピーして保持すること、delegate field を保持しないことを検証する。
+
+完了条件チェック:
+
+- [x] `WorldMapLayerViewData` が `Func<GridPosition, WorldMapCellViewKind>` を保持していない
+- [x] `WorldMapLayerViewData` または後継 DTO が cell kind / chunk view data の値スナップショットを保持している
+- [x] `WorldMapView` が `GroundMap` / `DungeonFloor` / `MapLayer` の Domain 判定に到達しない
+- [x] map chunk 生成が View 用 DTO の値だけで実行できる
+- [x] DTO 変換処理の EditMode test がある
+- [x] `uloop.cmd compile --project-path Client` が成功している
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（218 passed）
+- 禁止API検索: 今回追加差分による新規違反なし。既存の `ProductAssetLoader.cs` の `Resources.LoadAsync` と `Launcher.cs` の `SceneManager.LoadSceneAsync` は継続検出。
+- `Addressables.LoadAssetAsync`: 追加なし
+- `Resources.Load` / `Resource.Load`: 追加なし
+- `Task` / `ValueTask`: 追加なし
+- DI登録: 追加なし
+- `LighthouseGenerated` 以下: 編集なし

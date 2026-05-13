@@ -19,24 +19,44 @@ namespace DungeonInn.Application.GameLoop
 
     public readonly struct WorldMapLayerViewData
     {
-        readonly Func<GridPosition, WorldMapCellViewKind> resolveCellKind;
+        readonly WorldMapCellViewKind[] cellKinds;
 
         public WorldMapLayerViewData(
             MapLayerId layerId,
             string layerName,
-            MapLayer layer,
-            Func<GridPosition, WorldMapCellViewKind> resolveCellKind)
+            int width,
+            int height,
+            IReadOnlyList<WorldMapCellViewKind> cellKinds)
         {
-            LayerId = layerId;
-            LayerName = layerName ?? throw new ArgumentNullException(nameof(layerName));
-            if (layer == null)
+            if (width < 1)
             {
-                throw new ArgumentNullException(nameof(layer));
+                throw new ArgumentOutOfRangeException(nameof(width));
             }
 
-            Width = layer.Width;
-            Height = layer.Depth;
-            this.resolveCellKind = resolveCellKind ?? throw new ArgumentNullException(nameof(resolveCellKind));
+            if (height < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(height));
+            }
+
+            LayerId = layerId;
+            LayerName = layerName ?? throw new ArgumentNullException(nameof(layerName));
+            if (cellKinds == null)
+            {
+                throw new ArgumentNullException(nameof(cellKinds));
+            }
+
+            if (cellKinds.Count != width * height)
+            {
+                throw new ArgumentException("Cell kind count must match layer size.", nameof(cellKinds));
+            }
+
+            Width = width;
+            Height = height;
+            this.cellKinds = new WorldMapCellViewKind[cellKinds.Count];
+            for (var index = 0; index < cellKinds.Count; index++)
+            {
+                this.cellKinds[index] = cellKinds[index];
+            }
         }
 
         public MapLayerId LayerId { get; }
@@ -46,7 +66,17 @@ namespace DungeonInn.Application.GameLoop
 
         public WorldMapCellViewKind GetCellKind(GridPosition position)
         {
-            return resolveCellKind(position);
+            if (position.X < 0 || Width <= position.X)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position));
+            }
+
+            if (position.Z < 0 || Height <= position.Z)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position));
+            }
+
+            return cellKinds[position.Z * Width + position.X];
         }
     }
 
@@ -78,6 +108,8 @@ namespace DungeonInn.Application.GameLoop
     {
         readonly IGameWorldStateReader worldState;
         readonly List<WorldMapLayerViewData> layers = new();
+        readonly Dictionary<int, WorldMapLayerViewData> cachedLayers = new();
+        readonly List<WorldMapCellViewKind> cellKindBuffer = new();
 
         [Inject]
         public WorldMapViewDataProvider(IGameWorldStateReader worldState)
@@ -89,10 +121,11 @@ namespace DungeonInn.Application.GameLoop
         {
             layers.Clear();
             var groundMap = worldState.GroundMap;
-            layers.Add(new WorldMapLayerViewData(
+            layers.Add(GetOrCreateLayer(
                 MapLayerId.Ground,
                 "Ground",
-                groundMap.Layer,
+                groundMap.Layer.Width,
+                groundMap.Layer.Depth,
                 position => groundMap.IsWalkable(position)
                     ? WorldMapCellViewKind.GroundWalkable
                     : WorldMapCellViewKind.GroundBlocked));
@@ -100,14 +133,41 @@ namespace DungeonInn.Application.GameLoop
             foreach (var pair in worldState.Dungeon.Floors)
             {
                 var floor = pair.Value;
-                layers.Add(new WorldMapLayerViewData(
+                layers.Add(GetOrCreateLayer(
                     MapLayerId.DungeonFloor(pair.Key),
                     $"DungeonFloor{floor.FloorIndex}",
-                    floor.Layer,
+                    floor.Layer.Width,
+                    floor.Layer.Depth,
                     position => ResolveDungeonCellKind(floor, position)));
             }
 
             return layers;
+        }
+
+        WorldMapLayerViewData GetOrCreateLayer(
+            MapLayerId layerId,
+            string layerName,
+            int width,
+            int height,
+            Func<GridPosition, WorldMapCellViewKind> resolveCellKind)
+        {
+            if (cachedLayers.TryGetValue(layerId.Value, out var layerData))
+            {
+                return layerData;
+            }
+
+            cellKindBuffer.Clear();
+            for (var z = 0; z < height; z++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    cellKindBuffer.Add(resolveCellKind(new GridPosition(x, z)));
+                }
+            }
+
+            layerData = new WorldMapLayerViewData(layerId, layerName, width, height, cellKindBuffer);
+            cachedLayers.Add(layerId.Value, layerData);
+            return layerData;
         }
 
         static WorldMapCellViewKind ResolveDungeonCellKind(DungeonFloor floor, GridPosition position)
