@@ -31,7 +31,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
         PublishInnDailyReportUseCase publishInnDailyReportUseCase;
-        WorldActorDebugVisualizer worldActorDebugVisualizer;
+        WorldMapView worldMapView;
+        WorldActorPresenter worldActorPresenter;
         WorldCameraController worldCameraController;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
@@ -59,7 +60,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
             PublishInnDailyReportUseCase publishInnDailyReportUseCase,
-            WorldActorDebugVisualizer worldActorDebugVisualizer,
+            WorldMapView worldMapView,
+            WorldActorPresenter worldActorPresenter,
             WorldCameraController worldCameraController)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
@@ -80,7 +82,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
             this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
-            this.worldActorDebugVisualizer = worldActorDebugVisualizer ?? throw new ArgumentNullException(nameof(worldActorDebugVisualizer));
+            this.worldMapView = worldMapView ?? throw new ArgumentNullException(nameof(worldMapView));
+            this.worldActorPresenter = worldActorPresenter ?? throw new ArgumentNullException(nameof(worldActorPresenter));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
         }
 
@@ -104,7 +107,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             worldCameraController.UpdateCamera(Time.unscaledDeltaTime);
-            worldActorDebugVisualizer.UpdateVisuals();
+            worldMapView.UpdateVisuals();
+            worldActorPresenter.UpdateVisuals();
 
             if (isExecuting)
             {

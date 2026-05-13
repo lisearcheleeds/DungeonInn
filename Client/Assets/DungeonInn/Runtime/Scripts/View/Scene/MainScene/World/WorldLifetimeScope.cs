@@ -35,7 +35,6 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldActorPresenter>(Lifetime.Scoped);
             builder.Register<WorldCameraController>(Lifetime.Scoped);
             builder.Register<WorldLayerViewController>(Lifetime.Scoped);
-            builder.Register<WorldActorDebugVisualizer>(Lifetime.Scoped);
             builder.RegisterEntryPoint<WorldGameLogPresenter>(Lifetime.Scoped);
 
             builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();

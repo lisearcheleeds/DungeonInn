@@ -434,7 +434,7 @@ UI 表示:
 - 2026-05-13 完了。
 - Actor 表示は `SpriteRenderer` に移行し、debug Sphere 生成を撤去した。
 - Map 表示は Phase 4 の chunk mesh に移行済みであり、debug Plane 生成は通常表示経路に残っていない。
-- `WorldActorDebugVisualizer` は互換用 facade として `WorldMapView` / `WorldActorPresenter` を更新するだけの役割に留める。
+- `WorldActorDebugVisualizer` は削除した。正式表示更新は `WorldGameLoopEntryPoint` から `WorldMapView` / `WorldActorPresenter` を直接呼び出す。
 
 ## Milestone 6 へ移動する項目
 

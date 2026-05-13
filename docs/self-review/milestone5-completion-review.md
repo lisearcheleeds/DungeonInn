@@ -19,7 +19,7 @@ Milestone 5 は表示置き換えとしては完了可能な水準にある。�
 
 1. World 入力を Lighthouse の InputLayer 経由に戻す。
 2. `WorldGameLoopEntryPoint` からゲーム進行順序を Application 層へ移す。
-3. `WorldActorDebugVisualizer` を正式な View 更新名へ改名する。
+3. `WorldActorDebugVisualizer` を削除し、正式な View 更新経路へ移す。
 4. Actor SpriteAnimation の完了条件を「Milestone 5では表示・向き・反転まで」と明文化する、または最小アニメーションを追加する。
 5. PlayMode smoke test の証跡を残す。
 
@@ -143,7 +143,7 @@ Milestone 5 の完了条件を「SpriteRenderer による placeholder 表示、�
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldActorPresenter.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldActorView.cs`
 
-### 2. `WorldActorDebugVisualizer` が正式表示更新の名前として残っている
+### 2. `WorldActorDebugVisualizer` が正式表示更新の名前として残っている（対応済み）
 
 重大度: 中
 
@@ -158,6 +158,10 @@ Phase 7 後も `WorldActorDebugVisualizer` が DI 登録され、毎フレーム
 解決案:
 
 `WorldViewUpdater`、`WorldViewPresenter`、`WorldVisualPresenter` などへリネームする。Debug 表示が将来必要なら、別の debug 専用クラスとして分離する。
+
+対応:
+
+移行用 facade 自体が不要になっていたため、`WorldActorDebugVisualizer` を削除した。毎フレームの正式表示更新は `WorldGameLoopEntryPoint` から `WorldMapView` / `WorldActorPresenter` を直接呼び出す。
 
 根拠:
 
@@ -436,7 +440,7 @@ Milestone 6 開始前に「暫定定数の正式 Master 化」または「Milest
 
 ### Milestone 5 完了前に対応推奨
 
-1. `WorldActorDebugVisualizer` を正式な View 更新名へリネームする。
+1. `WorldActorDebugVisualizer` を削除し、正式な View 更新経路へ移す。（対応済み）
 2. `docs/roadmap/milestone5-roadmap.md` の完了条件を現状に合わせて更新する。
 3. Phase 7 の PlayMode smoke test 証跡を追記する。
 4. `WorldCamera` の culling mask / orthographic 契約をコードまたは OnValidate で保証する。
