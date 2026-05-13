@@ -56,6 +56,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
             builder.Register<ActorCombatService>(Lifetime.Scoped).As<IActorCombatService>();
+            builder.Register<ActorSpatialIndexService>(Lifetime.Scoped);
 
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
             builder.Register<GameWorldState>(Lifetime.Scoped)

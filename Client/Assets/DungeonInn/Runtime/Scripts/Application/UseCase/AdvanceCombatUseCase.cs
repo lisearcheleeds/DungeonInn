@@ -19,6 +19,7 @@ namespace DungeonInn.Application.UseCase
         readonly CombatEffectExecutor combatEffectExecutor;
         readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
         readonly IEventPublisher eventPublisher;
+        readonly ActorSpatialIndexService actorSpatialIndexService;
 
         [Inject]
         public AdvanceCombatUseCase(
@@ -27,7 +28,8 @@ namespace DungeonInn.Application.UseCase
             GameWorldFrameBuffer frameBuffer,
             CombatEffectExecutor combatEffectExecutor,
             ActorDefeatOrchestrator actorDefeatOrchestrator,
-            IEventPublisher eventPublisher)
+            IEventPublisher eventPublisher,
+            ActorSpatialIndexService actorSpatialIndexService)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -40,6 +42,8 @@ namespace DungeonInn.Application.UseCase
             this.actorDefeatOrchestrator = actorDefeatOrchestrator
                 ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
+            this.actorSpatialIndexService = actorSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -75,7 +79,11 @@ namespace DungeonInn.Application.UseCase
 
                 if (!IsWithinWeaponRange(actor, target))
                 {
-                    MoveTowardTarget(actor, target, deltaGameSeconds);
+                    if (MoveTowardTarget(actor, target, deltaGameSeconds))
+                    {
+                        actorSpatialIndexService.SyncActor(actor);
+                    }
+
                     continue;
                 }
 
@@ -103,11 +111,11 @@ namespace DungeonInn.Application.UseCase
             return UniTask.CompletedTask;
         }
 
-        static void MoveTowardTarget(Actor actor, Actor target, float deltaGameSeconds)
+        static bool MoveTowardTarget(Actor actor, Actor target, float deltaGameSeconds)
         {
             if (!actor.Position.LayerId.Equals(target.Position.LayerId))
             {
-                return;
+                return false;
             }
 
             var dx = target.Position.X - actor.Position.X;
@@ -115,7 +123,7 @@ namespace DungeonInn.Application.UseCase
             var distSq = dx * dx + dz * dz;
             if (distSq <= 0f)
             {
-                return;
+                return false;
             }
 
             var dist = (float)Math.Sqrt(distSq);
@@ -125,6 +133,7 @@ namespace DungeonInn.Application.UseCase
                 actor.Position.LayerId,
                 actor.Position.X + dx * ratio,
                 actor.Position.Z + dz * ratio));
+            return true;
         }
 
         static bool IsWithinWeaponRange(Actor actor, Actor target)

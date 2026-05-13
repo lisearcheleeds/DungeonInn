@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
@@ -202,7 +203,7 @@ namespace DungeonInn.Tests.EditMode
         static (PickUpItemUseCase, GameWorldState, CollectingEventBus) CreateContext()
         {
             var eventBus = new CollectingEventBus();
-            return (new PickUpItemUseCase(eventBus), new GameWorldState(), eventBus);
+            return (new PickUpItemUseCase(eventBus), new GameWorldState(new ActorSpatialIndexService()), eventBus);
         }
 
         static Actor CreateAdventurer(LayerPosition position, AdventurerLifecycleState lifecycleState)

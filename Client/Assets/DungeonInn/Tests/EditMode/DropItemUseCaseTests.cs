@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
@@ -123,7 +124,7 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var random = new FixedGameRandom(fixedRoll);
             var useCase = new DropItemUseCase(random, eventBus);
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             return (useCase, worldState, eventBus, random);
         }
 

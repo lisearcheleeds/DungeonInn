@@ -39,6 +39,66 @@
 本文に残っていても対応ログと現行コードで解消済みの項目は、未解決問題として再掲しない。
 再掲する場合は「現行コードでも未解決である根拠」を必ず示す。
 
+## 差分許可モデル
+
+レビュー担当者は、docs を「読んだ資料」として扱うだけでなく、差分を許可する条件として使う。
+実装差分またはレビュー対応差分を確認するときは、指摘項目ごとのチェックリストを増やす前に、差分そのものを以下の分類へ通す。
+
+### 差分分類
+
+差分に以下が含まれる場合、その変更は通常の実装修正ではなく、production 契約変更として扱う。
+
+- Runtime 側の `public` / `internal` API、constructor、interface、DTO、Request、Event を追加・変更している
+- DI 解決対象クラスの constructor、LifetimeScope 登録、注入型を追加・変更している
+- Runtime 側で `new XxxService()`、`new XxxUseCase()`、`new XxxRepository()`、static / singleton / 手動検索による依存解決を追加している
+- テストを通す、既存テスト修正量を減らす、互換を保つ、という理由で Runtime API や constructor を追加している
+- adjustable value、cache、dirty flag、index、registry、Actor-keyed state などの長期状態を追加している
+
+### 許可条件
+
+分類に該当した差分は、以下をすべて満たす場合だけ許可する。
+
+- production 側の責務として、その API / constructor / 依存生成が必要な理由を説明できる
+- 該当ガイドライン上で許可される所有者、境界、寿命、依存方向に置かれている
+- テスト都合だけで Runtime surface を増やしていない
+- DI 管理対象を Composition Root / Installer / LifetimeScope 以外で `new` していない
+- テスト補助は Runtime ではなく Tests 側の helper / fixture / test double に閉じている
+- docs にない設計判断が必要な場合は、実装やレビュー完了判定を止めてユーザーに確認している
+
+上記を満たせない差分は、compile や run-tests が成功していてもレビュー上は不許可とする。
+
+### 差分分類から見る例
+
+```text
+GameWorldState() を追加する
+→ Runtime public constructor の追加
+→ production caller と production 責務がない
+→ 既存テスト互換だけが理由
+→ implementation-quality-guidelines / AGENTS の方針に反する
+→ 不許可。Tests 側で GameWorldState(new ActorSpatialIndexService()) または helper を使う。
+```
+
+```text
+Runtime 内で new ActorSpatialIndexService() を追加する
+→ DI 管理対象 Service の手動生成
+→ LifetimeScope の寿命管理と一致しない
+→ AGENTS の DI 生成禁止に反する
+→ 不許可。LifetimeScope 登録と constructor injection に寄せる。
+```
+
+```text
+ActorSpatialIndexService.Revision を追加する
+→ cache invalidation 用の長期状態
+→ Application Service が spatial index と cache invalidation の所有者であることを説明できる
+→ 名前が用途を表し、テストで invalidation を検証している
+→ 許可。ただし Version のような広すぎる名前は避ける。
+```
+
+### 差分分類の記録
+
+レビュー文書または対応ログには、必要に応じて「差分分類」と「許可理由 / 不許可理由」を短く残す。
+これは個別チェック項目を増やすためではなく、docs の既存ルールを差分へ適用した判断過程を残すためである。
+
 ## レビュー観点
 
 ### 設計

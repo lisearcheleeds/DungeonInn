@@ -25,6 +25,7 @@ namespace DungeonInn.Application.Orchestration
         readonly IGameRandom gameRandom;
         readonly IEventPublisher eventPublisher;
         readonly AdventurerExplorationStateService explorationStateService;
+        readonly ActorSpatialIndexService actorSpatialIndexService;
 
         [Inject]
         public AdvanceActorLifecycleOrchestrator(
@@ -36,7 +37,8 @@ namespace DungeonInn.Application.Orchestration
             IActorCombatService actorCombatService,
             IGameRandom gameRandom,
             IEventPublisher eventPublisher,
-            AdventurerExplorationStateService explorationStateService)
+            AdventurerExplorationStateService explorationStateService,
+            ActorSpatialIndexService actorSpatialIndexService)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -56,6 +58,8 @@ namespace DungeonInn.Application.Orchestration
                 ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.explorationStateService = explorationStateService
                 ?? throw new ArgumentNullException(nameof(explorationStateService));
+            this.actorSpatialIndexService = actorSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -128,7 +132,7 @@ namespace DungeonInn.Application.Orchestration
                     DungeonStairType.Down,
                     Array.Empty<DungeonDepthBandConfig>());
 
-                actor.MoveTo(arrivalPosition);
+                MoveTo(actor, arrivalPosition);
                 navigationService.InvalidatePath(actor.Id);
                 actorCombatService.ClearCombatHistory(actor.Id);
                 behavior.ResetExplorationRoomArrivalCount();
@@ -251,7 +255,7 @@ namespace DungeonInn.Application.Orchestration
                 DungeonStairType.Down,
                 Array.Empty<DungeonDepthBandConfig>());
 
-            actor.MoveTo(nextFloorPosition);
+            MoveTo(actor, nextFloorPosition);
             explorationStateService.RemoveDestination(actor.Id);
             navigationService.InvalidatePath(actor.Id);
             actorCombatService.ClearCombatHistory(actor.Id);
@@ -288,14 +292,14 @@ namespace DungeonInn.Application.Orchestration
 
                 if (returnPosition.LayerId.Equals(MapLayerId.Ground))
                 {
-                    actor.MoveTo(returnPosition);
+                    MoveTo(actor, returnPosition);
                     navigationService.InvalidatePath(actor.Id);
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
                     eventPublisher.Publish(new ActorExitedDungeon(actor.Id));
                     return;
                 }
 
-                actor.MoveTo(returnPosition);
+                MoveTo(actor, returnPosition);
                 navigationService.InvalidatePath(actor.Id);
                 eventPublisher.Publish(new ActorEnteredDungeon(actor.Id, returnPosition.LayerId.Value));
             }
@@ -325,6 +329,12 @@ namespace DungeonInn.Application.Orchestration
 
             destination = PickRoomCell(floor, floor.Rooms[gameRandom.Next(floor.Rooms.Count)]);
             return true;
+        }
+
+        void MoveTo(Actor actor, LayerPosition position)
+        {
+            actor.MoveTo(position);
+            actorSpatialIndexService.SyncActor(actor);
         }
 
         LayerPosition PickRoomCell(DungeonFloor floor, DungeonRoom room)

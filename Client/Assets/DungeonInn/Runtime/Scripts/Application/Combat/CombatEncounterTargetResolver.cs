@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
 using VContainer;
@@ -10,50 +11,21 @@ namespace DungeonInn.Application.Combat
 {
     public sealed class CombatEncounterTargetResolver
     {
-        const float EncounterRangeMeters = 20f;
-        const int NeighborCellRadius = 1;
-
         readonly IGameClock gameClock;
-        readonly Dictionary<SpatialCellKey, List<Actor>> actorsByCell = new();
+        readonly ActorSpatialIndexService actorSpatialIndexService;
+        readonly List<Actor> candidates = new();
         readonly Dictionary<ActorPairKey, int> successfulLineOfSightTicks = new();
         int lineOfSightCacheTick = -1;
+        int lineOfSightCacheSpatialIndexRevision = -1;
 
         [Inject]
-        public CombatEncounterTargetResolver(IGameClock gameClock)
+        public CombatEncounterTargetResolver(
+            IGameClock gameClock,
+            ActorSpatialIndexService actorSpatialIndexService)
         {
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
-        }
-
-        public void Rebuild(IReadOnlyList<Actor> actors)
-        {
-            if (actors == null)
-            {
-                throw new ArgumentNullException(nameof(actors));
-            }
-
-            RefreshLineOfSightCache();
-
-            foreach (var bucket in actorsByCell.Values)
-            {
-                bucket.Clear();
-            }
-
-            foreach (var actor in actors)
-            {
-                if (actor.Hp <= 0 || actor.Position.LayerId.Equals(MapLayerId.Ground))
-                {
-                    continue;
-                }
-
-                var cellKey = SpatialCellKey.From(actor.Position);
-                if (!actorsByCell.TryGetValue(cellKey, out var bucket))
-                {
-                    bucket = new List<Actor>();
-                    actorsByCell[cellKey] = bucket;
-                }
-
-                bucket.Add(actor);
-            }
+            this.actorSpatialIndexService = actorSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
         }
 
         public Actor FindNearestHostile(Dungeon dungeon, Actor actor)
@@ -69,41 +41,33 @@ namespace DungeonInn.Application.Combat
             }
 
             Actor nearest = null;
-            var nearestDistSq = EncounterRangeMeters * EncounterRangeMeters;
-            var actorCell = SpatialCellKey.From(actor.Position);
+            var nearestDistSq = GameConstants.CombatEncounterRangeMeters *
+                GameConstants.CombatEncounterRangeMeters;
+            var neighborCellRadius = CalculateNeighborCellRadius();
 
-            for (var z = actorCell.Z - NeighborCellRadius; z <= actorCell.Z + NeighborCellRadius; z++)
+            RefreshLineOfSightCache();
+            candidates.Clear();
+            actorSpatialIndexService.CollectNearbyActors(actor.Position, neighborCellRadius, candidates);
+            foreach (var candidate in candidates)
             {
-                for (var x = actorCell.X - NeighborCellRadius; x <= actorCell.X + NeighborCellRadius; x++)
+                if (!CanFight(actor, candidate))
                 {
-                    var cellKey = new SpatialCellKey(actorCell.LayerId, x, z);
-                    if (!actorsByCell.TryGetValue(cellKey, out var candidates))
-                    {
-                        continue;
-                    }
-
-                    foreach (var candidate in candidates)
-                    {
-                        if (!CanFight(actor, candidate))
-                        {
-                            continue;
-                        }
-
-                        var distSq = actor.Position.DistanceSquaredTo(candidate.Position);
-                        if (nearestDistSq < distSq)
-                        {
-                            continue;
-                        }
-
-                        if (!HasLineOfSight(dungeon, actor, candidate))
-                        {
-                            continue;
-                        }
-
-                        nearestDistSq = distSq;
-                        nearest = candidate;
-                    }
+                    continue;
                 }
+
+                var distSq = actor.Position.DistanceSquaredTo(candidate.Position);
+                if (nearestDistSq < distSq)
+                {
+                    continue;
+                }
+
+                if (!HasLineOfSight(dungeon, actor, candidate))
+                {
+                    continue;
+                }
+
+                nearestDistSq = distSq;
+                nearest = candidate;
             }
 
             return nearest;
@@ -111,13 +75,24 @@ namespace DungeonInn.Application.Combat
 
         void RefreshLineOfSightCache()
         {
-            if (lineOfSightCacheTick == gameClock.CurrentScheduleTick)
+            if (lineOfSightCacheTick == gameClock.CurrentScheduleTick &&
+                lineOfSightCacheSpatialIndexRevision == actorSpatialIndexService.Revision)
             {
                 return;
             }
 
             lineOfSightCacheTick = gameClock.CurrentScheduleTick;
+            lineOfSightCacheSpatialIndexRevision = actorSpatialIndexService.Revision;
             successfulLineOfSightTicks.Clear();
+        }
+
+        static int CalculateNeighborCellRadius()
+        {
+            return Math.Max(
+                1,
+                (int)Math.Ceiling(
+                    GameConstants.CombatEncounterRangeMeters /
+                    GameConstants.ActorSpatialIndexCellSizeMeters));
         }
 
         bool HasLineOfSight(Dungeon dungeon, Actor actor, Actor candidate)
@@ -207,43 +182,6 @@ namespace DungeonInn.Application.Combat
         static bool AreHostile(ActorFaction a, ActorFaction b)
         {
             return (a.Id == 1 && b.Id == 2) || (a.Id == 2 && b.Id == 1);
-        }
-
-        readonly struct SpatialCellKey : IEquatable<SpatialCellKey>
-        {
-            public int LayerId { get; }
-            public int X { get; }
-            public int Z { get; }
-
-            public SpatialCellKey(int layerId, int x, int z)
-            {
-                LayerId = layerId;
-                X = x;
-                Z = z;
-            }
-
-            public static SpatialCellKey From(LayerPosition position)
-            {
-                return new SpatialCellKey(
-                    position.LayerId.Value,
-                    (int)Math.Floor(position.X / EncounterRangeMeters),
-                    (int)Math.Floor(position.Z / EncounterRangeMeters));
-            }
-
-            public bool Equals(SpatialCellKey other)
-            {
-                return LayerId == other.LayerId && X == other.X && Z == other.Z;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is SpatialCellKey other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(LayerId, X, Z);
-            }
         }
 
         readonly struct ActorPairKey : IEquatable<ActorPairKey>

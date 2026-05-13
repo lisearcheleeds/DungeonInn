@@ -1,5 +1,6 @@
 using System;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Combat;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Map;
 using VContainer;
@@ -12,12 +13,17 @@ namespace DungeonInn.Application.UseCase
         const float ArrivalDistanceMeters = 2.5f;
 
         readonly IActorNavigationService navigationService;
+        readonly ActorSpatialIndexService actorSpatialIndexService;
 
         [Inject]
-        public MoveActorTowardDestinationUseCase(IActorNavigationService navigationService)
+        public MoveActorTowardDestinationUseCase(
+            IActorNavigationService navigationService,
+            ActorSpatialIndexService actorSpatialIndexService)
         {
             this.navigationService = navigationService
                 ?? throw new ArgumentNullException(nameof(navigationService));
+            this.actorSpatialIndexService = actorSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
         }
 
         public bool Execute(
@@ -35,7 +41,7 @@ namespace DungeonInn.Application.UseCase
             var distSq = actor.Position.DistanceSquaredTo(destination);
             if (distSq <= ArrivalDistanceMeters * ArrivalDistanceMeters)
             {
-                actor.MoveTo(destination);
+                MoveTo(actor, destination);
                 return true;
             }
 
@@ -52,7 +58,7 @@ namespace DungeonInn.Application.UseCase
 
             if (!pathState.TryGetCurrentWaypoint(out var nextWaypointGrid))
             {
-                actor.MoveTo(destination);
+                MoveTo(actor, destination);
                 return true;
             }
 
@@ -62,20 +68,26 @@ namespace DungeonInn.Application.UseCase
 
             if (step * step >= waypointDistSq)
             {
-                actor.MoveTo(nextWaypoint);
+                MoveTo(actor, nextWaypoint);
                 pathState.AdvanceWaypoint();
             }
             else
             {
                 var dist = (float)Math.Sqrt(waypointDistSq);
                 var ratio = step / dist;
-                actor.MoveTo(new LayerPosition(
+                MoveTo(actor, new LayerPosition(
                     actor.Position.LayerId,
                     actor.Position.X + (nextWaypoint.X - actor.Position.X) * ratio,
                     actor.Position.Z + (nextWaypoint.Z - actor.Position.Z) * ratio));
             }
 
             return actor.Position.DistanceSquaredTo(destination) <= ArrivalDistanceMeters * ArrivalDistanceMeters;
+        }
+
+        void MoveTo(Actor actor, LayerPosition position)
+        {
+            actor.MoveTo(position);
+            actorSpatialIndexService.SyncActor(actor);
         }
     }
 }

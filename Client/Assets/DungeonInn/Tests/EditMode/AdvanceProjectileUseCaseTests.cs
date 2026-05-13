@@ -22,7 +22,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitDealsDamagePublishesEventsAndRemovesProjectile()
         {
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceProjectileUseCase(combatService, eventBus);
@@ -58,7 +58,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitCanCreateAreaThatDealsLinkedDirectDamage()
         {
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var executor = CreateCombatEffectExecutor(combatService, eventBus);

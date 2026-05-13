@@ -34,6 +34,7 @@ Milestone 5 完了確認として、`docs/` 配下のロードマップ、設計
 | 整合性1: アイテム / ドロップ仕様と実装マスタが不一致 | 対応済み | `spec_item_money.md` から現在値マスタ表を削除 |
 | 整合性2: AdventurerBattleRecord の設計と実装が一致していない | 対応済み | `game-event-design.md` を現行のシーンスコープ累積統計責務へ更新 |
 | 整合性3: 既存レビュー本文と対応ログの状態が混在している | 対応済み | 本索引で対応済み / 未対応の読み方を明文化 |
+| パフォーマンス2: 戦闘遭遇検出が毎フレーム全 Actor を再構築・探索している | 対応済み | `ActorSpatialIndexService` 追加、dirty Actor のみ検出、対応ログ 続き7 |
 | 既存レビュー2の AI 未接続指摘 | 対応済み | `AdvanceActorAiOrchestrator` は現行ゲーム進行に接続済みのため未対応扱いしない |
 | 上表以外のレビュー本文項目 | 未対応 / 一部対応 / 延期 | 各項目の完了条件と今後の対応ログを正とする |
 
@@ -320,12 +321,12 @@ Actor 生成・移動・死亡時だけ spatial index を更新する。戦闘�
 
 完了条件:
 
-- [ ] `DetectCombatEncounterUseCase` が毎フレーム全 Actor の spatial index を再構築していない
-- [ ] Actor 生成・移動・死亡・layer 移動時に spatial index を差分更新する経路がある
-- [ ] 戦闘検出の対象が移動 Actor または分散実行対象に限定されている
-- [ ] Line of Sight 判定の呼び出し回数が Actor 全組み合わせに近い形で増えない
-- [ ] spatial index の追加・削除・移動更新を検証する EditMode test がある
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+- [x] `DetectCombatEncounterUseCase` が毎フレーム全 Actor の spatial index を再構築していない
+- [x] Actor 生成・移動・死亡・layer 移動時に spatial index を差分更新する経路がある
+- [x] 戦闘検出の対象が移動 Actor または分散実行対象に限定されている
+- [x] Line of Sight 判定の呼び出し回数が Actor 全組み合わせに近い形で増えない
+- [x] spatial index の追加・削除・移動更新を検証する EditMode test がある
+- [x] `uloop.cmd compile --project-path Client` が成功している
 
 ### 3. 売却 / 取引経路で GC Alloc が起きやすい
 
@@ -945,3 +946,74 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 検証:
 
 - `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+
+## Codex対応ログ 2026-05-13（続き7）
+
+対応項目:
+
+- パフォーマンスレビュー2: 戦闘遭遇検出が毎フレーム全 Actor の spatial index を再構築していた問題を修正した。
+- `ActorSpatialIndexService` を追加し、Actor の生成・削除・移動・layer 移動に対して spatial index を差分更新するようにした。
+- `GameWorldState.RegisterActor` / `RemoveActor` で index 追加・削除を行うようにした。
+- `MoveActorTowardDestinationUseCase`、`AdvanceActorLifecycleOrchestrator`、`AdvanceCombatUseCase` の移動経路で index 更新を行うようにした。
+- `DetectCombatEncounterUseCase` は `ActorSpatialIndexService` の dirty Actor のみを処理し、全 Actor の `Rebuild(actors)` と全 Actor 検出ループを削除した。
+- `CombatEncounterTargetResolver` は shared spatial index から近傍候補を取得し、Line of Sight 判定を近傍候補のみに限定した。
+- `ActorSpatialIndexServiceTests` を追加し、sync・削除・Ground 移動・dirty Actor 限定検出を検証した。
+
+完了条件チェック:
+
+- [x] `DetectCombatEncounterUseCase` が毎フレーム全 Actor の spatial index を再構築していない
+- [x] Actor 生成・移動・死亡・layer 移動時に spatial index を差分更新する経路がある
+- [x] 戦闘検出の対象が dirty Actor に限定されている
+- [x] Line of Sight 判定は spatial index の近傍候補に限定されている
+- [x] spatial index の追加・削除・移動更新を検証する EditMode test がある
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（223 passed）
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap/reboot 例外のみ。
+
+### セルフレビュー後の修正
+
+- dirty Actor 限定化により、target 側が Ground / 範囲外へ移動した時に attacker 側の target が残るリスクを確認し修正した。
+- dirty Actor を target にしている attacker も検出対象へ追加し、target が削除・死亡・Ground 化した場合は `ClearTargetsReferencing` と `CombatEncounterEnded` を発行するようにした。
+- Ground 移動時と範囲外移動時に attacker 側 target が解除される EditMode test を追加した。
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（225 passed）
+
+### セルフレビュー指摘の追加修正
+
+対応項目:
+
+- `CombatEncounterTargetResolver` の近傍 cell 半径を固定値ではなく、`GameConstants.CombatEncounterRangeMeters / GameConstants.ActorSpatialIndexCellSizeMeters` から算出するようにした。
+- `ActorSpatialIndexService` に cache invalidation 用の `Revision` を追加し、Actor sync・削除で Line of Sight 成功キャッシュを invalidation できるようにした。
+- `GameWorldState` の DI 用 constructor に `[Inject]` を明示した。
+- `GameWorldState`、`MoveActorTowardDestinationUseCase`、`AdvanceActorLifecycleOrchestrator`、`AdvanceCombatUseCase` の production 経路では `ActorSpatialIndexService` を必須依存にし、null による silent degrade をなくした。
+- テスト互換のためだけに追加していた `GameWorldState()` と `MoveActorTowardDestinationUseCase(IActorNavigationService)` を削除し、テスト側で `ActorSpatialIndexService` を明示して渡す形に修正した。
+- 同一 schedule tick 内で target が遮蔽物の向こうへ移動した場合に、古い Line of Sight 成功キャッシュを再利用しない EditMode test を追加した。
+
+検証:
+
+- `rg "new GameWorldState\\(\\)|public GameWorldState\\(" Client/Assets/DungeonInn -g "*.cs"`: DI 用 constructor 1 件のみ
+- `rg "new ActorSpatialIndexService\\(\\)" Client/Assets/DungeonInn/Runtime/Scripts -g "*.cs"`: 該当なし
+- `rg "ActorSpatialIndexService actorSpatialIndexService = null|actorSpatialIndexService\\?\\.|const int NeighborCellRadius" Client/Assets/DungeonInn -g "*.cs"`: 該当なし
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
+- `git diff --check`: 問題なし
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（226 passed）
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap/reboot 例外のみ。
+
+### セルサイズ定数の配置修正
+
+- ガイドライン `docs/guidelines/implementation-quality-guidelines.md` の「調整可能な値はマジックナンバーにしない。定数に名前をつける」に従い、戦闘遭遇距離と spatial index セルサイズを `GameConstants.Combat.cs` へ移した。
+- `GameConstants.CombatEncounterRangeMeters` を `CombatEncounterTargetResolver` の距離判定に使用する。
+- `GameConstants.ActorSpatialIndexCellSizeMeters` を `ActorSpatialIndexService` の cell key 計算に使用する。
+- encounter range と spatial index cell size は現時点では同じ `20f` だが、意味が異なるため別定数として分離した。
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（225 passed）

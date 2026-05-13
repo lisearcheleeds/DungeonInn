@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
@@ -39,7 +40,7 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var useItemUseCase = new UseConsumableItemUseCase(repository);
             var advanceUseCase = new AdvanceActorEffectsUseCase();
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var actor = CreateAdventurer(20);
             actor.GainItem(new ItemStack(2001, 1));
             worldState.RegisterActor(actor);
@@ -61,7 +62,7 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var useItemUseCase = new UseConsumableItemUseCase(repository);
             var advanceUseCase = new AdvanceActorEffectsUseCase();
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var actor = CreateAdventurer(0);
             actor.GainItem(new ItemStack(2001, 2));
             worldState.RegisterActor(actor);
@@ -82,7 +83,7 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var useConsumableItemUseCase = new UseConsumableItemUseCase(repository);
             var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(repository, useConsumableItemUseCase, eventBus);
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var actor = CreateAdventurer(30);
             actor.GainItem(new ItemStack(2001, 1));
             worldState.RegisterActor(actor);

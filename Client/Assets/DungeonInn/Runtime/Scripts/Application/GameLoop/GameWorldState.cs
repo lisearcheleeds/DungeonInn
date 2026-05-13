@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Application.Combat;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using VContainer;
 
 namespace DungeonInn.Application.GameLoop
 {
@@ -23,6 +25,7 @@ namespace DungeonInn.Application.GameLoop
         readonly List<AreaEffectInstance> areaEffects = new();
         readonly Dictionary<Guid, AreaEffectInstance> areaEffectById = new();
         readonly Dictionary<Guid, int> areaEffectIndexById = new();
+        readonly ActorSpatialIndexService actorSpatialIndexService;
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
@@ -34,6 +37,13 @@ namespace DungeonInn.Application.GameLoop
         public IReadOnlyList<ProjectileInstance> Projectiles => projectiles;
         public IReadOnlyList<AreaEffectInstance> AreaEffects => areaEffects;
         public SpawnScheduleState SpawnSchedule { get; } = new();
+
+        [Inject]
+        public GameWorldState(ActorSpatialIndexService actorSpatialIndexService)
+        {
+            this.actorSpatialIndexService = actorSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+        }
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)
         {
@@ -63,6 +73,7 @@ namespace DungeonInn.Application.GameLoop
             actorIndexById[actor.Id] = actors.Count;
             actors.Add(actor);
             actorById[actor.Id] = actor;
+            actorSpatialIndexService.SyncActor(actor);
         }
 
         public bool RemoveActor(Guid actorId)
@@ -74,6 +85,7 @@ namespace DungeonInn.Application.GameLoop
 
             actorById.Remove(actorId);
             RemoveAtSwap(actors, actorIndexById, actorId, actor => actor.Id);
+            actorSpatialIndexService.RemoveActor(actorId);
 
             return true;
         }

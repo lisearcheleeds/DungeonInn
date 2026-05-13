@@ -167,7 +167,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void InitializeGameWorldCreatesGroundDungeonGuildAndInn()
         {
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),
@@ -206,8 +206,9 @@ namespace DungeonInn.Tests.EditMode
             worldState.RegisterActor(actor);
 
             var navigationService = new ActorNavigationService();
+            var spatialIndex = new ActorSpatialIndexService();
             var useCase = new AdvanceActorLifecycleOrchestrator(
-                new MoveActorTowardDestinationUseCase(navigationService),
+                new MoveActorTowardDestinationUseCase(navigationService, spatialIndex),
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
@@ -217,7 +218,8 @@ namespace DungeonInn.Tests.EditMode
                 new ActorCombatService(),
                 new GameRandom(10),
                 new NoOpGameEventBus(),
-                new AdventurerExplorationStateService(new NoOpGameEventBus()));
+                new AdventurerExplorationStateService(new NoOpGameEventBus()),
+                spatialIndex);
             var before = actor.Position;
 
             for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
@@ -239,8 +241,9 @@ namespace DungeonInn.Tests.EditMode
             worldState.RegisterActor(actor);
 
             var navigationService = new ActorNavigationService();
+            var spatialIndex = new ActorSpatialIndexService();
             var useCase = new AdvanceActorLifecycleOrchestrator(
-                new MoveActorTowardDestinationUseCase(navigationService),
+                new MoveActorTowardDestinationUseCase(navigationService, spatialIndex),
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
@@ -250,7 +253,8 @@ namespace DungeonInn.Tests.EditMode
                 new ActorCombatService(),
                 new GameRandom(10),
                 new NoOpGameEventBus(),
-                new AdventurerExplorationStateService(new NoOpGameEventBus()));
+                new AdventurerExplorationStateService(new NoOpGameEventBus()),
+                spatialIndex);
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
 
             for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
@@ -308,7 +312,7 @@ namespace DungeonInn.Tests.EditMode
 
         static GameWorldState CreateInitializedWorldState()
         {
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),
@@ -357,8 +361,9 @@ namespace DungeonInn.Tests.EditMode
         static AdvanceActorLifecycleOrchestrator CreateLifecycleUseCase()
         {
             var navigationService = new ActorNavigationService();
+            var spatialIndex = new ActorSpatialIndexService();
             return new AdvanceActorLifecycleOrchestrator(
-                new MoveActorTowardDestinationUseCase(navigationService),
+                new MoveActorTowardDestinationUseCase(navigationService, spatialIndex),
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(
                         new GenerateDungeonFloorUseCase())),
@@ -368,7 +373,8 @@ namespace DungeonInn.Tests.EditMode
                 new ActorCombatService(),
                 new GameRandom(10),
                 new NoOpGameEventBus(),
-                new AdventurerExplorationStateService(new NoOpGameEventBus()));
+                new AdventurerExplorationStateService(new NoOpGameEventBus()),
+                spatialIndex);
         }
 
         static SelectDungeonTargetFloorUseCase CreateSelectDungeonTargetFloorUseCase()

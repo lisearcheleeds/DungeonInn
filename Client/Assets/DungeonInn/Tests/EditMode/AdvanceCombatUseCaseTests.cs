@@ -23,7 +23,7 @@ namespace DungeonInn.Tests.EditMode
         public void DirectAttackDealsDamageWhenTargetIsInWeaponRange()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -45,7 +45,7 @@ namespace DungeonInn.Tests.EditMode
         public void AttackCooldownPreventsRepeatedAttackUntilEnoughGameSecondsPass()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -71,7 +71,7 @@ namespace DungeonInn.Tests.EditMode
         public void DefeatedTargetIsRemovedFromWorldAndCombatTargetsAreCleared()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -97,7 +97,7 @@ namespace DungeonInn.Tests.EditMode
         public void DefeatEventsArePublishedAfterDefeatTransactionCompletes()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -130,7 +130,7 @@ namespace DungeonInn.Tests.EditMode
         public void AreaAttackCreatesAreaEffectWithoutImmediateDamage()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState();
+            var worldState = new GameWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -256,7 +256,8 @@ namespace DungeonInn.Tests.EditMode
                 new GameWorldFrameBuffer(),
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
-                eventBus);
+                eventBus,
+                new ActorSpatialIndexService());
         }
 
         sealed class ZeroGameRandom : IGameRandom
