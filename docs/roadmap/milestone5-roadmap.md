@@ -46,7 +46,8 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 - マップ自体は 3D メッシュで表示する。
 - タイル状に敷き詰めた見た目にするが、タイルごとに GameObject を生成しない。
 - 実行時は、一定範囲ごとの chunk mesh を生成し、material ごとに結合する。
-- 床、壁、階段、施設などの見た目は material / prefab / mesh 設定で差し替え可能にする。
+- 床、壁、階段、施設などの見た目は `TileVisualDefinition` のような設定データで差し替え可能にする。
+- tile prefab を実体として大量配置するのではなく、設定データから chunk mesh を生成する。
 - 高パフォーマンスを優先するため、tile prefab の大量配置ではなく、chunk mesh + shared material + 必要に応じた GPU instancing を基本方針にする。
 
 ### Actor
@@ -77,12 +78,42 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 
 ## アーキテクチャ方針
 
-- View 層は `IGameWorldStateReader` とイベント購読を通じて状態を読む。
 - Domain / Application は UnityEngine、GameObject、SpriteRenderer、Mesh、Material、Camera に依存しない。
 - View は GameObject の生成・削除・描画・補間・カメラ操作だけを担当する。
 - ゲーム上の位置、移動結果、戦闘結果、宿泊結果は引き続き Domain / Application が決める。
 - 表示の補間は View 側で行ってよいが、補間結果を Domain の正としない。
 - Scene 上の手動配置が必要な root / camera / installer は最小限に留め、生成される map / actor object は View 側の管理下に置く。
+
+### 表示情報の取得経路
+
+すべての表示情報を `IGameWorldStateReader` に集約しない。
+表示の種類ごとに、以下の経路を使い分ける。
+
+World GameObject 表示:
+
+- `IGameWorldStateReader` を主な現在状態の参照元にする。
+- 対象は map、dungeon floor、Actor の現在位置、Actor の現在状態、施設の現在状態など。
+- 「今そこに何があるか」を同期する用途に限定する。
+- View が `IGameWorldStateReader` から複雑な経済集計や UI 用整形を行わない。
+
+瞬間演出:
+
+- GameEvent 購読を使う。
+- 対象は攻撃、被弾、死亡、アイテム取得、売却、宿泊料支払い、レベルアップなど。
+- `GameWorldState` には最終状態しか残らないため、「いつ何が起きたか」が必要な表示は Event を起点にする。
+- Milestone 5 では Projectile / AreaEffect / DropItem の正式表示は対象外だが、Actor animation の combat / hit / dead を扱う場合は Event 起点を基本にする。
+
+UI 表示:
+
+- UI は専用の Query UseCase / ReadModel / Status DTO を使う。
+- 既存の例として `GetInnEconomyStatusUseCase`、`GetInnEconomyReportUseCase`、`GetGameEventHistoryUseCase`、`GetGameTimeStateUseCase` がある。
+- UI が `IGameWorldStateReader` を直接読んで集計・整形し始めないようにする。
+- Milestone 5 では本格 UI は対象外だが、将来 UI が必要になった場合は表示目的ごとの Query を追加する。
+
+入力・操作:
+
+- 入力は Command UseCase に渡す。
+- View / UI が Domain Entity を直接変更しない。
 
 ## Phase 1: View 表現基盤と DebugVisualizer 分解
 
@@ -99,20 +130,84 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 - `WorldActorPresenter`
 - `WorldCameraController`
 - View 用の設定クラスまたは ScriptableObject
+- `LayerPositionViewMapper`
 
 対応内容:
 
 - DebugVisualizer が持っている root 生成、tile 表示、actor 表示を分離する。
 - `WorldGameLoopEntryPoint` から毎 frame 更新する対象を正式 View presenter へ置き換える準備をする。
 - 既存の debug 表示をすぐ削除せず、移行中は feature flag または明確な差し替え手順で併存できるようにする。
+- `LayerPosition` から Unity world position への変換責務を `WorldActorDebugVisualizer` から分離する。
 
 完了条件:
 
 - map / actor / camera の View 責務が分離されている。
+- 座標変換責務が独立し、map mesh と Actor 表示の両方から再利用できる。
 - Domain / Application に Unity 表示責務が漏れていない。
 - 既存 PlayMode 起動が壊れていない。
 
-## Phase 2: Map Mesh 生成基盤
+## Phase 2: Placeholder Asset / Visual Config 最小基盤
+
+目的:
+
+- 正式アセットがない状態でも、Map / Actor 表示の実装を進められる最小の placeholder と設定基盤を用意する。
+- Phase 3 以降が仮の素材参照や直書き material に依存しないようにする。
+
+作るもの:
+
+- `MapTileVisualConfig`
+- `MapMaterialSet`
+- `TileVisualDefinition`
+- `ActorSpriteVisualConfig`
+- placeholder sprite
+- placeholder material
+
+対応内容:
+
+- 床、壁、階段、施設予定地の placeholder material を用意する。
+- Actor 種別ごとの placeholder sprite を用意する。
+- map tile の見た目は tile prefab 実体ではなく、mesh 生成に使う `TileVisualDefinition` として定義する。
+- `TileVisualDefinition` には material、mesh 形状種別、uv / color など、chunk mesh 生成に必要な情報を持たせる。
+- config から sprite / material / mesh 定義を参照できるようにする。
+- asset 未設定時の fallback 表示方針を決める。
+- アセットの direct load 禁止ルールに違反しない。
+
+完了条件:
+
+- コードを書き換えずに placeholder material / sprite を差し替えられる。
+- map mesh 生成と Actor sprite 表示が同じ config 基盤を参照できる。
+- asset 未設定でも PlayMode が落ちず、fallback 表示できる。
+
+## Phase 3: 座標変換 / 表示 Layer 管理
+
+目的:
+
+- Ground と Dungeon の表示座標、表示 root、表示対象 layer の扱いを先に確定する。
+- Map mesh 生成と Actor 表示が同じ座標変換を使うようにする。
+
+作るもの:
+
+- `LayerPositionViewMapper`
+- `MapLayerViewRegistry`
+- 表示中 layer の切り替え処理
+- layer root 管理
+
+対応内容:
+
+- `MapLayerId.Ground` と dungeon floor layer を Unity world 上でどう配置するか決める。
+- layer ごとの root GameObject を作り、map mesh と Actor sprite を同じ layer root 配下に置けるようにする。
+- 表示対象 layer の map mesh を表示し、対象外 layer は非表示または別 root に分離する。
+- Actor の所属 layer に応じて表示 root を切り替える。
+- Dungeon floor が増えた場合も、必要な layer だけ mesh を生成できるようにする。
+- 表示切り替えはゲーム進行に影響させない。
+
+完了条件:
+
+- Ground 上の Actor と Dungeon 上の Actor が不正な位置に重なって表示されない設計になっている。
+- map mesh と Actor sprite が同じ座標変換を使う。
+- ダンジョン階層の表示切り替え方針が実装可能な粒度で決まっている。
+
+## Phase 4: Map Chunk Mesh 生成基盤
 
 目的:
 
@@ -123,8 +218,6 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 
 - `MapMeshBuildService`
 - `MapChunkMesh`
-- `MapTileVisualConfig`
-- `MapMaterialSet`
 - `GroundMapPresenter`
 - `DungeonMapPresenter`
 
@@ -134,7 +227,7 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 - chunk サイズを定義する。
 - material ごとに submesh または chunk を分け、描画バッチが効くようにする。
 - 床、壁、階段、施設予定地などの tile visual を placeholder material で表示する。
-- 後から prefab / custom mesh / material を差し替えられる設定層を作る。
+- `TileVisualDefinition` を使って mesh 形状と material を決める。
 - タイルごと collider は作らない。必要な場合も表示確認用に限定し、ゲーム判定には使わない。
 
 完了条件:
@@ -144,7 +237,39 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 - 表示 GameObject 数が map cell 数に比例して大量増加しない。
 - Material / mesh 設定を差し替えれば見た目を変更できる。
 
-## Phase 3: Actor SpriteRenderer 表示
+実装前に確認すること:
+
+- chunk サイズ。
+- material 分割単位。
+- 壁、階段、施設予定地を最初の mesh topology でどこまで表現するか。
+
+## Phase 5: Orthographic Camera 操作
+
+目的:
+
+- 2.5D RPG 表示を確認しやすい camera control を作る。
+
+作るもの:
+
+- `WorldCameraController`
+- `WorldCameraSettings`
+
+対応内容:
+
+- Orthographic camera を使う。
+- WASD で平面移動する。
+- マウス操作で yaw 回転する。
+- zoom は必要に応じて mouse wheel で追加する。
+- カメラ回転角を Actor sprite selection に渡せるようにする。
+- UI 実装は行わない。操作確認用の最低限の入力のみ扱う。
+
+完了条件:
+
+- WASD で表示範囲を移動できる。
+- マウスでカメラを回転できる。
+- カメラ回転後も map / actor の表示関係が読める。
+
+## Phase 6: Actor SpriteRenderer 表示
 
 目的:
 
@@ -171,6 +296,7 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 
 実装前に再確認すること:
 
+- Actor の向きを Domain 状態として追加するか、View 側で直近移動方向を保持するか。
 - Milestone 5 で idle / walk / combat / hit / dead のどこまでを実装するか。
 - 4方向 sprite、8方向 sprite、または左右反転中心の少数 direction で始めるか。
 - Actor 種別ごとの placeholder sprite をどの程度分けるか。
@@ -181,83 +307,6 @@ UI、デザイン済みボタン、詳細な操作パネル、NavMesh は Milest
 - Spawn / despawn / movement が表示上で追える。
 - カメラ回転時に sprite の向きが大きく破綻しない。
 - Domain Actor が GameObject / SpriteRenderer 参照を持っていない。
-
-## Phase 4: Orthographic Camera 操作
-
-目的:
-
-- 2.5D RPG 表示を確認しやすい camera control を作る。
-
-作るもの:
-
-- `WorldCameraController`
-- `WorldCameraSettings`
-
-対応内容:
-
-- Orthographic camera を使う。
-- WASD で平面移動する。
-- マウス操作で yaw 回転する。
-- zoom は必要に応じて mouse wheel で追加する。
-- カメラ回転角を Actor sprite selection に渡せるようにする。
-- UI 実装は行わない。操作確認用の最低限の入力のみ扱う。
-
-完了条件:
-
-- WASD で表示範囲を移動できる。
-- マウスでカメラを回転できる。
-- カメラ回転後も map / actor の表示関係が読める。
-
-## Phase 5: Ground / Dungeon 表示切り替えと座標変換
-
-目的:
-
-- Actor が地上とダンジョンに存在する状態を、表示レイヤーとして正しく切り替える。
-
-作るもの:
-
-- `LayerPositionViewMapper`
-- `MapLayerViewRegistry`
-- 表示中 layer の切り替え処理
-
-対応内容:
-
-- `MapLayerId.Ground` と dungeon floor layer を Unity world 上でどう配置するか決める。
-- 表示対象 layer の map mesh を表示し、対象外 layer は非表示または別 root に分離する。
-- Actor の所属 layer に応じて表示 root を切り替える。
-- Dungeon floor が増えた場合も、必要な layer だけ mesh を生成できるようにする。
-
-完了条件:
-
-- Ground 上の Actor と Dungeon 上の Actor が不正な位置に重なって表示されない。
-- ダンジョン階層の表示切り替えができる。
-- 表示切り替えはゲーム進行に影響しない。
-
-## Phase 6: Placeholder Asset / Visual Config 整備
-
-目的:
-
-- 正式アセットがない状態でも、後から差し替えやすい placeholder 表示を用意する。
-
-作るもの:
-
-- placeholder sprite
-- placeholder material
-- map visual config
-- actor visual config
-
-対応内容:
-
-- Actor 種別ごとの placeholder sprite を用意する。
-- idle / walk など最低限のアニメーション frame を仮素材で表現する。
-- 床、壁、階段、施設予定地の placeholder material を用意する。
-- config から sprite / material / mesh を参照できるようにする。
-- アセットの direct load 禁止ルールに違反しない。
-
-完了条件:
-
-- コードを書き換えずに placeholder material / sprite を差し替えられる。
-- asset 未設定でも PlayMode が落ちず、fallback 表示できる。
 
 ## Phase 7: Debug Sphere / Plane の撤去
 
@@ -300,11 +349,11 @@ Milestone 6 候補:
 ## 推奨実装順
 
 1. Phase 1: View 表現基盤と DebugVisualizer 分解
-2. Phase 2: Map Mesh 生成基盤
-3. Phase 4: Orthographic Camera 操作
-4. Phase 3: Actor SpriteRenderer 表示
-5. Phase 5: Ground / Dungeon 表示切り替えと座標変換
-6. Phase 6: Placeholder Asset / Visual Config 整備
+2. Phase 2: Placeholder Asset / Visual Config 最小基盤
+3. Phase 3: 座標変換 / 表示 Layer 管理
+4. Phase 4: Map Chunk Mesh 生成基盤
+5. Phase 5: Orthographic Camera 操作
+6. Phase 6: Actor SpriteRenderer 表示
 7. Phase 7: Debug Sphere / Plane の撤去
 
-Actor animation の詳細、戦闘 / 被弾 / 死亡 sprite の対応範囲は、Phase 3 の作業開始前にユーザーへ確認する。
+Actor の向きの扱い、Actor animation の詳細、戦闘 / 被弾 / 死亡 sprite の対応範囲は、Phase 6 の作業開始前にユーザーへ確認する。
