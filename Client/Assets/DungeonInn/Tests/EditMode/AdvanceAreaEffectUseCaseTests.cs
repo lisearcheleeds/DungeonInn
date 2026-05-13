@@ -22,11 +22,12 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void InstantAreaHitsEnemiesInRadiusAndIgnoresAllies()
         {
-            var worldState = new GameWorldState(new ActorSpatialIndexService());
+            var spatialIndex = new ActorSpatialIndexService();
+            var worldState = new GameWorldState(spatialIndex);
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = new AdvanceAreaEffectUseCase(
-                new AttackAreaTargetResolver(),
+                new AttackAreaTargetResolver(spatialIndex),
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
                 eventBus);
@@ -66,6 +67,38 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(ally.Hp, Is.EqualTo(50));
             Assert.That(outsideEnemy.Hp, Is.EqualTo(50));
             Assert.That(hits.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void InstantAreaUsesSpatialIndexCandidates()
+        {
+            var spatialIndex = new ActorSpatialIndexService();
+            var resolver = new AttackAreaTargetResolver(spatialIndex);
+            var attacker = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
+            var indexedEnemy = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
+            var unindexedEnemy = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 7f, 5f), 50);
+            var areaEffect = new AreaEffectInstance(
+                Guid.NewGuid(),
+                attacker.Id,
+                attacker.Faction.Id,
+                new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f),
+                new AttackAreaSpec(
+                    AttackAreaShape.Circle,
+                    AttackAreaDurationType.Instant,
+                    AttackHitIntervalType.OncePerTarget,
+                    0f,
+                    0f,
+                    3f,
+                    0f,
+                    0),
+                8);
+            spatialIndex.SyncActor(attacker);
+            spatialIndex.SyncActor(indexedEnemy);
+
+            var targets = resolver.ResolveTargets(areaEffect);
+
+            Assert.That(targets.Any(actor => actor.Id.Equals(indexedEnemy.Id)), Is.True);
+            Assert.That(targets.Any(actor => actor.Id.Equals(unindexedEnemy.Id)), Is.False);
         }
 
         sealed class CollectingGameEventBus : IGameEventBus

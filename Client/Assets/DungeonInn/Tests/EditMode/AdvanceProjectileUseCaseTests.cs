@@ -58,14 +58,15 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitCanCreateAreaThatDealsLinkedDirectDamage()
         {
-            var worldState = new GameWorldState(new ActorSpatialIndexService());
+            var spatialIndex = new ActorSpatialIndexService();
+            var worldState = new GameWorldState(spatialIndex);
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var executor = CreateCombatEffectExecutor(combatService, eventBus);
             var actorDefeatOrchestrator = CreateActorDefeatOrchestrator(combatService, eventBus);
             var projectileUseCase = new AdvanceProjectileUseCase(executor, actorDefeatOrchestrator, eventBus);
             var areaUseCase = new AdvanceAreaEffectUseCase(
-                new AttackAreaTargetResolver(),
+                new AttackAreaTargetResolver(spatialIndex),
                 executor,
                 actorDefeatOrchestrator,
                 eventBus);

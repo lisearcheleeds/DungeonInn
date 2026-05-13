@@ -36,6 +36,7 @@ Milestone 5 完了確認として、`docs/` 配下のロードマップ、設計
 | 整合性3: 既存レビュー本文と対応ログの状態が混在している | 対応済み | 本索引で対応済み / 未対応の読み方を明文化 |
 | パフォーマンス2: 戦闘遭遇検出が毎フレーム全 Actor を再構築・探索している | 対応済み | `ActorSpatialIndexService` 追加、dirty Actor のみ検出、対応ログ 続き7 |
 | パフォーマンス3: 売却 / 取引経路で GC Alloc が起きやすい | 対応済み | 単一 stack 取引経路追加、売却バッファ再利用、LINQ 正規化除去、対応ログ 続き8 |
+| パフォーマンス4: AreaEffect target 解決が Actor 全走査になっている | 対応済み | `AttackAreaTargetResolver` が `ActorSpatialIndexService` 近傍候補を利用、対応ログ 続き9 |
 | 既存レビュー2の AI 未接続指摘 | 対応済み | `AdvanceActorAiOrchestrator` は現行ゲーム進行に接続済みのため未対応扱いしない |
 | 上表以外のレビュー本文項目 | 未対応 / 一部対応 / 延期 | 各項目の完了条件と今後の対応ログを正とする |
 
@@ -1050,4 +1051,36 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `rg "GroupBy|Select\\(|Where\\(|Sum\\(|All\\(|new\\[\\] \\{ stack \\}|new\\[\\] \\{ price \\}|new List<ItemStack>\\(\\)" Client/Assets/DungeonInn/Runtime/Scripts/Domain/Commerce Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/SellItemsUseCase.cs Client/Assets/DungeonInn/Runtime/Scripts/Domain/Item/Inventory.cs -g "*.cs"`: 高頻度売却 / 取引経路の対象パターンなし
 - `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（227 passed）
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
+
+## Codex対応ログ 2026-05-13（続き9）
+
+対応項目:
+
+- パフォーマンスレビュー4: `AttackAreaTargetResolver` が AreaEffect ごとに全 Actor を走査していた問題を修正した。
+- `AttackAreaTargetResolver` に `ActorSpatialIndexService` を注入し、AreaEffect の中心と外接半径から近傍 cell 候補のみを取得するようにした。
+- `AdvanceAreaEffectUseCase` は `worldState.Actors` を resolver に渡さず、resolver は spatial index の候補だけを判定する。
+- Fan 判定は `Math.Sqrt` / `Math.Atan2` による角度計算をやめ、距離二乗と cos 比較で判定するようにした。
+- `AdvanceAreaEffectUseCaseTests` と `AdvanceProjectileUseCaseTests` は `GameWorldState` と `AttackAreaTargetResolver` で同じ `ActorSpatialIndexService` instance を共有する形に修正した。
+- `AttackAreaTargetResolver` が spatial index 候補を使うことを確認する EditMode test を追加した。
+
+差分許可モデル:
+
+- `AttackAreaTargetResolver` の constructor 変更は production DI 契約変更だが、AreaEffect target 解決の候補集合を spatial index に移す本番責務として許可する。
+- Runtime 側にテスト都合だけの constructor / public method は追加していない。
+- DI 管理対象 Service / UseCase / Repository の Runtime 内手動生成は追加していない。
+
+完了条件チェック:
+
+- [x] `AttackAreaTargetResolver` が AreaEffect ごとに全 Actor を無条件走査していない
+- [x] AreaEffect target 候補取得が `ActorSpatialIndexService` の近傍候補に限定されている
+- [x] Fan 判定で `Math.Sqrt` / `Math.Atan2` を使用していない
+- [x] Actor 数と AreaEffect 数が増えても候補数ベースで処理できることがコード上確認できる
+- [x] spatial index 候補利用を検証する EditMode test がある
+
+検証:
+
+- `rg "worldState\\.Actors|ResolveTargets\\(IGameWorldState|ResolveTargets\\(.*worldState|Math\\.Atan2|var distance =|new AttackAreaTargetResolver\\(\\)" Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat/AttackAreaTargetResolver.cs Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/AdvanceAreaEffectUseCase.cs Client/Assets/DungeonInn/Tests -g "*.cs"`: 対象実装に該当なし
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（228 passed）
 - 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。

@@ -1,29 +1,40 @@
 using System;
 using System.Collections.Generic;
-using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Combat;
+using VContainer;
 
 namespace DungeonInn.Application.Combat
 {
     public sealed class AttackAreaTargetResolver
     {
+        readonly ActorSpatialIndexService actorSpatialIndexService;
+        readonly List<Actor> candidates = new();
         readonly List<Actor> targets = new();
 
-        public IReadOnlyList<Actor> ResolveTargets(IGameWorldState worldState, AreaEffectInstance areaEffect)
+        [Inject]
+        public AttackAreaTargetResolver(ActorSpatialIndexService actorSpatialIndexService)
         {
-            if (worldState == null)
-            {
-                throw new ArgumentNullException(nameof(worldState));
-            }
+            this.actorSpatialIndexService = actorSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+        }
 
+        public IReadOnlyList<Actor> ResolveTargets(AreaEffectInstance areaEffect)
+        {
             if (areaEffect == null)
             {
                 throw new ArgumentNullException(nameof(areaEffect));
             }
 
             targets.Clear();
-            foreach (var actor in worldState.Actors)
+            candidates.Clear();
+            actorSpatialIndexService.CollectNearbyActors(
+                areaEffect.CenterPosition,
+                CalculateNeighborCellRadius(areaEffect),
+                candidates);
+
+            foreach (var actor in candidates)
             {
                 if (actor.Hp <= 0 ||
                     actor.Id.Equals(areaEffect.AttackerActorId) ||
@@ -39,6 +50,31 @@ namespace DungeonInn.Application.Combat
             }
 
             return targets;
+        }
+
+        static int CalculateNeighborCellRadius(AreaEffectInstance areaEffect)
+        {
+            return Math.Max(
+                1,
+                (int)Math.Ceiling(
+                    CalculateBoundingRadius(areaEffect.AreaSpec) /
+                    GameConstants.ActorSpatialIndexCellSizeMeters));
+        }
+
+        static float CalculateBoundingRadius(AttackAreaSpec areaSpec)
+        {
+            switch (areaSpec.Shape)
+            {
+                case AttackAreaShape.Circle:
+                case AttackAreaShape.Fan:
+                    return areaSpec.RadiusMeters;
+                case AttackAreaShape.Rectangle:
+                    var halfWidth = areaSpec.WidthMeters * 0.5f;
+                    var halfLength = areaSpec.LengthMeters * 0.5f;
+                    return (float)Math.Sqrt(halfWidth * halfWidth + halfLength * halfLength);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(areaSpec));
+            }
         }
 
         static bool Contains(AreaEffectInstance areaEffect, Actor actor)
@@ -68,27 +104,32 @@ namespace DungeonInn.Application.Combat
         static bool ContainsFan(AreaEffectInstance areaEffect, Actor actor)
         {
             var radius = areaEffect.AreaSpec.RadiusMeters;
-            if (radius * radius < areaEffect.CenterPosition.DistanceSquaredTo(actor.Position))
+            var dx = Math.Abs(actor.Position.X - areaEffect.CenterPosition.X);
+            var dz = actor.Position.Z - areaEffect.CenterPosition.Z;
+            var distSq = dx * dx + dz * dz;
+            if (radius * radius < distSq)
             {
                 return false;
             }
 
-            var dz = actor.Position.Z - areaEffect.CenterPosition.Z;
             if (dz < 0f)
             {
                 return false;
             }
 
-            var dx = Math.Abs(actor.Position.X - areaEffect.CenterPosition.X);
-            var distance = (float)Math.Sqrt(dx * dx + dz * dz);
-            if (distance <= 0f)
+            if (distSq <= 0f)
             {
                 return true;
             }
 
             var halfAngle = areaEffect.AreaSpec.AngleDegrees * 0.5f;
-            var angle = (float)(Math.Atan2(dx, dz) * 180f / Math.PI);
-            return angle <= halfAngle;
+            if (90f <= halfAngle)
+            {
+                return true;
+            }
+
+            var cos = Math.Cos(halfAngle * Math.PI / 180f);
+            return distSq * cos * cos <= dz * dz;
         }
     }
 }

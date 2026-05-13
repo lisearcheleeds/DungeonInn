@@ -63,7 +63,7 @@ namespace DungeonInn.Application.UseCase
             AreaEffectInstance areaEffect,
             IEventPublisher eventPublisher)
         {
-            foreach (var target in targetResolver.ResolveTargets(worldState, areaEffect))
+            foreach (var target in targetResolver.ResolveTargets(areaEffect))
             {
                 var targetDefeated = combatEffectExecutor.ExecuteAreaHit(worldState, areaEffect, target, eventPublisher);
                 if (targetDefeated && worldState.FindActor(target.Id) != null)
