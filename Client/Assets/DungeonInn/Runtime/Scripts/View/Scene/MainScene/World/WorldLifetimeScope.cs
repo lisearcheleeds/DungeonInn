@@ -64,7 +64,9 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .As<IGameWorldStateReader>()
                 .As<IGameWorldStateWriter>();
             builder.Register<WorldMapViewDataProvider>(Lifetime.Scoped).As<IWorldMapViewDataProvider>();
-            builder.Register<ActorViewDataProvider>(Lifetime.Scoped).As<IActorViewDataProvider>();
+            builder.Register<ActorViewDataStore>(Lifetime.Scoped)
+                .As<IActorViewDataProvider>()
+                .AsSelf();
             builder.Register<GameWorldFrameBuffer>(Lifetime.Scoped);
             builder.Register<InitializeWorldMapUseCase>(Lifetime.Scoped);
             builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Scoped);

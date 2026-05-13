@@ -37,6 +37,7 @@ Milestone 5 完了確認として、`docs/` 配下のロードマップ、設計
 | パフォーマンス2: 戦闘遭遇検出が毎フレーム全 Actor を再構築・探索している | 対応済み | `ActorSpatialIndexService` 追加、dirty Actor のみ検出、対応ログ 続き7 |
 | パフォーマンス3: 売却 / 取引経路で GC Alloc が起きやすい | 対応済み | 単一 stack 取引経路追加、売却バッファ再利用、LINQ 正規化除去、対応ログ 続き8 |
 | パフォーマンス4: AreaEffect target 解決が Actor 全走査になっている | 対応済み | `AttackAreaTargetResolver` が `ActorSpatialIndexService` 近傍候補を利用、対応ログ 続き9 |
+| パフォーマンス7: 描画更新が毎フレーム全 Actor DTO を再構築する | 対応済み | `ActorViewDataStore` による差分 DTO / 削除通知化、対応ログ 続き11 |
 | 既存レビュー2の AI 未接続指摘 | 対応済み | `AdvanceActorAiOrchestrator` は現行ゲーム進行に接続済みのため未対応扱いしない |
 | 上表以外のレビュー本文項目 | 未対応 / 一部対応 / 延期 | 各項目の完了条件と今後の対応ログを正とする |
 
@@ -1114,4 +1115,36 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 
 - `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（228 passed）
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
+## Codex対応ログ 2026-05-13（続き11）
+
+対応項目:
+
+- パフォーマンスレビュー7: 描画更新が毎フレーム全 Actor DTO を再構築していた問題を修正した。
+- `ActorViewDataStore` を追加し、Actor 生成 / 削除 / 移動 / layer 移動時に View DTO の差分だけを dirty として保持するようにした。
+- `GameWorldState.RegisterActor` / `RemoveActor`、`MoveActorTowardDestinationUseCase`、`AdvanceActorLifecycleOrchestrator`、`AdvanceCombatUseCase` の位置変更経路から `ActorViewDataStore` を同期するようにした。
+- `IActorViewDataProvider` は全量 `GetActors()` ではなく `ConsumeChanges()` を返す形に変更した。
+- `WorldActorPresenter` は changed actors と removed actor ids のみを反映し、camera yaw 変更時だけ既存 ActorView 全体の rotation / flip を更新するようにした。
+- `WorldActorViewRegistry.RemoveMissingActorObjects()` による全 ActorView 走査削除をやめ、削除通知ごとの `RemoveActorObject()` に変更した。
+
+差分許可モデル:
+
+- `ActorViewDataStore` は長期状態を持つが、今回の完了条件である Actor の変更検知 / dirty 管理 / View DTO キャッシュそのものなので許可する。
+- `ActorViewDataChangeBuffer` は 1 回の View 更新で反映する Actor 表示差分の一時バッファを表し、単一 Actor の `ActorViewData` や戦闘検出用の `ActorSpatialIndexService` dirty id とは所有者・用途・含むデータが異なるため許可する。
+- `GameWorldState` と移動系 UseCase / Orchestrator の constructor 変更は production の差分同期経路を DI で接続するための契約変更で、テスト都合の API 追加ではない。
+- Runtime 内で DI 管理対象を手動 `new` していない。
+
+完了条件チェック:
+
+- [x] `ActorViewDataProvider.GetActors()` による毎フレーム全 Actor DTO 再構築経路がない
+- [x] Actor 生成 / 削除 / 移動 / layer 移動時に View DTO の dirty / removed が更新される
+- [x] `WorldActorPresenter` が差分更新を扱える
+- [x] camera yaw 変更時の既存 ActorView 更新は ViewRegistry 内の既存 view に限定される
+- [x] ActorViewData dirty / removed の EditMode test がある
+- [x] `uloop.cmd compile --project-path Client` が成功している
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（230 passed）
 - 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。

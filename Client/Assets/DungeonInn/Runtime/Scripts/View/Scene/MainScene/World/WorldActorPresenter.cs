@@ -12,7 +12,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly WorldActorViewRegistry actorViewRegistry;
         readonly ActorSpriteVisualConfig actorSpriteVisualConfig;
         readonly WorldCameraController worldCameraController;
-        readonly HashSet<Guid> activeActorIds = new();
         bool hasLastCameraYawDegrees;
         float lastCameraYawDegrees;
 
@@ -33,14 +32,18 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void UpdateVisuals()
         {
-            activeActorIds.Clear();
             var cameraYawDegrees = worldCameraController.CurrentYawDegrees;
             var cameraYawChanged = !hasLastCameraYawDegrees ||
                 !UnityEngine.Mathf.Approximately(lastCameraYawDegrees, cameraYawDegrees);
+            var changes = viewDataProvider.ConsumeChanges();
 
-            foreach (var actor in viewDataProvider.GetActors())
+            foreach (var actorId in changes.RemovedActorIds)
             {
-                activeActorIds.Add(actor.ActorId);
+                actorViewRegistry.RemoveActorObject(actorId);
+            }
+
+            foreach (var actor in changes.ChangedActors)
+            {
                 var actorView = actorViewRegistry.GetOrCreateActorView(
                     actor.ActorId,
                     actor.Position,
@@ -63,20 +66,24 @@ namespace DungeonInn.View.Scene.MainScene.World
                     facingChanged = actorView.UpdateFacing(actor.Position);
                 }
 
-                if (created || positionChanged || cameraYawChanged)
+                if (!cameraYawChanged && (created || positionChanged))
                 {
                     actorView.ActorObject.transform.rotation = UnityEngine.Quaternion.Euler(0f, cameraYawDegrees, 0f);
                 }
 
-                if (created || facingChanged || cameraYawChanged)
+                if (!cameraYawChanged && (created || facingChanged))
                 {
                     ApplyCameraRelativeFlip(actorView, cameraYawDegrees);
                 }
             }
 
-            if (actorViewRegistry.Count != activeActorIds.Count)
+            if (cameraYawChanged)
             {
-                actorViewRegistry.RemoveMissingActorObjects(activeActorIds);
+                actorViewRegistry.ForEachActorView(actorView =>
+                {
+                    actorView.ActorObject.transform.rotation = UnityEngine.Quaternion.Euler(0f, cameraYawDegrees, 0f);
+                    ApplyCameraRelativeFlip(actorView, cameraYawDegrees);
+                });
             }
 
             lastCameraYawDegrees = cameraYawDegrees;

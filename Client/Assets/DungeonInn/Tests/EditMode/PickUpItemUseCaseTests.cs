@@ -203,7 +203,7 @@ namespace DungeonInn.Tests.EditMode
         static (PickUpItemUseCase, GameWorldState, CollectingEventBus) CreateContext()
         {
             var eventBus = new CollectingEventBus();
-            return (new PickUpItemUseCase(eventBus), new GameWorldState(new ActorSpatialIndexService()), eventBus);
+            return (new PickUpItemUseCase(eventBus), new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore()), eventBus);
         }
 
         static Actor CreateAdventurer(LayerPosition position, AdventurerLifecycleState lifecycleState)

@@ -26,6 +26,7 @@ namespace DungeonInn.Application.Orchestration
         readonly IEventPublisher eventPublisher;
         readonly AdventurerExplorationStateService explorationStateService;
         readonly ActorSpatialIndexService actorSpatialIndexService;
+        readonly ActorViewDataStore actorViewDataStore;
 
         [Inject]
         public AdvanceActorLifecycleOrchestrator(
@@ -38,7 +39,8 @@ namespace DungeonInn.Application.Orchestration
             IGameRandom gameRandom,
             IEventPublisher eventPublisher,
             AdventurerExplorationStateService explorationStateService,
-            ActorSpatialIndexService actorSpatialIndexService)
+            ActorSpatialIndexService actorSpatialIndexService,
+            ActorViewDataStore actorViewDataStore)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -60,6 +62,8 @@ namespace DungeonInn.Application.Orchestration
                 ?? throw new ArgumentNullException(nameof(explorationStateService));
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+            this.actorViewDataStore = actorViewDataStore
+                ?? throw new ArgumentNullException(nameof(actorViewDataStore));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -335,6 +339,7 @@ namespace DungeonInn.Application.Orchestration
         {
             actor.MoveTo(position);
             actorSpatialIndexService.SyncActor(actor);
+            actorViewDataStore.SyncActor(actor);
         }
 
         LayerPosition PickRoomCell(DungeonFloor floor, DungeonRoom room)

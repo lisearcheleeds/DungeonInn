@@ -10,7 +10,6 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly MapLayerViewRegistry layerViewRegistry;
         readonly Dictionary<Guid, WorldActorView> actorViews = new();
-        readonly List<Guid> removeActorIds = new();
 
         public int Count => actorViews.Count;
 
@@ -54,21 +53,27 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
         }
 
-        public void RemoveMissingActorObjects(HashSet<Guid> activeActorIds)
+        public void RemoveActorObject(Guid actorId)
         {
-            removeActorIds.Clear();
-            foreach (var pair in actorViews)
+            if (!actorViews.TryGetValue(actorId, out var actorView))
             {
-                if (!activeActorIds.Contains(pair.Key))
-                {
-                    removeActorIds.Add(pair.Key);
-                }
+                return;
             }
 
-            foreach (var actorId in removeActorIds)
+            UnityEngine.Object.Destroy(actorView.ActorObject);
+            actorViews.Remove(actorId);
+        }
+
+        public void ForEachActorView(Action<WorldActorView> action)
+        {
+            if (action == null)
             {
-                UnityEngine.Object.Destroy(actorViews[actorId].ActorObject);
-                actorViews.Remove(actorId);
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            foreach (var actorView in actorViews.Values)
+            {
+                action(actorView);
             }
         }
 

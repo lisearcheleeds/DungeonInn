@@ -94,6 +94,20 @@ namespace DungeonInn.Application.GameLoop
         public ActorBehaviorType BehaviorType { get; }
     }
 
+    public readonly struct ActorViewDataChangeBuffer
+    {
+        public ActorViewDataChangeBuffer(
+            IReadOnlyList<ActorViewData> changedActors,
+            IReadOnlyList<Guid> removedActorIds)
+        {
+            ChangedActors = changedActors ?? throw new ArgumentNullException(nameof(changedActors));
+            RemovedActorIds = removedActorIds ?? throw new ArgumentNullException(nameof(removedActorIds));
+        }
+
+        public IReadOnlyList<ActorViewData> ChangedActors { get; }
+        public IReadOnlyList<Guid> RemovedActorIds { get; }
+    }
+
     public interface IWorldMapViewDataProvider
     {
         IReadOnlyList<WorldMapLayerViewData> GetLayers();
@@ -101,7 +115,7 @@ namespace DungeonInn.Application.GameLoop
 
     public interface IActorViewDataProvider
     {
-        IReadOnlyList<ActorViewData> GetActors();
+        ActorViewDataChangeBuffer ConsumeChanges();
     }
 
     public sealed class WorldMapViewDataProvider : IWorldMapViewDataProvider
@@ -188,26 +202,72 @@ namespace DungeonInn.Application.GameLoop
         }
     }
 
-    public sealed class ActorViewDataProvider : IActorViewDataProvider
+    public sealed class ActorViewDataStore : IActorViewDataProvider
     {
-        readonly IGameWorldStateReader worldState;
-        readonly List<ActorViewData> actors = new();
+        readonly Dictionary<Guid, ActorViewData> actorViewDataById = new();
+        readonly HashSet<Guid> dirtyActorIds = new();
+        readonly HashSet<Guid> removedActorIdSet = new();
+        readonly List<ActorViewData> changedActors = new();
+        readonly List<Guid> removedActorIds = new();
 
-        [Inject]
-        public ActorViewDataProvider(IGameWorldStateReader worldState)
+        public void SyncActor(Actor actor)
         {
-            this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
-        }
-
-        public IReadOnlyList<ActorViewData> GetActors()
-        {
-            actors.Clear();
-            foreach (var actor in worldState.Actors)
+            if (actor == null)
             {
-                actors.Add(new ActorViewData(actor.Id, actor.Position, ResolveBehaviorType(actor)));
+                throw new ArgumentNullException(nameof(actor));
             }
 
-            return actors;
+            var viewData = new ActorViewData(actor.Id, actor.Position, ResolveBehaviorType(actor));
+            if (actorViewDataById.TryGetValue(actor.Id, out var current) && IsSame(current, viewData))
+            {
+                return;
+            }
+
+            actorViewDataById[actor.Id] = viewData;
+            removedActorIdSet.Remove(actor.Id);
+            dirtyActorIds.Add(actor.Id);
+        }
+
+        public void RemoveActor(Guid actorId)
+        {
+            if (!actorViewDataById.Remove(actorId))
+            {
+                return;
+            }
+
+            dirtyActorIds.Remove(actorId);
+            removedActorIdSet.Add(actorId);
+        }
+
+        public ActorViewDataChangeBuffer ConsumeChanges()
+        {
+            changedActors.Clear();
+            foreach (var actorId in dirtyActorIds)
+            {
+                if (actorViewDataById.TryGetValue(actorId, out var actor))
+                {
+                    changedActors.Add(actor);
+                }
+            }
+
+            removedActorIds.Clear();
+            foreach (var actorId in removedActorIdSet)
+            {
+                removedActorIds.Add(actorId);
+            }
+
+            dirtyActorIds.Clear();
+            removedActorIdSet.Clear();
+            return new ActorViewDataChangeBuffer(changedActors, removedActorIds);
+        }
+
+        static bool IsSame(ActorViewData first, ActorViewData second)
+        {
+            return first.ActorId.Equals(second.ActorId) &&
+                first.Position.LayerId.Equals(second.Position.LayerId) &&
+                first.Position.X.Equals(second.Position.X) &&
+                first.Position.Z.Equals(second.Position.Z) &&
+                first.BehaviorType == second.BehaviorType;
         }
 
         static ActorBehaviorType ResolveBehaviorType(Actor actor)

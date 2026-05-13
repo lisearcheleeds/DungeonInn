@@ -23,7 +23,7 @@ namespace DungeonInn.Tests.EditMode
         public void InstantAreaHitsEnemiesInRadiusAndIgnoresAllies()
         {
             var spatialIndex = new ActorSpatialIndexService();
-            var worldState = new GameWorldState(spatialIndex);
+            var worldState = new GameWorldState(spatialIndex, new ActorViewDataStore());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = new AdvanceAreaEffectUseCase(

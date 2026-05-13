@@ -26,6 +26,7 @@ namespace DungeonInn.Application.GameLoop
         readonly Dictionary<Guid, AreaEffectInstance> areaEffectById = new();
         readonly Dictionary<Guid, int> areaEffectIndexById = new();
         readonly ActorSpatialIndexService actorSpatialIndexService;
+        readonly ActorViewDataStore actorViewDataStore;
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
@@ -39,10 +40,14 @@ namespace DungeonInn.Application.GameLoop
         public SpawnScheduleState SpawnSchedule { get; } = new();
 
         [Inject]
-        public GameWorldState(ActorSpatialIndexService actorSpatialIndexService)
+        public GameWorldState(
+            ActorSpatialIndexService actorSpatialIndexService,
+            ActorViewDataStore actorViewDataStore)
         {
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+            this.actorViewDataStore = actorViewDataStore
+                ?? throw new ArgumentNullException(nameof(actorViewDataStore));
         }
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)
@@ -74,6 +79,7 @@ namespace DungeonInn.Application.GameLoop
             actors.Add(actor);
             actorById[actor.Id] = actor;
             actorSpatialIndexService.SyncActor(actor);
+            actorViewDataStore.SyncActor(actor);
         }
 
         public bool RemoveActor(Guid actorId)
@@ -86,6 +92,7 @@ namespace DungeonInn.Application.GameLoop
             actorById.Remove(actorId);
             RemoveAtSwap(actors, actorIndexById, actorId, actor => actor.Id);
             actorSpatialIndexService.RemoveActor(actorId);
+            actorViewDataStore.RemoveActor(actorId);
 
             return true;
         }

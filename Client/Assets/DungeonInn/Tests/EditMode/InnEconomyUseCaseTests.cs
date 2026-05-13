@@ -248,7 +248,7 @@ namespace DungeonInn.Tests.EditMode
 
         static GameWorldState CreateInitializedWorldState()
         {
-            var worldState = new GameWorldState(new ActorSpatialIndexService());
+            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),

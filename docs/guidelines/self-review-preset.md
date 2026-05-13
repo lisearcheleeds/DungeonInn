@@ -99,6 +99,70 @@ ActorSpatialIndexService.Revision を追加する
 レビュー文書または対応ログには、必要に応じて「差分分類」と「許可理由 / 不許可理由」を短く残す。
 これは個別チェック項目を増やすためではなく、docs の既存ルールを差分へ適用した判断過程を残すためである。
 
+## 新規概念追加ゲート
+
+レビュー担当者・実装担当者は、新しい DTO / Result / Request / Store / Service / Calculator / Factory / Event / State を追加した場合、レビュー本文または対応ログに以下を必ず記載する。
+
+- 追加した型
+- 既存の類似概念
+- 既存概念との意味差分
+- 既存概念で代替しなかった理由
+- 将来統合・削除される条件
+
+このゲートの目的は、新規型の追加を禁止することではない。新しい型が必要な場合は、既存の形に無理に寄せず、概念として独立している理由を説明する。
+
+### 判定基準
+
+新規概念を許可する条件:
+
+- 既存型と所有者、寿命、更新契機、利用者、含むデータのいずれかが意味上異なる
+- 既存型で代替すると、呼び出し元が追加検索、再解決、状態推測、consume 競合を持つ
+- 新規型の名前が表す概念が、呼び出し元都合ではなく Application / Domain / View 境界上の安定した責務である
+- 将来、より大きい共通概念へ統合される条件を説明できる
+
+新規概念を不許可にする条件:
+
+- 既存型と所有者、寿命、更新契機、利用者、含むデータが同じで、名前だけが違う
+- 既存概念との差分を「便利」「扱いやすい」「今だけ必要」以外で説明できない
+- テスト、暫定実装、局所的な呼び出し元都合だけで Runtime の public / internal surface を増やしている
+- 既存概念を確認せず、完全一致がないことだけを理由に新規型を追加している
+
+禁止する判断:
+
+- 「既存パターンと違う」だけで不要と判断する
+- 「新しい形だから」だけで削除・統合する
+- 「既存に完全一致がない」だけで新規型を正当化する
+- 名前、戻り値、形が似ている / 違うだけで統合可否を判断する
+- 用途、所有者、寿命、更新契機、含むデータを比較せずに削除・統合する
+
+### 記載例
+
+```md
+新規概念追加ゲート:
+
+追加した型:
+- ActorViewDataChangeSet
+
+既存の類似概念:
+- ActorViewData
+- WorldMapLayerViewData
+- ActorSpatialIndexService の dirty consume 経路
+
+意味差分:
+- ActorViewData は単一 Actor の表示スナップショット
+- ActorViewDataChangeSet は 1 回の View 更新で反映する Actor 表示差分
+- ActorSpatialIndexService の dirty id は戦闘検出用で、表示 DTO と削除通知を持たない
+
+代替しなかった理由:
+- ActorViewData の List だけでは removed actor を表現できない
+- dirty id のみでは Presenter が position / behavior type を再解決する必要がある
+- spatial index の dirty は consume 競合が起きるため共有できない
+
+統合・削除条件:
+- Actor / Item / Projectile などの View diff が共通 interface に統合された場合
+- View 差分通知の共通型が導入された場合
+```
+
 ## レビュー観点
 
 ### 設計

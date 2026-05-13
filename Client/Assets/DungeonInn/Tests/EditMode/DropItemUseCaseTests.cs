@@ -124,7 +124,7 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var random = new FixedGameRandom(fixedRoll);
             var useCase = new DropItemUseCase(random, eventBus);
-            var worldState = new GameWorldState(new ActorSpatialIndexService());
+            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
             return (useCase, worldState, eventBus, random);
         }
 

@@ -14,16 +14,20 @@ namespace DungeonInn.Application.UseCase
 
         readonly IActorNavigationService navigationService;
         readonly ActorSpatialIndexService actorSpatialIndexService;
+        readonly ActorViewDataStore actorViewDataStore;
 
         [Inject]
         public MoveActorTowardDestinationUseCase(
             IActorNavigationService navigationService,
-            ActorSpatialIndexService actorSpatialIndexService)
+            ActorSpatialIndexService actorSpatialIndexService,
+            ActorViewDataStore actorViewDataStore)
         {
             this.navigationService = navigationService
                 ?? throw new ArgumentNullException(nameof(navigationService));
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+            this.actorViewDataStore = actorViewDataStore
+                ?? throw new ArgumentNullException(nameof(actorViewDataStore));
         }
 
         public bool Execute(
@@ -88,6 +92,7 @@ namespace DungeonInn.Application.UseCase
         {
             actor.MoveTo(position);
             actorSpatialIndexService.SyncActor(actor);
+            actorViewDataStore.SyncActor(actor);
         }
     }
 }
