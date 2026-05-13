@@ -2,7 +2,7 @@ using System;
 
 namespace DungeonInn.Application.GameLoop
 {
-    public sealed class GameLoopTickRequest
+    public readonly struct GameLoopTickRequest
     {
         public float UnscaledDeltaTimeSeconds { get; }
 

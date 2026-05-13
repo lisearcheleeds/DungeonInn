@@ -215,6 +215,7 @@ namespace DungeonInn.Tests.EditMode
             return new AdvanceCombatUseCase(
                 combatService,
                 clock,
+                new GameWorldFrameBuffer(),
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus));
         }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
@@ -26,8 +25,7 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            var actors = new List<Actor>(worldState.Actors);
-            foreach (var actor in actors)
+            foreach (var actor in worldState.Actors)
             {
                 if (actor.Hp <= 0 || actor.Behavior is not AdventurerBehavior behavior)
                 {
@@ -47,10 +45,9 @@ namespace DungeonInn.Application.UseCase
         {
             var pickupRadius = GameConstants.AdventurerItemPickupRadiusMeters;
             var pickupRadiusSq = pickupRadius * pickupRadius;
-            var items = new List<Domain.Item.ItemInstance>(worldState.Items);
-
-            foreach (var item in items)
+            for (var i = worldState.Items.Count - 1; 0 <= i; i--)
             {
+                var item = worldState.Items[i];
                 if (!actor.Position.LayerId.Equals(item.Position.LayerId))
                 {
                     continue;

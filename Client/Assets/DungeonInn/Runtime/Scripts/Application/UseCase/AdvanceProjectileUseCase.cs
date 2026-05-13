@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
@@ -32,9 +31,9 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            var projectiles = new List<ProjectileInstance>(worldState.Projectiles);
-            foreach (var projectile in projectiles)
+            for (var i = worldState.Projectiles.Count - 1; 0 <= i; i--)
             {
+                var projectile = worldState.Projectiles[i];
                 if (!AdvanceProjectile(worldState, projectile, deltaGameSeconds))
                 {
                     worldState.RemoveProjectile(projectile.Id);

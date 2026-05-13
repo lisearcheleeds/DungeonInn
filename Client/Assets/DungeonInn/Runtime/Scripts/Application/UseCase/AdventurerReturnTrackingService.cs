@@ -13,6 +13,7 @@ namespace DungeonInn.Application.UseCase
         readonly IActorProfileRegistry profileRegistry;
         readonly Dictionary<Guid, Dictionary<int, int>> defeatedMonsterCountsByActor = new();
         readonly HashSet<Guid> dirtyActorIds = new();
+        readonly List<Guid> dirtyIdBuffer = new();
         DisposableBag bag;
 
         [Inject]
@@ -58,8 +59,13 @@ namespace DungeonInn.Application.UseCase
 
         public void RemoveMissingDirtyActors(HashSet<Guid> foundDirtyActorIds)
         {
-            var dirtyIds = new List<Guid>(dirtyActorIds);
-            foreach (var actorId in dirtyIds)
+            dirtyIdBuffer.Clear();
+            foreach (var actorId in dirtyActorIds)
+            {
+                dirtyIdBuffer.Add(actorId);
+            }
+
+            foreach (var actorId in dirtyIdBuffer)
             {
                 if (!foundDirtyActorIds.Contains(actorId))
                 {

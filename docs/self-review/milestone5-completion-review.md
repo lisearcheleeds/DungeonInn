@@ -201,7 +201,7 @@ Phase 7 後も `WorldActorDebugVisualizer` が DI 登録され、毎フレーム
 | `milestone5-consistency-review.md` / `milestone5-general-review.md` | `WorldActorDebugVisualizer` の互換 facade | 対応済み |
 | `milestone5-performance-review.md` | 戦闘探索 O(n^2) / Line of Sight サンプリング | 対応済み |
 | `milestone5-performance-review.md` | Area target 全走査 | Milestone 6へ延期 |
-| `milestone5-performance-review.md` | Combat / Projectile / AreaEffect の毎フレーム List 複製 | 要対応 |
+| `milestone5-performance-review.md` | Combat / Projectile / AreaEffect の毎フレーム List 複製 | 対応済み |
 | `milestone5-performance-review.md` | `WorldActorPresenter` の毎フレーム `HashSet` 生成 | 対応済み |
 | `milestone5-performance-review.md` | Actor 表示の全 Actor 毎フレーム更新 | Milestone 6へ延期 |
 | `milestone5-performance-review.md` | Chunk mesh 同期生成スパイク | Milestone 6へ延期 |
@@ -295,7 +295,7 @@ Layer 別・セル別の Spatial Index を導入し、近傍セルだけ探索�
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/DetectCombatEncounterUseCase.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat/CombatEncounterTargetResolver.cs`
 
-### 3. 毎フレーム GC Alloc と O(n) 削除が複数ある
+### 3. 毎フレーム GC Alloc と O(n) 削除が複数ある（対応済み）
 
 重大度: 高
 
@@ -311,12 +311,18 @@ Layer 別・セル別の Spatial Index を導入し、近傍セルだけ探索�
 
 再利用バッファ、削除 ID queue、末尾 swap-remove、ID to index 管理を使う。Projectile / AreaEffect は逆順 loop か削除 list 再利用にする。
 
+対応:
+
+`GameLoopTickRequest` を値型に変更し、毎フレーム生成されていた request オブジェクト割当を避ける。`AdvanceProjectileUseCase` / `AdvanceAreaEffectUseCase` / `PickUpItemUseCase` / `RecoverAdventurerAtInnUseCase` は live list の逆順走査に変更し、コレクション変更回避用の一時 `List` 生成を削除した。戦闘処理は別 Actor の削除が発生するため、`GameWorldFrameBuffer` の再利用 snapshot を使って順序破壊や重複処理を避ける。`GameWorldState.RemoveXxx()` は ID to index 辞書と末尾 swap-remove に変更し、削除時の `FindIndex()` 再検索をなくした。`WorldActorViewRegistry` と `AdventurerReturnTrackingService` の削除候補 list も field buffer として再利用する。
+
 根拠:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/AdvanceCombatUseCase.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/AdvanceProjectileUseCase.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/AdvanceAreaEffectUseCase.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/GameLoop/GameWorldState.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/Application/GameLoop/GameLoopTickRequest.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/Application/GameLoop/GameWorldFrameBuffer.cs`
 
 ### 4. Actor 表示が全 Actor を毎フレーム更新する
 

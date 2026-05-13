@@ -10,6 +10,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly MapLayerViewRegistry layerViewRegistry;
         readonly Dictionary<Guid, WorldActorView> actorViews = new();
+        readonly List<Guid> removeActorIds = new();
 
         [Inject]
         public WorldActorViewRegistry(MapLayerViewRegistry layerViewRegistry)
@@ -47,7 +48,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void RemoveMissingActorObjects(HashSet<Guid> activeActorIds)
         {
-            var removeActorIds = new List<Guid>();
+            removeActorIds.Clear();
             foreach (var pair in actorViews)
             {
                 if (!activeActorIds.Contains(pair.Key))

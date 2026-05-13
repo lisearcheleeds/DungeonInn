@@ -16,11 +16,6 @@ namespace DungeonInn.Application.GameLoop
 
         public UniTask<GameLoopTickResult> ExecuteAsync(GameLoopTickRequest request)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
             var advanceResult = gameClock.Advance(request.UnscaledDeltaTimeSeconds);
 
             return UniTask.FromResult(new GameLoopTickResult(

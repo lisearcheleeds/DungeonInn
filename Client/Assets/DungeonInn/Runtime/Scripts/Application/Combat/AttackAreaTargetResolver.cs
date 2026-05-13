@@ -8,6 +8,8 @@ namespace DungeonInn.Application.Combat
 {
     public sealed class AttackAreaTargetResolver
     {
+        readonly List<Actor> targets = new();
+
         public IReadOnlyList<Actor> ResolveTargets(IGameWorldState worldState, AreaEffectInstance areaEffect)
         {
             if (worldState == null)
@@ -20,7 +22,7 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(areaEffect));
             }
 
-            var targets = new List<Actor>();
+            targets.Clear();
             foreach (var actor in worldState.Actors)
             {
                 if (actor.Hp <= 0 ||

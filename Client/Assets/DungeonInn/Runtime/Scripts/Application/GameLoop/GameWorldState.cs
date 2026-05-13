@@ -13,12 +13,16 @@ namespace DungeonInn.Application.GameLoop
     {
         readonly List<Actor> actors = new();
         readonly Dictionary<Guid, Actor> actorById = new();
+        readonly Dictionary<Guid, int> actorIndexById = new();
         readonly List<ItemInstance> items = new();
         readonly Dictionary<Guid, ItemInstance> itemById = new();
+        readonly Dictionary<Guid, int> itemIndexById = new();
         readonly List<ProjectileInstance> projectiles = new();
         readonly Dictionary<Guid, ProjectileInstance> projectileById = new();
+        readonly Dictionary<Guid, int> projectileIndexById = new();
         readonly List<AreaEffectInstance> areaEffects = new();
         readonly Dictionary<Guid, AreaEffectInstance> areaEffectById = new();
+        readonly Dictionary<Guid, int> areaEffectIndexById = new();
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
@@ -56,6 +60,7 @@ namespace DungeonInn.Application.GameLoop
                 throw new InvalidOperationException("Actor is already registered.");
             }
 
+            actorIndexById[actor.Id] = actors.Count;
             actors.Add(actor);
             actorById[actor.Id] = actor;
         }
@@ -68,11 +73,7 @@ namespace DungeonInn.Application.GameLoop
             }
 
             actorById.Remove(actorId);
-            var index = actors.FindIndex(x => x.Id.Equals(actorId));
-            if (index >= 0)
-            {
-                actors.RemoveAt(index);
-            }
+            RemoveAtSwap(actors, actorIndexById, actorId, actor => actor.Id);
 
             return true;
         }
@@ -95,6 +96,7 @@ namespace DungeonInn.Application.GameLoop
                 throw new InvalidOperationException("Item instance is already registered.");
             }
 
+            itemIndexById[item.InstanceId] = items.Count;
             items.Add(item);
             itemById[item.InstanceId] = item;
         }
@@ -107,11 +109,7 @@ namespace DungeonInn.Application.GameLoop
             }
 
             itemById.Remove(instanceId);
-            var index = items.FindIndex(x => x.InstanceId.Equals(instanceId));
-            if (index >= 0)
-            {
-                items.RemoveAt(index);
-            }
+            RemoveAtSwap(items, itemIndexById, instanceId, item => item.InstanceId);
 
             return true;
         }
@@ -128,6 +126,7 @@ namespace DungeonInn.Application.GameLoop
                 throw new InvalidOperationException("Projectile is already registered.");
             }
 
+            projectileIndexById[projectile.Id] = projectiles.Count;
             projectiles.Add(projectile);
             projectileById[projectile.Id] = projectile;
         }
@@ -140,11 +139,7 @@ namespace DungeonInn.Application.GameLoop
             }
 
             projectileById.Remove(projectileId);
-            var index = projectiles.FindIndex(x => x.Id.Equals(projectileId));
-            if (0 <= index)
-            {
-                projectiles.RemoveAt(index);
-            }
+            RemoveAtSwap(projectiles, projectileIndexById, projectileId, projectile => projectile.Id);
 
             return true;
         }
@@ -161,6 +156,7 @@ namespace DungeonInn.Application.GameLoop
                 throw new InvalidOperationException("Area effect is already registered.");
             }
 
+            areaEffectIndexById[areaEffect.Id] = areaEffects.Count;
             areaEffects.Add(areaEffect);
             areaEffectById[areaEffect.Id] = areaEffect;
         }
@@ -173,13 +169,32 @@ namespace DungeonInn.Application.GameLoop
             }
 
             areaEffectById.Remove(areaEffectId);
-            var index = areaEffects.FindIndex(x => x.Id.Equals(areaEffectId));
-            if (0 <= index)
-            {
-                areaEffects.RemoveAt(index);
-            }
+            RemoveAtSwap(areaEffects, areaEffectIndexById, areaEffectId, areaEffect => areaEffect.Id);
 
             return true;
+        }
+
+        static void RemoveAtSwap<T>(
+            List<T> values,
+            Dictionary<Guid, int> indexById,
+            Guid removedId,
+            Func<T, Guid> idSelector)
+        {
+            if (!indexById.TryGetValue(removedId, out var index))
+            {
+                return;
+            }
+
+            var lastIndex = values.Count - 1;
+            if (index < lastIndex)
+            {
+                var lastValue = values[lastIndex];
+                values[index] = lastValue;
+                indexById[idSelector(lastValue)] = index;
+            }
+
+            values.RemoveAt(lastIndex);
+            indexById.Remove(removedId);
         }
     }
 }

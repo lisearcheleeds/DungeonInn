@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
@@ -34,9 +33,9 @@ namespace DungeonInn.Application.UseCase
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            var areaEffects = new List<AreaEffectInstance>(worldState.AreaEffects);
-            foreach (var areaEffect in areaEffects)
+            for (var i = worldState.AreaEffects.Count - 1; 0 <= i; i--)
             {
+                var areaEffect = worldState.AreaEffects[i];
                 areaEffect.Advance(deltaGameSeconds);
                 if (areaEffect.CanApply())
                 {

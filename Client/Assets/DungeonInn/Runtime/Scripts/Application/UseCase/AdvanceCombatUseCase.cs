@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
@@ -15,6 +14,7 @@ namespace DungeonInn.Application.UseCase
     {
         readonly IActorCombatService actorCombatService;
         readonly IGameClock gameClock;
+        readonly GameWorldFrameBuffer frameBuffer;
         readonly CombatEffectExecutor combatEffectExecutor;
         readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
 
@@ -22,6 +22,7 @@ namespace DungeonInn.Application.UseCase
         public AdvanceCombatUseCase(
             IActorCombatService actorCombatService,
             IGameClock gameClock,
+            GameWorldFrameBuffer frameBuffer,
             CombatEffectExecutor combatEffectExecutor,
             ActorDefeatOrchestrator actorDefeatOrchestrator)
         {
@@ -29,6 +30,8 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.gameClock = gameClock
                 ?? throw new ArgumentNullException(nameof(gameClock));
+            this.frameBuffer = frameBuffer
+                ?? throw new ArgumentNullException(nameof(frameBuffer));
             this.combatEffectExecutor = combatEffectExecutor
                 ?? throw new ArgumentNullException(nameof(combatEffectExecutor));
             this.actorDefeatOrchestrator = actorDefeatOrchestrator
@@ -43,7 +46,7 @@ namespace DungeonInn.Application.UseCase
             }
 
             var currentGameTimeSeconds = gameClock.ElapsedGameTimeSeconds;
-            var actors = new List<Actor>(worldState.Actors);
+            var actors = frameBuffer.CopyActors(worldState.Actors);
 
             foreach (var actor in actors)
             {

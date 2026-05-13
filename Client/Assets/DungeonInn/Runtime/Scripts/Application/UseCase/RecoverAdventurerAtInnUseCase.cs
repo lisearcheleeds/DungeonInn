@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
@@ -59,10 +58,9 @@ namespace DungeonInn.Application.UseCase
             }
 
             var guild = worldState.Guild;
-            var actors = new List<Actor>(worldState.Actors);
-
-            foreach (var actor in actors)
+            for (var i = worldState.Actors.Count - 1; 0 <= i; i--)
             {
+                var actor = worldState.Actors[i];
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
                     continue;
