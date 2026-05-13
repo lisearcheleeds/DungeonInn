@@ -24,6 +24,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldViewRoot>(Lifetime.Scoped);
             builder.RegisterInstance(new LayerPositionViewSettings()).AsSelf();
             builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
+            builder.Register<MapLayerViewRegistry>(Lifetime.Scoped);
             builder.Register<MapMaterialSet>(Lifetime.Scoped);
             builder.Register<MapTileVisualConfig>(Lifetime.Scoped);
             builder.Register<ActorSpriteVisualConfig>(Lifetime.Scoped);

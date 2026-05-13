@@ -33,6 +33,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 var actorObject = actorViewRegistry.GetOrCreateActorObject(
                     actor,
                     actorSpriteVisualConfig.GetDebugMaterial(actor));
+                actorViewRegistry.SetActorLayer(actorObject, actor);
                 actorObject.transform.position = positionMapper.ToActorUnityPosition(actor.Position);
             }
 

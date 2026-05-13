@@ -250,6 +250,15 @@ UI 表示:
 - map mesh と Actor sprite が同じ座標変換を使う。
 - ダンジョン階層の表示切り替え方針が実装可能な粒度で決まっている。
 
+実装状況:
+
+- 2026-05-13 完了。
+- `MapLayerViewRegistry` / `MapLayerViewRoot` を追加し、`MapLayerId` ごとに表示 root を生成する構成にした。
+- 各 layer root 配下に `Tiles` と `Actors` を分け、map 表示と Actor 表示が同じ layer root と座標変換基準を共有するようにした。
+- `WorldMapView` は layer root 配下へ local position で tile を配置し、layer 高さを二重適用しないようにした。
+- `WorldActorViewRegistry` は Actor の所属 layer に応じて Actor GameObject の parent を切り替える。
+- 現時点では生成済み layer はすべて表示する。表示切り替えが必要になった場合は `MapLayerViewRegistry` に active layer 制御を追加する。
+
 ## Phase 4: Map Chunk Mesh 生成基盤
 
 目的:

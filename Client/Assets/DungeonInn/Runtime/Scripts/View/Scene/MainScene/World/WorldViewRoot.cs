@@ -1,4 +1,5 @@
 using System;
+using DungeonInn.Domain.Map;
 using UnityEngine;
 
 namespace DungeonInn.View.Scene.MainScene.World
@@ -6,27 +7,30 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldViewRoot : IDisposable
     {
         readonly GameObject root;
-        readonly GameObject tileRoot;
-        readonly GameObject actorRoot;
+        readonly GameObject layersRoot;
 
         public WorldViewRoot()
         {
             root = new GameObject("WorldViewRoot");
-            tileRoot = new GameObject("Tiles");
-            actorRoot = new GameObject("Actors");
-            tileRoot.transform.SetParent(root.transform, false);
-            actorRoot.transform.SetParent(root.transform, false);
+            layersRoot = new GameObject("Layers");
+            layersRoot.transform.SetParent(root.transform, false);
         }
 
-        public Transform TileRoot => tileRoot.transform;
-        public Transform ActorRoot => actorRoot.transform;
+        public Transform LayersRoot => layersRoot.transform;
 
-        public Transform CreateMapLayerRoot(string layerName, Vector3 position)
+        public MapLayerViewRoot CreateLayerRoot(MapLayerId layerId, string layerName, Vector3 position)
         {
-            var layerRoot = new GameObject(layerName);
-            layerRoot.transform.SetParent(TileRoot, false);
+            var layerRoot = new GameObject($"{layerName}_{layerId.Value}");
             layerRoot.transform.position = position;
-            return layerRoot.transform;
+            layerRoot.transform.SetParent(LayersRoot, true);
+
+            var tileRoot = new GameObject("Tiles");
+            tileRoot.transform.SetParent(layerRoot.transform, false);
+
+            var actorRoot = new GameObject("Actors");
+            actorRoot.transform.SetParent(layerRoot.transform, false);
+
+            return new MapLayerViewRoot(layerRoot.transform, tileRoot.transform, actorRoot.transform);
         }
 
         public void Dispose()

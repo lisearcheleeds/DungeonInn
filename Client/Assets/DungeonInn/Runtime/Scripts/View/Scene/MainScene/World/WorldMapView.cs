@@ -11,20 +11,17 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldMapView : IDisposable
     {
         readonly IGameWorldStateReader gameWorldState;
-        readonly WorldViewRoot viewRoot;
-        readonly LayerPositionViewMapper positionMapper;
+        readonly MapLayerViewRegistry layerViewRegistry;
         readonly MapTileVisualConfig tileVisualConfig;
         readonly HashSet<int> builtLayerIds = new();
 
         public WorldMapView(
             IGameWorldStateReader gameWorldState,
-            WorldViewRoot viewRoot,
-            LayerPositionViewMapper positionMapper,
+            MapLayerViewRegistry layerViewRegistry,
             MapTileVisualConfig tileVisualConfig)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
-            this.viewRoot = viewRoot ?? throw new ArgumentNullException(nameof(viewRoot));
-            this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
+            this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.tileVisualConfig = tileVisualConfig ?? throw new ArgumentNullException(nameof(tileVisualConfig));
         }
 
@@ -95,17 +92,16 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         Transform CreateLayerRoot(string layerName, MapLayerId layerId)
         {
-            return viewRoot.CreateMapLayerRoot(
-                layerName,
-                new Vector3(0f, positionMapper.ResolveLayerY(layerId), 0f));
+            return layerViewRegistry.GetOrCreateTileRoot(layerId, layerName);
         }
 
         void CreateTile(Transform layerRoot, MapLayer layer, GridPosition position, TileVisualDefinition visualDefinition)
         {
             var tile = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            var cellCenter = layer.GetCellCenter(position);
             tile.name = $"Tile_{position.X}_{position.Z}";
             tile.transform.SetParent(layerRoot, false);
-            tile.transform.position = positionMapper.ToUnityPosition(layer.GetCellCenter(position));
+            tile.transform.localPosition = new Vector3(cellCenter.X, 0f, cellCenter.Z);
             tile.transform.localScale = Vector3.one * (GameConstants.MapCellSizeMeters / 10f);
             RemoveCollider(tile);
             ApplyMaterial(tile, visualDefinition.RequireMaterial());

@@ -9,12 +9,12 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         const float ActorSphereDiameterMeters = 3f;
 
-        readonly WorldViewRoot viewRoot;
+        readonly MapLayerViewRegistry layerViewRegistry;
         readonly Dictionary<Guid, GameObject> actorObjects = new();
 
-        public WorldActorViewRegistry(WorldViewRoot viewRoot)
+        public WorldActorViewRegistry(MapLayerViewRegistry layerViewRegistry)
         {
-            this.viewRoot = viewRoot ?? throw new ArgumentNullException(nameof(viewRoot));
+            this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
         }
 
         public GameObject GetOrCreateActorObject(Actor actor, Material material)
@@ -26,12 +26,21 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             actorObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             actorObject.name = $"Actor_{actor.Id}";
-            actorObject.transform.SetParent(viewRoot.ActorRoot, false);
             actorObject.transform.localScale = Vector3.one * ActorSphereDiameterMeters;
             RemoveCollider(actorObject);
             ApplyMaterial(actorObject, material);
             actorObjects.Add(actor.Id, actorObject);
+            SetActorLayer(actorObject, actor);
             return actorObject;
+        }
+
+        public void SetActorLayer(GameObject actorObject, Actor actor)
+        {
+            var actorRoot = layerViewRegistry.GetOrCreateActorRoot(actor.Position.LayerId);
+            if (actorObject.transform.parent != actorRoot)
+            {
+                actorObject.transform.SetParent(actorRoot, true);
+            }
         }
 
         public void RemoveMissingActorObjects(HashSet<Guid> activeActorIds)
