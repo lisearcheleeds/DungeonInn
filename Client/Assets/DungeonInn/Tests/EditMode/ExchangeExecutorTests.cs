@@ -36,6 +36,30 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void ExecuteSingleStackTransfersBothSidesAndRecordsTransaction()
+        {
+            var executor = new ExchangeExecutor();
+            var initiator = CreateParticipant(new Inventory(new FixedItemStackLimitResolver()));
+            var counterparty = CreateParticipant(new Inventory(new FixedItemStackLimitResolver()));
+            initiator.Inventory.Add(new ItemStack(1001, 2));
+            counterparty.Inventory.Add(new ItemStack(1, 10));
+
+            var transaction = executor.Execute(
+                initiator,
+                counterparty,
+                new ItemStack(1001, 2),
+                new ItemStack(1, 10),
+                123);
+
+            Assert.That(initiator.Inventory.Has(new ItemStack(1, 10)), Is.True);
+            Assert.That(counterparty.Inventory.Has(new ItemStack(1001, 2)), Is.True);
+            Assert.That(transaction.InitiatorItems.Count, Is.EqualTo(1));
+            Assert.That(transaction.CounterpartyItems.Count, Is.EqualTo(1));
+            Assert.That(transaction.InitiatorItems[0].ItemId, Is.EqualTo(1001));
+            Assert.That(transaction.CounterpartyItems[0].Count, Is.EqualTo(10));
+        }
+
+        [Test]
         public void ExecuteAllowsSwapWhenOutgoingItemFreesSlot()
         {
             var executor = new ExchangeExecutor();
@@ -117,14 +141,34 @@ namespace DungeonInn.Tests.EditMode
                 return Inventory.HasAll(items);
             }
 
+            public bool Has(ItemStack item)
+            {
+                return Inventory.Has(item);
+            }
+
+            public bool CanAddAfterRemoving(ItemStack toRemove, ItemStack toAdd)
+            {
+                return Inventory.CanAddAfterRemoving(toRemove, toAdd);
+            }
+
             public bool CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
             {
                 return Inventory.CanAddAfterRemoving(toRemove, toAdd);
             }
 
+            public void Remove(ItemStack item)
+            {
+                Inventory.Remove(item);
+            }
+
             public void RemoveRange(IReadOnlyList<ItemStack> items)
             {
                 Inventory.RemoveRange(items);
+            }
+
+            public void Add(ItemStack item)
+            {
+                Inventory.Add(item);
             }
 
             public void AddRange(IReadOnlyList<ItemStack> items)

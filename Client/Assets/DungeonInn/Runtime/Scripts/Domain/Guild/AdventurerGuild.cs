@@ -170,14 +170,34 @@ namespace DungeonInn.Domain.Guild
             return Inventory.HasAll(items);
         }
 
+        bool IExchangeParticipant.Has(ItemStack item)
+        {
+            return Inventory.Has(item);
+        }
+
+        bool IExchangeParticipant.CanAddAfterRemoving(ItemStack toRemove, ItemStack toAdd)
+        {
+            return Inventory.CanAddAfterRemoving(toRemove, toAdd);
+        }
+
         bool IExchangeParticipant.CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
         {
             return Inventory.CanAddAfterRemoving(toRemove, toAdd);
         }
 
+        void IExchangeParticipant.Remove(ItemStack item)
+        {
+            Inventory.Remove(item);
+        }
+
         void IExchangeParticipant.RemoveRange(IReadOnlyList<ItemStack> items)
         {
             Inventory.RemoveRange(items);
+        }
+
+        void IExchangeParticipant.Add(ItemStack item)
+        {
+            Inventory.Add(item);
         }
 
         void IExchangeParticipant.AddRange(IReadOnlyList<ItemStack> items)

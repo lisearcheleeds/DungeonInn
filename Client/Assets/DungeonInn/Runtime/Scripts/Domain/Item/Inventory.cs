@@ -143,7 +143,27 @@ namespace DungeonInn.Domain.Item
 
         public bool CanAdd(ItemStack itemStack)
         {
-            return CanAddAll(new[] { itemStack });
+            var remaining = itemStack.Count;
+            var maxStackCount = GetMaxStackCount(itemStack.ItemId);
+            for (var slotIndex = 0; slotIndex < slots.Count && 0 < remaining; slotIndex++)
+            {
+                var slot = slots[slotIndex];
+                if (slot.ItemId != itemStack.ItemId || maxStackCount <= slot.Count)
+                {
+                    continue;
+                }
+
+                remaining -= Math.Min(maxStackCount - slot.Count, remaining);
+            }
+
+            var availableSlotCount = maxSlotCount - slots.Count;
+            while (0 < remaining && 0 < availableSlotCount)
+            {
+                remaining -= Math.Min(maxStackCount, remaining);
+                availableSlotCount--;
+            }
+
+            return remaining <= 0;
         }
 
         public bool CanAddAll(IEnumerable<ItemStack> itemStacks)
@@ -176,13 +196,78 @@ namespace DungeonInn.Domain.Item
             return simulatedSlots.Count <= maxSlotCount;
         }
 
+        public bool CanAddAfterRemoving(ItemStack removingItemStack, ItemStack addingItemStack)
+        {
+            var remainingRemoveCount = removingItemStack.Count;
+            var remainingAddCount = addingItemStack.Count;
+            var resultingSlotCount = slots.Count;
+            var maxAddStackCount = 0 < remainingAddCount
+                ? GetMaxStackCount(addingItemStack.ItemId)
+                : 0;
+
+            for (var slotIndex = slots.Count - 1; 0 <= slotIndex; slotIndex--)
+            {
+                var slot = slots[slotIndex];
+                var simulatedSlotCount = slot.Count;
+
+                if (0 < remainingRemoveCount && slot.ItemId == removingItemStack.ItemId)
+                {
+                    var removeCount = Math.Min(simulatedSlotCount, remainingRemoveCount);
+                    simulatedSlotCount -= removeCount;
+                    remainingRemoveCount -= removeCount;
+                    if (simulatedSlotCount == 0)
+                    {
+                        resultingSlotCount--;
+                        continue;
+                    }
+                }
+
+                if (0 < remainingAddCount &&
+                    slot.ItemId == addingItemStack.ItemId &&
+                    simulatedSlotCount < maxAddStackCount)
+                {
+                    remainingAddCount -= Math.Min(maxAddStackCount - simulatedSlotCount, remainingAddCount);
+                }
+            }
+
+            if (0 < remainingRemoveCount)
+            {
+                return false;
+            }
+
+            var availableSlotCount = maxSlotCount - resultingSlotCount;
+            while (0 < remainingAddCount && 0 < availableSlotCount)
+            {
+                remainingAddCount -= Math.Min(maxAddStackCount, remainingAddCount);
+                availableSlotCount--;
+            }
+
+            return remainingAddCount <= 0;
+        }
+
         public bool HasAll(IEnumerable<ItemStack> itemStacks)
         {
-            var requiredCounts = itemStacks
-                .GroupBy(itemStack => itemStack.ItemId)
-                .Select(group => new ItemStack(group.Key, group.Sum(itemStack => itemStack.Count)));
+            var requiredCounts = new Dictionary<int, int>();
+            foreach (var itemStack in itemStacks ?? throw new ArgumentNullException(nameof(itemStacks)))
+            {
+                if (requiredCounts.TryGetValue(itemStack.ItemId, out var count))
+                {
+                    requiredCounts[itemStack.ItemId] = count + itemStack.Count;
+                    continue;
+                }
 
-            return requiredCounts.All(Has);
+                requiredCounts.Add(itemStack.ItemId, itemStack.Count);
+            }
+
+            foreach (var kvp in requiredCounts)
+            {
+                if (!Has(new ItemStack(kvp.Key, kvp.Value)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         void AddInternal(ItemStack itemStack)
@@ -239,9 +324,15 @@ namespace DungeonInn.Domain.Item
 
         static bool RemoveFromSimulatedSlots(List<InventorySlot> simulatedSlots, ItemStack itemStack)
         {
-            var totalCount = simulatedSlots
-                .Where(slot => slot.ItemId == itemStack.ItemId)
-                .Sum(slot => slot.Count);
+            var totalCount = 0;
+            foreach (var slot in simulatedSlots)
+            {
+                if (slot.ItemId == itemStack.ItemId)
+                {
+                    totalCount += slot.Count;
+                }
+            }
+
             if (totalCount < itemStack.Count)
             {
                 return false;

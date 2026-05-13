@@ -35,6 +35,7 @@ Milestone 5 完了確認として、`docs/` 配下のロードマップ、設計
 | 整合性2: AdventurerBattleRecord の設計と実装が一致していない | 対応済み | `game-event-design.md` を現行のシーンスコープ累積統計責務へ更新 |
 | 整合性3: 既存レビュー本文と対応ログの状態が混在している | 対応済み | 本索引で対応済み / 未対応の読み方を明文化 |
 | パフォーマンス2: 戦闘遭遇検出が毎フレーム全 Actor を再構築・探索している | 対応済み | `ActorSpatialIndexService` 追加、dirty Actor のみ検出、対応ログ 続き7 |
+| パフォーマンス3: 売却 / 取引経路で GC Alloc が起きやすい | 対応済み | 単一 stack 取引経路追加、売却バッファ再利用、LINQ 正規化除去、対応ログ 続き8 |
 | 既存レビュー2の AI 未接続指摘 | 対応済み | `AdvanceActorAiOrchestrator` は現行ゲーム進行に接続済みのため未対応扱いしない |
 | 上表以外のレビュー本文項目 | 未対応 / 一部対応 / 延期 | 各項目の完了条件と今後の対応ログを正とする |
 
@@ -1017,3 +1018,36 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 
 - `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（225 passed）
+## Codex対応ログ 2026-05-13（続き8）
+
+対応項目:
+
+- パフォーマンスレビュー3: 売却 / 取引経路で単一 stack 取引でも配列生成・LINQ 正規化を通っていた問題を修正した。
+- `SellItemsUseCase` は Actor ごとの売却候補 `List<ItemStack>` を毎回 new せず、UseCase 内の再利用バッファを `Clear()` して使うようにした。
+- `PricePolicy.CalculatePurchasePrice(ItemStack, ...)` を追加し、単一 stack 売却で `new[] { stack }` を作らない経路を追加した。
+- `ExchangeExecutor.Execute(..., ItemStack, ItemStack, ...)` を追加し、単一 stack 取引では `NormalizeItems()` を通さずに検証・交換するようにした。
+- `ExchangeExecutor.NormalizeItems()` は `GroupBy` / `Select` / `ToArray` の LINQ チェーンをやめ、明示ループで正規化するようにした。
+- `IExchangeParticipant` に単一 `ItemStack` 用の `Has` / `CanAddAfterRemoving` / `Remove` / `Add` を追加し、Actor / Guild / Facility の実装を追加した。
+- `Inventory.CanAdd(ItemStack)` と `Inventory.CanAddAfterRemoving(ItemStack, ItemStack)` は単一 stack 用の直接判定にし、単一売却経路で `new[]` と `slots.ToList()` を避けるようにした。
+- `ExchangeExecutorTests` に単一 stack 取引の回帰テストを追加した。
+
+差分許可モデル:
+
+- `IExchangeParticipant` の単一 item API 追加は production 契約変更だが、単一 stack 売却 / 取引を高頻度経路で扱うための責務として許可する。
+- Runtime 側にテスト都合だけの constructor / public method は追加していない。
+- DI 管理対象 Service / UseCase / Repository の Runtime 内手動生成は追加していない。
+
+完了条件チェック:
+
+- [x] 売却処理が毎フレーム経路から外れている
+- [x] 単一 stack 売却で `new[] { stack }` / `new[] { price }` を呼び出し側が生成していない
+- [x] `ExchangeExecutor.NormalizeItems()` が LINQ `GroupBy` / `Select` / `ToArray` チェーンを使っていない
+- [x] 売却候補リストは `SellItemsUseCase` の再利用バッファに限定されている
+- [x] 単一 stack 取引結果を検証する EditMode test がある
+
+検証:
+
+- `rg "GroupBy|Select\\(|Where\\(|Sum\\(|All\\(|new\\[\\] \\{ stack \\}|new\\[\\] \\{ price \\}|new List<ItemStack>\\(\\)" Client/Assets/DungeonInn/Runtime/Scripts/Domain/Commerce Client/Assets/DungeonInn/Runtime/Scripts/Application/UseCase/SellItemsUseCase.cs Client/Assets/DungeonInn/Runtime/Scripts/Domain/Item/Inventory.cs -g "*.cs"`: 高頻度売却 / 取引経路の対象パターンなし
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（227 passed）
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap / reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。

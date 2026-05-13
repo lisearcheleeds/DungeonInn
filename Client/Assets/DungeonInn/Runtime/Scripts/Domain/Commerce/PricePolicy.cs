@@ -19,6 +19,12 @@ namespace DungeonInn.Domain.Commerce
             return new ItemStack(SpecialItemIds.Money, Math.Max(1, total / 2));
         }
 
+        public ItemStack CalculatePurchasePrice(ItemStack item, IReadOnlyDictionary<int, ItemMaster> itemMasters)
+        {
+            var total = CalculateItemTotal(item, itemMasters, 1);
+            return new ItemStack(SpecialItemIds.Money, Math.Max(1, total / 2));
+        }
+
         int CalculateItemTotal(IEnumerable<ItemStack> items, IReadOnlyDictionary<int, ItemMaster> itemMasters, int multiplier)
         {
             var total = 0;
@@ -39,6 +45,21 @@ namespace DungeonInn.Domain.Commerce
             }
 
             return total;
+        }
+
+        int CalculateItemTotal(ItemStack item, IReadOnlyDictionary<int, ItemMaster> itemMasters, int multiplier)
+        {
+            if (!itemMasters.TryGetValue(item.ItemId, out var itemMaster))
+            {
+                throw new InvalidOperationException("Item master does not exist.");
+            }
+
+            if (!itemMaster.CanTrade)
+            {
+                throw new InvalidOperationException("Item cannot be traded.");
+            }
+
+            return itemMaster.BasePrice * item.Count * Math.Max(1, multiplier);
         }
     }
 }

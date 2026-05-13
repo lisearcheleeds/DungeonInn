@@ -20,6 +20,7 @@ namespace DungeonInn.Application.UseCase
         readonly IGameClock gameClock;
         readonly PricePolicy pricePolicy = new();
         readonly ExchangeExecutor exchangeExecutor = new();
+        readonly List<ItemStack> sellBuffer = new();
 
         [Inject]
         public SellItemsUseCase(
@@ -64,7 +65,7 @@ namespace DungeonInn.Application.UseCase
 
         void SellItems(AdventurerGuild guild, Actor actor)
         {
-            var toSell = new List<ItemStack>();
+            sellBuffer.Clear();
 
             foreach (var kvp in actor.Inventory.ItemCounts)
             {
@@ -91,10 +92,10 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                toSell.Add(new ItemStack(itemId, count));
+                sellBuffer.Add(new ItemStack(itemId, count));
             }
 
-            foreach (var stack in toSell)
+            foreach (var stack in sellBuffer)
             {
                 var itemMaster = masterRepository.GetItemMaster(stack.ItemId);
                 if (!TryFindSaleFacility(guild, itemMaster.Category, out var facility))
@@ -102,7 +103,7 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                var price = pricePolicy.CalculatePurchasePrice(new[] { stack }, masterRepository.ItemMasters);
+                var price = pricePolicy.CalculatePurchasePrice(stack, masterRepository.ItemMasters);
                 if (!facility.Inventory.Has(price) ||
                     !facility.Inventory.CanAdd(stack) ||
                     !actor.Inventory.CanAdd(price))
@@ -113,8 +114,8 @@ namespace DungeonInn.Application.UseCase
                 var transaction = exchangeExecutor.Execute(
                     actor,
                     facility,
-                    new[] { stack },
-                    new[] { price },
+                    stack,
+                    price,
                     gameClock.CurrentScheduleTick);
                 guild.RecordTransaction(transaction);
 

@@ -262,14 +262,34 @@ namespace DungeonInn.Domain.Actor
             return inventory.HasAll(items);
         }
 
+        bool IExchangeParticipant.Has(ItemStack item)
+        {
+            return inventory.Has(item);
+        }
+
+        bool IExchangeParticipant.CanAddAfterRemoving(ItemStack toRemove, ItemStack toAdd)
+        {
+            return inventory.CanAddAfterRemoving(toRemove, toAdd);
+        }
+
         bool IExchangeParticipant.CanAddAfterRemoving(IReadOnlyList<ItemStack> toRemove, IReadOnlyList<ItemStack> toAdd)
         {
             return inventory.CanAddAfterRemoving(toRemove, toAdd);
         }
 
+        void IExchangeParticipant.Remove(ItemStack item)
+        {
+            inventory.Remove(item);
+        }
+
         void IExchangeParticipant.RemoveRange(IReadOnlyList<ItemStack> items)
         {
             inventory.RemoveRange(items);
+        }
+
+        void IExchangeParticipant.Add(ItemStack item)
+        {
+            inventory.Add(item);
         }
 
         void IExchangeParticipant.AddRange(IReadOnlyList<ItemStack> items)
