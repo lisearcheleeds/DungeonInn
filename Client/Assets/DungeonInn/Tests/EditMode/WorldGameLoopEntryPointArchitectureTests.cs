@@ -24,8 +24,9 @@ namespace DungeonInn.Tests.EditMode
                     .Where(method => method.Name == "Construct")
                     .SelectMany(method => method.GetParameters())
                     .Select(parameter => parameter.ParameterType))
-                .Where(type => type.Namespace == "DungeonInn.Application.UseCase" ||
-                    type.Namespace == "DungeonInn.Application.Orchestration")
+                .Where(type => type.Namespace != null &&
+                    (type.Namespace.EndsWith(".UseCase", System.StringComparison.Ordinal) ||
+                    type.Namespace.EndsWith(".Orchestration", System.StringComparison.Ordinal)))
                 .Select(type => type.FullName)
                 .ToArray();
 
@@ -37,7 +38,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var sourcePath = Path.Combine(
                 UnityEngine.Application.dataPath,
-                "DungeonInn/Runtime/Scripts/Application/GameLoop/WorldSimulationOrchestrator.cs");
+                "DungeonInn/Runtime/Scripts/Application/World/WorldSimulationOrchestrator.cs");
             var source = File.ReadAllText(sourcePath);
             var frameMethodStart = source.IndexOf("public async UniTask AdvanceFrameAsync", System.StringComparison.Ordinal);
             var scheduleMethodStart = source.IndexOf("async UniTask AdvanceScheduleSystemsAsync", System.StringComparison.Ordinal);

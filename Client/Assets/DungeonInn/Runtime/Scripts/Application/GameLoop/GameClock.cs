@@ -1,3 +1,4 @@
+using DungeonInn.Application.GameLoop;
 using System;
 
 namespace DungeonInn.Application.GameLoop

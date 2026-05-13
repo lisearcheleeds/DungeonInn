@@ -1,5 +1,16 @@
 using System.Collections.Generic;
-using DungeonInn.Application.UseCase;
+using DungeonInn.Application.Actors.Ai;
+using DungeonInn.Application.Actors.Equipment;
+using DungeonInn.Application.Actors.Lifecycle;
+using DungeonInn.Application.Actors.Movement;
+using DungeonInn.Application.Actors.Profiles;
+using DungeonInn.Application.Actors.Spawn;
+using DungeonInn.Application.Combat;
+using DungeonInn.Application.Dungeons;
+using DungeonInn.Application.Economy;
+using DungeonInn.Application.Facilities;
+using DungeonInn.Application.Items;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
 using NUnit.Framework;
@@ -9,8 +20,7 @@ namespace DungeonInn.Tests.EditMode
     public sealed class DungeonFloorGenerationTests
     {
         /// <summary>
-        /// ランダム seed のフロアを複数生成し、上層階段から下層階段まで必ず移動可能な通路で接続されていることを検証する。
-        /// </summary>
+        /// ランダム seed のフロアを褁E��生�Eし、上層階段から下層階段まで忁E��移動可能な通路で接続されてぁE��ことを検証する、E        /// </summary>
         [Test]
         public void GeneratedFloorsConnectUpStairToDownStair()
         {

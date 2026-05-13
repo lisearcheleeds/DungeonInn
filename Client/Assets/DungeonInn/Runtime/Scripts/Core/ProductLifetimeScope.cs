@@ -1,4 +1,4 @@
-using DungeonInn.Application.Factory;
+using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Infrastructure.TextTable;

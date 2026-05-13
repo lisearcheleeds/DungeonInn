@@ -1,9 +1,10 @@
+using DungeonInn.Application.World;
 using System;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Profiles;
+using DungeonInn.Application.Actors.Profiles;
 using R3;
 using UnityEngine;
 using VContainer;

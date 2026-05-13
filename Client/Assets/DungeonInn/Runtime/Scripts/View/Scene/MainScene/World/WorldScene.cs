@@ -1,3 +1,4 @@
+using DungeonInn.Application.Economy;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;

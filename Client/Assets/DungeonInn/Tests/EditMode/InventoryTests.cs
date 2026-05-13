@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;

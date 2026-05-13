@@ -1,3 +1,4 @@
+using DungeonInn.Application.GameLoop;
 using Cysharp.Threading.Tasks;
 
 namespace DungeonInn.Application.GameLoop
