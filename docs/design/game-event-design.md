@@ -109,14 +109,15 @@ public interface IGameEvent { }
 - View / Presenter 層に置く
 - VContainer の Lifetime Scoped で購読を管理し、シーン破棄時に破棄される
 
-### 長期保管購読者（戦績・統計）
+### シーンスコープ統計購読者（戦績・統計）
 
-- `AdventurerBattleRecord`：冒険者ごとの戦闘履歴・ダメージ統計を記録する
-- `CombatEncounterStarted` / `CombatEncounterEnded` を受け取り、1戦闘ごとのサマリーを生成する
+- `AdventurerBattleRecordService`：冒険者ごとの戦闘回数・与ダメージ・被ダメージ・撃破数をシーンスコープで累積する
+- `CombatEncounterStarted` を受け取り、戦闘開始回数を加算する
 - `CombatAttackOccurred` を受け取り、ダメージ与/受を集計する
-- `ActorDefeated` を受け取り、撃破/死亡を記録する
-- `ActorExitedDungeon` のタイミングでサマリーを確定し、保管ストアへ移す
-- Application 層に置き、`GameWorldState` 経由で参照可能にする
+- `CombatAttackOccurred.TargetRemainingHp <= 0` の攻撃者を撃破数として加算する
+- `CombatEncounterEnded` / `ActorExitedDungeon` は統計の確定条件ではなく、現状は `WorldGameLogPresenter` が累積統計を表示する契機として扱う
+- Application 層に置き、`AdventurerBattleRecordService.TryGetRecord` 経由で参照する
+- 永続化や1戦闘ごとの保管ストアが必要になった場合は、別途 `CombatEncounterEnded` / `ActorExitedDungeon` を契機に確定する Store を追加する
 
 ## 廃棄管理
 
@@ -194,7 +195,7 @@ Application/
       ActorExitedDungeon
       ActorSpawned
   Combat/
-    AdventurerBattleRecord   ← 長期保管購読者
+    AdventurerBattleRecordService   ← シーンスコープ統計購読者
 
 View/
   Presenter/

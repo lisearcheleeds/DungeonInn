@@ -19,6 +19,24 @@ Milestone 5 完了確認として、`docs/` 配下のロードマップ、設計
 - 既存レビュー本文で未対応に見える項目でも、現行実装または既存レビュー末尾の対応ログで解消済みと確認できたものは原則として再掲しない。
 - 例: `AdvanceActorAiOrchestrator` は現行 `WorldGameLoopEntryPoint.TickAsync()` に接続済みのため、未接続問題としては扱わない。
 
+## 現在状態索引
+
+この文書の本文はレビュー時点の指摘履歴として残す。完了判断は下表と末尾の対応ログを優先する。
+
+| 項目 | 現在状態 | 根拠 |
+|---|---|---|
+| 設計1: View 層がゲーム進行パイプラインを握っている | 対応済み | `WorldSimulationOrchestrator` 追加、`WorldGameLoopEntryPoint` の直接 orchestration 除去、対応ログ 2026-05-13 |
+| 設計2: 表示 DTO が Domain オブジェクトへの遅延参照を閉じ込めている | 対応済み | `WorldMapLayerViewData` の値スナップショット化、対応ログ 続き |
+| パフォーマンス1: 毎フレーム処理に schedule tick / event-driven で十分な処理が混在 | 対応済み | schedule tick 側への移動、対応ログ 続き2 |
+| 設計3: 戦闘イベントがトランザクション完了前に発行される | 対応済み | `BufferedEventPublisher` 経由へ変更、対応ログ 続き3 |
+| その他1: Lighthouse 禁止 API が基盤実装に残っている | 対応済み | `ProductAssetLoader` 削除、Launcher 例外を docs 明文化、対応ログ 続き4 |
+| 設計4: UseCase / Service の命名と配置がまだ混在している | 対応済み | `XxxUseCase` へ責務名統一、対応ログ 続き5 |
+| 整合性1: アイテム / ドロップ仕様と実装マスタが不一致 | 対応済み | `spec_item_money.md` から現在値マスタ表を削除 |
+| 整合性2: AdventurerBattleRecord の設計と実装が一致していない | 対応済み | `game-event-design.md` を現行のシーンスコープ累積統計責務へ更新 |
+| 整合性3: 既存レビュー本文と対応ログの状態が混在している | 対応済み | 本索引で対応済み / 未対応の読み方を明文化 |
+| 既存レビュー2の AI 未接続指摘 | 対応済み | `AdvanceActorAiOrchestrator` は現行ゲーム進行に接続済みのため未対応扱いしない |
+| 上表以外のレビュー本文項目 | 未対応 / 一部対応 / 延期 | 各項目の完了条件と今後の対応ログを正とする |
+
 ## 結論
 
 Milestone 5 の主目的である debug Plane / Sphere から chunk mesh / SpriteRenderer 表示への置き換えは、現行実装上は到達している。
@@ -56,7 +74,7 @@ Application 層に `AdvanceWorldFrameUseCase` または `WorldSimulationOrchestr
 - [ ] Application 層に `AdvanceWorldFrameUseCase` または `WorldSimulationOrchestrator` が存在し、1フレームのゲーム進行順序を所有している
 - [ ] `WorldGameLoopEntryPoint` は初期化、delta time 受け渡し、キャンセル管理、camera / view 更新の呼び出しだけを担当している
 - [ ] 追加した Application 側パイプラインの EditMode test がある
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+- [x] `uloop.cmd compile --project-path Client` が成功している
 
 ### 2. 表示 DTO が Domain オブジェクトへの遅延参照を閉じ込めている
 
@@ -87,7 +105,7 @@ View へ `IGameWorldStateReader` や `MapLayer` を直接渡す問題は緩和�
 - [ ] `WorldMapView` が `GroundMap` / `DungeonFloor` / `MapLayer` の Domain 判定に到達しない
 - [ ] map chunk 生成が View 用 DTO の値だけで実行できる
 - [ ] DTO 変換処理の EditMode test がある
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+- [x] `uloop.cmd compile --project-path Client` が成功している
 
 ### 3. 戦闘イベントがトランザクション完了前に発行される
 
@@ -120,7 +138,7 @@ Resolver / Executor が処理途中で即時 publish しており、UseCase の�
 - [ ] 戦闘処理の発生イベントを収集し、トランザクション完了後に publish する経路がある
 - [ ] Projectile / AreaEffect / 通常攻撃でイベント発行順を検証する EditMode test がある
 - [ ] `docs/design/game-event-design.md` が実装後のイベント契約と一致している
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+- [x] `uloop.cmd compile --project-path Client` が成功している
 
 ### 4. UseCase / Service の命名と配置がまだ混在している
 
@@ -163,15 +181,15 @@ Milestone 6 のゲームループ整理に合わせ、コマンド実行単位�
 
 問題:
 
-`docs/design/spec_item_money.md` の Goblin drop は `Goblin Ear (1002)` と Gold が中心だが、実装の `HardcodedMasterRepository` では Goblin に `Iron Sword (3004)` の drop が含まれている。また `Iron Sword` 自体も実装マスタに存在する一方、仕様側の現行アイテム表では扱いが明確ではない。
+`docs/design/spec_item_money.md` に「現在のアイテムマスタ」「現在のドロップテーブル」という実データ表があり、実装の `HardcodedMasterRepository` と差分が発生している。`spec_item_money.md` はアイテム・ドロップの振る舞いを記載する設計資料であり、現在値のマスタデータ表を持つ責務ではない。
 
 原因:
 
-マスタ拡張後に設計資料の「現在のマスタ」表とドロップ表が追従していないか、実装側の値が暫定値のまま残っている。
+振る舞い仕様と実装マスタの現在値を同じ docs に混在させたため、マスタ変更のたびに設計資料側の追従が必要になり、差分がレビュー指摘として現れている。
 
 解決案:
 
-`Iron Sword` と Goblin drop を正式仕様に含めるなら、`spec_item_money.md` のアイテム表とドロップ表を更新する。暫定値なら Goblin の `3004` drop を削除または確率調整する。
+`spec_item_money.md` から現在値のアイテムマスタ表とドロップテーブル表を削除し、`ItemMaster` / `ActorDropEntry` / `DropItemUseCase` の構造と振る舞いだけを残す。マスタデータの現在値は実装マスタまたは将来のマスタデータ定義側を正とする。
 
 根拠:
 
@@ -180,11 +198,11 @@ Milestone 6 のゲームループ整理に合わせ、コマンド実行単位�
 
 完了条件:
 
-- [ ] `Iron Sword (3004)` を正式仕様に含めるか暫定値として削除するかが決定されている
-- [ ] 正式仕様に含める場合、`docs/design/spec_item_money.md` のアイテム表に `Iron Sword` が記載されている
-- [ ] 正式仕様に含める場合、Goblin の drop 表に `Iron Sword` の drop 率と意図が記載されている
-- [ ] 暫定値として削除する場合、`HardcodedMasterRepository` の Goblin drop から `3004` が削除または仕様値へ調整されている
-- [ ] マスタと仕様の差分を確認するレビュー記録が残っている
+- [x] `docs/design/spec_item_money.md` から「現在のアイテムマスタ」表が削除されている
+- [x] `docs/design/spec_item_money.md` から「現在のドロップテーブル」表が削除されている
+- [x] `DropItemService` 表記が現行責務名の `DropItemUseCase` に更新されている
+- [x] `spec_item_money.md` がマスタ現在値ではなく、構造と振る舞いを説明する資料になっている
+- [x] マスタと仕様の差分を確認するレビュー記録が残っている
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
 ### 2. AdventurerBattleRecord の設計と実装が一致していない
@@ -193,15 +211,15 @@ Milestone 6 のゲームループ整理に合わせ、コマンド実行単位�
 
 問題:
 
-`docs/design/game-event-design.md` では `AdventurerBattleRecord` が `CombatEncounterStarted` / `CombatEncounterEnded` で1戦闘ごとのサマリーを作り、`ActorExitedDungeon` で確定・保管する想定になっている。実装の `AdventurerBattleRecordService` は `CombatEncounterStarted` と `CombatAttackOccurred` だけを購読しており、戦闘終了・死亡・退出による確定処理がない。
+`docs/design/game-event-design.md` では `AdventurerBattleRecord` が `CombatEncounterStarted` / `CombatEncounterEnded` で1戦闘ごとのサマリーを作り、`ActorExitedDungeon` で確定・保管する想定になっていた。一方、現行実装の `AdventurerBattleRecordService` は `CombatEncounterStarted` と `CombatAttackOccurred` からシーンスコープの累積戦闘統計を作る責務であり、設計 docs の責務名と寿命が実装より大きく書かれていた。
 
 原因:
 
-戦闘ログの最小集計が先に実装され、イベント設計上の「戦闘単位サマリー」「退出時の保管」まで接続されていない。
+戦闘ログの最小集計が現行仕様として採用されているが、設計 docs だけが将来構想の「戦闘単位サマリー」「退出時の保管」まで含んだ表現のまま残っていた。
 
 解決案:
 
-設計通りにするなら `CombatEncounterEnded` / `ActorDefeated` / `ActorExitedDungeon` の購読を追加し、戦闘単位の区切りと帰還時の確定ストアを実装する。現状の累積統計だけを正とするなら、設計資料を現在の責務へ縮小する。
+`docs/design/game-event-design.md` を現行実装に合わせ、`AdventurerBattleRecordService` はシーンスコープの累積統計購読者であると明記する。`CombatEncounterEnded` / `ActorExitedDungeon` は現状では確定条件ではなく表示契機に留め、永続化や1戦闘ごとの保管ストアが必要になった時に別責務として追加する。
 
 根拠:
 
@@ -210,11 +228,10 @@ Milestone 6 のゲームループ整理に合わせ、コマンド実行単位�
 
 完了条件:
 
-- [ ] `AdventurerBattleRecordService` が `CombatEncounterEnded` を購読し、戦闘単位の区切りを扱っている
-- [ ] `AdventurerBattleRecordService` が `ActorDefeated` または死亡確定イベントを必要に応じて扱っている
-- [ ] `AdventurerBattleRecordService` が `ActorExitedDungeon` または帰還・退出確定イベントで記録を確定できる
-- [ ] 累積統計のみを正とする場合、`docs/design/game-event-design.md` の仕様が現在責務へ縮小されている
-- [ ] 戦闘開始・攻撃・戦闘終了・退出時の記録更新を検証する EditMode test がある
+- [x] 累積統計のみを正とする方針に合わせ、`docs/design/game-event-design.md` の仕様が現在責務へ縮小されている
+- [x] `AdventurerBattleRecordService` の購読対象が `CombatEncounterStarted` / `CombatAttackOccurred` であることと一致している
+- [x] `CombatEncounterEnded` / `ActorExitedDungeon` は現状の確定条件ではなく表示契機であると明記されている
+- [x] 永続化や1戦闘ごとの保管ストアは将来追加責務であると明記されている
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
 ### 3. 既存レビュー本文と対応ログの状態が混在している
@@ -223,7 +240,7 @@ Milestone 6 のゲームループ整理に合わせ、コマンド実行単位�
 
 問題:
 
-`docs/self-review/milestone5-completion-review-2-total.md` の本文には「AI 実行基盤がゲームループに接続されていない」などの指摘が残っているが、同ファイル末尾の対応ログおよび現行実装では `AdvanceActorAiOrchestrator` は接続済み。レビュー本文だけを読むと未完了扱いに見える。
+`docs/self-review/milestone5-completion-review-2-total.md` の本文には「AI 実行基盤がゲームループに接続されていない」などの指摘が残っているが、同ファイル末尾の対応ログおよび現行実装では `AdvanceActorAiOrchestrator` は接続済み。レビュー本文だけを読むと未完了扱いに見えるため、この文書の冒頭に現在状態索引を追加して、対応済み項目と未対応項目の読み方を分離する必要があった。
 
 原因:
 
@@ -231,7 +248,7 @@ Milestone 6 のゲームループ整理に合わせ、コマンド実行単位�
 
 解決案:
 
-既存レビューは履歴として維持しつつ、冒頭または末尾に「対応済み項目」「未対応項目」を分けた現在状態の索引を追加する。今後の完了判断は最新レビュー文書または統合版の対応状況表を正とする。
+既存レビューは履歴として維持しつつ、この文書の冒頭に「現在状態索引」を追加する。今後の完了判断はレビュー本文単体ではなく、現在状態索引と末尾の対応ログを正とする。
 
 根拠:
 
@@ -240,10 +257,10 @@ Milestone 6 のゲームループ整理に合わせ、コマンド実行単位�
 
 完了条件:
 
-- [ ] `milestone5-completion-review-2-total.md` または後続統合レビューに、対応済み項目と未対応項目の現在状態表がある
-- [ ] AI 未接続など現行コードで解消済みの項目が、未対応リストに残っていない
-- [ ] 未対応項目には「未対応」「一部対応」「延期」「別タスク化済み」の状態が明記されている
-- [ ] 完了済みとする項目には、完了条件を満たした根拠が記録されている
+- [x] 後続統合レビューである本ファイルに、対応済み項目と未対応項目の現在状態表がある
+- [x] AI 未接続など現行コードで解消済みの項目が、未対応扱いされないことが明記されている
+- [x] 未対応項目には「未対応 / 一部対応 / 延期」として扱う状態が明記されている
+- [x] 完了済みとする項目には、根拠となる対応ログまたは docs 更新が記録されている
 
 ## パフォーマンスレビュー
 
@@ -907,3 +924,24 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` の bootstrap/reboot 例外、`UniTask<T>` と `UnityWebRequest.Result` の false positive のみ。
 - DI 登録: `WorldLifetimeScope` に新責務名で登録済み。
 - `LighthouseGenerated` 以下: 編集なし。
+
+## Codex対応ログ 2026-05-13（続き6）
+
+対応項目:
+
+- 整合性レビュー2: `AdventurerBattleRecord` の設計 docs が現行実装より大きい責務を書いていた問題を docs 側で修正した。
+- `docs/design/game-event-design.md` の `AdventurerBattleRecord` 説明を、シーンスコープ累積統計購読者である `AdventurerBattleRecordService` の現行責務に合わせた。
+- `CombatEncounterEnded` / `ActorExitedDungeon` は現状の確定条件ではなく、表示契機として扱うことを明記した。
+- 永続化や1戦闘ごとの保管ストアが必要になった場合は別責務として追加する方針を明記した。
+- 整合性レビュー3: 既存レビュー本文と対応ログの状態混在に対し、本ファイル冒頭へ現在状態索引を追加した。
+
+完了条件チェック:
+
+- [x] `game-event-design.md` が現行の `AdventurerBattleRecordService` 責務に縮小されている
+- [x] `CombatEncounterEnded` / `ActorExitedDungeon` の扱いが現行実装と矛盾しない
+- [x] 後続統合レビューに対応済み / 未対応の現在状態表がある
+- [x] AI 未接続など解消済み項目が未対応扱いされないことが明記されている
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）

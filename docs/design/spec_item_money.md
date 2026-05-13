@@ -97,18 +97,6 @@ interface IItemStackLimitResolver { int GetMaxStackCount(int itemId); }
 | `CanTrade` | 取引可能フラグ |
 | `MaxStackCount` | 1スロットに積める最大個数 |
 
-#### 現在のアイテムマスタ（HardcodedMasterRepository）
-
-| ID | 名前 | カテゴリ | BasePrice | MaxStackCount |
-|---|---|---|---|---|
-| 1 | Gold | Material | 1 | 100,000 |
-| 1001 | Herb | Material | 10 | 10 |
-| 1002 | Goblin Ear | Material | 25 | 10 |
-| 2001 | Potion | Consumable | 30 | 10 |
-| 3001 | Novice Sword | Equipment | 80 | 1 |
-| 3002 | Novice Bow | Equipment | 80 | 1 |
-| 3003 | Cloth Armor | Equipment | 60 | 1 |
-
 ---
 
 ## お金（Gold）の扱い
@@ -147,7 +135,7 @@ interface IActorDropSource { IReadOnlyList<ActorDropEntry> DropTable; }
 `MonsterBehavior` と `AdventurerBehavior` の両方が実装する。
 冒険者は現在 `DropTable` が空。将来的に冒険者ドロップを追加する場合は `DropTable` にエントリを追加するだけでよい。
 
-### DropItemService（Application/UseCase）
+### DropItemUseCase（Application/UseCase）
 
 ```
 actor.Behavior is IActorDropSource → 各エントリを確率ロール → パスしたものを ItemInstance として WorldState に追加 → ItemDropped イベント発行
@@ -160,13 +148,6 @@ actor.Behavior is IActorDropSource → 各エントリを確率ロール → パ
 4. `new ItemInstance(Guid.NewGuid(), new ItemStack(itemId, count), position)` を生成
 5. `GameWorldState.AddItem(instance)` でワールド登録
 6. `ItemDropped` イベント発行
-
-#### 現在のドロップテーブル（HardcodedMasterRepository）
-
-| モンスター | アイテム | 確率 | 個数 |
-|---|---|---|---|
-| ゴブリン | Goblin Ear (1002) | 70% | 1 |
-| ゴブリン | Gold (1) | 50% | 1〜3 |
 
 ---
 
