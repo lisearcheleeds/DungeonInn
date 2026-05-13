@@ -9,7 +9,7 @@ DungeonInnプロジェクト（Milestone 5 Phase 1完了時点）の整合性は
 主な所見：
 - **禁止API検出**: `Resources.LoadAsync` の使用（ProductAssetLoader）
 - **コーディングルール違反**: lambda変数の単一文字名、不要なasync修飾子
-- **設計ドキュメントとの差異**: `AdvanceActorAiUseCase` → `AdvanceActorAiOrchestrator` への変更が文書化されていない
+- **設計ドキュメントとの差異**: `AdvanceActorAiUseCase` → `AdvanceActorAiOrchestrator` への変更は対応済み
 - **クラス名の冗長性**: `FirstSceneScene` の命名
 - **DI登録**: 問題なし、全て整合している
 
@@ -79,7 +79,7 @@ public UniTask MarkEventAsync(Guid actorId, ActorAiEventType eventType)
 
 ---
 
-### [整合-4] 設計ドキュメントと実装の名前乖離（actor-ai-desing.md）
+### [整合-4] 設計ドキュメントと実装の名前乖離（actor-ai-desing.md）（対応済み）
 
 **重要度**: 低  
 **場所**: `docs/design/actor-ai-desing.md:40` vs 実装
@@ -96,6 +96,8 @@ UseCase/
 **原因**: 設計段階の計画からの変更が、ドキュメントに反映されなかった。
 
 **解決案**: `docs/design/actor-ai-desing.md` を更新し、`AdvanceActorAiUseCase` を `AdvanceActorAiOrchestrator` に修正する。
+
+**最終ステータス**: 対応済み。`docs/design/actor-ai-desing.md` と `docs/design/lifetime-scope-game-loop-design.md` は、現行実装名 `AdvanceActorAiOrchestrator` を正として更新済み。
 
 ---
 
@@ -117,7 +119,7 @@ public class FirstSceneScene : ProductCanvasMainSceneBase<FirstSceneScene.QuickF
 
 ---
 
-### [整合-6] WorldActorDebugVisualizer ファサードの機能分岐機構が未実装
+### [整合-6] WorldActorDebugVisualizer ファサードの機能分岐機構が未実装（対応済み）
 
 **重要度**: 低  
 **場所**: `View/Scene/MainScene/World/WorldActorDebugVisualizer.cs`
@@ -130,6 +132,8 @@ Milestone 5ロードマップでは「既存のdebug表示をすぐ削除せず�
 **解決案**:
 - デバッグビジュアライザー ON/OFF の切り替え手段を実装する（設定フラグ または コンパイルディレクティブ）。
 - または、既存 PlayMode がこのファサードを使い続ける設計であることを文書化する。
+
+**最終ステータス**: 対応済み。`WorldActorDebugVisualizer` は削除し、正式表示更新は `WorldGameLoopEntryPoint` から `WorldMapView` / `WorldActorPresenter` を直接呼び出す。
 
 ---
 
@@ -166,5 +170,5 @@ rg "Addressables\.LoadAssetAsync|Resources\.Load|Resource\.Load|SceneManager\.Lo
 | 高 | Resources.LoadAsync の禁止API排除 | 中（Lighthouse 方針確認が必要） |
 | 中 | GameWorldState.cs の lambda 変数修正 | 小 |
 | 中 | AdvanceActorAiOrchestrator の async 削除 | 小 |
-| 低 | actor-ai-desing.md の更新 | 小 |
+| 低 | actor-ai-desing.md の更新 | 対応済み |
 | 低 | QuickFirstScene のクラス名修正 | 小 |

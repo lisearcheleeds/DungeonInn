@@ -169,7 +169,7 @@ Phase 7 後も `WorldActorDebugVisualizer` が DI 登録され、毎フレーム
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldGameLoopEntryPoint.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldLifetimeScope.cs`
 
-### 3. self-review の古い指摘が解決済みか未解決か追いにくい
+### 3. self-review の古い指摘が解決済みか未解決か追いにくい（対応済み）
 
 重大度: 低
 
@@ -185,6 +185,28 @@ Phase 7 後も `WorldActorDebugVisualizer` が DI 登録され、毎フレーム
 
 本ファイルを Milestone 5 完了前レビューのサマリとし、今後のレビューでは項目ごとに `対応済み`、`Milestone 6へ延期`、`要対応` を明示する。
 
+対応:
+
+本ファイルを Milestone 5 self-review の最終ステータス一覧として扱う。古い個別レビューは履歴として残し、現在の判断は下表を正とする。
+
+| 元レビュー | 指摘 | 最終ステータス |
+|---|---|---|
+| `milestone5-design-review.md` | Domain static catalog 依存 | 別タスクとして追跡 |
+| `milestone5-design-review.md` / `milestone5-general-review.md` | `WorldGameLoopEntryPoint` の責務過多 | Milestone 6へ延期 |
+| `milestone5-design-review.md` | Service / UseCase / Orchestrator の責務整理 | 一部対応済み、残りは Milestone 6へ延期 |
+| `milestone5-design-review.md` | `WorldMapView` の GameObject 大量生成 | 対応済み |
+| `milestone5-design-review.md` | 戦闘死亡処理の依存方向とイベント順序 | 対応済み |
+| `milestone5-consistency-review.md` | 既存 `Resources.LoadAsync` / `SceneManager.LoadSceneAsync` | 別タスクとして追跡 |
+| `milestone5-consistency-review.md` | `AdvanceActorAiUseCase` 旧名 | 対応済み |
+| `milestone5-consistency-review.md` / `milestone5-general-review.md` | `WorldActorDebugVisualizer` の互換 facade | 対応済み |
+| `milestone5-performance-review.md` | 戦闘探索 O(n^2) / Area target 全走査 | Milestone 6へ延期 |
+| `milestone5-performance-review.md` | Combat / Projectile / AreaEffect の毎フレーム List 複製 | 要対応 |
+| `milestone5-performance-review.md` | `WorldActorPresenter` の毎フレーム `HashSet` 生成 | 対応済み |
+| `milestone5-performance-review.md` | Actor 表示の全 Actor 毎フレーム更新 | Milestone 6へ延期 |
+| `milestone5-performance-review.md` | Chunk mesh 同期生成スパイク | Milestone 6へ延期 |
+| `milestone5-general-review.md` | 表示アセット差し替え基盤 | Milestone 6へ延期 |
+| `milestone5-general-review.md` | 暫定 TODO / Master data 整理 | Milestone 6へ延期 |
+
 根拠:
 
 - `docs/self-review/milestone5-design-review.md`
@@ -193,7 +215,7 @@ Phase 7 後も `WorldActorDebugVisualizer` が DI 登録され、毎フレーム
 - `docs/self-review/milestone5-general-review.md`
 - `docs/self-review/milestone5-phase2-review-response.md`
 
-### 4. 設計 docs に古い実装名が残っている
+### 4. 設計 docs に古い実装名が残っている（対応済み）
 
 重大度: 中
 
@@ -208,6 +230,10 @@ AI 関連 docs に `AdvanceActorAiUseCase` の記述が残っている一方、�
 解決案:
 
 `docs/design/actor-ai-desing.md` と `docs/design/lifetime-scope-game-loop-design.md` を現行実装名へ更新する。旧名は履歴として残す場合も、現在の正は `AdvanceActorAiOrchestrator` であることを明記する。
+
+対応:
+
+`docs/design/actor-ai-desing.md` と `docs/design/lifetime-scope-game-loop-design.md` の `AdvanceActorAiUseCase` 記述を `AdvanceActorAiOrchestrator` へ更新した。現在の AI 評価入口は `AdvanceActorAiOrchestrator`、Decision 適用は `ApplyActorAiDecisionUseCase` を正とする。
 
 根拠:
 
@@ -441,7 +467,7 @@ Milestone 6 開始前に「暫定定数の正式 Master 化」または「Milest
 ### Milestone 5 完了前に対応推奨
 
 1. `WorldActorDebugVisualizer` を削除し、正式な View 更新経路へ移す。（対応済み）
-2. `docs/roadmap/milestone5-roadmap.md` の完了条件を現状に合わせて更新する。
+2. `docs/roadmap/milestone5-roadmap.md` の完了条件を現状に合わせて更新する。（対応済み）
 3. Phase 7 の PlayMode smoke test 証跡を追記する。
 4. `WorldCamera` の culling mask / orthographic 契約をコードまたは OnValidate で保証する。
 
@@ -455,6 +481,6 @@ Milestone 6 開始前に「暫定定数の正式 Master 化」または「Milest
 ### 別タスクとして追跡
 
 1. 既存の `Resources.LoadAsync` / `SceneManager.LoadSceneAsync` の置き換え。
-2. AI docs の旧名更新。
+2. AI docs の旧名更新。（対応済み）
 3. Spawn / Faction / Move speed などの TODO 整理。
 4. URP 軽量 Renderer / Quality の検討。

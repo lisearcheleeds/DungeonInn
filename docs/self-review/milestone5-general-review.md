@@ -74,7 +74,7 @@ DungeonInnプロジェクト（Milestone 5 Phase 1）の総合品質評価は、
 
 ---
 
-### [総合-4] WorldActorDebugVisualizer が「互換ファサード」のまま保守負債化リスク
+### [総合-4] WorldActorDebugVisualizer が「互換ファサード」のまま保守負債化リスク（対応済み）
 
 **重要度**: 中  
 **カテゴリ**: コード品質 / 保守性  
@@ -90,6 +90,8 @@ DungeonInnプロジェクト（Milestone 5 Phase 1）の総合品質評価は、
 **解決案**:
 - `#if DUNGEON_INN_DEBUG_VISUALIZATION` などのコンパイルディレクティブで debug 表示を条件付きにする。
 - または `IDebugVisualizationEnabled` フラグを設定から読み込み、off の場合は呼び出さない。
+
+**最終ステータス**: 対応済み。`WorldActorDebugVisualizer` は削除し、正式表示更新は `WorldGameLoopEntryPoint` から `WorldMapView` / `WorldActorPresenter` を直接呼び出す。
 
 ---
 

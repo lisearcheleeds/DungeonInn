@@ -77,7 +77,7 @@ Application 層そのものが LifetimeScope を持つわけではない。Appli
 - AI実行基盤
   - `ActorDecisionScheduler`
   - `ApplyActorAiDecisionUseCase`
-  - `AdvanceActorAiUseCase`
+  - `AdvanceActorAiOrchestrator`
   - `AdventurerAiPolicy`
   - `MonsterAiPolicy`
   - `PetAiPolicy`

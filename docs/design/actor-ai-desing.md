@@ -36,12 +36,13 @@ Application/
     MonsterAiPolicy
     PetAiPolicy
     GuildStaffAiPolicy
+  Orchestration/
+    AdvanceActorAiOrchestrator
   UseCase/
-    AdvanceActorAiUseCase
     ApplyActorAiDecisionUseCase
 ```
 
-Domain は、AI判断の結果として成立する状態を持つ。Application/AI は、評価タイミング、dirty管理、cooldown、判断ロジックを持つ。UseCase は、AI評価の呼び出しと、決定されたDecisionの適用を担当する。
+Domain は、AI判断の結果として成立する状態を持つ。Application/AI は、評価タイミング、dirty管理、cooldown、判断ロジックを持つ。Orchestrator は AI 評価の呼び出しと、決定されたDecisionの適用順序を担当する。
 
 ## Domain が持つもの
 
@@ -287,9 +288,9 @@ UseCase が Decision を Actor / World へ適用する。
 
 ## UseCase
 
-### AdvanceActorAiUseCase
+### AdvanceActorAiOrchestrator
 
-AI評価を進めるUseCase。
+AI評価を進めるOrchestrator。
 
 責務:
 
@@ -302,7 +303,7 @@ AI評価を進めるUseCase。
 現在の呼び出しは以下の形。
 
 ```csharp
-await advanceActorAiUseCase.ExecuteAsync(
+await advanceActorAiOrchestrator.ExecuteAsync(
     actors,
     currentTimeSeconds,
     evaluationFrameId,
