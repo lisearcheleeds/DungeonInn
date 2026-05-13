@@ -226,7 +226,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 new LayerPosition(MapLayerId.Ground, 0f, 0f),
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, lifecycleState));
+                new AdventurerBehavior(0, lifecycleState),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         sealed class CollectingEventBus : IGameEventBus

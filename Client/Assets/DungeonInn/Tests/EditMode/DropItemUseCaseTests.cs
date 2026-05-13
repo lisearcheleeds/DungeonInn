@@ -8,6 +8,7 @@ using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 using R3;
 
@@ -49,7 +50,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProbabilityFailProducesNoItems()
         {
-            // roll = 5001/10000 = 0.5001 which is > 0.5 → skip
+            // roll = 5001/10000 = 0.5001 which is > 0.5, so skip
             var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 5001);
             var drops = new[] { new ActorDropEntry(1001, 0.5f, 1, 1) };
             var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), drops);
@@ -142,7 +143,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(2, "Monster"),
-                new MonsterBehavior(1, dropTable));
+                new MonsterBehavior(1, dropTable),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static Actor CreateAdventurerActor(LayerPosition position)
@@ -161,7 +163,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0));
+                new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         sealed class FixedGameRandom : IGameRandom

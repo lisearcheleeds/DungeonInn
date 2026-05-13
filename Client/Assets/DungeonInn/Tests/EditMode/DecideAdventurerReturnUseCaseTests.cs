@@ -254,7 +254,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, AdventurerLifecycleState.Exploring));
+                new AdventurerBehavior(0, AdventurerLifecycleState.Exploring),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static Actor CreateMonster(LayerPosition position)
@@ -273,7 +274,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(2, "Monster"),
-                new MonsterBehavior(1, Array.Empty<ActorDropEntry>()));
+                new MonsterBehavior(1, Array.Empty<ActorDropEntry>()),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static DecideAdventurerReturnUseCaseFixture CreateUseCase(

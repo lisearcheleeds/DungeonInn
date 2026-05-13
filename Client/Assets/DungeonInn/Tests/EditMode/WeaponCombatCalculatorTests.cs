@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Item;
@@ -30,7 +30,7 @@ namespace DungeonInn.Tests.EditMode
         public void ScytheUsesDurationAreaAttackSpecLinkedToDirectDamage()
         {
             var actor = CreateActor();
-            actor.ChangeNaturalWeaponType(WeaponType.Scythe);
+            actor.ChangeNaturalWeaponType(WeaponTypeCombatMasterCatalog.Get(WeaponType.Scythe));
 
             var attackSpec = actor.WeaponCombatParams.AttackSpec;
             Assert.That(attackSpec.Nodes.Count, Is.EqualTo(2));
@@ -87,7 +87,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateActor();
 
-            actor.ChangeNaturalWeaponType(WeaponType.Claws);
+            actor.ChangeNaturalWeaponType(WeaponTypeCombatMasterCatalog.Get(WeaponType.Claws));
 
             Assert.That(actor.WeaponCombatParams.RangeMeters, Is.EqualTo(1.5f));
             Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(0.9f));
@@ -173,7 +173,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Test"),
-                new AdventurerBehavior(0));
+                new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static void EquipWeapon(

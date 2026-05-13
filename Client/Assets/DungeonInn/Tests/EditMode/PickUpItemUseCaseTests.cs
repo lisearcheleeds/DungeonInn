@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Event;
@@ -8,6 +8,7 @@ using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 using R3;
 
@@ -228,7 +229,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, lifecycleState));
+                new AdventurerBehavior(0, lifecycleState),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static Inventory CreateFullInventory()

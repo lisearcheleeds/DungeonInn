@@ -16,7 +16,8 @@ namespace DungeonInn.Application.Factory
             ActorFaction faction,
             int preferenceSeed,
             IActorBehavior behavior,
-            IItemStackLimitResolver stackLimitResolver)
+            IItemStackLimitResolver stackLimitResolver,
+            WeaponTypeCombatMaster naturalWeaponTypeCombatMaster)
         {
             var initialXp = levelTable.GetExperienceForLevel(archetypeMaster.InitialLevel);
             var actor = new Actor(
@@ -33,7 +34,8 @@ namespace DungeonInn.Application.Factory
                 preferenceSeed,
                 position,
                 faction,
-                behavior);
+                behavior,
+                naturalWeaponTypeCombatMaster);
             actor.RecalculateLevel(levelTable);
             RecoverFully(actor);
             return actor;

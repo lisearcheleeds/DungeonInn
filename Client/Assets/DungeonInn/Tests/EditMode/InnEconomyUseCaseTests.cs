@@ -285,7 +285,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 new LayerPosition(MapLayerId.Ground, 0f, 0f),
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, AdventurerLifecycleState.Recovering));
+                new AdventurerBehavior(0, AdventurerLifecycleState.Recovering),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static void RemoveStock(GameWorldState worldState, int itemId, int count)

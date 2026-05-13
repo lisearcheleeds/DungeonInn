@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Event;
@@ -146,7 +146,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Test"),
-                new AdventurerBehavior(0));
+                new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static Actor CreateActorWithArchetype(int archetypeId, int experience)
@@ -165,7 +166,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f),
                 new ActorFaction(archetypeId, $"Faction {archetypeId}"),
-                new AdventurerBehavior(0));
+                new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         sealed class CollectingGameEventBus : IGameEventBus

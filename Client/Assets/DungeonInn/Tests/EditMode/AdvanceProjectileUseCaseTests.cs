@@ -232,7 +232,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(factionId, $"Faction {factionId}"),
-                new AdventurerBehavior(0));
+                new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
     }
 }

@@ -349,7 +349,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, lifecycleState));
+                new AdventurerBehavior(0, lifecycleState),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static AdvanceActorLifecycleOrchestrator CreateLifecycleUseCase()

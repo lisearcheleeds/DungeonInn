@@ -6,6 +6,7 @@ using DungeonInn.Application.UseCase;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 
 namespace DungeonInn.Tests.EditMode
@@ -104,7 +105,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0));
+                new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         static AdvanceActorAiOrchestrator CreateUseCase()

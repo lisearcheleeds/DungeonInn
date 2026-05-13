@@ -103,7 +103,7 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
-            attacker.ChangeNaturalWeaponType(WeaponType.Scythe);
+            attacker.ChangeNaturalWeaponType(WeaponTypeCombatMasterCatalog.Get(WeaponType.Scythe));
             worldState.RegisterActor(attacker);
             worldState.RegisterActor(target);
             combatService.SetTarget(attacker.Id, target.Id);
@@ -227,7 +227,8 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(factionId, $"Faction {factionId}"),
-                new AdventurerBehavior(0));
+                new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
     }
 }

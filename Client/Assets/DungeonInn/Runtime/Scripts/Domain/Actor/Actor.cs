@@ -55,7 +55,8 @@ namespace DungeonInn.Domain.Actor
             int preferenceSeed,
             LayerPosition position,
             ActorFaction faction,
-            IActorBehavior behavior)
+            IActorBehavior behavior,
+            WeaponTypeCombatMaster naturalWeaponTypeCombatMaster)
         {
             if (level < 1)
             {
@@ -77,8 +78,8 @@ namespace DungeonInn.Domain.Actor
             Position = position;
             Faction = faction ?? throw new ArgumentNullException(nameof(faction));
             Behavior = behavior ?? throw new ArgumentNullException(nameof(behavior));
-            NaturalWeaponType = WeaponType.Fist;
-            NaturalWeaponTypeCombatMaster = WeaponTypeCombatMasterCatalog.Get(NaturalWeaponType);
+            NaturalWeaponTypeCombatMaster = naturalWeaponTypeCombatMaster ?? throw new ArgumentNullException(nameof(naturalWeaponTypeCombatMaster));
+            NaturalWeaponType = naturalWeaponTypeCombatMaster.WeaponType;
             CurrentGoal = ActorGoal.None();
             CurrentPlan = ActorPlan.None();
             CurrentAction = ActorAction.None();
@@ -142,11 +143,6 @@ namespace DungeonInn.Domain.Actor
             Behavior = behavior ?? throw new ArgumentNullException(nameof(behavior));
             RefreshWeaponCalculator();
             RefreshParams();
-        }
-
-        public void ChangeNaturalWeaponType(WeaponType weaponType)
-        {
-            ChangeNaturalWeaponType(WeaponTypeCombatMasterCatalog.Get(weaponType));
         }
 
         public void ChangeNaturalWeaponType(WeaponTypeCombatMaster weaponTypeCombatMaster)

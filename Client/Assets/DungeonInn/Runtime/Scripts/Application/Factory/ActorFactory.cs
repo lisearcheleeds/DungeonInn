@@ -27,6 +27,7 @@ namespace DungeonInn.Application.Factory
             ValidateBehaviorType(archetypeMaster, request.RequiredBehaviorType);
 
             var levelTable = masterRepository.GetLevelTable(archetypeMaster.LevelTableId);
+            var naturalWeaponTypeCombatMaster = masterRepository.GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType);
             var actor = ActorFactoryCore.CreateActor(
                 request.ActorId,
                 archetypeMaster,
@@ -35,9 +36,9 @@ namespace DungeonInn.Application.Factory
                 request.Faction,
                 request.PreferenceSeed,
                 CreateBehavior(archetypeMaster),
-                masterRepository);
+                masterRepository,
+                naturalWeaponTypeCombatMaster);
 
-            actor.ChangeNaturalWeaponType(masterRepository.GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType));
             actor.Inventory.AddRange(archetypeMaster.InitialInventoryItemIds);
             return actor;
         }
