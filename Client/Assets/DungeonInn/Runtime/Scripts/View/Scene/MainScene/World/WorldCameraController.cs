@@ -9,7 +9,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly WorldCameraSettings settings;
 
         Camera camera;
-        bool applyInitialState;
         bool initialized;
         bool isRotating;
         Vector2 moveInput;
@@ -24,14 +23,11 @@ namespace DungeonInn.View.Scene.MainScene.World
         public WorldCameraController(WorldCameraSettings settings)
         {
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            yawDegrees = settings.InitialYawDegrees;
-            pitchDegrees = settings.PitchDegrees;
         }
 
-        public void BindCamera(Camera camera, bool applyInitialState)
+        public void BindCamera(Camera camera)
         {
             this.camera = camera ?? throw new ArgumentNullException(nameof(camera));
-            this.applyInitialState = applyInitialState;
             initialized = false;
         }
 
@@ -83,21 +79,8 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void InitializeCamera(Camera camera)
         {
-            if (applyInitialState)
-            {
-                camera.orthographic = true;
-                camera.orthographicSize = settings.InitialOrthographicSize;
-                camera.transform.position = settings.InitialPosition;
-                yawDegrees = settings.InitialYawDegrees;
-                pitchDegrees = settings.PitchDegrees;
-            }
-            else
-            {
-                yawDegrees = camera.transform.eulerAngles.y;
-                pitchDegrees = camera.transform.eulerAngles.x;
-            }
-
-            ApplyRotation(camera);
+            yawDegrees = camera.transform.eulerAngles.y;
+            pitchDegrees = camera.transform.eulerAngles.x;
             initialized = true;
         }
 

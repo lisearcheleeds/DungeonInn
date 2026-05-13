@@ -17,6 +17,10 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldScene : ProductMainSceneBase<WorldScene.WorldTransitionData>
     {
+        static readonly Vector3 FallbackWorldCameraPosition = new(64f, 80f, -64f);
+        static readonly Quaternion FallbackWorldCameraRotation = Quaternion.Euler(60f, 45f, 0f);
+        const float FallbackWorldCameraOrthographicSize = 48f;
+
         [SerializeField] Camera worldCamera;
 
         IWorldPresenter worldPresenter;
@@ -26,7 +30,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         WorldCameraController worldCameraController;
         WorldLayerViewController worldLayerViewController;
         WorldSceneCamera worldSceneCamera;
-        bool isFallbackWorldCamera;
 
         public override MainSceneId MainSceneId => DungeonInnMainSceneId.World;
 
@@ -77,9 +80,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         protected override UniTask OnSetup()
         {
             EnsureWorldSceneCamera();
-            worldCameraController.BindCamera(
-                worldSceneCamera.GetCamera(),
-                applyInitialState: isFallbackWorldCamera);
+            worldCameraController.BindCamera(worldSceneCamera.GetCamera());
             worldPresenter.Setup();
             return UniTask.CompletedTask;
         }
@@ -114,10 +115,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             cameraObject.layer = WorldRenderingLayer.Layer;
             cameraObject.transform.SetParent(transform, false);
             worldCamera = cameraObject.AddComponent<Camera>();
+            worldCamera.orthographic = true;
+            worldCamera.orthographicSize = FallbackWorldCameraOrthographicSize;
             worldCamera.cullingMask = WorldRenderingLayer.Mask;
+            worldCamera.transform.SetPositionAndRotation(
+                FallbackWorldCameraPosition,
+                FallbackWorldCameraRotation);
             EnsureUniversalCameraData(cameraObject);
             worldSceneCamera = new WorldSceneCamera(worldCamera);
-            isFallbackWorldCamera = true;
         }
 
         static void EnsureUniversalCameraData(GameObject cameraObject)
@@ -127,5 +132,19 @@ namespace DungeonInn.View.Scene.MainScene.World
                 cameraObject.AddComponent<UniversalAdditionalCameraData>();
             }
         }
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            if (worldCamera == null)
+            {
+                return;
+            }
+
+            worldCamera.orthographic = true;
+            worldCamera.cullingMask = WorldRenderingLayer.Mask;
+            EnsureUniversalCameraData(worldCamera.gameObject);
+        }
+#endif
     }
 }

@@ -108,6 +108,10 @@ Milestone 4 の戦闘整理で Orchestrator / Resolver / Service を導入した
 
 方針を明文化する。推奨は、Scene の `WorldCamera` がある場合は Inspector 設定を正とし、`WorldCameraSettings` は操作速度、回転感度、ズーム範囲など runtime control の設定に限定すること。最低限 `cullingMask = World` と `orthographic = true` は起動時検証または `OnValidate` で保証する。
 
+ユーザー確認後方針:
+
+`WorldCameraSettings` は、ユーザーがゲーム中の設定画面から変更できる操作感・ズーム範囲などに限定する。ゲーム中に設定できない初期位置、初期角度、projection、culling mask などは Inspector / Scene 設定を正とする。ただし、Lighthouse / URP camera stack の接続や fallback camera 生成など、実行時に動的変更が必要な契約はコード側で扱う。
+
 根拠:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldScene.cs`
@@ -450,4 +454,3 @@ Milestone 6 開始前に「暫定定数の正式 Master 化」または「Milest
 2. AI docs の旧名更新。
 3. Spawn / Faction / Move speed などの TODO 整理。
 4. URP 軽量 Renderer / Quality の検討。
-
