@@ -541,11 +541,11 @@ Adventurer / Monster それぞれの生成経路を先に実装した後、共�
 
 完了条件:
 
-- [ ] `AdventurerCreateRequest` / `MonsterCreateRequest` の重複フィールドが `ActorSpawnRequest` または同等の共通 request に統合されている
-- [ ] `DisplayName` など差分フィールドが任意項目または専用 facade の責務として整理されている
-- [ ] 外部公開 factory が `IActorFactory` 中心になっている、または専用 factory を残す理由が docs に記録されている
-- [ ] Adventurer / Monster 生成の既存テストが通る
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+- [x] `AdventurerCreateRequest` / `MonsterCreateRequest` の重複フィールドが `ActorFactoryRequest` に統合されている
+- [x] `DisplayName` など差分フィールドが `ActorFactoryRequest.DisplayName` の任意値として整理されている
+- [x] 外部公開 factory が `IActorFactory` 中心になっている
+- [x] Adventurer / Monster 生成の既存テストが通る
+- [x] `uloop.cmd compile --project-path Client` が成功している
 
 ### 3. 経済系 DTO が近いフィールドを複数型で重複保持している
 
@@ -1185,5 +1185,43 @@ Unity scene / View 接続の確認が PlayMode smoke test と手動確認中心�
 - `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
 - `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（231 passed）
 - 対象ファイルの LINQ / `ToArray()` / `ToList()` / `Sum()` / `Count()` 検索: 該当なし
+- `git diff --check`: 問題なし
+- 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` bootstrap / reboot 例外、`UniTask<T>`、`UnityWebRequest.Result`、LighthouseGenerated のみ。
+
+## Codex対応ログ 2026-05-14（続き13）
+
+対応項目:
+
+- 設計重複レビュー7: Factory / Request の上層が重複している問題を修正した。
+
+対応内容:
+
+- `AdventurerCreateRequest` / `MonsterCreateRequest` を廃止し、生成入力を `ActorFactoryRequest` に統合した。
+- `ActorFactoryRequest` に任意の `DisplayName` を追加し、Adventurer 固有名の差分を共通 request 上で表すようにした。
+- `IAdventurerFactory` / `IMonsterFactory` と `AdventurerFactory` / `MonsterFactory` を削除し、`SpawnAdventurerUseCase` / `SpawnMonsterUseCase` は `IActorFactory` を直接利用するようにした。
+- `SpawnScheduledAdventurerOrchestrator` / `SpawnScheduledMonsterOrchestrator` は `ActorFactoryRequest.RequiredBehaviorType` で生成対象を明示するようにした。
+- `ProductLifetimeScope` の DI 登録を `ActorFactory as IActorFactory` のみに整理した。
+- `docs/design/guild-domain-design.md` / `docs/design/lifetime-scope-game-loop-design.md` / `docs/guidelines/domain-design-guidelines.md` の Factory 記述を現行構成に更新した。
+
+差分許可モデル:
+
+- 新しい Request / Factory 型は追加していない。既存の `ActorFactoryRequest` に差分フィールドを統合したため、セルフレビュープリセットの「新しい概念を増やす前に既存概念との差分を確認する」方針に沿う。
+- `SpawnAdventurerUseCase` / `SpawnMonsterUseCase` の Behavior 種別チェックは、専用 Factory 削除後も呼び出し側の用途誤りを UseCase 境界で止めるための production validation であり、テスト都合の API 追加ではない。
+- `ActorFactory` / `ActorFactoryCore` は引き続き Actor 本体の生成だけを担当し、スポーン抽選、ギルド在庫支給、初期装備反映、取引履歴は UseCase / Orchestrator 側に残した。
+
+完了条件チェック:
+
+- [x] `AdventurerCreateRequest` / `MonsterCreateRequest` の重複フィールドが `ActorFactoryRequest` に統合されている。
+- [x] `DisplayName` が `ActorFactoryRequest.DisplayName` の任意値として整理されている。
+- [x] 外部公開 factory が `IActorFactory` 中心になっている。
+- [x] Adventurer / Monster 生成の既存テストが通る。
+- [x] `uloop.cmd compile --project-path Client` が成功している。
+
+検証:
+
+- `uloop.cmd compile --project-path Client`: 成功（ErrorCount 0 / WarningCount 0）
+- `uloop.cmd run-tests --project-path Client --test-mode EditMode`: 成功（231 passed）
+- `Client/Assets/DungeonInn` 内の旧 Factory / Request 名検索: 該当なし
+- `docs/design` / `docs/guidelines` 内の旧 Factory / Request 名検索: 旧実装例として `domain-design-guidelines.md` に残した記述のみ
 - `git diff --check`: 問題なし
 - 禁止 API 検索: 今回差分による新規追加なし。既存の `Launcher.cs` bootstrap / reboot 例外、`UniTask<T>`、`UnityWebRequest.Result`、LighthouseGenerated のみ。

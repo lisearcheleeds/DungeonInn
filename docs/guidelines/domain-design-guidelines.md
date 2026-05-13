@@ -536,8 +536,9 @@ public sealed class EntityFactory
 
 ### DungeonInn Example
 
-`AdventurerCreateRequest` / `MonsterCreateRequest` は `ActorFactoryCore` で共通実装されているが、
-上層 interface が統一されていない。
+旧 DungeonInn 実装では `AdventurerCreateRequest` / `MonsterCreateRequest` と
+`IAdventurerFactory` / `IMonsterFactory` が並列に存在していた。
+差分が `DisplayName` と必須 Behavior 種別だけだったため、`ActorFactoryRequest` / `IActorFactory` に統合した。
 
 ---
 

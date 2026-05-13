@@ -14,39 +14,44 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class SpawnAdventurerUseCase
     {
-        readonly IAdventurerFactory adventurerFactory;
+        readonly IActorFactory actorFactory;
         readonly IMasterRepository masterRepository;
         readonly CompleteActorSpawnUseCase completeActorSpawnUseCase;
         readonly ExchangeExecutor exchangeExecutor = new();
 
         [Inject]
         public SpawnAdventurerUseCase(
-            IAdventurerFactory adventurerFactory,
+            IActorFactory actorFactory,
             IMasterRepository masterRepository,
             CompleteActorSpawnUseCase completeActorSpawnUseCase)
         {
-            this.adventurerFactory = adventurerFactory ?? throw new ArgumentNullException(nameof(adventurerFactory));
+            this.actorFactory = actorFactory ?? throw new ArgumentNullException(nameof(actorFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.completeActorSpawnUseCase = completeActorSpawnUseCase ?? throw new ArgumentNullException(nameof(completeActorSpawnUseCase));
         }
 
         public SpawnAdventurerUseCase(
-            IAdventurerFactory adventurerFactory,
+            IActorFactory actorFactory,
             IMasterRepository masterRepository,
             DungeonInn.Application.Profiles.IActorProfileRegistry profileRegistry,
             DungeonInn.Application.Event.IEventPublisher eventBus)
             : this(
-                adventurerFactory,
+                actorFactory,
                 masterRepository,
                 new CompleteActorSpawnUseCase(profileRegistry, eventBus))
         {
         }
 
-        public UniTask<Actor> ExecuteAsync(AdventurerGuild guild, AdventurerCreateRequest request, int occurredAtTick)
+        public UniTask<Actor> ExecuteAsync(AdventurerGuild guild, ActorFactoryRequest request, int occurredAtTick)
         {
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.RequiredBehaviorType != ActorBehaviorType.Adventurer)
+            {
+                throw new InvalidOperationException("Spawn adventurer requires adventurer actor request.");
             }
 
             var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
@@ -55,7 +60,7 @@ namespace DungeonInn.Application.UseCase
                 throw new InvalidOperationException("Spawn adventurer requires adventurer actor archetype.");
             }
 
-            var actor = adventurerFactory.Create(request);
+            var actor = actorFactory.Create(request);
 
             if (actor.Level == 1)
             {

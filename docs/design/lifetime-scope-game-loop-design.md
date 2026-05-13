@@ -49,8 +49,7 @@ Application 層そのものが LifetimeScope を持つわけではない。Appli
 - Product 共通サービス
   - `ProductAssetLoader`
   - `HardcodedMasterRepository` as `IMasterRepository`
-  - `AdventurerFactory` as `IAdventurerFactory`
-  - `MonsterFactory` as `IMonsterFactory`
+  - `ActorFactory` as `IActorFactory`
   - `ScoutCostPolicy`
 - 共有してよい UseCase
   - Master / Factory / Domain Entity を組み合わせるステートレスUseCase群

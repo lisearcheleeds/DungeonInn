@@ -16,16 +16,18 @@ namespace DungeonInn.Tests.EditMode
     public sealed class ActorFactoryTests
     {
         [Test]
-        public void AdventurerFactoryBuildsBareAdventurerFromArchetypeMaster()
+        public void ActorFactoryBuildsBareAdventurerFromArchetypeMaster()
         {
-            var factory = new AdventurerFactory(new HardcodedMasterRepository());
+            var factory = new ActorFactory(new HardcodedMasterRepository());
 
-            var actor = factory.Create(new AdventurerCreateRequest(
+            var actor = factory.Create(new ActorFactoryRequest(
                 1,
                 Guid.NewGuid(),
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Adventurer"),
-                123));
+                123,
+                ActorBehaviorType.Adventurer,
+                string.Empty));
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
             Assert.That(actor.Inventory.Gold, Is.EqualTo(100));
@@ -39,14 +41,16 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void CreateMonsterBuildsMonsterFromArchetypeMaster()
         {
-            var factory = new MonsterFactory(new HardcodedMasterRepository());
+            var factory = new ActorFactory(new HardcodedMasterRepository());
 
-            var actor = factory.Create(new MonsterCreateRequest(
+            var actor = factory.Create(new ActorFactoryRequest(
                 2,
                 Guid.NewGuid(),
                 new LayerPosition(MapLayerId.DungeonFloor(1), 10, 10),
                 new ActorFaction(2, "Monster"),
-                456));
+                456,
+                ActorBehaviorType.Monster,
+                string.Empty));
 
             var behavior = actor.RequireBehavior<MonsterBehavior>();
 
@@ -67,14 +71,16 @@ namespace DungeonInn.Tests.EditMode
                 new LayerPosition(MapLayerId.Ground, 0, 0),
                 new ActorFaction(1, "Adventurer"),
                 123,
-                ActorBehaviorType.Adventurer));
+                ActorBehaviorType.Adventurer,
+                string.Empty));
             var monster = factory.Create(new ActorFactoryRequest(
                 2,
                 Guid.NewGuid(),
                 new LayerPosition(MapLayerId.DungeonFloor(1), 10, 10),
                 new ActorFaction(2, "Monster"),
                 456,
-                ActorBehaviorType.Monster));
+                ActorBehaviorType.Monster,
+                string.Empty));
 
             Assert.That(adventurer.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
             Assert.That(adventurer.Inventory.Has(new ItemStack(2001, 1)), Is.True);
@@ -88,7 +94,7 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var profileRegistry = new NoOpActorProfileRegistry();
             var useCase = new SpawnAdventurerUseCase(
-                new AdventurerFactory(repository),
+                new ActorFactory(repository),
                 repository,
                 profileRegistry,
                 new NoOpGameEventBus());
@@ -99,12 +105,14 @@ namespace DungeonInn.Tests.EditMode
 
             var actor = useCase.ExecuteAsync(
                 guild,
-                new AdventurerCreateRequest(
+                new ActorFactoryRequest(
                     1,
                     Guid.NewGuid(),
                     new LayerPosition(MapLayerId.Ground, 0, 0),
                     new ActorFaction(1, "Adventurer"),
-                    123),
+                    123,
+                    ActorBehaviorType.Adventurer,
+                    string.Empty),
                 10).GetAwaiter().GetResult();
 
             Assert.That(guild.Inventory.Has(new ItemStack(3001, 1)), Is.False);
@@ -123,7 +131,7 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var profileRegistry = new RecordingActorProfileRegistry();
             var useCase = new SpawnAdventurerUseCase(
-                new AdventurerFactory(repository),
+                new ActorFactory(repository),
                 repository,
                 profileRegistry,
                 new NoOpGameEventBus());
@@ -135,12 +143,13 @@ namespace DungeonInn.Tests.EditMode
 
             useCase.ExecuteAsync(
                 guild,
-                new AdventurerCreateRequest(
+                new ActorFactoryRequest(
                     1,
                     actorId,
                     new LayerPosition(MapLayerId.Ground, 0, 0),
                     new ActorFaction(1, "Adventurer"),
                     123,
+                    ActorBehaviorType.Adventurer,
                     "Alice"),
                 10).GetAwaiter().GetResult();
 

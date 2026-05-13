@@ -12,6 +12,7 @@ namespace DungeonInn.Application.Factory
         public ActorFaction Faction { get; }
         public int PreferenceSeed { get; }
         public ActorBehaviorType RequiredBehaviorType { get; }
+        public string DisplayName { get; }
 
         public ActorFactoryRequest(
             int archetypeId,
@@ -19,7 +20,8 @@ namespace DungeonInn.Application.Factory
             LayerPosition position,
             ActorFaction faction,
             int preferenceSeed,
-            ActorBehaviorType requiredBehaviorType)
+            ActorBehaviorType requiredBehaviorType,
+            string displayName)
         {
             if (archetypeId < 1)
             {
@@ -32,6 +34,7 @@ namespace DungeonInn.Application.Factory
             Faction = faction ?? throw new ArgumentNullException(nameof(faction));
             PreferenceSeed = preferenceSeed;
             RequiredBehaviorType = requiredBehaviorType;
+            DisplayName = displayName ?? string.Empty;
         }
     }
 }

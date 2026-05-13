@@ -75,12 +75,14 @@ namespace DungeonInn.Application.Orchestration
             // TODO: FactionをFactionMasterから取得する
             var faction = new ActorFaction(2, "Monster");
 
-            var request = new MonsterCreateRequest(
+            var request = new ActorFactoryRequest(
                 entry.TargetMasterId,
                 Guid.NewGuid(),
                 position,
                 faction,
-                gameRandom.Next());
+                gameRandom.Next(),
+                ActorBehaviorType.Monster,
+                string.Empty);
 
             var actor = await spawnMonsterUseCase.ExecuteAsync(request);
             worldState.RegisterActor(actor);

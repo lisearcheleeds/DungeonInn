@@ -9,42 +9,47 @@ namespace DungeonInn.Application.UseCase
 {
     public sealed class SpawnMonsterUseCase
     {
-        readonly IMonsterFactory monsterFactory;
+        readonly IActorFactory actorFactory;
         readonly IMasterRepository masterRepository;
         readonly CompleteActorSpawnUseCase completeActorSpawnUseCase;
 
         [Inject]
         public SpawnMonsterUseCase(
-            IMonsterFactory monsterFactory,
+            IActorFactory actorFactory,
             IMasterRepository masterRepository,
             CompleteActorSpawnUseCase completeActorSpawnUseCase)
         {
-            this.monsterFactory = monsterFactory ?? throw new ArgumentNullException(nameof(monsterFactory));
+            this.actorFactory = actorFactory ?? throw new ArgumentNullException(nameof(actorFactory));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.completeActorSpawnUseCase = completeActorSpawnUseCase ?? throw new ArgumentNullException(nameof(completeActorSpawnUseCase));
         }
 
         public SpawnMonsterUseCase(
-            IMonsterFactory monsterFactory,
+            IActorFactory actorFactory,
             IMasterRepository masterRepository,
             DungeonInn.Application.Profiles.IActorProfileRegistry profileRegistry,
             DungeonInn.Application.Event.IEventPublisher eventBus)
             : this(
-                monsterFactory,
+                actorFactory,
                 masterRepository,
                 new CompleteActorSpawnUseCase(profileRegistry, eventBus))
         {
         }
 
-        public UniTask<Actor> ExecuteAsync(MonsterCreateRequest request)
+        public UniTask<Actor> ExecuteAsync(ActorFactoryRequest request)
         {
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
             }
 
+            if (request.RequiredBehaviorType != ActorBehaviorType.Monster)
+            {
+                throw new InvalidOperationException("Spawn monster requires monster actor request.");
+            }
+
             var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
-            var actor = monsterFactory.Create(request);
+            var actor = actorFactory.Create(request);
             completeActorSpawnUseCase.Complete(actor, archetypeMaster, string.Empty);
             return UniTask.FromResult(actor);
         }

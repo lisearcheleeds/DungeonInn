@@ -71,12 +71,13 @@ namespace DungeonInn.Application.Orchestration
             // TODO: FactionをFactionMasterから取得する
             var faction = new ActorFaction(1, "Adventurer");
 
-            var request = new AdventurerCreateRequest(
+            var request = new ActorFactoryRequest(
                 adventurerSpawnMaster.ActorArchetypeId,
                 Guid.NewGuid(),
                 position,
                 faction,
                 gameRandom.Next(),
+                ActorBehaviorType.Adventurer,
                 adventurerSpawnMaster.DisplayName);
 
             var actor = await spawnAdventurerUseCase.ExecuteAsync(worldState.Guild, request, currentScheduleTick);
