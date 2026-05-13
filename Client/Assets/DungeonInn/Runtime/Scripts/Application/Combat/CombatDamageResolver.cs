@@ -2,7 +2,6 @@ using System;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Orchestration;
 using DungeonInn.Domain.Actor;
 using VContainer;
 
@@ -12,20 +11,17 @@ namespace DungeonInn.Application.Combat
     {
         readonly IActorCombatService actorCombatService;
         readonly IEventPublisher eventBus;
-        readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
 
         [Inject]
         public CombatDamageResolver(
             IActorCombatService actorCombatService,
-            IEventPublisher eventBus,
-            ActorDefeatOrchestrator actorDefeatOrchestrator)
+            IEventPublisher eventBus)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            this.actorDefeatOrchestrator = actorDefeatOrchestrator ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
         }
 
-        public void ApplyDamage(IGameWorldState worldState, Actor attacker, Actor target, int damage)
+        public bool ApplyDamage(IGameWorldState worldState, Actor attacker, Actor target, int damage)
         {
             if (worldState == null)
             {
@@ -37,10 +33,10 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(attacker));
             }
 
-            ApplyDamage(worldState, attacker.Id, attacker, target, damage);
+            return ApplyDamage(worldState, attacker.Id, attacker, target, damage);
         }
 
-        public void ApplyDamage(IGameWorldState worldState, Guid attackerActorId, Actor attacker, Actor target, int damage)
+        public bool ApplyDamage(IGameWorldState worldState, Guid attackerActorId, Actor attacker, Actor target, int damage)
         {
             if (worldState == null)
             {
@@ -66,10 +62,7 @@ namespace DungeonInn.Application.Combat
                 resolvedDamage,
                 target.Hp));
 
-            if (target.Hp <= 0)
-            {
-                actorDefeatOrchestrator.Execute(worldState, attacker, target);
-            }
+            return target.Hp <= 0;
         }
     }
 }

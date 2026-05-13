@@ -26,7 +26,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
@@ -48,7 +48,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
@@ -74,7 +74,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
             worldState.RegisterActor(attacker);
@@ -100,7 +100,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = new GameWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = new AdvanceCombatUseCase(combatService, clock, CreateCombatEffectExecutor(combatService, eventBus));
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             attacker.ChangeNaturalWeaponType(WeaponTypeCombatMasterCatalog.Get(WeaponType.Scythe));
@@ -192,16 +192,31 @@ namespace DungeonInn.Tests.EditMode
             IActorCombatService combatService,
             IGameEventBus eventBus)
         {
-            var defeatResolver = new CombatDefeatResolver(
-                combatService,
-                eventBus);
-            var actorDefeatOrchestrator = new ActorDefeatOrchestrator(
-                defeatResolver,
-                CreateGrantExperienceService(eventBus),
-                CreateDropItemService(eventBus));
             return new CombatEffectExecutor(
                 eventBus,
-                new CombatDamageResolver(combatService, eventBus, actorDefeatOrchestrator));
+                new CombatDamageResolver(combatService, eventBus));
+        }
+
+        static ActorDefeatOrchestrator CreateActorDefeatOrchestrator(
+            IActorCombatService combatService,
+            IGameEventBus eventBus)
+        {
+            return new ActorDefeatOrchestrator(
+                new CombatDefeatResolver(combatService, eventBus),
+                CreateGrantExperienceService(eventBus),
+                CreateDropItemService(eventBus));
+        }
+
+        static AdvanceCombatUseCase CreateAdvanceCombatUseCase(
+            IActorCombatService combatService,
+            IGameClock clock,
+            IGameEventBus eventBus)
+        {
+            return new AdvanceCombatUseCase(
+                combatService,
+                clock,
+                CreateCombatEffectExecutor(combatService, eventBus),
+                CreateActorDefeatOrchestrator(combatService, eventBus));
         }
 
         sealed class ZeroGameRandom : IGameRandom

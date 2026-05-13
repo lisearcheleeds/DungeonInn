@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Orchestration;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Common;
 using VContainer;
@@ -12,11 +13,16 @@ namespace DungeonInn.Application.UseCase
     public sealed class AdvanceProjectileUseCase
     {
         readonly CombatEffectExecutor combatEffectExecutor;
+        readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
 
         [Inject]
-        public AdvanceProjectileUseCase(CombatEffectExecutor combatEffectExecutor)
+        public AdvanceProjectileUseCase(
+            CombatEffectExecutor combatEffectExecutor,
+            ActorDefeatOrchestrator actorDefeatOrchestrator)
         {
             this.combatEffectExecutor = combatEffectExecutor ?? throw new ArgumentNullException(nameof(combatEffectExecutor));
+            this.actorDefeatOrchestrator = actorDefeatOrchestrator
+                ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -53,7 +59,15 @@ namespace DungeonInn.Application.UseCase
                 return 0f < projectile.RemainingDistanceMeters;
             }
 
-            combatEffectExecutor.ExecuteProjectileHit(worldState, projectile, target);
+            var targetDefeated = combatEffectExecutor.ExecuteProjectileHit(worldState, projectile, target);
+            if (targetDefeated && worldState.FindActor(target.Id) != null)
+            {
+                actorDefeatOrchestrator.Execute(
+                    worldState,
+                    worldState.FindActor(projectile.AttackerActorId),
+                    target);
+            }
+
             return false;
         }
     }

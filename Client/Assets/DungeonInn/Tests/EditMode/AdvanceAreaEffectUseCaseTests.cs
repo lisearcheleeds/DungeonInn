@@ -27,7 +27,8 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingGameEventBus();
             var useCase = new AdvanceAreaEffectUseCase(
                 new AttackAreaTargetResolver(),
-                CreateCombatEffectExecutor(combatService, eventBus));
+                CreateCombatEffectExecutor(combatService, eventBus),
+                CreateActorDefeatOrchestrator(combatService, eventBus));
             var attacker = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var enemyA = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             var enemyB = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 7f, 5f), 50);
@@ -127,16 +128,19 @@ namespace DungeonInn.Tests.EditMode
             IActorCombatService combatService,
             IGameEventBus eventBus)
         {
-            var defeatResolver = new CombatDefeatResolver(
-                combatService,
-                eventBus);
-            var actorDefeatOrchestrator = new ActorDefeatOrchestrator(
-                defeatResolver,
-                CreateGrantExperienceService(eventBus),
-                CreateDropItemService(eventBus));
             return new CombatEffectExecutor(
                 eventBus,
-                new CombatDamageResolver(combatService, eventBus, actorDefeatOrchestrator));
+                new CombatDamageResolver(combatService, eventBus));
+        }
+
+        static ActorDefeatOrchestrator CreateActorDefeatOrchestrator(
+            IActorCombatService combatService,
+            IGameEventBus eventBus)
+        {
+            return new ActorDefeatOrchestrator(
+                new CombatDefeatResolver(combatService, eventBus),
+                CreateGrantExperienceService(eventBus),
+                CreateDropItemService(eventBus));
         }
 
         static Actor CreateActor(int factionId, LayerPosition position, int hp)

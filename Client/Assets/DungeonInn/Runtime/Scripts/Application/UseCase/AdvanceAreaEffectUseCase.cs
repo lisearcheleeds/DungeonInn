@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Orchestration;
 using DungeonInn.Domain.Combat;
 using VContainer;
 
@@ -12,14 +13,18 @@ namespace DungeonInn.Application.UseCase
     {
         readonly AttackAreaTargetResolver targetResolver;
         readonly CombatEffectExecutor combatEffectExecutor;
+        readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
 
         [Inject]
         public AdvanceAreaEffectUseCase(
             AttackAreaTargetResolver targetResolver,
-            CombatEffectExecutor combatEffectExecutor)
+            CombatEffectExecutor combatEffectExecutor,
+            ActorDefeatOrchestrator actorDefeatOrchestrator)
         {
             this.targetResolver = targetResolver ?? throw new ArgumentNullException(nameof(targetResolver));
             this.combatEffectExecutor = combatEffectExecutor ?? throw new ArgumentNullException(nameof(combatEffectExecutor));
+            this.actorDefeatOrchestrator = actorDefeatOrchestrator
+                ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -52,7 +57,15 @@ namespace DungeonInn.Application.UseCase
         {
             foreach (var target in targetResolver.ResolveTargets(worldState, areaEffect))
             {
-                combatEffectExecutor.ExecuteAreaHit(worldState, areaEffect, target);
+                var targetDefeated = combatEffectExecutor.ExecuteAreaHit(worldState, areaEffect, target);
+                if (targetDefeated && worldState.FindActor(target.Id) != null)
+                {
+                    actorDefeatOrchestrator.Execute(
+                        worldState,
+                        worldState.FindActor(areaEffect.AttackerActorId),
+                        target);
+                }
+
                 areaEffect.MarkHitActor(target.Id);
             }
         }

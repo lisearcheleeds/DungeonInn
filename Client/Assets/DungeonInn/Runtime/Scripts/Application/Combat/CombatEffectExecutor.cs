@@ -23,7 +23,11 @@ namespace DungeonInn.Application.Combat
             this.damageResolver = damageResolver ?? throw new ArgumentNullException(nameof(damageResolver));
         }
 
-        public void ExecuteAttack(IGameWorldState worldState, Actor attacker, Actor target, WeaponAttackSpec attackSpec)
+        public bool ExecuteAttack(
+            IGameWorldState worldState,
+            Actor attacker,
+            Actor target,
+            WeaponAttackSpec attackSpec)
         {
             if (worldState == null)
             {
@@ -46,13 +50,26 @@ namespace DungeonInn.Application.Combat
             }
 
             var executionId = CombatEffectExecutionId.New();
+            var targetDefeated = false;
             foreach (var rootNodeId in attackSpec.RootNodeIds)
             {
-                ExecuteNode(worldState, attacker, target, target.Position, attackSpec, FindNode(attackSpec, rootNodeId), executionId);
+                targetDefeated |= ExecuteNode(
+                    worldState,
+                    attacker,
+                    target,
+                    target.Position,
+                    attackSpec,
+                    FindNode(attackSpec, rootNodeId),
+                    executionId);
             }
+
+            return targetDefeated;
         }
 
-        public void ExecuteProjectileHit(IGameWorldState worldState, ProjectileInstance projectile, Actor target)
+        public bool ExecuteProjectileHit(
+            IGameWorldState worldState,
+            ProjectileInstance projectile,
+            Actor target)
         {
             if (worldState == null)
             {
@@ -73,11 +90,15 @@ namespace DungeonInn.Application.Combat
             eventBus.Publish(new ProjectileHit(projectile.Id, projectile.AttackerActorId, target.Id, projectile.Damage));
             if (projectile.AttackSpec == null || projectile.SourceNodeId <= 0)
             {
-                damageResolver.ApplyDamage(worldState, projectile.AttackerActorId, attacker, target, projectile.Damage);
-                return;
+                return damageResolver.ApplyDamage(
+                    worldState,
+                    projectile.AttackerActorId,
+                    attacker,
+                    target,
+                    projectile.Damage);
             }
 
-            ExecuteLinks(
+            return ExecuteLinks(
                 worldState,
                 attacker,
                 projectile.AttackerActorId,
@@ -89,7 +110,10 @@ namespace DungeonInn.Application.Combat
                 projectile.ExecutionId);
         }
 
-        public void ExecuteAreaHit(IGameWorldState worldState, AreaEffectInstance areaEffect, Actor target)
+        public bool ExecuteAreaHit(
+            IGameWorldState worldState,
+            AreaEffectInstance areaEffect,
+            Actor target)
         {
             if (worldState == null)
             {
@@ -110,11 +134,15 @@ namespace DungeonInn.Application.Combat
             eventBus.Publish(new AreaEffectHit(areaEffect.Id, areaEffect.AttackerActorId, target.Id, areaEffect.Damage));
             if (areaEffect.AttackSpec == null || areaEffect.SourceNodeId <= 0)
             {
-                damageResolver.ApplyDamage(worldState, areaEffect.AttackerActorId, attacker, target, areaEffect.Damage);
-                return;
+                return damageResolver.ApplyDamage(
+                    worldState,
+                    areaEffect.AttackerActorId,
+                    attacker,
+                    target,
+                    areaEffect.Damage);
             }
 
-            ExecuteLinks(
+            return ExecuteLinks(
                 worldState,
                 attacker,
                 areaEffect.AttackerActorId,
@@ -126,7 +154,7 @@ namespace DungeonInn.Application.Combat
                 areaEffect.ExecutionId);
         }
 
-        void ExecuteLinks(
+        bool ExecuteLinks(
             IGameWorldState worldState,
             Actor attacker,
             Guid attackerActorId,
@@ -137,6 +165,7 @@ namespace DungeonInn.Application.Combat
             CombatEffectTriggerType triggerType,
             CombatEffectExecutionId executionId)
         {
+            var targetDefeated = false;
             foreach (var link in sourceNode.Links)
             {
                 if (link.TriggerType != triggerType)
@@ -144,7 +173,7 @@ namespace DungeonInn.Application.Combat
                     continue;
                 }
 
-                ExecuteNode(
+                targetDefeated |= ExecuteNode(
                     worldState,
                     attacker,
                     attackerActorId,
@@ -154,9 +183,11 @@ namespace DungeonInn.Application.Combat
                     FindNode(attackSpec, link.TargetNodeId),
                     executionId);
             }
+
+            return targetDefeated;
         }
 
-        void ExecuteNode(
+        bool ExecuteNode(
             IGameWorldState worldState,
             Actor attacker,
             Actor target,
@@ -165,10 +196,10 @@ namespace DungeonInn.Application.Combat
             CombatEffectNodeSpec node,
             CombatEffectExecutionId executionId)
         {
-            ExecuteNode(worldState, attacker, attacker.Id, target, effectPosition, attackSpec, node, executionId);
+            return ExecuteNode(worldState, attacker, attacker.Id, target, effectPosition, attackSpec, node, executionId);
         }
 
-        void ExecuteNode(
+        bool ExecuteNode(
             IGameWorldState worldState,
             Actor attacker,
             Guid attackerActorId,
@@ -181,14 +212,18 @@ namespace DungeonInn.Application.Combat
             switch (node.Type)
             {
                 case CombatEffectNodeType.DirectDamage:
-                    damageResolver.ApplyDamage(worldState, attackerActorId, attacker, target, node.DamageSpec.Amount);
-                    return;
+                    return damageResolver.ApplyDamage(
+                        worldState,
+                        attackerActorId,
+                        attacker,
+                        target,
+                        node.DamageSpec.Amount);
                 case CombatEffectNodeType.Projectile:
                     CreateProjectile(worldState, attackerActorId, target, effectPosition, attackSpec, node, executionId);
-                    return;
+                    return false;
                 case CombatEffectNodeType.Area:
                     CreateAreaEffect(worldState, attackerActorId, attacker, target, effectPosition, attackSpec, node, executionId);
-                    return;
+                    return false;
                 case CombatEffectNodeType.ApplyStatus:
                     throw new InvalidOperationException("ApplyStatus combat effect node is not supported yet.");
                 default:

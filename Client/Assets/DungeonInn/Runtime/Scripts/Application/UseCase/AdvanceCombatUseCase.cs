@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Orchestration;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
@@ -15,12 +16,14 @@ namespace DungeonInn.Application.UseCase
         readonly IActorCombatService actorCombatService;
         readonly IGameClock gameClock;
         readonly CombatEffectExecutor combatEffectExecutor;
+        readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
 
         [Inject]
         public AdvanceCombatUseCase(
             IActorCombatService actorCombatService,
             IGameClock gameClock,
-            CombatEffectExecutor combatEffectExecutor)
+            CombatEffectExecutor combatEffectExecutor,
+            ActorDefeatOrchestrator actorDefeatOrchestrator)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -28,6 +31,8 @@ namespace DungeonInn.Application.UseCase
                 ?? throw new ArgumentNullException(nameof(gameClock));
             this.combatEffectExecutor = combatEffectExecutor
                 ?? throw new ArgumentNullException(nameof(combatEffectExecutor));
+            this.actorDefeatOrchestrator = actorDefeatOrchestrator
+                ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -71,7 +76,16 @@ namespace DungeonInn.Application.UseCase
                     continue;
                 }
 
-                combatEffectExecutor.ExecuteAttack(worldState, actor, target, actor.WeaponCombatParams.AttackSpec);
+                var targetDefeated = combatEffectExecutor.ExecuteAttack(
+                    worldState,
+                    actor,
+                    target,
+                    actor.WeaponCombatParams.AttackSpec);
+                if (targetDefeated && worldState.FindActor(target.Id) != null)
+                {
+                    actorDefeatOrchestrator.Execute(worldState, actor, target);
+                }
+
                 combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
                 actorCombatService.MarkCombatParticipation(actor.Id);
             }
