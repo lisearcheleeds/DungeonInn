@@ -23,13 +23,13 @@
 根拠となるファイルリスト:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Lifecycle/RecoverAdventurerAtInnUseCase.cs`
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Lifecycle/ChargeInnFeeUseCase.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Economy/ChargeInnFeeUseCase.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Lifecycle/DespawnAdventurerUseCase.cs`
 - `docs/guidelines/application-boundary-guidelines.md`
 
 完了条件:
 
-- [ ] 非 Orchestrator の `*UseCase` が他の `*UseCase` を constructor injection していない
+- [ ] `RecoverAdventurerAtInnUseCase` が `ChargeInnFeeUseCase` / `DespawnAdventurerUseCase` を constructor injection していない（本指摘のスコープは宿回復フローに限定）
 - [ ] 宿回復、料金徴収、退去/despawn の順序が Orchestrator または明示的な Application Service に移っている
 - [ ] 料金不足、満額支払い、満室待機、退去/despawn の EditMode test がある
 - [ ] `uloop.cmd compile --project-path Client` が成功している
@@ -40,7 +40,7 @@
 
 問題:
 
-`CombatDamageResolver` と `CombatEffectExecutor` は `IEventPublisher` を保持し、buffer / collector を渡さない public overload から即時 publish できる。主要経路では `BufferedEventPublisher` に寄せられているが、API としてはトランザクション完了後 publish が保証されていない。
+`CombatDamageResolver`・`CombatEffectExecutor`・`CombatDefeatResolver` の 3 クラスが `IEventPublisher` を保持し、buffer / collector を渡さない public overload から即時 publish できる。主要経路では `BufferedEventPublisher` に寄せられているが、API としてはトランザクション完了後 publish が保証されていない。
 
 原因:
 
@@ -54,13 +54,14 @@ Resolver / Executor から `IEventPublisher` field と no-buffer overload を削
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat/CombatDamageResolver.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat/CombatEffectExecutor.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat/CombatDefeatResolver.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat/AdvanceCombatUseCase.cs`
 - `docs/design/game-event-design.md`
 - `docs/guidelines/application-boundary-guidelines.md`
 
 完了条件:
 
-- [ ] `CombatDamageResolver` / `CombatEffectExecutor` が global event bus に直接 publish できない
+- [ ] `CombatDamageResolver` / `CombatEffectExecutor` / `CombatDefeatResolver` が global event bus に直接 publish できない
 - [ ] buffer / collector を通さない public overload がない
 - [ ] 通常攻撃、projectile、area effect、defeat / drop / reward のイベント発行順を検証する EditMode test がある
 - [ ] `docs/design/game-event-design.md` が現行のイベント発行契約と一致している
@@ -82,9 +83,11 @@ Resolver / Executor から `IEventPublisher` field と no-buffer overload を削
 
 `WorldGameLogPresenter` が `IGameWorldStateReader` を直接注入し、Actor、Guild、施設予約、所持金などを読みながら表示用ログ文字列を組み立てている。Milestone 5 roadmap は UI 表示を専用 Query / ReadModel / DTO に寄せる方針を定めており、debug build 限定であっても View 層が広い Domain 集約に到達できる状態は境界を曖昧にする。
 
+> **検証注記（2026-05-14）:** コードを直接確認した結果、`Initialize()` メソッドは `if (!Debug.isDebugBuild) { return; }` で始まり、subscriptions は Debug build 以外では登録されない。ただし DI constructor は常に `IGameWorldStateReader worldState` を受け取り、`OnActorWaitingForInn()`・`OnActorReservedInn()`・`OnItemPickedUp()` 内で `worldState.Guild.GetFacility()`・`worldState.FindActor()` を呼んで補助情報を取得している。実行は Debug build に限定されるが、依存関係と読み取り経路はコード上に常に存在する。完了条件「Debug.isDebugBuild に境界違反の許容を依存していない」はこの状態を指している。
+
 原因:
 
-イベントログに必要な補助情報が event DTO または narrow query として用意されておらず、Presenter が不足情報を `IGameWorldStateReader` から直接補っている。
+イベントログに必要な補助情報が event DTO または narrow query として用意されておらず、Presenter が不足情報を `IGameWorldStateReader` から直接補っている。具体的には `ActorWaitingForInn` イベント DTO が `InnFacilityId` のみを持ち、room 数・Gold などを持たないため、Presenter が `worldState` から後引きせざるを得ない。
 
 解決案:
 
@@ -144,7 +147,7 @@ layers.Add(GetOrCreateLayer(
 - [ ] Dungeon Floor 追加時にキャッシュが適切に追加されることを EditMode test で確認済み
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
-### 5. DetectCombatEncounterUseCase が BufferedEventPublisher を使わず直接 publish する
+### 5. DetectCombatEncounterUseCase のイベント発行順序契約が docs にない
 
 重大度: 中
 
@@ -160,8 +163,10 @@ layers.Add(GetOrCreateLayer(
 
 解決案:
 
-1. `DetectCombatEncounterUseCase` も `BufferedEventPublisher` を使い、メソッド末尾で `Flush()` する（他 UseCase と統一）
-2. または「CombatEncounterStarted は遭遇検出時の即時通知であり、同フレーム内の戦闘結果より先に届く」という契約を `docs/design/game-event-design.md` に明記する
+> **訂正（Codex レビュー 2026-05-14）:** 旧解決案1「`BufferedEventPublisher` を使い末尾で `Flush()`」は問題を解決しない。`Flush()` を UseCase 末尾で呼んでも `DetectCombatEncounterUseCase` の実行は `advanceCombatUseCase.ExecuteAsync()` より前のまま（`WorldSimulationOrchestrator` の実行順序は変わらない）。`CombatEncounterStarted` が戦闘結果より先に届くという事実は Buffer 統一では変わらない。主要解決策は docs への契約明記。
+
+1. 「`CombatEncounterStarted` / `CombatEncounterEnded` は遭遇状態変更の即時イベントであり、同フレーム内の戦闘結果より先に届く」という発行順契約を `docs/design/game-event-design.md` に明記する（主要解決策）。
+2. もし CombatEncounterStarted を受けた購読者が同フレームの戦闘結果に依存することが問題になるなら、`WorldSimulationOrchestrator` の実行順序（detect → combat → flush）を見直すか、FrameEnd 後の後処理フェーズに遭遇通知を分割する。
 
 根拠となるファイルリスト:
 
@@ -172,8 +177,8 @@ layers.Add(GetOrCreateLayer(
 
 完了条件:
 
-- [ ] `DetectCombatEncounterUseCase` が `BufferedEventPublisher` を使うか、即時発行の理由が `game-event-design.md` に明記されている
-- [ ] `CombatEncounterStarted` / `CombatEncounterEnded` のフレーム内発行順序が docs に契約として記載されている
+- [ ] `CombatEncounterStarted` / `CombatEncounterEnded` の発行タイミングと「同フレーム内の戦闘結果との順序」が `game-event-design.md` に契約として記載されている
+- [ ] 発行順に依存する購読者（`AdventurerBattleRecordService` 等）の想定が docs と一致している
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
 ### 6. IActorBehavior が空マーカーインターフェースのまま、かつ Domain 内で具体型依存が拡大している
@@ -186,70 +191,53 @@ review-2 で「Milestone 6以降の大規模変更」と判断され、review-3 
 
 再発防止策:
 
-`IActorBehavior` に `ActorBehaviorKind Kind { get; }` を追加し、新規の型チェック追加時に lint か CI で警告を出す仕組みを入れる。
+`IActorBehavior` に型別分岐が不要な polymorphic hook（`OnRecover(RecoverContext)` 等）を定義し、Domain コアが具体型を参照しなくて済む設計にする。新規 Behavior 追加時の型チェック分散を CI で警告する仕組みを入れる。
 
 問題:
 
-`IActorBehavior` はメンバを一切持たないマーカーインターフェース。Domain / Application / View の各層で `behavior is AdventurerBehavior` 等の型チェックが散在している。特に `Actor.Recover()` が Domain 層内で `AdventurerBehavior` に直接キャストし、`ReduceStress()` を呼んでいる。Domain が具体型 Behavior に直接依存することで、新しい Behavior 追加時に Domain コアを変更せざるを得ない。
+`IActorBehavior` はメンバを一切持たないマーカーインターフェースであり、これは `domain-design-guidelines.md` の方針（`ActorBehaviorType` を持たせない）に沿った意図的な設計である。問題は空マーカーであること自体ではなく、Domain コアが `AdventurerBehavior` 具体型に直接依存している点にある。具体的には `Actor.Recover()` が Domain 層内で `if (Behavior is AdventurerBehavior adventurerBehavior)` とキャストして `ReduceStress()` を呼んでおり、新しい Behavior 追加時に Domain コアを変更せざるを得ない。Application 層（`WorldViewDataProviders.cs` の `ResolveBehaviorType()`）でも同様の型チェックが散在している。
 
 原因:
 
-`IActorBehavior` のメンバレス設計は「型そのものが役割を表す」意図だったが、Domain 内にその型を参照するコードが増えた結果、型チェック分岐が Domain コアにまで入り込んでいる。
+Domain コアが具体型 Behavior に依存する polymorphic hook が `IActorBehavior` に定義されていないため、`Actor.Recover()` が型チェックで具体型に到達する必要が生じている。
 
 解決案:
 
-1. `IActorBehavior` に `ActorBehaviorKind Kind { get; }` を追加し、各 Behavior 実装に enum 値を返させる
-2. `Actor.Recover()` の `is AdventurerBehavior` チェックを `Behavior.Kind == ActorBehaviorKind.Adventurer` に変更し、`AdventurerBehavior` への具体型依存をなくす
-3. ストレス軽減などの Behavior 固有ロジックは `IActorBehavior.OnRecover(RecoverContext)` のようなメソッドとして interface に定義し、Behavior 実装側で処理する
+> **訂正（Codex レビュー 2026-05-14）:** 旧解決案1・2 の `IActorBehavior.Kind`/`ActorBehaviorKind` 追加は、`docs/guidelines/domain-design-guidelines.md` 第2節「IActorBehavior に ActorBehaviorType Type を持たせない」と正面衝突するため採用しない。
+
+1. `IActorBehavior` に `void OnRecover(RecoverContext context)` のような polymorphic hook を定義し、`Actor.Recover()` が型チェックせずに `Behavior.OnRecover(context)` を呼ぶ。ストレス軽減は `AdventurerBehavior.OnRecover()` の内部で処理する
+2. または `IStressRecoverable` のような capability interface を導入し、`Actor.Recover()` が `if (Behavior is IStressRecoverable recoverable) { recoverable.ReduceStress(...); }` のように具体クラスではなく interface に依存する
+3. どちらの方針を採用するかを `docs/guidelines/domain-design-guidelines.md` に明記する
 
 根拠となるファイルリスト:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/Domain/Actor/IActorBehavior.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Domain/Actor/Actor.cs`（Recover() 内の型チェック）
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/World/WorldViewDataProviders.cs`（ResolveBehaviorType()）
+- `docs/guidelines/domain-design-guidelines.md`（第2節: IActorBehavior に識別子プロパティを持たせない）
 
 完了条件:
 
-- [ ] `IActorBehavior` に識別用メンバ（`Kind` プロパティ等）が追加されている
+- [ ] `IActorBehavior` に polymorphic hook（`OnRecover(RecoverContext)` 等）または capability interface（`IStressRecoverable` 等）が定義されている
 - [ ] `Actor.Recover()` が `AdventurerBehavior` に直接キャストしていない
-- [ ] `ActorViewDataStore.ResolveBehaviorType()` が `IActorBehavior` の識別メンバを使用している
 - [ ] Domain 層のコアコード（Actor / ActorEffects 等）に `is AdventurerBehavior` の型チェックが残っていない
 - [ ] `docs/guidelines/domain-design-guidelines.md` に Behavior 判定の推奨パターンが記載されている
 - [ ] Actor の Behavior 別 Recover / 処理分岐を検証する EditMode test がある
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
-### 7. InnEconomyStatistics.Demand プロパティと InnEconomyStatusCalculator が重複計算する
+### 7. ~~InnEconomyStatistics.Demand プロパティと InnEconomyStatusCalculator が重複計算する~~
 
-重大度: 低
+→ **重複1「InnEconomyStatus / InnDailyReport の正典がまだ分散している」に統合済み**（Codex レビュー 2026-05-14）
 
-問題:
-
-`InnEconomyStatistics` には算出プロパティ `Demand { get => Guests + RejectedGuests; }` が定義されている。しかし `InnEconomyStatusCalculator.CalculateDailyReport()` は `statistics.Demand` を使わず、`statistics.Guests + statistics.RejectedGuests` を直接計算して `InnDailyReport` に渡している。同じロジックが 2 箇所に存在し、定義が変わった場合に片方が追従し忘れるリスクがある。
-
-原因:
-
-`CalculateDailyReport()` の実装が `InnEconomyStatistics.Demand` プロパティの存在に気付かず（または意図的に）直接計算している。
-
-解決案:
-
-`InnEconomyStatusCalculator.CalculateDailyReport()` 内の `statistics.Guests + statistics.RejectedGuests` を `statistics.Demand` に変更する。
-
-根拠となるファイルリスト:
-
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Economy/InnEconomyStatistics.cs`
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Economy/InnEconomyStatusCalculator.cs`
-
-完了条件:
-
-- [ ] `InnEconomyStatusCalculator.CalculateDailyReport()` が `statistics.Guests + statistics.RejectedGuests` を直接計算せず `statistics.Demand` を使用している
-- [ ] `Demand` の計算ロジックが `InnEconomyStatistics` の 1 箇所にのみ存在する
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+> **注:** 「統合済み」はこのドキュメント内の項目番号を整理したことを意味する。コード上の問題（`InnEconomyStatistics.Demand` の定義が `InnEconomyStatusCalculator` に参照されず `statistics.Guests + statistics.RejectedGuests` が重複計算されている）は**未解決**。完了条件は重複1で管理している。
 
 ---
 
-### 8. SpawnScheduledAdventurerOrchestrator と Monster 版で LINQ 使用パターンが非対称
+### 8. SpawnScheduledAdventurerOrchestrator と Monster 版で LINQ 使用パターンが非対称（パフォーマンス3・パフォーマンス7 統合）
 
 重大度: 中
+
+> **統合（Codex レビュー 2026-05-14）:** パフォーマンス3「Adventurer spawn の候補抽選に LINQ / 一時配列が残っている」およびパフォーマンス7「SpawnScheduledAdventurerOrchestrator が毎 schedule tick に LINQ GC Alloc を発生させる」を本項目に吸収した。
 
 問題:
 
@@ -267,7 +255,7 @@ Monster 版は後から実装されてパフォーマンス改善が適用され
 
 解決案:
 
-1. `worldState.Actors.Count(x => x.Behavior is AdventurerBehavior)` を `GameWorldState` に `AdventurerCount` プロパティとしてキャッシュ、または `IActorBehavior.Kind` 比較に変更してラムダアロケーションを減らす
+1. `worldState.Actors.Count(x => x.Behavior is AdventurerBehavior)` を明示ループに変更する。必要であれば `GameWorldState` または Actor 管理 Service 側で Adventurer 数をキャッシュする（`IActorBehavior.Kind` 比較への変更は `domain-design-guidelines.md` の方針と矛盾するため採用しない）
 2. `Where().ToArray()` を `foreach` + 条件チェックの明示ループに変更する
 3. `Sum()` を for ループに変更する
 
@@ -348,34 +336,11 @@ Schedule tick 内に処理予算を設け、複数フレームに分割する。
 - [ ] Inventory / Facility 変更時に必要な dirty flag または candidate queue が更新される
 - [ ] schedule tick 大量発生時の負荷を検証する EditMode test または profiler 記録がある
 
-### 3. Adventurer spawn の候補抽選に LINQ / 一時配列が残っている
+### 3. ~~Adventurer spawn の候補抽選に LINQ / 一時配列が残っている~~
 
-重大度: 中
+→ **設計8「SpawnScheduledAdventurerOrchestrator と Monster 版で LINQ 使用パターンが非対称」に統合済み**（Codex レビュー 2026-05-14）
 
-問題:
-
-第3回レビュー対応ログでは spawn / AI 周辺の LINQ が明示ループへ置き換え済みとされているが、現行 `SpawnScheduledAdventurerOrchestrator.SelectAdventurerSpawnEntry()` には `Where(...).ToArray()` と `Sum()` が残っている。schedule tick 経路ではあるが、候補数や spawn table 数が増えた場合に不要な allocation が発生する。
-
-原因:
-
-Monster spawn 側は明示ループへ修正されたが、Adventurer spawn 側の類似処理が対象から漏れている。対応ログの検証検索も対象ファイルを完全に網羅していなかった可能性がある。
-
-解決案:
-
-`SelectAdventurerSpawnEntry()` を明示ループへ置き換え、候補抽出と weight 合計を一時配列なしで行う。spawn 抽選の共通 helper を作る場合は、allocation しない API にする。
-
-根拠となるファイルリスト:
-
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/SpawnScheduledAdventurerOrchestrator.cs`
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/SpawnScheduledMonsterOrchestrator.cs`
-- `docs/self-review/milestone5-completion-review-3-codex.md`
-- `docs/guidelines/application-boundary-guidelines.md`
-
-完了条件:
-
-- [ ] `SpawnScheduledAdventurerOrchestrator` の schedule tick 経路に `Where` / `ToArray` / `Sum` が残っていない
-- [ ] SpawnOnce 除外と weight 抽選の挙動を検証する EditMode test がある
-- [ ] `rg "Where\\(|ToArray\\(|Sum\\(" Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn -g "*.cs"` で hot path の対象が残っていない
+> **注:** 「統合済み」はこのドキュメント内の項目番号を整理したことを意味する。コード上の問題（`SpawnScheduledAdventurerOrchestrator` の `.Where().ToArray()` による一時配列生成）は**未解決**。完了条件は設計8で管理している。
 
 ### 4. Actor View の生成 / 削除が pooled ではない
 
@@ -454,7 +419,7 @@ A* の基本実装として List を使っているため、open set への重�
 
 問題:
 
-review-2 / review-3 で「Fan 判定は dot / cross と距離二乗で行い、`Sqrt` / `Atan2` などの三角関数を避ける」と指摘されていた。現行実装では `Math.Sqrt` / `Math.Atan2` は使われていないが、`Math.Cos(halfAngle * Math.PI / 180f)` が残っている。三角関数は整数演算や乗算より大幅にコストが高く、AreaEffect 数 × 近傍 Actor 数が増えると積み上がる。
+review-2 / review-3 で「Fan 判定は dot / cross と距離二乗で行い、`Sqrt` / `Atan2` などの三角関数を避ける」と指摘されていた。Fan 判定では `Math.Sqrt` / `Math.Atan2` は使われていないが（Rectangle の bounding radius 計算では `CalculateBoundingRadius()` 内で `Math.Sqrt` が残存している）、Fan 判定の `ContainsFan()` では `Math.Cos(halfAngle * Math.PI / 180f)` が残っている。三角関数は整数演算や乗算より大幅にコストが高く、AreaEffect 数 × 近傍 Actor 数が増えると積み上がる。
 
 ```csharp
 // ContainsFan() 内
@@ -488,38 +453,11 @@ review-2 の解決案は「`Sqrt` / `Atan2` を避ける」と書いていたが
 
 ---
 
-### 7. SpawnScheduledAdventurerOrchestrator が毎 schedule tick に LINQ GC Alloc を発生させる
+### 7. ~~SpawnScheduledAdventurerOrchestrator が毎 schedule tick に LINQ GC Alloc を発生させる~~
 
-重大度: 中
+→ **設計8「SpawnScheduledAdventurerOrchestrator と Monster 版で LINQ 使用パターンが非対称」に統合済み**（Codex レビュー 2026-05-14）
 
-問題:
-
-`SpawnScheduledAdventurerOrchestrator.ExecuteAsync()` は毎 schedule tick（ゲーム時間経過ごと）に以下の GC Alloc を発生させる。
-
-1. `worldState.Actors.Count(x => x.Behavior is AdventurerBehavior)` → ラムダ生成
-2. `spawnTable.Entries.Where(e => !spawnedSet.Contains(e.EntryId)).ToArray()` → 中間配列 `SpawnTableEntryMaster[]` 生成
-3. `entries.Sum(entry => entry.Weight)` → ラムダ生成
-
-Actor 数とスポーンテーブルサイズが増えるほど割り当てが増加する。
-
-原因:
-
-整合性3で述べた通り、Monster 版への LINQ 削減が Adventurer 版に反映されていない。
-
-解決案:
-
-整合性3の解決案と同一。for ループへの変換とカウント専用プロパティの導入。
-
-根拠となるファイルリスト:
-
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/SpawnScheduledAdventurerOrchestrator.cs`
-
-完了条件:
-
-- [ ] `Count(x => ...)` / `Where().ToArray()` / `Sum(...)` が LINQ を使わない実装に変わっている
-- [ ] schedule tick ごとの GC Alloc が削減されていることが Profiler または コードレビューで確認できる
-- [ ] Adventurer スポーン判定の EditMode test が通る
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+> **注:** 「統合済み」はこのドキュメント内の項目番号を整理したことを意味する。コード上の問題（`.Count()` / `.Sum()` による毎 schedule tick の GC Alloc）は**未解決**。完了条件は設計8で管理している。
 
 ---
 
@@ -550,6 +488,7 @@ Actor 数とスポーンテーブルサイズが増えるほど割り当てが�
 
 - [ ] `Actor.RefreshParams()` が `new ActorParamCalculator()` を毎回生成していない
 - [ ] `ActorParamCalculator` が純粋 Domain 計算として static 化または shared instance 化されている
+- [ ] `ActorParamCalculator.Calculate()` 内の `equipment.Sum(x => x.Defense)` LINQ と `CollectBonuses()` の `new List<StatBonus>()` 一時生成が排除されている（`RefreshParams()` 呼び出しごとに発生するアロケーション）
 - [ ] WeaponCombatCalculatorFactory / WeaponCalculatorFactory との設計方針が揃っている
 - [ ] `docs/guidelines/domain-design-guidelines.md` に Domain Calculator の扱い方針が記載されている
 - [ ] Actor パラメータ再計算の EditMode test が通る
@@ -557,27 +496,37 @@ Actor 数とスポーンテーブルサイズが増えるほど割り当てが�
 
 ## 重複した機能を持つクラス / データクラスレビュー
 
-### 1. InnEconomyStatus / InnDailyReport の正典がまだ分散している
+### 1. InnEconomyStatus / InnDailyReport の正典がまだ分散している（設計7・重複5 統合）
 
 重大度: 中
 
+> **統合（Codex レビュー 2026-05-14）:** 設計7「InnEconomyStatistics.Demand プロパティと InnEconomyStatusCalculator が重複計算する」および 重複5「InnEconomyStatus の 12 個の alias proxy プロパティが未整理」を本項目に吸収した。いずれも InnEconomySummary 正典を中心に据えれば同一作業で解決できる。
+
 問題:
 
-`InnEconomySummary` は追加済みだが、`InnEconomyStatus` と `InnDailyReport` は同じ経済値を proxy property と constructor 引数として保持し続けている。`InnEconomyStatusCalculator` は report を作った後に status へ詰め替えており、現在値 DTO と履歴 DTO の共通値の正典がまだ分かれたままになっている。
+`InnEconomySummary` は追加済みだが、以下の 3 点で正典の分散が残っている。
+
+1. `InnEconomyStatus` と `InnDailyReport` は同じ経済値を proxy property と constructor 引数として保持し続けており、`InnEconomyStatusCalculator` は report-to-status の field-by-field 詰め替えを行っている
+2. `InnEconomyStatus` には `GuestsToday`、`RejectedGuestsToday`、`DemandToday` など `Current.Xxx` への委譲となる 12 個の alias proxy プロパティが残っており、UI 互換維持か削除かの方針が未決定（review-3 完了条件「alias proxy を持たないか互換維持理由が明記」は未チェック）
+3. `InnEconomyStatistics.Demand { get => Guests + RejectedGuests; }` プロパティが存在するが、`InnEconomyStatusCalculator.CalculateDailyReport()` では `statistics.Demand` を使わず `statistics.Guests + statistics.RejectedGuests` を直接計算しており、定義が 2 箇所に重複している
 
 原因:
 
-既存 API 互換のために alias property を残した結果、Summary 抽出後も field-by-field の詰め替えが残っている。
+既存 API 互換のために alias property を残した結果、Summary 抽出後も field-by-field の詰め替えが残っている。`Demand` プロパティの存在を `CalculateDailyReport()` が参照しなかった（または意図的に無視した）ため重複計算が生じた。
 
 解決案:
 
-`InnEconomyStatus` と `InnDailyReport` を `(Day, InnEconomySummary)` の薄い wrapper に寄せる。UI 互換用の alias property が必要な場合は ViewModel に移すか、互換 API として残す理由と削除条件を docs に明記する。
+1. `InnEconomyStatus` と `InnDailyReport` を `(Day, InnEconomySummary)` の薄い wrapper に寄せる
+2. alias proxy プロパティを削除し、呼び出し元をすべて `status.Current.Guests` 形式に統一する。UI 互換用に維持する場合は削除条件を docs に明記する
+3. `InnEconomyStatusCalculator.CalculateDailyReport()` 内の `statistics.Guests + statistics.RejectedGuests` を `statistics.Demand` に変更する
 
 根拠となるファイルリスト:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Economy/InnEconomyStatus.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Domain/Guild/InnDailyReport.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Economy/InnEconomyStatusCalculator.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Economy/InnEconomyStatistics.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/Domain/Guild/InnEconomySummary.cs`
 - `docs/self-review/milestone5-completion-review-3-codex.md`
 - `docs/guidelines/domain-design-guidelines.md`
 
@@ -586,8 +535,11 @@ Actor 数とスポーンテーブルサイズが増えるほど割り当てが�
 - [ ] `InnEconomyStatus` が `InnEconomySummary` を直接受け取り保持している
 - [ ] `InnDailyReport` が `InnEconomySummary` を直接受け取り保持している
 - [ ] `InnEconomyStatusCalculator` に report-to-status の field-by-field 詰め替えがない
+- [ ] `InnEconomyStatusCalculator.CalculateDailyReport()` が `statistics.Guests + statistics.RejectedGuests` を直接計算せず `statistics.Demand` を使用している
+- [ ] `InnEconomyStatus` の alias proxy プロパティが削除されているか、使用継続理由が docs またはファイル内に明記されている
 - [ ] status / report の summary equivalence を検証する EditMode test がある
-- [ ] 互換 property を残す場合、削除条件が docs または task に記録されている
+- [ ] `InnEconomyUseCaseTests` が更新後も通る
+- [ ] `uloop.cmd compile --project-path Client` が成功している
 
 ### 2. Actor-keyed transient state holder が増え続けている
 
@@ -596,6 +548,8 @@ Actor 数とスポーンテーブルサイズが増えるほど割り当てが�
 問題:
 
 `ActorDecisionScheduler`、`AdventurerExplorationStateService`、`AdventurerRecoveryStateService`、`AdventurerReturnTrackingService`、`ActorViewDataStore` など、ActorId を key にする長期状態 holder が複数存在する。死亡・帰還時 cleanup は一部で対応されたが、新しい holder を追加するたびに cleanup 対象イベントを個別に実装する必要がある。
+
+> **検証注記（2026-05-14）:** コードを直接確認した結果、`AdventurerReturnTrackingService` は `OnActorDeparted` で `dirtyActorIds` と `defeatedMonsterCountsByActor` を cleanup している。一方 `ActorDecisionScheduler` は `Dictionary<Guid, ActorAiRuntimeState> states` を保持するが、`ActorDefeated` / `ActorDeparted` の cleanup handler が存在しない（IEventSubscriber を constructor inject していない）。Actor が死亡・退場しても `states` に entry が残り続ける。
 
 原因:
 
@@ -618,7 +572,8 @@ Actor-keyed state の所有者、寿命、cleanup event の共通契約がなく
 完了条件:
 
 - [ ] Actor-keyed state holder の owner、lifetime、cleanup event が docs または review log に一覧化されている
-- [ ] `ActorDecisionScheduler` に removal cleanup がある、または scene lifetime persistence として明示されている
+- [ ] `ActorDecisionScheduler` に `ActorDefeated` / `ActorDeparted` 購読による `states` cleanup が追加されている（現状は cleanup なし・コード確認済み）
+- [ ] `AdventurerReturnTrackingService.OnActorDefeated()` が倒された Actor 自身の `dirtyActorIds` / `defeatedMonsterCountsByActor` を cleanup している（現状は killer の dirty mark のみ・倒された actor 自身の cleanup なし・コード確認済み）
 - [ ] `ActorDefeated` / `ActorDeparted` cleanup を各 transient state holder で検証する EditMode test がある
 - [ ] 新しい Actor-keyed state holder の追加時に同じ cleanup checklist を通す運用が task template または guideline にある
 
@@ -637,6 +592,8 @@ Actor-keyed state の所有者、寿命、cleanup event の共通契約がなく
 問題:
 
 `ActorProfile` は `ActorId`、`DisplayName`、`ArchetypeId`、`SpeciesId`、`BehaviorType` を保持し、`WorldGameLogPresenter` の表示名解決と `AdventurerReturnTrackingService` の戦闘帰還判定の両方で使われている。表示用 directory と、削除済み Actor の gameplay snapshot が同じ概念に混ざっている。
+
+> **検証注記（2026-05-14）:** コードを直接確認した結果、`AdventurerReturnTrackingService.OnActorDefeated()` が `profileRegistry.TryGetProfile(gameEvent.ActorId, out var profile)` を呼び、`profile.SpeciesId` で倒したモンスターの種族を集計している。これは gameplay logic（帰還判断の素材）として `ActorProfileRegistry` を使う具体的な実例。`WorldGameLogPresenter.GetName()` も同じ registry から `DisplayName` を取得しており、表示用と gameplay 用が同一 registry に混在していることをコードレベルで確認した。
 
 原因:
 
@@ -677,6 +634,8 @@ Factory / Request 統合の過程で、既存テストや互換用の簡易構�
 
 Runtime public constructor は DI で使う 1 系統に統一する。テスト側で `CompleteActorSpawnUseCase` を組み立てる helper / fixture を用意し、Runtime API にテスト都合の constructor を残さない。
 
+> **観察（Codex レビュー 2026-05-14）:** `SellItemsUseCase` にも第2 constructor があり `new NullGameClock()` を使用している。ただし `NullGameClock` は private inner class（DI 管理対象ではない）のため、DI を迂回して管理対象 UseCase を手動生成する Spawn UseCase とは性質が異なる。本項目は Spawn UseCase スコープに留める。「Runtime にテスト都合 constructor を残さない」方針として一般化する場合は `SellItemsUseCase` も対象に含めること。
+
 根拠となるファイルリスト:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/SpawnAdventurerUseCase.cs`
@@ -692,43 +651,11 @@ Runtime public constructor は DI で使う 1 系統に統一する。テスト�
 - [ ] Runtime code に DI 管理対象 UseCase を手動 `new` する composition path がない
 - [ ] `uloop.cmd compile --project-path Client` と該当 spawn tests が成功している
 
-### 5. InnEconomyStatus の 12 個の alias proxy プロパティが未整理
+### 5. ~~InnEconomyStatus の 12 個の alias proxy プロパティが未整理~~
 
-重大度: 中
+→ **重複1「InnEconomyStatus / InnDailyReport の正典がまだ分散している」に統合済み**（Codex レビュー 2026-05-14）
 
-問題:
-
-`InnEconomyStatus` は `InnEconomySummary Current` を内包する設計に変わったが、`GuestsToday`, `RejectedGuestsToday`, `DemandToday`, `SalesToday`, `SatisfactionDeltaToday`, `Reputation`, `OccupiedRooms`, `RoomCapacity`, `OccupancyPercent`, `GuildGold`, `RookieSwordStock`, `RookieArmorStock` という 12 個の `Current.Xxx` への委譲プロパティが残っている。review-3 の完了条件「`InnEconomyStatus` が UI alias の大量 proxy を持たない、または互換維持理由が明記されている」は未チェックのまま。
-
-```csharp
-// InnEconomyStatus（現状）
-public int GuestsToday => Current.Guests;       // Current.Guests の alias
-public int RejectedGuestsToday => Current.RejectedGuests; // alias
-// ... 10 個続く
-```
-
-これは今後 UI 向け ViewModel が追加される際に「どちらを使うか」が曖昧になり、`InnEconomySummary` と `InnEconomyStatus` と ViewModel の三層に同じ値が散在するリスクがある。
-
-原因:
-
-`InnEconomySummary` 導入前の API 互換を維持するために alias プロパティを残した。互換維持の方針が明記されていないため、削除タイミングが宙に浮いている。
-
-解決案:
-
-1. alias プロパティを削除し、呼び出し元をすべて `status.Current.Guests` 形式に統一する
-2. または「呼び出し元の Presenter が alias を使う期間だけ維持し、Presenter 側が `InnEconomySummary` を直接参照するよう移行後に削除する」方針を docs に明記する
-
-根拠となるファイルリスト:
-
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Economy/InnEconomyStatus.cs`
-- `Client/Assets/DungeonInn/Runtime/Scripts/Domain/Guild/InnEconomySummary.cs`（または相当ファイル）
-
-完了条件:
-
-- [ ] `InnEconomyStatus` の alias proxy プロパティが削除されているか、使用継続理由が docs またはファイル内に明記されている
-- [ ] 呼び出し元が `status.Current.Xxx` または `InnEconomySummary` を直接参照している
-- [ ] `InnEconomyUseCaseTests` が更新後も通る
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+> **注:** 「統合済み」はこのドキュメント内の項目番号を整理したことを意味する。コード上の問題（`GuestsToday` / `RejectedGuestsToday` 等 12 個の alias proxy プロパティが `InnEconomyStatus` に残存）は**未解決**。完了条件は重複1で管理している。
 
 ---
 
@@ -736,19 +663,21 @@ public int RejectedGuestsToday => Current.RejectedGuests; // alias
 
 重大度: 低
 
+> **訂正（Codex レビュー 2026-05-14）:** 旧問題文の「どちらも `ActorFactory` を呼んで Actor を生成し、GameWorldState に追加する」は現行コードと異なる。両 UseCase は Actor を生成して返すのみで、GameWorldState への登録は `SpawnScheduledAdventurerOrchestrator`（L95）および対応 Monster Orchestrator が行っている。また `SpawnAdventurerUseCase` は rookie equipment 支給・guild transaction・lifecycle 初期化を持ち、`SpawnMonsterUseCase` との単純重複とは言いにくい。本項目は「将来の Behavior 追加時に統合検討」に downgrade している。
+
 問題:
 
-review-2 / review-3 で「ActorFactoryCore による共通化は完了、上層 interface が冗長」と指摘され、Factory 層は統合済み。しかし UseCase 層では `SpawnAdventurerUseCase` と `SpawnMonsterUseCase` が引き続き並列に存在し、実体的な処理フローが類似している。どちらも `ActorFactory` を呼んで Actor を生成し、GameWorldState に追加する。
+review-2 / review-3 で「ActorFactoryCore による共通化は完了、上層 interface が冗長」と指摘され、Factory 層は統合済み。UseCase 層では `SpawnAdventurerUseCase` と `SpawnMonsterUseCase` が引き続き並列に存在する。両 UseCase は内部で `ActorFactory` を呼んで Actor を生成して返し（GameWorldState への登録は Orchestrator が担う）、基本フローは類似しているが、Adventurer 版は rookie equipment 支給・guild transaction・lifecycle 初期化などの固有ロジックを持つ。
 
-今後 NPC / Pet などの Behavior が追加された場合、新しい `SpawnXxxUseCase` が生まれるリスクがある。
+今後 NPC / Pet などの Behavior が追加された場合、新しい `SpawnXxxUseCase` が生まれるリスクがある。ただし現時点での機能重複は限定的であり、統合は Milestone 6 の Behavior 設計と合わせて検討する方が適切。
 
 原因:
 
-UseCase 統合はMilestone 6 の移動・AI 整理と合わせて対応する方針で延期されており、追跡は継続中。
+UseCase 統合は Milestone 6 の移動・AI 整理と合わせて対応する方針で延期されており、追跡は継続中。
 
 解決案:
 
-`SpawnActorUseCase` に統合し、Behavior 指定は `ActorFactoryRequest.Behavior` で行う。既存の `SpawnAdventurerUseCase` / `SpawnMonsterUseCase` は `SpawnActorUseCase` のラッパーまたは削除する。
+将来 Behavior 追加が続く場合に `SpawnActorUseCase` への統合を検討する。Behavior 固有の初期化ロジック（装備支給、guild transaction 等）は `IActorSpawnInitializer` のような strategy pattern で分離できる。現時点での強制統合は Adventurer 固有ロジックの位置を不明瞭にするリスクがある。
 
 根拠となるファイルリスト:
 
@@ -756,12 +685,11 @@ UseCase 統合はMilestone 6 の移動・AI 整理と合わせて対応する方
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/SpawnMonsterUseCase.cs`
 - `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/ActorFactory.cs`
 
-完了条件:
+完了条件（Milestone 6 統合検討時):
 
-- [ ] `SpawnAdventurerUseCase` / `SpawnMonsterUseCase` が削除されているか、統合済みの `SpawnActorUseCase` 呼び出しに変わっている
-- [ ] 新しい Behavior を追加する際に新規 UseCase を作らなくてよい
-- [ ] Adventurer / Monster スポーンの EditMode test が通る
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+- [ ] 新しい Behavior 追加時に統合が必要かどうかの判断基準が docs に記載されている
+- [ ] 共通化すべき重複が増えた場合に `SpawnActorUseCase` 統合を検討する設計メモが task または guideline にある
+- [ ] 現時点での強制統合は行わない（Adventurer 固有ロジックの位置が不明瞭になるリスクがある）
 
 ---
 
@@ -807,33 +735,35 @@ GC Alloc を避けるために内部バッファをそのまま返している�
 
 ### 1. WorldActorPresenter.Dispose() が空実装
 
-重大度: 中
+重大度: 低
+
+> **検証注記（2026-05-14）:** `WorldActorViewRegistry` はすでに `IDisposable` を実装し、`Dispose()` 内で保持する全 GameObject を `Object.Destroy()` している。かつ `WorldLifetimeScope` では `Lifetime.Scoped` で登録されており、VContainer が LifetimeScope 破棄時に自動的に `Dispose()` を呼ぶ。したがって「GameObjects が残留する可能性がある」という元の記述は事実と異なる。GameObject リークは実際には発生しない。本項目を重大度「低」に下げ、問題説明を修正した。
 
 問題:
 
-`WorldActorPresenter : IDisposable` を実装しているが `Dispose()` メソッドが空で何もしていない。`WorldActorPresenter` は内部的に `WorldActorViewRegistry` を保持しており、Actor の `GameObject` が追加されている場合でも `Dispose()` 呼び出しで何もクリーンアップされない。Scene が閉じる際（LifetimeScope の破棄時）に GameObjects が残留する可能性がある。
-
-一方で VContainer の Scoped 登録では IDisposable を実装するクラスは LifetimeScope 破棄時に `Dispose()` が呼ばれる。実際に Resource のリークが起きているかは Scene の遷移テストがないと確認困難。
+`WorldActorPresenter : IDisposable` を実装しているが `Dispose()` メソッドが空で何もしていない。実際の GameObject 破棄は `WorldActorViewRegistry.Dispose()`（Scoped/VContainer 自動呼び出し）が担っており、Scene 遷移時のリークは発生しない。ただし空 `Dispose()` はコード読者に「クリーンアップ責務がどこにあるか」を伝えず、将来 `WorldActorPresenter` が R3 購読や他のリソースを持つようになった場合に cleanup 漏れを招くリスクがある。
 
 原因:
 
-`Dispose()` パターンを形式として実装したが、実際に解放すべきリソース（`WorldActorViewRegistry` 内の View オブジェクト）の管理が `WorldActorPresenter` の責務か `WorldActorViewRegistry` の責務かが不明確なため、空のままになっている。
+`WorldActorViewRegistry` が `IDisposable` を持ち Scoped で登録されているため、`WorldActorPresenter` 側で明示的な解放を書かなくても動作した。結果として空の `Dispose()` が残り、責務の所在がコードから読み取れない状態になっている。
 
 解決案:
 
-1. `WorldActorViewRegistry` に `Clear()` / `Dispose()` を実装し、保持する GameObject を Destroy する
-2. `WorldActorPresenter.Dispose()` から `actorViewRegistry.Clear()` を呼ぶ
-3. または `WorldActorViewRegistry` も `IDisposable` として DI Scoped 登録し、LifetimeScope 破棄で自動クリアされるようにする
+1. `WorldActorPresenter : IDisposable` を実装する必要がなければ `IDisposable` を interface から外し、空 `Dispose()` を削除する（主要解決策）
+2. `WorldActorPresenter.Dispose()` を維持する場合は内に `// cleanup is handled by WorldActorViewRegistry.Dispose() via VContainer` のようなコメントを付けて意図を明示する
+3. または `WorldActorPresenter` に将来 R3 購読を追加する際に `DisposableBag` を追加し、その時点で `Dispose()` も実装する
+4. `WorldActorViewRegistry` が Scoped で Dispose される設計を `docs/design` または LifetimeScope コメントに記録する
 
 根拠となるファイルリスト:
 
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldActorPresenter.cs`（Dispose()）
-- `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldActorViewRegistry.cs`
+- `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldActorViewRegistry.cs`（IDisposable 実装確認済み）
+- `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldLifetimeScope.cs`（Scoped 登録確認済み）
 
 完了条件:
 
-- [ ] `WorldActorPresenter.Dispose()` または `WorldActorViewRegistry` のいずれかが Actor GameObject を適切に Destroy / Clear する
-- [ ] Scene 閉鎖時に Actor GameObject がヒエラルキーに残留しないことを確認済み（PlayMode または DI 解体テスト）
+- [ ] `WorldActorPresenter.Dispose()` の空実装に対して、クリーンアップ責務が `WorldActorViewRegistry` にあることをコメントまたは docs で明示している
+- [ ] 将来 `WorldActorPresenter` が disposable リソースを持つ場合に備え、Dispose 実装のガイドが task または guideline に記録されている
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
 ---
@@ -856,7 +786,7 @@ if (shouldAdvanceTimeDependentSystems && ...)
 }
 ```
 
-pause 中は Actor が移動しないため `ActorSpatialIndexService.dirtyActorIds` が増えず、`DetectCombatEncounterUseCase.BuildDetectionActorIds()` は空のまま早期終了するため実害は小さい。ただし設計意図と実装が乖離しており、将来の変更で pause 中に誤って遭遇検出が走るリスクがある。
+pause 中は新規移動が発生しないため `ActorSpatialIndexService.dirtyActorIds` は通常増えにくく、`DetectCombatEncounterUseCase.BuildDetectionActorIds()` は空またはほぼ空のまま早期終了することが多い。ただし pause 直前フレームで追加された dirty actor が consume されずに残っていた場合は検出が走ることがあり、実害がゼロとは言い切れない。設計意図と実装が乖離しており、将来の変更で pause 中に誤って遭遇検出が走るリスクがある。
 
 原因:
 
