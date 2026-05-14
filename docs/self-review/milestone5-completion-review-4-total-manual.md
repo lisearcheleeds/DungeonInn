@@ -75,23 +75,29 @@ Resolver / Executor から `IEventPublisher` field と no-buffer overload を削
 
 レビュー完了条件に「古い publish overload が消えていること」を含め、`rg "IEventPublisher" Client/Assets/DungeonInn/Runtime/Scripts/Application/Combat` で直接 publish 可能な helper を確認する。
 
-### 3. Debug Log Presenter が広い world state を View 層から直接読んでいる
+### 3. Debug Log Presenter が本番 Presenter として広い world state を View 層から直接読める
 
 重大度: 中
 
 問題:
 
-`WorldGameLogPresenter` が `IGameWorldStateReader` を直接注入し、Actor、Guild、施設予約、所持金などを読みながら表示用ログ文字列を組み立てている。Milestone 5 roadmap は UI 表示を専用 Query / ReadModel / DTO に寄せる方針を定めており、debug build 限定であっても View 層が広い Domain 集約に到達できる状態は境界を曖昧にする。
+`WorldGameLogPresenter` は現状 `Debug.Log` 出力のみを行う開発診断用途のクラスだが、名前・配置・DI 登録上は通常の World Presenter と同じ扱いになっている。その状態で `IGameWorldStateReader` を直接注入し、Actor、Guild、施設予約、所持金などを読みながらログ文字列を組み立てている。
+
+Milestone 5 roadmap は UI 表示を専用 Query / ReadModel / DTO に寄せる方針を定めている。プレイヤー向けログ、通知、履歴 UI、分析などの本番機能として扱う場合、View 層が広い Domain 集約に到達できる状態は境界違反となる。一方、現状の用途が Debug.Log のみであるなら、本番 Presenter に間借りさせるのではなく、`#if DEBUG` でのみコンパイル・DI 登録される diagnostics 専用クラスへ隔離するのが妥当。
 
 > **検証注記（2026-05-14）:** コードを直接確認した結果、`Initialize()` メソッドは `if (!Debug.isDebugBuild) { return; }` で始まり、subscriptions は Debug build 以外では登録されない。ただし DI constructor は常に `IGameWorldStateReader worldState` を受け取り、`OnActorWaitingForInn()`・`OnActorReservedInn()`・`OnItemPickedUp()` 内で `worldState.Guild.GetFacility()`・`worldState.FindActor()` を呼んで補助情報を取得している。実行は Debug build に限定されるが、依存関係と読み取り経路はコード上に常に存在する。完了条件「Debug.isDebugBuild に境界違反の許容を依存していない」はこの状態を指している。
 
 原因:
 
-イベントログに必要な補助情報が event DTO または narrow query として用意されておらず、Presenter が不足情報を `IGameWorldStateReader` から直接補っている。具体的には `ActorWaitingForInn` イベント DTO が `InnFacilityId` のみを持ち、room 数・Gold などを持たないため、Presenter が `worldState` から後引きせざるを得ない。
+開発診断ログと将来の本番ログ UI の責務が分離されていない。現状は Debug.Log 出力だけにもかかわらず、クラス名と登録位置が通常機能の Presenter として見えるため、広い world state 依存が View 層の通常依存として残っている。
+
+また、ログに必要な補助情報が event DTO または narrow query として用意されていないため、Presenter が不足情報を `IGameWorldStateReader` から直接補っている。具体的には `ActorWaitingForInn` イベント DTO が `InnFacilityId` のみを持ち、room 数・Gold などを持たないため、Presenter が `worldState` から後引きせざるを得ない。
 
 解決案:
 
-Debug log 用の narrow read model / query を Application 層に置く。Presenter は `IGameWorldStateReader` ではなく、表示に必要な DTO だけを参照する。イベントに含めるべき事実情報と、Query で後引きする表示補助情報を整理する。
+短期対応として、現行 `WorldGameLogPresenter` は Debug.Log 以外の本番処理を持たないため、`WorldDebugGameLogPresenter` などの diagnostics 専用クラスへリネーム・移動する。クラス本体と `WorldLifetimeScope` の DI 登録を `#if DEBUG` で囲み、Release ビルドではコンパイル・Resolve されない状態にする。広い `IGameWorldStateReader` 依存はこの diagnostics 専用例外として扱い、クラスコメントで「Debug diagnostics only. Do not use for runtime UI.」のように明記する。
+
+将来、プレイヤー向けログ、通知、履歴 UI、分析などを作る場合は、この debug クラスを昇格させず、Application 層に event history / narrow read model / query を新設する。Presenter は `IGameWorldStateReader` ではなく、表示に必要な DTO だけを参照する。イベントに含めるべき事実情報と、Query で後引きする表示補助情報をその時点で整理する。
 
 根拠となるファイルリスト:
 
@@ -102,10 +108,10 @@ Debug log 用の narrow read model / query を Application 層に置く。Presen
 
 完了条件:
 
-- [ ] `WorldGameLogPresenter` が `IGameWorldStateReader` に依存していない
-- [ ] ログ表示に必要な状態は event DTO または narrow Application query / read model から取得される
-- [ ] `Debug.isDebugBuild` に境界違反の許容を依存していない
-- [ ] Debug log 用 query / DTO の責務が docs またはテスト名で明確になっている
+- [ ] 現行 Debug.Log 用途のクラスが `WorldDebugGameLogPresenter` など diagnostics 専用名・専用配置になっている
+- [ ] diagnostics 専用クラス本体と DI 登録が `#if DEBUG` で囲まれ、Release ビルドではコンパイル・Resolve されない
+- [ ] diagnostics 専用クラスに、広い world state 依存が Debug diagnostics 例外であり runtime UI に使わないことがコメントまたは docs で明記されている
+- [ ] 将来プレイヤー向けログ / 通知 / 履歴 UI を作る場合は、event history / narrow Application query / read model を新設する方針が task または docs に記録されている
 
 ### 4. WorldMapViewDataProvider.GetLayers() が毎フレームラムダクロージャを生成する
 
@@ -113,7 +119,9 @@ Debug log 用の narrow read model / query を Application 層に置く。Presen
 
 問題:
 
-`WorldMapViewDataProvider.GetLayers()` は毎フレーム `WorldGameLoopEntryPoint.Update()` → `WorldMapView.UpdateVisuals()` 経由で呼ばれる。内部の `GetOrCreateLayer()` は `Func<GridPosition, WorldMapCellViewKind> resolveCellKind` を受け取り、呼び出しごとに `groundMap`・`DungeonFloor` を捕捉するラムダクロージャを生成している（Ground 用 1 個 + Dungeon Floor 数分）。キャッシュヒット後にラムダの本体は呼び出されないが、ラムダオブジェクト自体は毎フレーム新規生成される。
+`WorldMapViewDataProvider.GetLayers()` は毎フレーム `WorldGameLoopEntryPoint.Update()` → `WorldMapView.UpdateVisuals()` 経由で呼ばれる。内部の `GetOrCreateLayer()` は `Func<GridPosition, WorldMapCellViewKind> resolveCellKind` を受け取り、呼び出し元が `groundMap`・`DungeonFloor` を捕捉するラムダを渡している（Ground 用 1 個 + Dungeon Floor 数分）。
+
+キャッシュヒット後にラムダの本体は呼び出されないが、`position => groundMap.IsWalkable(position)` や `position => ResolveDungeonCellKind(floor, position)` のラムダオブジェクト自体は `GetLayers()` 呼び出しごとに生成される可能性がある。単に private 関数へ切り出しても、`position => ResolveGroundCellKind(groundMap, position)` のように文脈オブジェクトを捕捉するラムダを渡し続ける限りクロージャ生成は残る。
 
 ```csharp
 // GetLayers() 内（毎フレーム）
@@ -129,11 +137,13 @@ layers.Add(GetOrCreateLayer(
 
 原因:
 
-`GetOrCreateLayer()` メソッドシグネチャが `Func<>` を受け取る設計のため、呼び出し元でラムダを記述せざるを得ない。Layer が静的（マップは完成後に変化しない）にもかかわらず、毎フレームクロージャが生成されている。
+`GetOrCreateLayer()` メソッドシグネチャが `Func<>` を受け取る設計のため、呼び出し元で「Layer 種別ごとのセル解決」と「キャッシュ取得」を同じ汎用メソッドに詰め込んでいる。Layer が静的（マップは完成後に変化しない）にもかかわらず、キャッシュ済み Layer に対しても `GetLayers()` 内で捕捉ラムダを作る構造になっている。
 
 解決案:
 
-`GetLayers()` がキャッシュ済みの場合は `viewDataProvider.GetLayers()` 自体を呼ばないか、`WorldMapView` が新規 layer のみを通知ベースで受け取る設計にする。短期対応としては `GetOrCreateLayer()` 内で `if (cachedLayers.TryGetValue(...))` がヒットした場合に即 `return` し、ラムダを評価しない形は維持しつつ、呼び出しコンテキスト（`GetLayers()` 自体）も all-hit のときは早期 `return` を入れる。
+短期対応として、`GetOrCreateLayer()` の `Func<>` 引数をやめ、Ground / Dungeon 用の private 作成メソッドに分ける。各メソッドは冒頭で `cachedLayers.TryGetValue(...)` を確認し、キャッシュ済みならセル生成処理へ入らず即 return する。新規作成が必要な場合だけ、メソッド内の通常ループで `ResolveGroundCellKind(groundMap, position)` / `ResolveDungeonCellKind(floor, position)` を呼ぶ。
+
+つまり、`position => ...` を private 関数に置き換えるだけではなく、ラムダを `Func<>` として渡す構造そのものをなくす。より大きな整理としては、`WorldMapView` が毎フレーム `GetLayers()` を呼ばず、新規 layer 追加時だけ通知または差分取得する設計にする。
 
 根拠となるファイルリスト:
 
@@ -142,12 +152,14 @@ layers.Add(GetOrCreateLayer(
 
 完了条件:
 
-- [ ] `GetLayers()` が全キャッシュヒット時にラムダクロージャを生成しないか、呼び出し自体をスキップできる
+- [ ] `GetOrCreateLayer()` の `Func<GridPosition, WorldMapCellViewKind>` 引数が削除されている
+- [ ] Ground / Dungeon Floor の Layer 作成が private メソッドに分離され、各メソッド冒頭でキャッシュヒット時に即 return する
+- [ ] `GetLayers()` 内に `position => ...` の捕捉ラムダが残っていない
 - [ ] 毎フレームの GC Alloc がラムダ生成由来でゼロになっていることを Profiler で確認済み
 - [ ] Dungeon Floor 追加時にキャッシュが適切に追加されることを EditMode test で確認済み
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
-### 5. DetectCombatEncounterUseCase のイベント発行順序契約が docs にない
+### 5. 戦闘系イベントのフレーム内発行順序契約が docs にない
 
 重大度: 中
 
@@ -157,16 +169,50 @@ layers.Add(GetOrCreateLayer(
 
 `WorldSimulationOrchestrator.AdvanceFrameAsync()` では `detectCombatEncounterUseCase.ExecuteAsync()` が `advanceCombatUseCase.ExecuteAsync()` より先に呼ばれるため、「戦闘遭遇開始イベント → 戦闘未進行」という状態で購読者に通知が届く。`AdventurerBattleRecordService` が `CombatEncounterStarted` で記録を作成し始めると、同フレーム内の `AdvanceCombatUseCase` の `CombatAttackOccurred`（BufferedFlush 後）より先に record 生成が起きる。
 
+この順序自体は「遭遇状態変更」と「攻撃・ダメージ結果」を別イベントとして扱う設計として成立する。問題は、`CombatEncounterStarted` / `CombatEncounterEnded` だけでなく、通常攻撃、projectile、area effect、死亡解決、経験値、ドロップまで含めた戦闘系イベント全体のフレーム内発行順序が `docs/design/game-event-design.md` に契約としてまとまっていない点にある。将来このイベント群を利用する実装者が、同フレーム内の後続イベントが既に届いていると誤解するリスクがある。
+
 原因:
 
-`CombatEncounterStarted/Ended` は「遭遇の開始/終了」を表すため、ダメージ系とは異なり即時通知でも問題ないと判断された可能性があるが、その判断が docs に明記されていない。
+`CombatEncounterStarted/Ended` は「遭遇の開始/終了」を表すため、ダメージ系とは異なり即時通知でも問題ないと判断された可能性があるが、その判断が docs に明記されていない。また、戦闘系イベントの publish 順が各 UseCase / Orchestrator の実装を読まないと分からず、購読者がどのイベント順を前提にしてよいか判断しにくい。
 
 解決案:
 
 > **訂正（Codex レビュー 2026-05-14）:** 旧解決案1「`BufferedEventPublisher` を使い末尾で `Flush()`」は問題を解決しない。`Flush()` を UseCase 末尾で呼んでも `DetectCombatEncounterUseCase` の実行は `advanceCombatUseCase.ExecuteAsync()` より前のまま（`WorldSimulationOrchestrator` の実行順序は変わらない）。`CombatEncounterStarted` が戦闘結果より先に届くという事実は Buffer 統一では変わらない。主要解決策は docs への契約明記。
 
-1. 「`CombatEncounterStarted` / `CombatEncounterEnded` は遭遇状態変更の即時イベントであり、同フレーム内の戦闘結果より先に届く」という発行順契約を `docs/design/game-event-design.md` に明記する（主要解決策）。
-2. もし CombatEncounterStarted を受けた購読者が同フレームの戦闘結果に依存することが問題になるなら、`WorldSimulationOrchestrator` の実行順序（detect → combat → flush）を見直すか、FrameEnd 後の後処理フェーズに遭遇通知を分割する。
+`docs/design/game-event-design.md` に、戦闘系イベントのフレーム内発行順序を契約として記載する。`CombatEncounterStarted` / `CombatEncounterEnded` だけを個別に説明するのではなく、`WorldSimulationOrchestrator.AdvanceFrameAsync()` 内の戦闘関連処理順に沿って、以下を番号付きリストなどの形式で整理する。
+
+1. 遭遇検出フェーズ
+   - `DetectCombatEncounterUseCase`
+   - `CombatEncounterStarted` / `CombatEncounterEnded`
+   - `ActorAiDecisionRecorded(StartCombat)` など
+   - 同フレームの攻撃・ダメージ結果より先に届く
+2. 通常攻撃フェーズ
+   - `AdvanceCombatUseCase`
+   - `CombatAttackOccurred`
+   - 攻撃効果により projectile / area が生成される場合は `ProjectileFired` / `AreaEffectCreated`
+   - UseCase 内では `BufferedEventPublisher` に蓄積し、フェーズ末尾で flush される
+3. 死亡解決フェーズ
+   - 通常攻撃・projectile・area effect の各処理内で対象死亡が確定した場合に実行される
+   - `ExperienceGranted`
+   - `ActorLeveledUp`
+   - `ItemDropped`
+   - `CombatEncounterEnded`
+   - `ActorDefeated`
+   - これらは状態変更後に buffer から順に publish される
+4. Projectile フェーズ
+   - `AdvanceProjectileUseCase`
+   - `ProjectileHit`
+   - 命中時に linked effect があれば追加の `CombatAttackOccurred` / `AreaEffectCreated` 等が続く
+   - フェーズ末尾で flush される
+5. Area Effect フェーズ
+   - `AdvanceAreaEffectUseCase`
+   - `AreaEffectHit`
+   - linked effect があれば追加イベントが続く
+   - フェーズ末尾で flush される
+
+この順序は「購読者がゲーム状態を変更しない」前提の通知順であり、購読者が同フレーム内の後続イベントに依存する処理を書く場合は、設計 docs の順序契約を参照することも明記する。
+
+もし `CombatEncounterStarted` を受けた購読者が同フレームの戦闘結果に依存することが問題になるなら、その時点で `WorldSimulationOrchestrator` の実行順序（detect → combat → flush）を見直すか、FrameEnd 後の後処理フェーズに遭遇通知を分割する。
 
 根拠となるファイルリスト:
 
@@ -177,7 +223,9 @@ layers.Add(GetOrCreateLayer(
 
 完了条件:
 
-- [ ] `CombatEncounterStarted` / `CombatEncounterEnded` の発行タイミングと「同フレーム内の戦闘結果との順序」が `game-event-design.md` に契約として記載されている
+- [ ] `docs/design/game-event-design.md` に戦闘系イベントのフレーム内発行順序が番号付きで記載されている
+- [ ] `CombatEncounterStarted` / `CombatEncounterEnded` が同フレーム内の攻撃・ダメージ結果より先に届くことが明記されている
+- [ ] 通常攻撃 / projectile / area effect / defeat / drop / reward の publish 順が現行コードと一致している
 - [ ] 発行順に依存する購読者（`AdventurerBattleRecordService` 等）の想定が docs と一致している
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
@@ -191,7 +239,7 @@ review-2 で「Milestone 6以降の大規模変更」と判断され、review-3 
 
 再発防止策:
 
-`IActorBehavior` に型別分岐が不要な polymorphic hook（`OnRecover(RecoverContext)` 等）を定義し、Domain コアが具体型を参照しなくて済む設計にする。新規 Behavior 追加時の型チェック分散を CI で警告する仕組みを入れる。
+`IActorBehavior` に型別分岐が不要な polymorphic hook を定義し、Domain コアが具体型を参照しなくて済む設計にする。新規 Behavior 追加時の型チェック分散を CI で警告する仕組みを入れる。
 
 問題:
 
@@ -204,10 +252,21 @@ Domain コアが具体型 Behavior に依存する polymorphic hook が `IActorB
 解決案:
 
 > **訂正（Codex レビュー 2026-05-14）:** 旧解決案1・2 の `IActorBehavior.Kind`/`ActorBehaviorKind` 追加は、`docs/guidelines/domain-design-guidelines.md` 第2節「IActorBehavior に ActorBehaviorType Type を持たせない」と正面衝突するため採用しない。
+>
+> **方針整理（2026-05-15）:** `ActorBehaviorType` ルールは緩和しない。過去にこのルールを置いた理由は、型別分岐で十分な箇所に Runtime Behavior へ enum 識別子を重複保持させる設計を避けるためであり、今回も `Behavior.Type == Adventurer` のような分岐へ置き換えても Domain コアの型別分岐問題は解決しない。`Actor.Recover()` の問題は「Actor が Behavior 具体型を知っていること」であり、`ActorBehaviorType` を追加しても `AdventurerBehavior` キャストが enum switch に変わるだけで本質は残る。
 
-1. `IActorBehavior` に `void OnRecover(RecoverContext context)` のような polymorphic hook を定義し、`Actor.Recover()` が型チェックせずに `Behavior.OnRecover(context)` を呼ぶ。ストレス軽減は `AdventurerBehavior.OnRecover()` の内部で処理する
-2. または `IStressRecoverable` のような capability interface を導入し、`Actor.Recover()` が `if (Behavior is IStressRecoverable recoverable) { recoverable.ReduceStress(...); }` のように具体クラスではなく interface に依存する
-3. どちらの方針を採用するかを `docs/guidelines/domain-design-guidelines.md` に明記する
+採用方針:
+
+1. `IActorBehavior` に `void OnRecovered(int hpAmount, int mpAmount, int fatigueReduction, int stressReduction, int injuryReduction)` を追加する
+2. `Actor.Recover()` は `AdventurerBehavior` へ直接キャストせず、既存の `Recover()` 引数をそのまま `Behavior.OnRecovered(...)` に渡す
+3. `AdventurerBehavior.OnRecovered()` は `stressReduction` を使って `ReduceStress()` を呼ぶ
+4. `MonsterBehavior` / `PetBehavior` / `GuildStaffBehavior` など、現時点で回復時の固有処理を持たない Behavior は no-op 実装にする
+5. `RecoverContext` は現時点では導入しない。将来 `Recover` / `Damage` の hook 引数をまとめて構造化する段階で、`RecoverContext` / `DamageContext` の struct 化を検討する
+6. `docs/guidelines/domain-design-guidelines.md` に、Behavior 固有処理は `ActorBehaviorType` ではなく polymorphic hook で扱う方針を記載する
+
+補足:
+
+`OnRecovered()` へ渡す値は、まずは `Actor.Recover()` に渡された引数をそのまま渡す。実回復量（上限 clamp 後に実際に増えた HP など）を扱う必要が出た場合は、その時点で `RecoverContext` を導入し、要求値と実適用値を名前で分ける。
 
 根拠となるファイルリスト:
 
@@ -218,10 +277,12 @@ Domain コアが具体型 Behavior に依存する polymorphic hook が `IActorB
 
 完了条件:
 
-- [ ] `IActorBehavior` に polymorphic hook（`OnRecover(RecoverContext)` 等）または capability interface（`IStressRecoverable` 等）が定義されている
+- [ ] `IActorBehavior` に `OnRecovered(int hpAmount, int mpAmount, int fatigueReduction, int stressReduction, int injuryReduction)` が定義されている
 - [ ] `Actor.Recover()` が `AdventurerBehavior` に直接キャストしていない
 - [ ] Domain 層のコアコード（Actor / ActorEffects 等）に `is AdventurerBehavior` の型チェックが残っていない
-- [ ] `docs/guidelines/domain-design-guidelines.md` に Behavior 判定の推奨パターンが記載されている
+- [ ] `ActorBehaviorType` / `IActorBehavior.Kind` による Runtime Behavior 判定へ置き換えていない
+- [ ] 回復時固有処理が不要な Behavior は `OnRecovered()` を no-op 実装している
+- [ ] `docs/guidelines/domain-design-guidelines.md` に Behavior 固有処理は polymorphic hook で扱う方針が記載されている
 - [ ] Actor の Behavior 別 Recover / 処理分岐を検証する EditMode test がある
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
@@ -585,23 +646,38 @@ Actor-keyed state の所有者、寿命、cleanup event の共通契約がなく
 
 「Actor-keyed state を追加したら cleanup event と test を必ず書く」ゲートを `application-boundary-guidelines.md` または task template に追加する。
 
-### 3. ActorProfileRegistry が表示名辞書と gameplay snapshot を兼ねている
+### 3. ActorProfileRegistry と探索単位実績の責務境界が未定義
 
 重大度: 中
 
 問題:
 
-`ActorProfile` は `ActorId`、`DisplayName`、`ArchetypeId`、`SpeciesId`、`BehaviorType` を保持し、`WorldGameLogPresenter` の表示名解決と `AdventurerReturnTrackingService` の戦闘帰還判定の両方で使われている。表示用 directory と、削除済み Actor の gameplay snapshot が同じ概念に混ざっている。
+`ActorProfile` は `ActorId`、`DisplayName`、`ArchetypeId`、`SpeciesId`、`BehaviorType` を保持し、`WorldGameLogPresenter` の表示名解決と `AdventurerReturnTrackingService` の戦闘帰還判定の両方で使われている。
+
+恒久的な Actor profile / spawn metadata registry として `ActorProfileRegistry` を持つこと自体は問題ない。`DisplayName`、`ArchetypeId`、`SpeciesId`、生成時 Behavior 種別のような「Actor が生成された時点で確定し、その後も参照したい情報」は、削除済み Actor も含めて保持する価値がある。
+
+問題は、`ActorProfileRegistry` が恒久 profile registry なのか、表示用 directory なのか、探索単位の一時 state holder なのかが docs 上で未定義な点にある。特に「探索開始から今回の探索中に倒したモンスター数」のような run / exploration 単位の状態は、Actor の恒久 profile ではなく、探索開始時に reset される別の state として扱う必要がある。
 
 > **検証注記（2026-05-14）:** コードを直接確認した結果、`AdventurerReturnTrackingService.OnActorDefeated()` が `profileRegistry.TryGetProfile(gameEvent.ActorId, out var profile)` を呼び、`profile.SpeciesId` で倒したモンスターの種族を集計している。これは gameplay logic（帰還判断の素材）として `ActorProfileRegistry` を使う具体的な実例。`WorldGameLogPresenter.GetName()` も同じ registry から `DisplayName` を取得しており、表示用と gameplay 用が同一 registry に混在していることをコードレベルで確認した。
 
 原因:
 
-イベントが ActorId 中心で発行されるため、後から表示名や species / archetype を解決する side channel として registry が導入され、そのまま gameplay lookup にも拡張された。
+イベントが ActorId 中心で発行されるため、後から表示名や species / archetype を解決する side channel として `ActorProfileRegistry` が導入された。その後、倒したモンスターの species 集計のような探索単位の gameplay state も同じ周辺に置かれ、恒久 profile と探索中 achievement の境界が曖昧になった。
 
 解決案:
 
-責務を分ける。表示用途は `ActorDisplayNameDirectory`、削除後も必要な gameplay 情報は `ActorSpawnSnapshotStore` のように命名し、寿命と cleanup / persistence を定義する。単一 registry を維持するなら、表示用ではなく「spawn snapshot store」であることを名前と docs に反映する。
+責務を以下の2つに分ける。
+
+1. `ActorProfileRegistry`
+   - 恒久的な Actor profile / spawn metadata registry として維持する
+   - 保持してよい情報は `ActorId`、`DisplayName`、`ArchetypeId`、`SpeciesId`、生成時 Behavior 種別など、Actor 生成時に確定し、Actor 削除後も参照したい lifetime metadata に限定する
+   - 将来 lifetime aggregate（生成から現在までの総撃破数など）を持つ場合も、探索単位ではなく Actor 生涯累積として意味がある情報に限定する
+2. `ActorExplorationAchievementRegistry`
+   - 探索開始から探索終了までの一時的な実績を保持する registry として新設する
+   - 保持対象は「今回の探索で倒したモンスター数」「今回の探索で倒した種族別カウント」「今回の探索で拾ったアイテム数」など、探索開始時に reset される achievement に限定する
+   - 探索開始時に reset し、探索終了・死亡・退場時に cleanup する
+
+`AdventurerReturnTrackingService` の `defeatedMonsterCountsByActor` は「探索を開始してからの種族別撃破数」として扱うため、恒久 `ActorProfileRegistry` ではなく `ActorExplorationAchievementRegistry` 側へ移す。`dirtyActorIds` は achievement ではなく評価対象 queue / transient flag なので、`AdventurerReturnTrackingService` か別の transient state holder に残し、achievement registry へ混ぜない。
 
 根拠となるファイルリスト:
 
@@ -613,10 +689,13 @@ Actor-keyed state の所有者、寿命、cleanup event の共通契約がなく
 
 完了条件:
 
-- [ ] Profile registry の責務が display-only、snapshot-only、または分割済みとして明確になっている
-- [ ] gameplay code が display profile に依存していない
-- [ ] 削除済み Actor 情報を保持する場合、その persistence / cleanup 方針がテストされている
-- [ ] 新規概念追加ゲートとして既存 Actor / archetype / behavior との差分が docs に記録されている
+- [ ] `ActorProfileRegistry` が恒久的な Actor profile / spawn metadata registry であると docs またはクラスコメントに明記されている
+- [ ] `ActorProfileRegistry` に保持してよい情報が lifetime metadata / lifetime aggregate に限定され、探索単位・戦闘単位・frame 単位の transient state を保持しない契約が明記されている
+- [ ] 探索開始からの実績を保持する `ActorExplorationAchievementRegistry` が新設されている
+- [ ] `defeatedMonsterCountsByActor` 相当の種族別撃破数が `ActorExplorationAchievementRegistry` に移り、探索開始時に reset される
+- [ ] 探索終了・死亡・退場時に `ActorExplorationAchievementRegistry` の該当 Actor entry が cleanup される
+- [ ] `dirtyActorIds` など評価対象 queue / transient flag が achievement registry に混在していない
+- [ ] 恒久 profile と探索単位 achievement の寿命差を検証する EditMode test がある
 
 ### 4. Spawn UseCase に DI を迂回する重複 constructor が残っている
 
@@ -659,77 +738,23 @@ Runtime public constructor は DI で使う 1 系統に統一する。テスト�
 
 ---
 
-### 6. SpawnAdventurerUseCase / SpawnMonsterUseCase のフロントエンド並列構造が継続
+### 6. ~~SpawnAdventurerUseCase / SpawnMonsterUseCase のフロントエンド並列構造が継続~~
 
-重大度: 低
+→ **今回の未解決項目から除外**（2026-05-15）
 
-> **訂正（Codex レビュー 2026-05-14）:** 旧問題文の「どちらも `ActorFactory` を呼んで Actor を生成し、GameWorldState に追加する」は現行コードと異なる。両 UseCase は Actor を生成して返すのみで、GameWorldState への登録は `SpawnScheduledAdventurerOrchestrator`（L95）および対応 Monster Orchestrator が行っている。また `SpawnAdventurerUseCase` は rookie equipment 支給・guild transaction・lifecycle 初期化を持ち、`SpawnMonsterUseCase` との単純重複とは言いにくい。本項目は「将来の Behavior 追加時に統合検討」に downgrade している。
+現行コードでは `SpawnAdventurerUseCase` と `SpawnMonsterUseCase` の責務差が明確にある。両 UseCase は Actor を生成して返すのみで、GameWorldState への登録は `SpawnScheduledAdventurerOrchestrator` および対応 Monster Orchestrator が担っている。また Adventurer 版は rookie equipment 支給、guild transaction 記録、lifecycle 初期化、初期装備 equip、level 条件チェックを持ち、Monster 版との単純重複とは言いにくい。
 
-問題:
-
-review-2 / review-3 で「ActorFactoryCore による共通化は完了、上層 interface が冗長」と指摘され、Factory 層は統合済み。UseCase 層では `SpawnAdventurerUseCase` と `SpawnMonsterUseCase` が引き続き並列に存在する。両 UseCase は内部で `ActorFactory` を呼んで Actor を生成して返し（GameWorldState への登録は Orchestrator が担う）、基本フローは類似しているが、Adventurer 版は rookie equipment 支給・guild transaction・lifecycle 初期化などの固有ロジックを持つ。
-
-今後 NPC / Pet などの Behavior が追加された場合、新しい `SpawnXxxUseCase` が生まれるリスクがある。ただし現時点での機能重複は限定的であり、統合は Milestone 6 の Behavior 設計と合わせて検討する方が適切。
-
-原因:
-
-UseCase 統合は Milestone 6 の移動・AI 整理と合わせて対応する方針で延期されており、追跡は継続中。
-
-解決案:
-
-将来 Behavior 追加が続く場合に `SpawnActorUseCase` への統合を検討する。Behavior 固有の初期化ロジック（装備支給、guild transaction 等）は `IActorSpawnInitializer` のような strategy pattern で分離できる。現時点での強制統合は Adventurer 固有ロジックの位置を不明瞭にするリスクがある。
-
-根拠となるファイルリスト:
-
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/SpawnAdventurerUseCase.cs`
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/SpawnMonsterUseCase.cs`
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/Actors/Spawn/ActorFactory.cs`
-
-完了条件（Milestone 6 統合検討時):
-
-- [ ] 新しい Behavior 追加時に統合が必要かどうかの判断基準が docs に記載されている
-- [ ] 共通化すべき重複が増えた場合に `SpawnActorUseCase` 統合を検討する設計メモが task または guideline にある
-- [ ] 現時点での強制統合は行わない（Adventurer 固有ロジックの位置が不明瞭になるリスクがある）
+今すぐ統合すると Adventurer 固有ロジックの置き場所が曖昧になるため、Milestone 5 完了レビューの修正対象からは外す。NPC / Pet / Staff など新しい Behavior の spawn が増え、UseCase 並列構造が再び問題になった時点で、Milestone 6 以降の Behavior / Spawn 設計レビュー対象として扱う。
 
 ---
 
-### 7. ActorViewDataStore.ConsumeChanges() が内部バッファへの参照を返す
+### 7. ~~ActorViewDataStore.ConsumeChanges() が内部バッファへの参照を返す~~
 
-重大度: 低
+→ **今回の未解決項目から除外**（2026-05-15）
 
-問題:
+`ActorViewDataStore.ConsumeChanges()` は内部フィールド `changedActors` と `removedActorIds` に対して `IReadOnlyList<T>` ビューを返すため、次回 `ConsumeChanges()` 呼び出しで内容が無効になる。ただし現状の呼び出し元は `WorldActorPresenter.UpdateVisuals()` のみであり、同フレーム内で同期的に即時消費している。現時点では実害がなく、GC Alloc 回避を優先した実装として維持する。
 
-`ActorViewDataStore.ConsumeChanges()` は内部フィールド `changedActors` と `removedActorIds` に対して `IReadOnlyList<T>` ビューを返す。次回 `ConsumeChanges()` が呼ばれると `changedActors.Clear()` と `removedActorIds.Clear()` が走るため、呼び出し元が返された参照を次フレームまで保持していると空になる。
-
-```csharp
-// WorldActorPresenter.UpdateVisuals() 内
-var changes = viewDataProvider.ConsumeChanges();  // 内部 List への参照
-foreach (var actor in changes.ChangedActors) { ... }
-// 同フレーム内なら安全だが、非同期処理や他コードが ConsumeChanges() を呼ぶと壊れる
-```
-
-現状は `WorldActorPresenter.UpdateVisuals()` が同フレーム内で消費するため実害はないが、将来の非同期化や複数 Presenter への拡張時に無言の不具合になりうる。
-
-原因:
-
-GC Alloc を避けるために内部バッファをそのまま返している。このパターンは `.Clear()` のタイミングと参照ライフタイムが一致しないと壊れる設計になっている。
-
-解決案:
-
-1. 返す前に `changedActors` / `removedActorIds` を `ReadOnlyCollection` のスナップショットとして返す（GC Alloc 許容）
-2. または `ConsumeChanges()` のコントラクトに「返された参照は次回 ConsumeChanges() 呼び出しで無効になる」を XML コメントで明文化し、呼び出し元に同期消費を強制する
-3. API を `ConsumeChanges(Action<ActorViewData> onChanged, Action<Guid> onRemoved)` コールバック形式に変更し、参照問題を排除する
-
-根拠となるファイルリスト:
-
-- `Client/Assets/DungeonInn/Runtime/Scripts/Application/World/WorldViewDataProviders.cs`（ActorViewDataStore.ConsumeChanges()）
-- `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/World/WorldActorPresenter.cs`（UpdateVisuals()）
-
-完了条件:
-
-- [ ] `ConsumeChanges()` の返却 `IReadOnlyList<T>` が次回 `ConsumeChanges()` 呼び出し後も有効か、無効になる旨がコントラクトに明記されている
-- [ ] `WorldActorPresenter` 以外が `ConsumeChanges()` を呼んだ場合のライフタイム安全性が保証されている
-- [ ] `uloop.cmd compile --project-path Client` が成功している
+将来、`ConsumeChanges()` の結果をフレームをまたいで保持する、非同期処理へ渡す、複数 Presenter / consumer が読む、などの用途が出た場合に再検討する。その時点では、内部バッファ参照の無効化コントラクトを明文化する、snapshot を返す、または callback 形式に変更する。
 
 ## その他総合レビュー
 

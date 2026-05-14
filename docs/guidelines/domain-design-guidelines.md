@@ -542,6 +542,66 @@ public sealed class EntityFactory
 
 ---
 
+## 13. 純粋計算クラスはインスタンスを毎回生成しない
+
+副作用を持たない純粋計算クラス（Calculator / Policy 等）のインスタンスをメソッド呼び出しのたびに `new` するのは禁止する。
+
+解決手段の優先順位は以下の通りとする。
+
+1. **`static` クラスまたは `static` メソッド化する（推奨）** — 状態を持たない計算クラスは `static` が最も明確。Domain 層のクラスは DI フレームワークへの依存を避けるためこちらを選ぶ。
+2. **呼び出し側が共有インスタンスを所有する** — `static` にできない事情がある場合（例: インターフェースを要求される）、呼び出し側クラスのフィールドとして `readonly` インスタンスを保持して再利用する。
+3. **DI でシングルトンとしてインジェクトする** — Application 層以上のクラスで、テスト差し替えや将来の拡張が見込まれる場合に限り採用する。Domain 層のクラスに DI を導入すると Domain 層がフレームワークに依存する問題が生じるため禁止する。
+
+### Before
+
+```csharp
+public sealed class Actor
+{
+    public void RefreshParams()
+    {
+        // NG: 呼び出しのたびに新しいインスタンスを生成する
+        Params = new ActorParamCalculator().Calculate(Stats, equipment, Behavior, Level);
+    }
+}
+```
+
+### After
+
+```csharp
+// 選択肢1: static クラスにする（Domain 層の推奨）
+public static class ActorParamCalculator
+{
+    public static ActorParams Calculate(
+        ActorStats stats, IReadOnlyList<EquipmentMaster> equipment,
+        IActorBehavior behavior, int level) { ... }
+}
+
+// 選択肢2: 呼び出し側がフィールドとして保持する
+public sealed class Actor
+{
+    static readonly ActorParamCalculator calculator = new();
+
+    public void RefreshParams()
+    {
+        Params = calculator.Calculate(Stats, equipment, Behavior, Level);
+    }
+}
+```
+
+### 適用基準
+
+- メソッドに状態がなく（フィールドを持たず）同じ引数で同じ結果を返す計算クラスは `static` にする
+- `new XxxCalculator()` がメソッド本体に出てきたら即座に対象として疑う
+- インターフェース（`IWeaponCalculator` 等）を要求される場合は選択肢2でフィールド共有する
+- DI による Calculator 注入は Application 層のみ。Domain 層には持ち込まない
+
+### DungeonInn Example
+
+`ActorParamCalculator` は状態を持たないため `static` クラスまたは `Actor` のフィールドとして保持する。
+`Actor.RefreshParams()` 内で毎回 `new ActorParamCalculator()` するパターンは禁止。
+
+---
+
 ## レビュー用チェックリスト
 
 ### 命名・分類
@@ -573,3 +633,9 @@ public sealed class EntityFactory
 
 - [ ] Factory が文脈依存の判断まで抱え込みすぎていないか
 - [ ] View / Infrastructure / Framework の都合が Domain に入り込んでいないか
+
+### 純粋計算クラス
+
+- [ ] 状態を持たない Calculator / Policy クラスがメソッド呼び出しのたびに `new` されていないか
+- [ ] Domain 層の Calculator は `static` クラスまたはフィールドとして保持する共有インスタンスになっているか
+- [ ] Domain 層の Calculator に DI を導入してフレームワーク依存を持ち込んでいないか

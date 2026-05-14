@@ -350,6 +350,146 @@ return candidates[Random.Range(0, candidates.Count)];
 
 ---
 
+## 10. 内部バッファを返す API はコントラクトを明示する
+
+メソッドが内部バッファへの参照を返す場合（例: `List<T>` の実体を返す）、「呼び出し後に内部状態が変化する」「呼び出し側はコピーを保持してはならない」などのコントラクトをメソッド名またはコメントで明示する。
+
+代替案として、配列コピー・`ReadOnlyCollection<T>`・immutable snapshot を返す、または callback 形式で同期消費させる設計を検討する。
+`IReadOnlyList<T>` として返すだけでは内部の `List<T>` 実体への参照は同じままであるため、内部バッファ参照問題は解決しない。
+
+### Before
+
+```csharp
+public List<ActorViewData> ConsumeChanges()
+{
+    var result = changedActors;  // NG: 内部バッファをそのまま返している
+    changedActors = new List<ActorViewData>();
+    return result;
+}
+```
+
+### After
+
+```csharp
+// コントラクトを名前で明示: Consume = 呼び出し後に内部バッファがクリアされる
+public ActorViewData[] ConsumeChangesAndClear()
+{
+    var snapshot = changedActors.ToArray();  // コピーを返す
+    changedActors.Clear();
+    return snapshot;
+}
+```
+
+### 適用基準
+
+- メソッド名に「Consume」「Drain」「Flush」など副作用を示す語を含める
+- 返した後も内部バッファが変化する場合はコメントで明記する
+- `IReadOnlyList<T>` ラッピングだけで内部バッファを「安全に」返したと思わない
+
+---
+
+## 11. テスト用コンストラクタを Runtime コードに含めない
+
+DI コンテナによって解決されるクラスに、テスト・互換目的で「DI 管理対象の依存を手動 `new` する互換コンストラクタ」を追加してはならない。
+テストでは DI コンテナ上でテスト用バインディングを行う、またはテスト専用のファクトリ / fixture を用意する。
+
+**理由:** Runtime コードに互換コンストラクタがあると、誤って本番コードから呼ばれるリスクがあり、DI の恩恵（依存の可視化・ライフタイム管理）が崩れる。また、手動 `new` された依存はライフタイムやスコープが DI の管理外になる。
+
+### Before
+
+```csharp
+public sealed class SpawnAdventurerUseCase
+{
+    // DI 経由の正規コンストラクタ
+    public SpawnAdventurerUseCase(IProfileRegistry profileRegistry, IEventPublisher eventBus,
+        CompleteActorSpawnUseCase completeSpawnUseCase) { ... }
+
+    // NG: テスト用に追加した互換コンストラクタ。手動 new で依存を生成している
+    public SpawnAdventurerUseCase(IProfileRegistry profileRegistry, IEventPublisher eventBus)
+    {
+        this.completeSpawnUseCase = new CompleteActorSpawnUseCase(profileRegistry, eventBus);
+    }
+}
+```
+
+### After
+
+```csharp
+// Runtime コードには正規コンストラクタのみ残す
+public sealed class SpawnAdventurerUseCase
+{
+    public SpawnAdventurerUseCase(IProfileRegistry profileRegistry, IEventPublisher eventBus,
+        CompleteActorSpawnUseCase completeSpawnUseCase) { ... }
+}
+
+// テスト側でバインディングを構成する
+container.Register<CompleteActorSpawnUseCase>(Lifetime.Scoped);
+container.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
+```
+
+### 適用基準
+
+- コンストラクタ内で `new` している依存が DI で解決すべきクラスでないか確認する
+- optional パラメータ（`= null`）でデフォルト依存を生成するパターンも同じ問題
+- テスト用 setup は TestLifetimeScope / fixture / test helper に分離する
+
+---
+
+## 12. IDisposable 実装は空にしない
+
+`IDisposable.Dispose()` を空実装（`{ }`）で放置しない。
+購読解除・バッファクリア・ネイティブリソース解放など、実際のクリーンアップが不要であることを確認した上で、その理由をコメントで明示するか、インターフェースの実装そのものを外す。
+
+### Before
+
+```csharp
+public sealed class WorldActorPresenter : IDisposable
+{
+    public void Dispose() { }  // NG: なぜ空なのか不明。実装忘れの可能性がある
+}
+```
+
+### After
+
+```csharp
+// ケース1: 購読解除が必要な場合は実装する
+public sealed class WorldActorPresenter : IDisposable
+{
+    readonly IDisposable subscription;
+    public void Dispose() => subscription.Dispose();
+}
+
+// ケース2: 本当にクリーンアップが不要な場合はインターフェース自体を外す
+public sealed class WorldActorPresenter  // IDisposable を実装しない
+{
+}
+```
+
+### 適用基準
+
+- `Dispose()` が空の場合、「本当に解放すべきリソースがないか」をコードで確認する
+- 購読（`Subscribe`）・バッファ（`List`・`Dictionary`）・非同期トークンを保持しているなら Dispose が必要
+- 「将来の拡張のため」に空 `IDisposable` を置くのは禁止。必要になったときに追加する
+
+---
+
+## 13. 一般パターンに反する設計は設計ドキュメントに根拠を記録する
+
+「一般的なパターンに反するが意図的にそう設計した」箇所（例: 意図的に空のマーカーインターフェース）は、その設計意図と根拠を設計ドキュメントに記録する。
+
+記録がない場合、後続の開発者・レビュアーが「バグ」または「改善余地」と判断して不必要な変更を加えるリスクがある。
+また、レビュー時にも「ドキュメントに記載あり」を根拠として意図的設計を示せるようにする。
+
+**注意:** 「意図的な設計」の記録は、その設計決定の影響範囲を明確にするものでもある。例えば「空マーカーインターフェースは意図的」という記録は「インターフェースを空にしてよい」という意味ではなく、「空であることによって Domain コア側で具体型へのキャストが必要になる問題は別途解決が必要」という認識も合わせて記録する。設計の一側面が意図的であっても、そこから派生する別の問題が免除されるわけではない。
+
+### 適用基準
+
+- コードレビューで「なぜこうなっているのか」の質問が想定されるパターンはドキュメントに記録する
+- 設計意図の記録先: 関連する設計ドキュメント（`docs/design/`）または task ファイルのレビューログ
+- 記録する内容: 「何を意図しているか」「なぜ一般パターンに従わなかったか」「派生する問題と対処方針」
+
+---
+
 ## レビュー用チェックリスト
 
 ### 命名
@@ -393,3 +533,16 @@ return candidates[Random.Range(0, candidates.Count)];
 - [ ] TODO が現在の挙動を仕様と違うものにしていないか
 - [ ] 実挙動・性能に影響する TODO に `TODO(milestone:X):` 形式でマイルストーンを明記したか
 - [ ] マイルストーン完了時に、そのマイルストーン番号の TODO が残っていないか
+
+### API コントラクト・コンストラクタ・IDisposable
+
+- [ ] 内部バッファを返すメソッドのコントラクトが名前またはコメントで明示されているか
+- [ ] `IReadOnlyList<T>` ラッピングだけで内部バッファ参照問題を解決したと思っていないか
+- [ ] DI で解決すべき依存を手動 `new` する互換コンストラクタが Runtime コードに含まれていないか
+- [ ] `IDisposable.Dispose()` が空の場合、クリーンアップ不要であることをコードで確認したか
+- [ ] `Dispose()` が空なら、インターフェース自体を外すか理由をコメントで明記しているか
+
+### 設計記録
+
+- [ ] 一般パターンに反する意図的設計の根拠が設計ドキュメントに記録されているか
+- [ ] 「意図的な設計」の記録が、そこから派生する別の問題への認識も含んでいるか

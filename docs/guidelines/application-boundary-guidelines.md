@@ -121,6 +121,7 @@ public sealed class HandleActorDefeatOrchestrator
 
 - クラス名が UseCase でなくても、他の UseCase を注入して呼ぶ Resolver / Service / Handler はこのルールの対象
 - UseCase 間の処理順序を表現したい場合は、上位 Orchestrator を1つ作り、そこに順序を書く
+- UseCase をまたぐ共通処理はドメインサービスまたは Application Service として切り出し、複数の UseCase から参照する構造にする
 
 ---
 
@@ -293,6 +294,15 @@ eventPublisher.PublishAll(events);  // 状態変更後にまとめて発行
 完了後に `CombatAttackOccurred` / `ActorDefeated` を `IGameEventBus` に Publish する。
 `CombatLogPresenter`（UI表示）はこれを購読するが、ゲームの状態（Actor の HP 等）を変更しない。
 
+### イベント DTO の必須フィールド
+
+イベント DTO には、そのイベントで発生した事実と、その時点で確定している前後状態を含める。
+
+購読側が表示補助や集計用の派生情報を必要とする場合は、イベント DTO に View 都合の値を詰め込まず、narrow query / read model で補完する。
+購読側が広い State を直接読んで補完する設計は避ける。
+
+**理由:** イベントは「起きた事実」の記録であり、表示やビジネスロジックの都合でフィールドを膨らませると、イベントの意味が曖昧になり購読側の依存が複雑化する。
+
 ---
 
 ## 5. イベント購読者はゲームの状態を変更しない
@@ -405,6 +415,7 @@ public sealed class FooStateService : IDisposable
 - Entity 除去 UseCase / Handler を追加したとき、関連する全 Service の cleanup を確認したか
 - `XxxStateService` を追加したとき、どのイベントで cleanup するかを列挙したか
 - cleanup が特定の除去経路だけに偏っていないか
+- 新しい State ホルダーを追加した際は、対象エンティティの全終端経路をドキュメントまたは task コメントに列挙し、全パスに削除処理があることを diff レビューで明示的に確認したか
 
 ### DungeonInn Example
 
@@ -691,11 +702,27 @@ public sealed class EntityStatusPresenter
 }
 ```
 
+### 実行ガードは境界違反の免除ではない
+
+`if (!Debug.isDebugBuild) { return; }` のような実行ガードは「実行を抑制する」だけであり、「境界違反を許可する」条件ではない。
+DI コンストラクタに広い State（例: `IGameWorldStateReader`）への依存が残っている時点で、ビルド設定に関わらずアーキテクチャ境界は崩れている。
+依存の存在と実行の有無は別の問題。実行を抑制しても依存が残れば、リファクタリング・テスト・ポーティングの障壁となる。
+
+**例外（開発診断専用クラス）:** 以下を全て満たす場合に限り、広い State を直接読んでよい。
+
+- クラス名・namespace・配置で Debug / Diagnostics 専用であることが明確
+- クラス本体と DI 登録が `#if DEBUG` で囲まれ、Release ビルドではコンパイル・Resolve されない
+- コメントまたは docs に「Debug diagnostics only」であり runtime UI に使わないことが明記されている
+
+プレイヤー向けログ、通知、履歴 UI、分析などの本番機能に昇格する場合は、diagnostics クラスを流用せず、Application 層の narrow query / read model / DTO を新設する。
+
 ### レビュー観点
 
 - View / Presenter が Application 内部用の広い Reader を直接受け取っていないか
 - `entity.Behavior is XxxBehavior` のような型判断が View 層に入っていないか
 - 表示に必要な情報が DTO / Query として明示されているか
+- `if (!Debug.isDebugBuild)` ガードを根拠に広い State への依存を正当化していないか
+- 診断専用クラスが `#if DEBUG` で囲まれ、Release ビルドでコンパイルされないことを確認したか
 
 ### DungeonInn Example
 
@@ -759,9 +786,12 @@ public sealed class GameLoopEntryPoint : MonoBehaviour
 
 | 種別 | 例 | 実行契機 |
 |---|---|---|
-| Frame Loop | 移動補間、物理更新、戦闘進行 | 毎フレーム必須 |
-| Schedule Tick | 日次処理、定期生成、時間経過回復 | ゲーム内 tick 単位 |
-| Event-Driven | 装備更新、価格再計算、UI 再集計 | 状態変更イベント / dirty flag |
+| Frame Loop | 物理・プロジェクタイル・エリアエフェクト・戦闘進行 | 毎フレーム必須 |
+| Schedule Tick | スポーン・ライフサイクル遷移・時間経過回復 | ゲーム内 tick 単位 |
+| Event-Driven | dirty flag・candidate queue の更新 | 状態変更イベント発生時のみ |
+
+イベント駆動は「処理対象候補の追跡」であり、実際の Domain 変更（死亡処理・アイテム取得・装備更新など）は UseCase の明示実行で行う。
+購読ハンドラ内で直接 Domain State を変更する設計は避ける（§5 参照）。
 
 `Frame Loop` に分類される処理は GC Alloc・LINQ 呼び出し・コレクション生成を原則禁止とする。
 
@@ -859,6 +889,111 @@ foreach (var c in candidates)
 ループ内で `floors.Where(...).OrderByDescending(...).FirstOrDefault()` や `slots.ToList()` が
 呼ばれており、毎フレーム GC Alloc が発生している。
 
+### ループ内で変化しない値はループ外でキャッシュする
+
+ループ・メソッド呼び出しのたびに再計算される値（三角関数・定数の算術結果など）は、変数またはフィールドにキャッシュする。
+特にゲームループから呼ばれる頻度の高いメソッドでは、`Math.Cos` / `Math.Sqrt` などの高コスト演算を毎回実行しない。
+
+ラムダクロージャも同様に毎回ヒープアロケーションが発生する。メソッド引数としてラムダを渡す際、キャッシュヒット後に本体が呼ばれない場合でもラムダオブジェクト自体は生成されるため、ループ外でフィールドにキャッシュするか、早期リターンによってラムダの渡し自体を回避する構造にする。
+
+---
+
+## 17. Registry / Repository クラスは単一責務を守る
+
+Registry / Repository クラスは「登録・取得」のみを担い、副作用（イベント発行・ライフサイクル処理など）を持ってはならない。
+副作用が必要なら UseCase または Application Service に委譲する。
+
+### Before
+
+```csharp
+public sealed class ActorRegistry
+{
+    readonly IEventPublisher eventPublisher;
+
+    public void Register(Actor actor)
+    {
+        actors[actor.Id] = actor;
+        eventPublisher.Publish(new ActorRegistered(actor.Id));  // NG: Registry がイベントを発行している
+    }
+}
+```
+
+### After
+
+```csharp
+// Registry は登録・取得のみ
+public sealed class ActorRegistry
+{
+    public void Register(Actor actor) => actors[actor.Id] = actor;
+    public Actor Find(Guid id) => actors.TryGetValue(id, out var a) ? a : null;
+}
+
+// イベント発行は UseCase の責務
+public sealed class SpawnActorUseCase
+{
+    public void Execute(Actor actor)
+    {
+        actorRegistry.Register(actor);
+        eventPublisher.Publish(new ActorRegistered(actor.Id));
+    }
+}
+```
+
+### 適用基準
+
+- Registry / Repository のメソッド内にイベント発行・ライフサイクル管理・他クラスへの通知がある場合は UseCase に切り出す
+- Registry / Repository は `IDisposable` を実装しない（購読・非同期処理を持ってはならないため）
+
+---
+
+## 18. 新旧イベント API は同一クローズアウトで廃止する
+
+イベント発行に「バッファ付き」「即時」など複数の経路が存在する場合、新 API を導入した時点で旧 API の削除スコープを定義し、新しい API への移行と同じタスク・マイルストーンで完結させる。
+
+旧 API がコードベースに残り続けると、どちらのパスが正しいかが不明確になり誤用が増える。
+
+### 適用基準
+
+- 新 API を PR にマージする際、旧 API の削除 task を同時に作成する
+- 旧 API を「いずれ消す」として残したまま次のマイルストーンに進まない
+- 移行期間中は旧 API の呼び出し元をリストアップし、全て移行が完了していることをレビューで確認する
+
+---
+
+## 19. イベント発行順序はドキュメント化する
+
+複数のイベントが 1 トランザクション内で発行される場合、発行順序と各イベントの発行タイミング（即時 / トランザクション終了後フラッシュ）をコメントまたは設計ドキュメントに明示する。
+
+**理由:** 発行順が暗黙化すると、購読側で依存する順序が壊れたことを検知できない。
+
+```csharp
+// 発行順: 1. ActorDefeated → 2. ItemDropped → 3. ExperienceGranted
+// 全イベントはトランザクション完了後にまとめてフラッシュする
+var events = new List<IGameEvent>();
+defeatResolver.Resolve(worldState, attacker, target, events);
+dropItemUseCase.Execute(target, worldState, events);
+grantExperienceUseCase.Execute(attacker, target, events);
+eventPublisher.PublishAll(events);
+```
+
+### 適用基準
+
+- 1 UseCase / Orchestrator から複数のイベントを発行する場合、その順序をコメントに記録する
+- 即時発行と遅延フラッシュが混在する場合、それぞれ明示する
+
+---
+
+## 20. 同一責務を持つ実装はパフォーマンス特性を統一する
+
+同じ責務（例: スポーン処理）を持つ複数の実装クラスが存在する場合、一方に最適化（LINQ 排除・foreach 化など）を施したなら、他方にも同様の最適化を適用する。
+
+**理由:** 片方だけ最適化された状態は、コードレビューで「なぜ差異があるのか」を判断するコストが生まれ、また最適化されていない実装がベースラインとして使われ続けるリスクがある。
+
+### 適用基準
+
+- 並列に存在する実装クラスの一方を最適化した場合、もう一方への適用を同一 PR に含める
+- 意図的に差異を設ける場合（例: デバッグ用のみ LINQ を許容する）は、コメントで理由を記録する
+
 ---
 
 ## レビュー用チェックリスト
@@ -900,10 +1035,25 @@ foreach (var c in candidates)
 - [ ] `IGameWorldState` を UseCase に渡している場合、読み取りだけなら `IGameWorldStateReader` にできないか
 - [ ] View / Presenter が Application 内部用の広い Reader を直接受け取っていないか
 
+### イベント設計
+
+- [ ] イベント DTO に発生した事実と確定している前後状態が含まれているか
+- [ ] 購読側が narrow query / read model を使わず広い State を直接読んで補完していないか
+- [ ] 複数イベントを発行する UseCase / Orchestrator の発行順序がコメントに記録されているか
+- [ ] 旧 API の削除スコープと移行完了が同一タスク・マイルストーンで定義されているか
+
+### Registry / Repository
+
+- [ ] Registry / Repository のメソッド内にイベント発行・ライフサイクル管理が含まれていないか
+
 ### ゲームループ
 
 - [ ] MonoBehaviour に UseCase の呼び出し順序が書かれていないか
 - [ ] 設計・DI 登録済みの処理が Orchestrator / FrameUseCase 経由で実行パイプラインに実際に接続されているか
 - [ ] ゲームループに追加する処理に実行種別コメントを付けたか（`// [FrameLoop]` 等）
 - [ ] `Frame Loop` に分類した処理で LINQ / `ToList()` / コレクション生成が発生していないか
+- [ ] イベント駆動の購読ハンドラ内で Domain State を直接変更していないか
 - [ ] ゲームループ内の UseCase から発行されたイベントを、同一ループ内の別 UseCase が購読して状態変更していないか
+- [ ] ループ内で毎回 `Math.Cos` / `Math.Sqrt` などの高コスト演算を再実行していないか
+- [ ] ラムダをメソッド引数として毎フレーム生成していないか（フィールドキャッシュまたは早期リターンで回避しているか）
+- [ ] 同一責務の並列実装クラスに同じパフォーマンス最適化が適用されているか
