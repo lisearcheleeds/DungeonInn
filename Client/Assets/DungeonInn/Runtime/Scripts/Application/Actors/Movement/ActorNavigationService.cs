@@ -12,7 +12,9 @@ namespace DungeonInn.Application.Actors.Movement
     public sealed class ActorNavigationService : IActorNavigationService, IDisposable
     {
         readonly Dictionary<Guid, ActorPathState> pathStates = new();
-        readonly List<GridPosition> openSet = new();
+        readonly SortedSet<AStarPathfinder.OpenSetNode> openQueue =
+            new(AStarPathfinder.OpenSetNodeComparer.Instance);
+        readonly HashSet<GridPosition> openSet = new();
         readonly Dictionary<GridPosition, GridPosition> cameFrom = new();
         readonly Dictionary<GridPosition, int> gScore = new();
         readonly Dictionary<GridPosition, int> fScore = new();
@@ -58,6 +60,7 @@ namespace DungeonInn.Application.Actors.Movement
                 isWalkable,
                 startGrid,
                 goalGrid,
+                openQueue,
                 openSet,
                 cameFrom,
                 gScore,

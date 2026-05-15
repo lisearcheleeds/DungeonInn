@@ -18,6 +18,15 @@ namespace DungeonInn.View.Scene.MainScene.World
         public LayerPosition LastPosition { get; private set; }
         public bool HasLastPosition { get; private set; }
 
+        public void Reset(Sprite sprite)
+        {
+            SpriteRenderer.sprite = sprite;
+            SpriteRenderer.flipX = false;
+            Facing = Vector2.down;
+            LastPosition = default;
+            HasLastPosition = false;
+        }
+
         public bool UpdateFacing(LayerPosition position)
         {
             var previousFacing = Facing;

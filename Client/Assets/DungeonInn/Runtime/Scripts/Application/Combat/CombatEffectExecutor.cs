@@ -12,25 +12,12 @@ namespace DungeonInn.Application.Combat
 {
     public sealed class CombatEffectExecutor
     {
-        readonly IEventPublisher eventBus;
         readonly CombatDamageResolver damageResolver;
 
         [Inject]
-        public CombatEffectExecutor(
-            IEventPublisher eventBus,
-            CombatDamageResolver damageResolver)
+        public CombatEffectExecutor(CombatDamageResolver damageResolver)
         {
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.damageResolver = damageResolver ?? throw new ArgumentNullException(nameof(damageResolver));
-        }
-
-        public bool ExecuteAttack(
-            IGameWorldState worldState,
-            Actor attacker,
-            Actor target,
-            WeaponAttackSpec attackSpec)
-        {
-            return ExecuteAttack(worldState, attacker, target, attackSpec, eventBus);
         }
 
         public bool ExecuteAttack(
@@ -86,14 +73,6 @@ namespace DungeonInn.Application.Combat
         public bool ExecuteProjectileHit(
             IGameWorldState worldState,
             ProjectileInstance projectile,
-            Actor target)
-        {
-            return ExecuteProjectileHit(worldState, projectile, target, eventBus);
-        }
-
-        public bool ExecuteProjectileHit(
-            IGameWorldState worldState,
-            ProjectileInstance projectile,
             Actor target,
             IEventPublisher eventPublisher)
         {
@@ -141,14 +120,6 @@ namespace DungeonInn.Application.Combat
                 CombatEffectTriggerType.OnHit,
                 projectile.ExecutionId,
                 eventPublisher);
-        }
-
-        public bool ExecuteAreaHit(
-            IGameWorldState worldState,
-            AreaEffectInstance areaEffect,
-            Actor target)
-        {
-            return ExecuteAreaHit(worldState, areaEffect, target, eventBus);
         }
 
         public bool ExecuteAreaHit(

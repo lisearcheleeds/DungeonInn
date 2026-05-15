@@ -11,7 +11,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
     public sealed class AdventurerReturnTrackingService : IDisposable
     {
         readonly IActorProfileRegistry profileRegistry;
-        readonly Dictionary<Guid, Dictionary<int, int>> defeatedMonsterCountsByActor = new();
+        readonly ActorExplorationAchievementRegistry achievementRegistry;
         readonly HashSet<Guid> dirtyActorIds = new();
         readonly List<Guid> dirtyIdBuffer = new();
         DisposableBag bag;
@@ -19,7 +19,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
         [Inject]
         public AdventurerReturnTrackingService(
             IEventSubscriber eventSubscriber,
-            IActorProfileRegistry profileRegistry)
+            IActorProfileRegistry profileRegistry,
+            ActorExplorationAchievementRegistry achievementRegistry)
         {
             if (eventSubscriber == null)
             {
@@ -27,6 +28,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
 
             this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
+            this.achievementRegistry = achievementRegistry ?? throw new ArgumentNullException(nameof(achievementRegistry));
 
             eventSubscriber.OnEvent<ActorDefeated>()
                 .Subscribe(OnActorDefeated)
@@ -55,6 +57,20 @@ namespace DungeonInn.Application.Actors.Lifecycle
             return dirtyActorIds.Contains(actorId);
         }
 
+        public void CollectDirtyActorIds(List<Guid> results)
+        {
+            if (results == null)
+            {
+                throw new ArgumentNullException(nameof(results));
+            }
+
+            results.Clear();
+            foreach (var actorId in dirtyActorIds)
+            {
+                results.Add(actorId);
+            }
+        }
+
         public void ClearDirty(Guid actorId)
         {
             dirtyActorIds.Remove(actorId);
@@ -79,13 +95,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
         public int GetDefeatedMonsterCount(Guid actorId, int monsterSpeciesId)
         {
-            if (!defeatedMonsterCountsByActor.TryGetValue(actorId, out var defeatedMonsterCounts))
-            {
-                return 0;
-            }
-
-            defeatedMonsterCounts.TryGetValue(monsterSpeciesId, out var count);
-            return count;
+            return achievementRegistry.GetDefeatedMonsterCount(actorId, monsterSpeciesId);
         }
 
         void MarkDirty(Guid actorId)
@@ -96,11 +106,12 @@ namespace DungeonInn.Application.Actors.Lifecycle
         void OnActorDeparted(ActorDeparted gameEvent)
         {
             dirtyActorIds.Remove(gameEvent.ActorId);
-            defeatedMonsterCountsByActor.Remove(gameEvent.ActorId);
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)
         {
+            dirtyActorIds.Remove(gameEvent.ActorId);
+
             if (gameEvent.KillerActorId.HasValue)
             {
                 MarkDirty(gameEvent.KillerActorId.Value);
@@ -116,19 +127,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 return;
             }
 
-            var actorId = gameEvent.KillerActorId.Value;
-            if (!defeatedMonsterCountsByActor.TryGetValue(actorId, out var defeatedMonsterCounts))
-            {
-                defeatedMonsterCounts = new Dictionary<int, int>();
-                defeatedMonsterCountsByActor.Add(actorId, defeatedMonsterCounts);
-            }
-
-            if (!defeatedMonsterCounts.TryGetValue(profile.SpeciesId, out var count))
-            {
-                count = 0;
-            }
-
-            defeatedMonsterCounts[profile.SpeciesId] = count + 1;
+            achievementRegistry.RecordDefeatedMonster(gameEvent.KillerActorId.Value, profile.SpeciesId);
         }
 
         public void Dispose()

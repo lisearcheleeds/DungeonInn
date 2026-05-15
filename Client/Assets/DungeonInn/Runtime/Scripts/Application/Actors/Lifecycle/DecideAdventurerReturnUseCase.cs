@@ -23,18 +23,22 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IEventPublisher eventPublisher;
         readonly AdventurerReturnTrackingService returnTrackingService;
         readonly IItemMasterRepository itemMasterRepository;
+        readonly ActorProcessingCandidateService candidateService;
+        readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
         public DecideAdventurerReturnUseCase(
             IActorCombatService actorCombatService,
             IEventPublisher eventPublisher,
             AdventurerReturnTrackingService returnTrackingService,
-            IItemMasterRepository itemMasterRepository)
+            IItemMasterRepository itemMasterRepository,
+            ActorProcessingCandidateService candidateService)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.returnTrackingService = returnTrackingService ?? throw new ArgumentNullException(nameof(returnTrackingService));
             this.itemMasterRepository = itemMasterRepository ?? throw new ArgumentNullException(nameof(itemMasterRepository));
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
@@ -49,12 +53,14 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 return UniTask.CompletedTask;
             }
 
-            var actors = worldState.Actors;
             var foundDirtyActorIds = new HashSet<Guid>();
-            foreach (var actor in actors)
+            returnTrackingService.CollectDirtyActorIds(actorIdBuffer);
+            foreach (var actorId in actorIdBuffer)
             {
-                if (!returnTrackingService.IsDirty(actor.Id))
+                var actor = worldState.FindActor(actorId);
+                if (actor == null)
                 {
+                    returnTrackingService.ClearDirty(actorId);
                     continue;
                 }
 
@@ -86,6 +92,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
                 actorCombatService.ClearCombatHistory(actor.Id);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
+                candidateService.MarkPostDungeonScheduleCandidates(actor.Id);
                 returnTrackingService.ClearDirty(actor.Id);
 
                 if (returnDecision.GoalCompleted)

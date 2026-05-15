@@ -19,5 +19,14 @@ namespace DungeonInn.Domain.Actor
             SpeciesId = speciesId;
             DropTable = dropTable ?? throw new ArgumentNullException(nameof(dropTable));
         }
+
+        public void OnRecovered(
+            int hpAmount,
+            int mpAmount,
+            int fatigueReduction,
+            int stressReduction,
+            int injuryReduction)
+        {
+        }
     }
 }

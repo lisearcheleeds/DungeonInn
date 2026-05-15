@@ -39,6 +39,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly AdventurerExplorationStateService explorationStateService;
         readonly ActorSpatialIndexService actorSpatialIndexService;
         readonly ActorViewDataStore actorViewDataStore;
+        readonly ActorProcessingCandidateService candidateService;
 
         [Inject]
         public AdvanceActorLifecycleOrchestrator(
@@ -52,7 +53,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IEventPublisher eventPublisher,
             AdventurerExplorationStateService explorationStateService,
             ActorSpatialIndexService actorSpatialIndexService,
-            ActorViewDataStore actorViewDataStore)
+            ActorViewDataStore actorViewDataStore,
+            ActorProcessingCandidateService candidateService)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -76,6 +78,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
             this.actorViewDataStore = actorViewDataStore
                 ?? throw new ArgumentNullException(nameof(actorViewDataStore));
+            this.candidateService = candidateService
+                ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -105,6 +109,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 case AdventurerLifecycleState.Preparing:
                     await PrepareExplorationAsync(actor, behavior, worldState);
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.GoingToDungeon);
+                    candidateService.SyncActor(actor);
                     break;
 
                 case AdventurerLifecycleState.GoingToDungeon:
@@ -153,6 +158,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 actorCombatService.ClearCombatHistory(actor.Id);
                 behavior.ResetExplorationRoomArrivalCount();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Exploring);
+                candidateService.SyncActor(actor);
                 eventPublisher.Publish(new ActorEnteredDungeon(actor.Id, arrivalPosition.LayerId.Value));
             }
         }
@@ -240,6 +246,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 if (GameConstants.AdventurerExplorationRoomArrivalTarget <= behavior.ExplorationRoomArrivalCount)
                 {
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
+                    candidateService.MarkPostDungeonScheduleCandidates(actor.Id);
                 }
             }
         }
@@ -311,6 +318,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     MoveTo(actor, returnPosition);
                     navigationService.InvalidatePath(actor.Id);
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
+                    candidateService.MarkRecoveryCandidate(actor.Id);
+                    candidateService.MarkPostDungeonScheduleCandidates(actor.Id);
                     eventPublisher.Publish(new ActorExitedDungeon(actor.Id));
                     return;
                 }

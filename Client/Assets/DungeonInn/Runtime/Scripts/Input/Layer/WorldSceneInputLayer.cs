@@ -141,13 +141,14 @@ namespace DungeonInn.Input.Layer
         async UniTask ShowInnStatusAsync()
         {
             var status = await getInnEconomyStatusUseCase.ExecuteAsync();
+            var current = status.Current;
             Debug.Log(
-                $"[InnStatus] Day={status.CurrentDay} Guests={status.GuestsToday} " +
-                $"Demand={status.DemandToday} Rejected={status.RejectedGuestsToday} " +
-                $"Occupancy={status.OccupiedRooms}/{status.RoomCapacity} ({status.OccupancyPercent}%) " +
-                $"Sales={status.SalesToday}G Satisfaction={status.SatisfactionDeltaToday:+#;-#;0} " +
-                $"Reputation={status.Reputation} Treasury={status.GuildGold}G " +
-                $"Stock(Sword={status.RookieSwordStock}, Armor={status.RookieArmorStock})");
+                $"[InnStatus] Day={status.CurrentDay} Guests={current.Guests} " +
+                $"Demand={current.Demand} Rejected={current.RejectedGuests} " +
+                $"Occupancy={current.OccupiedRooms}/{current.RoomCapacity} ({current.OccupancyPercent}%) " +
+                $"Sales={current.Sales}G Satisfaction={current.SatisfactionDelta:+#;-#;0} " +
+                $"Reputation={current.Reputation} Treasury={current.GuildGold}G " +
+                $"Stock(Sword={current.RookieSwordStock}, Armor={current.RookieArmorStock})");
         }
     }
 }

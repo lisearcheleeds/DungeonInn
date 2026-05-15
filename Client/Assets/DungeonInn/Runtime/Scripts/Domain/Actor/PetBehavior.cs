@@ -10,5 +10,14 @@ namespace DungeonInn.Domain.Actor
         {
             OwnerActorId = ownerActorId;
         }
+
+        public void OnRecovered(
+            int hpAmount,
+            int mpAmount,
+            int fatigueReduction,
+            int stressReduction,
+            int injuryReduction)
+        {
+        }
     }
 }

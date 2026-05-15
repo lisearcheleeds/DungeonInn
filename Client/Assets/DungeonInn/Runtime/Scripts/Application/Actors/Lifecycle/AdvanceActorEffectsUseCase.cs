@@ -1,5 +1,6 @@
 using DungeonInn.Application.World;
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
@@ -9,9 +10,13 @@ namespace DungeonInn.Application.Actors.Lifecycle
 {
     public sealed class AdvanceActorEffectsUseCase
     {
+        readonly ActorProcessingCandidateService candidateService;
+        readonly List<Guid> actorIdBuffer = new();
+
         [Inject]
-        public AdvanceActorEffectsUseCase()
+        public AdvanceActorEffectsUseCase(ActorProcessingCandidateService candidateService)
         {
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -26,9 +31,21 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 return UniTask.CompletedTask;
             }
 
-            foreach (var actor in worldState.Actors)
+            candidateService.CollectActorEffectCandidates(actorIdBuffer);
+            foreach (var actorId in actorIdBuffer)
             {
+                var actor = worldState.FindActor(actorId);
+                if (actor == null)
+                {
+                    candidateService.RemoveActor(actorId);
+                    continue;
+                }
+
                 AdvanceActorEffects(actor, deltaGameSeconds);
+                if (actor.ActorEffects.Count == 0)
+                {
+                    candidateService.ClearActorEffectCandidate(actor.Id);
+                }
             }
 
             return UniTask.CompletedTask;

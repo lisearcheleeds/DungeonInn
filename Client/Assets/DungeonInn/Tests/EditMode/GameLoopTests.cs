@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
@@ -190,7 +190,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void InitializeGameWorldCreatesGroundDungeonGuildAndInn()
         {
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),
@@ -244,7 +244,8 @@ namespace DungeonInn.Tests.EditMode
                 new NoOpGameEventBus(),
                 new AdventurerExplorationStateService(new NoOpGameEventBus()),
                 spatialIndex,
-                actorViewDataStore);
+                actorViewDataStore,
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
             var before = actor.Position;
 
             for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
@@ -281,7 +282,8 @@ namespace DungeonInn.Tests.EditMode
                 new NoOpGameEventBus(),
                 new AdventurerExplorationStateService(new NoOpGameEventBus()),
                 spatialIndex,
-                actorViewDataStore);
+                actorViewDataStore,
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
 
             for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
@@ -364,7 +366,7 @@ namespace DungeonInn.Tests.EditMode
 
         static GameWorldState CreateInitializedWorldState()
         {
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),
@@ -381,6 +383,15 @@ namespace DungeonInn.Tests.EditMode
                 .GetResult();
 
             return worldState;
+        }
+
+        static GameWorldState CreateWorldState()
+        {
+            return new GameWorldState(
+                new ActorSpatialIndexService(),
+                new ItemSpatialIndexService(),
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                new ActorViewDataStore());
         }
 
         static Actor CreateExploringAdventurer(LayerPosition position)
@@ -428,7 +439,8 @@ namespace DungeonInn.Tests.EditMode
                 new NoOpGameEventBus(),
                 new AdventurerExplorationStateService(new NoOpGameEventBus()),
                 spatialIndex,
-                actorViewDataStore);
+                actorViewDataStore,
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
         }
 
         static SelectDungeonTargetFloorUseCase CreateSelectDungeonTargetFloorUseCase()

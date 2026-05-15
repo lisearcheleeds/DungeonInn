@@ -1,3 +1,4 @@
+#if DEBUG
 using DungeonInn.Application.World;
 using System;
 using DungeonInn.Application.Combat;
@@ -12,7 +13,11 @@ using VContainer.Unity;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
-    public sealed class WorldGameLogPresenter : IInitializable, IDisposable
+    /// <summary>
+    /// Debug diagnostics only. Do not use for runtime UI.
+    /// This class may read broad world state only to enrich Debug.Log output.
+    /// </summary>
+    public sealed class WorldDebugGameLogPresenter : IInitializable, IDisposable
     {
         readonly IEventSubscriber eventSubscriber;
         readonly IGameWorldStateReader worldState;
@@ -21,7 +26,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         DisposableBag bag;
 
         [Inject]
-        public WorldGameLogPresenter(
+        public WorldDebugGameLogPresenter(
             IEventSubscriber eventSubscriber,
             IGameWorldStateReader worldState,
             AdventurerBattleRecordService battleRecordService,
@@ -396,3 +401,4 @@ namespace DungeonInn.View.Scene.MainScene.World
         }
     }
 }
+#endif

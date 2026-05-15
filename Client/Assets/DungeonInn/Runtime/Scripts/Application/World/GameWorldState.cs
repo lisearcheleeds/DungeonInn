@@ -2,7 +2,9 @@ using DungeonInn.Application.World;
 using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Combat;
+using DungeonInn.Application.Items;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Guild;
@@ -27,6 +29,8 @@ namespace DungeonInn.Application.World
         readonly Dictionary<Guid, AreaEffectInstance> areaEffectById = new();
         readonly Dictionary<Guid, int> areaEffectIndexById = new();
         readonly ActorSpatialIndexService actorSpatialIndexService;
+        readonly ItemSpatialIndexService itemSpatialIndexService;
+        readonly ActorProcessingCandidateService actorProcessingCandidateService;
         readonly ActorViewDataStore actorViewDataStore;
 
         public bool IsInitialized { get; private set; }
@@ -43,10 +47,16 @@ namespace DungeonInn.Application.World
         [Inject]
         public GameWorldState(
             ActorSpatialIndexService actorSpatialIndexService,
+            ItemSpatialIndexService itemSpatialIndexService,
+            ActorProcessingCandidateService actorProcessingCandidateService,
             ActorViewDataStore actorViewDataStore)
         {
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+            this.itemSpatialIndexService = itemSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(itemSpatialIndexService));
+            this.actorProcessingCandidateService = actorProcessingCandidateService
+                ?? throw new ArgumentNullException(nameof(actorProcessingCandidateService));
             this.actorViewDataStore = actorViewDataStore
                 ?? throw new ArgumentNullException(nameof(actorViewDataStore));
         }
@@ -80,6 +90,7 @@ namespace DungeonInn.Application.World
             actors.Add(actor);
             actorById[actor.Id] = actor;
             actorSpatialIndexService.SyncActor(actor);
+            actorProcessingCandidateService.SyncActor(actor);
             actorViewDataStore.SyncActor(actor);
         }
 
@@ -93,6 +104,7 @@ namespace DungeonInn.Application.World
             actorById.Remove(actorId);
             RemoveAtSwap(actors, actorIndexById, actorId, actor => actor.Id);
             actorSpatialIndexService.RemoveActor(actorId);
+            actorProcessingCandidateService.RemoveActor(actorId);
             actorViewDataStore.RemoveActor(actorId);
 
             return true;
@@ -119,6 +131,7 @@ namespace DungeonInn.Application.World
             itemIndexById[item.InstanceId] = items.Count;
             items.Add(item);
             itemById[item.InstanceId] = item;
+            itemSpatialIndexService.SyncItem(item);
         }
 
         public bool RemoveItem(Guid instanceId)
@@ -130,6 +143,7 @@ namespace DungeonInn.Application.World
 
             itemById.Remove(instanceId);
             RemoveAtSwap(items, itemIndexById, instanceId, item => item.InstanceId);
+            itemSpatialIndexService.RemoveItem(instanceId);
 
             return true;
         }

@@ -1,16 +1,12 @@
-using DungeonInn.Application.Economy;
-using DungeonInn.Application.Combat;
 using DungeonInn.Application.World;
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
-using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Map;
 using VContainer;
@@ -21,56 +17,21 @@ namespace DungeonInn.Application.Actors.Lifecycle
     {
         readonly IEventPublisher eventPublisher;
         readonly IGameClock gameClock;
-        readonly ChargeInnFeeUseCase chargeInnFeeUseCase;
-        readonly DespawnAdventurerUseCase despawnAdventurerUseCase;
         readonly AdventurerRecoveryStateService recoveryStateService;
+        readonly ActorProcessingCandidateService candidateService;
+        readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
         public RecoverAdventurerAtInnUseCase(
             IEventPublisher eventPublisher,
             IGameClock gameClock,
-            ChargeInnFeeUseCase chargeInnFeeUseCase,
-            DespawnAdventurerUseCase despawnAdventurerUseCase,
-            AdventurerRecoveryStateService recoveryStateService)
+            AdventurerRecoveryStateService recoveryStateService,
+            ActorProcessingCandidateService candidateService)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
-            this.chargeInnFeeUseCase = chargeInnFeeUseCase ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
-            this.despawnAdventurerUseCase = despawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(despawnAdventurerUseCase));
             this.recoveryStateService = recoveryStateService ?? throw new ArgumentNullException(nameof(recoveryStateService));
-        }
-
-        public UniTask EnsureReservationsAsync(IGameWorldState worldState, int currentTick)
-        {
-            if (worldState == null)
-            {
-                throw new ArgumentNullException(nameof(worldState));
-            }
-
-            var guild = worldState.Guild;
-            for (var i = worldState.Actors.Count - 1; 0 <= i; i--)
-            {
-                var actor = worldState.Actors[i];
-                if (actor.Behavior is not AdventurerBehavior behavior)
-                {
-                    continue;
-                }
-
-                if (behavior.LifecycleState != AdventurerLifecycleState.Recovering &&
-                    behavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
-                {
-                    continue;
-                }
-
-                if (!actor.Position.LayerId.Equals(MapLayerId.Ground))
-                {
-                    continue;
-                }
-
-                EnsureInnReservation(worldState, guild, actor, behavior, currentTick);
-            }
-
-            return UniTask.CompletedTask;
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -81,22 +42,31 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
 
             var guild = worldState.Guild;
-            var actors = worldState.Actors;
-
-            foreach (var actor in actors)
+            candidateService.CollectRecoveryCandidates(actorIdBuffer);
+            foreach (var actorId in actorIdBuffer)
             {
+                var actor = worldState.FindActor(actorId);
+                if (actor == null)
+                {
+                    candidateService.RemoveActor(actorId);
+                    continue;
+                }
+
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
+                    candidateService.RemoveActor(actor.Id);
                     continue;
                 }
 
                 if (behavior.LifecycleState != AdventurerLifecycleState.Recovering)
                 {
+                    candidateService.ClearRecoveryCandidate(actor.Id);
                     continue;
                 }
 
                 if (!actor.Position.LayerId.Equals(MapLayerId.Ground))
                 {
+                    candidateService.ClearRecoveryCandidate(actor.Id);
                     continue;
                 }
 
@@ -104,90 +74,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
 
             return UniTask.CompletedTask;
-        }
-
-        void EnsureInnReservation(
-            IGameWorldState worldState,
-            AdventurerGuild guild,
-            Actor actor,
-            AdventurerBehavior behavior,
-            int currentTick)
-        {
-            if (guild.HasActiveInnReservation(actor.Id))
-            {
-                if (behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn)
-                {
-                    behavior.ClearWaitingForInn();
-                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                }
-
-                return;
-            }
-
-            foreach (var facility in guild.Facilities)
-            {
-                if (facility.Type != FacilityType.Inn)
-                {
-                    continue;
-                }
-
-                if (!guild.CanReserveInn(facility.Id))
-                {
-                    ChangeToWaitingForInn(worldState, actor, behavior, facility);
-                    continue;
-                }
-
-                if (!chargeInnFeeUseCase.Execute(actor, guild, facility))
-                {
-                    behavior.ClearWaitingForInn();
-                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
-                    return;
-                }
-
-                guild.ReserveInn(Guid.NewGuid(), actor, facility.Id, currentTick);
-                behavior.ClearWaitingForInn();
-                behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                eventPublisher.Publish(new ActorReservedInn(actor.Id, facility.Id));
-                return;
-            }
-        }
-
-        void ChangeToWaitingForInn(
-            IGameWorldState worldState,
-            Actor actor,
-            AdventurerBehavior behavior,
-            DungeonInn.Domain.Facility.Facility facility)
-        {
-            var wasWaiting = behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn;
-            behavior.StartWaitingForInn(gameClock.CurrentDay);
-
-            var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;
-            if (GameConstants.AdventurerInnWaitDepartureDays <= waitedDays)
-            {
-                despawnAdventurerUseCase.Execute(worldState, actor, waitedDays);
-                return;
-            }
-
-            if (wasWaiting)
-            {
-                return;
-            }
-
-            eventPublisher.Publish(new InnSatisfactionChanged(
-                actor.Id,
-                GameConstants.InnWaitingSatisfactionDelta,
-                InnSatisfactionChangeReason.WaitingForInn));
-            eventPublisher.Publish(new ActorAiDecisionRecorded(
-                actor.Id,
-                AiDecisionType.WaitForInn,
-                AiDecisionReasonType.NoVacantInnRoom,
-                default,
-                facility.Id,
-                0,
-                0,
-                0,
-                0));
-            eventPublisher.Publish(new ActorWaitingForInn(actor.Id, facility.Id));
         }
 
         void TickRecovery(AdventurerGuild guild, Actor actor, AdventurerBehavior behavior, float deltaGameSeconds)
@@ -213,6 +99,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             if (actor.Hp >= actor.Params.MaxHp)
             {
                 recoveryStateService.Remove(actor.Id);
+                candidateService.ClearRecoveryCandidate(actor.Id);
                 guild.ReleaseInnReservation(actor.Id, gameClock.CurrentScheduleTick);
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
                 eventPublisher.Publish(new ActorFullyRecovered(actor.Id));

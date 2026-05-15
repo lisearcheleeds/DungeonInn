@@ -64,5 +64,15 @@ namespace DungeonInn.Domain.Actor
         {
             Stress = Math.Max(0, Stress - Math.Max(0, amount));
         }
+
+        public void OnRecovered(
+            int hpAmount,
+            int mpAmount,
+            int fatigueReduction,
+            int stressReduction,
+            int injuryReduction)
+        {
+            ReduceStress(stressReduction);
+        }
     }
 }

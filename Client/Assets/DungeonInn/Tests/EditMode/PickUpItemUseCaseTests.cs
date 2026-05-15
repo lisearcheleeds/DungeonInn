@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -211,10 +211,58 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(eventBus.GetEvents<ItemPickedUp>().Count, Is.EqualTo(0));
         }
 
+        [Test]
+        public void ManyActorsAndItemsUseExploringCandidateAndNearbyItemOnly()
+        {
+            var (useCase, worldState, eventBus) = CreateContext();
+            const int actorCount = 120;
+            const int itemCount = 120;
+
+            for (var i = 0; i < actorCount; i++)
+            {
+                worldState.RegisterActor(CreateAdventurer(
+                    new LayerPosition(MapLayerId.DungeonFloor(1), i * 3f, 20f),
+                    AdventurerLifecycleState.Returning));
+            }
+
+            for (var i = 0; i < itemCount; i++)
+            {
+                worldState.AddItem(new ItemInstance(
+                    Guid.NewGuid(),
+                    new ItemStack(1001, 1),
+                    new LayerPosition(MapLayerId.DungeonFloor(1), 1000f + i * 3f, 0f)));
+            }
+
+            var actor = CreateAdventurer(
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f),
+                AdventurerLifecycleState.Exploring);
+            var nearbyItem = new ItemInstance(
+                Guid.NewGuid(),
+                new ItemStack(1001, 2),
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0.5f, 0f));
+            worldState.RegisterActor(actor);
+            worldState.AddItem(nearbyItem);
+
+            useCase.Execute(worldState);
+
+            Assert.That(actor.Inventory.Has(new ItemStack(1001, 2)), Is.True);
+            Assert.That(worldState.Items.Count, Is.EqualTo(itemCount));
+            Assert.That(eventBus.GetEvents<ItemPickedUp>().Count, Is.EqualTo(1));
+        }
+
         static (PickUpItemUseCase, GameWorldState, CollectingEventBus) CreateContext()
         {
             var eventBus = new CollectingEventBus();
-            return (new PickUpItemUseCase(eventBus), new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore()), eventBus);
+            var itemSpatialIndexService = new ItemSpatialIndexService();
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            return (
+                new PickUpItemUseCase(eventBus, itemSpatialIndexService, candidateService),
+                new GameWorldState(
+                    new ActorSpatialIndexService(),
+                    itemSpatialIndexService,
+                    candidateService,
+                    new ActorViewDataStore()),
+                eventBus);
         }
 
         static Actor CreateAdventurer(LayerPosition position, AdventurerLifecycleState lifecycleState)

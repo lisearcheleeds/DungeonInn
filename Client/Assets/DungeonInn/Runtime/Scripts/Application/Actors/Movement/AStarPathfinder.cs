@@ -14,12 +14,13 @@ namespace DungeonInn.Application.Actors.Movement
             GridPosition start,
             GridPosition goal)
         {
-            var openSet = new List<GridPosition>();
+            var openQueue = new SortedSet<OpenSetNode>(OpenSetNodeComparer.Instance);
+            var openSet = new HashSet<GridPosition>();
             var cameFrom = new Dictionary<GridPosition, GridPosition>();
             var gScore = new Dictionary<GridPosition, int>();
             var fScore = new Dictionary<GridPosition, int>();
             var path = new List<GridPosition>();
-            return TryFindPath(layer, isWalkable, start, goal, openSet, cameFrom, gScore, fScore, path)
+            return TryFindPath(layer, isWalkable, start, goal, openQueue, openSet, cameFrom, gScore, fScore, path)
                 ? path
                 : null;
         }
@@ -29,12 +30,14 @@ namespace DungeonInn.Application.Actors.Movement
             Func<GridPosition, bool> isWalkable,
             GridPosition start,
             GridPosition goal,
-            List<GridPosition> openSet,
+            SortedSet<OpenSetNode> openQueue,
+            HashSet<GridPosition> openSet,
             Dictionary<GridPosition, GridPosition> cameFrom,
             Dictionary<GridPosition, int> gScore,
             Dictionary<GridPosition, int> fScore,
             List<GridPosition> path)
         {
+            openQueue.Clear();
             openSet.Clear();
             cameFrom.Clear();
             gScore.Clear();
@@ -51,65 +54,69 @@ namespace DungeonInn.Application.Actors.Movement
                 return false;
             }
 
+            var sequence = 0;
             openSet.Add(start);
+            openQueue.Add(new OpenSetNode(start, Heuristic(start, goal), sequence));
             gScore[start] = 0;
             fScore[start] = Heuristic(start, goal);
 
-            while (openSet.Count > 0)
+            while (openQueue.Count > 0)
             {
-                var current = PopLowestF(openSet, fScore);
-
-                if (current.Equals(goal))
+                var current = PopLowestF(openQueue, openSet);
+                if (!current.HasValue)
                 {
-                    ReconstructPath(cameFrom, current, path);
+                    return false;
+                }
+
+                if (current.Value.Equals(goal))
+                {
+                    ReconstructPath(cameFrom, current.Value, path);
                     return true;
                 }
 
                 for (var i = 0; i < Directions.Length; i++)
                 {
                     var (dx, dz) = Directions[i];
-                    var neighbor = new GridPosition(current.X + dx, current.Z + dz);
+                    var neighbor = new GridPosition(current.Value.X + dx, current.Value.Z + dz);
                     if (!layer.Contains(neighbor) || !isWalkable(neighbor))
                     {
                         continue;
                     }
 
-                    var tentativeG = gScore[current] + 1;
+                    var tentativeG = gScore[current.Value] + 1;
                     if (gScore.TryGetValue(neighbor, out var knownG) && tentativeG >= knownG)
                     {
                         continue;
                     }
 
-                    cameFrom[neighbor] = current;
+                    cameFrom[neighbor] = current.Value;
                     gScore[neighbor] = tentativeG;
-                    fScore[neighbor] = tentativeG + Heuristic(neighbor, goal);
-                    if (!openSet.Contains(neighbor))
-                    {
-                        openSet.Add(neighbor);
-                    }
+                    var estimatedTotalCost = tentativeG + Heuristic(neighbor, goal);
+                    fScore[neighbor] = estimatedTotalCost;
+                    openSet.Add(neighbor);
+                    sequence++;
+                    openQueue.Add(new OpenSetNode(neighbor, estimatedTotalCost, sequence));
                 }
             }
 
             return false;
         }
 
-        static GridPosition PopLowestF(List<GridPosition> openSet, Dictionary<GridPosition, int> fScore)
+        static GridPosition? PopLowestF(SortedSet<OpenSetNode> openQueue, HashSet<GridPosition> openSet)
         {
-            var bestIndex = 0;
-            var bestF = fScore.TryGetValue(openSet[0], out var initialScore) ? initialScore : int.MaxValue;
-            for (var i = 1; i < openSet.Count; i++)
+            while (openQueue.Count > 0)
             {
-                var candidateScore = fScore.TryGetValue(openSet[i], out var score) ? score : int.MaxValue;
-                if (candidateScore < bestF)
+                var node = openQueue.Min;
+                openQueue.Remove(node);
+                if (!openSet.Remove(node.Position))
                 {
-                    bestF = candidateScore;
-                    bestIndex = i;
+                    continue;
                 }
+
+                return node.Position;
             }
 
-            var result = openSet[bestIndex];
-            openSet.RemoveAt(bestIndex);
-            return result;
+            return null;
         }
 
         static void ReconstructPath(
@@ -129,6 +136,48 @@ namespace DungeonInn.Application.Actors.Movement
         static int Heuristic(GridPosition first, GridPosition second)
         {
             return Math.Abs(first.X - second.X) + Math.Abs(first.Z - second.Z);
+        }
+
+        public readonly struct OpenSetNode
+        {
+            public GridPosition Position { get; }
+            public int EstimatedTotalCost { get; }
+            public int Sequence { get; }
+
+            public OpenSetNode(GridPosition position, int estimatedTotalCost, int sequence)
+            {
+                Position = position;
+                EstimatedTotalCost = estimatedTotalCost;
+                Sequence = sequence;
+            }
+        }
+
+        public sealed class OpenSetNodeComparer : IComparer<OpenSetNode>
+        {
+            public static readonly OpenSetNodeComparer Instance = new();
+
+            public int Compare(OpenSetNode x, OpenSetNode y)
+            {
+                var estimatedTotalCostComparison = x.EstimatedTotalCost.CompareTo(y.EstimatedTotalCost);
+                if (estimatedTotalCostComparison != 0)
+                {
+                    return estimatedTotalCostComparison;
+                }
+
+                var xComparison = x.Position.X.CompareTo(y.Position.X);
+                if (xComparison != 0)
+                {
+                    return xComparison;
+                }
+
+                var zComparison = x.Position.Z.CompareTo(y.Position.Z);
+                if (zComparison != 0)
+                {
+                    return zComparison;
+                }
+
+                return x.Sequence.CompareTo(y.Sequence);
+            }
         }
     }
 }

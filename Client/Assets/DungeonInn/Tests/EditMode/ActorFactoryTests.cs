@@ -104,11 +104,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var repository = new HardcodedMasterRepository();
             var profileRegistry = new NoOpActorProfileRegistry();
-            var useCase = new SpawnAdventurerUseCase(
-                new ActorFactory(repository),
-                repository,
-                profileRegistry,
-                new NoOpGameEventBus());
+            var useCase = CreateSpawnAdventurerUseCase(repository, profileRegistry, new NoOpGameEventBus());
             var guildInventory = new Inventory(new FixedItemStackLimitResolver());
             guildInventory.Add(new ItemStack(3001, 1));
             guildInventory.Add(new ItemStack(3003, 1));
@@ -141,11 +137,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var repository = new HardcodedMasterRepository();
             var profileRegistry = new RecordingActorProfileRegistry();
-            var useCase = new SpawnAdventurerUseCase(
-                new ActorFactory(repository),
-                repository,
-                profileRegistry,
-                new NoOpGameEventBus());
+            var useCase = CreateSpawnAdventurerUseCase(repository, profileRegistry, new NoOpGameEventBus());
             var guildInventory = new Inventory(new FixedItemStackLimitResolver());
             guildInventory.Add(new ItemStack(3001, 1));
             guildInventory.Add(new ItemStack(3003, 1));
@@ -167,6 +159,17 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(profileRegistry.TryGetProfile(actorId, out var profile), Is.True);
             Assert.That(profile.DisplayName, Is.EqualTo("Alice"));
             Assert.That(profile.ArchetypeId, Is.EqualTo(1));
+        }
+
+        static SpawnAdventurerUseCase CreateSpawnAdventurerUseCase(
+            IMasterRepository repository,
+            IActorProfileRegistry profileRegistry,
+            IEventPublisher eventBus)
+        {
+            return new SpawnAdventurerUseCase(
+                new ActorFactory(repository),
+                repository,
+                new CompleteActorSpawnUseCase(profileRegistry, eventBus));
         }
 
         sealed class NoOpActorProfileRegistry : IActorProfileRegistry

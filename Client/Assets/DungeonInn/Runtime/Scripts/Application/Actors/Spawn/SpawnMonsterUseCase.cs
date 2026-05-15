@@ -24,18 +24,6 @@ namespace DungeonInn.Application.Actors.Spawn
             this.completeActorSpawnUseCase = completeActorSpawnUseCase ?? throw new ArgumentNullException(nameof(completeActorSpawnUseCase));
         }
 
-        public SpawnMonsterUseCase(
-            IActorFactory actorFactory,
-            IMasterRepository masterRepository,
-            DungeonInn.Application.Actors.Profiles.IActorProfileRegistry profileRegistry,
-            DungeonInn.Application.Event.IEventPublisher eventBus)
-            : this(
-                actorFactory,
-                masterRepository,
-                new CompleteActorSpawnUseCase(profileRegistry, eventBus))
-        {
-        }
-
         public UniTask<Actor> ExecuteAsync(ActorFactoryRequest request)
         {
             if (request == null)

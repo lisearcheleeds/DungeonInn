@@ -1,6 +1,7 @@
 using DungeonInn.Application.World;
 using System;
 using System.Collections.Generic;
+using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
@@ -15,12 +16,18 @@ namespace DungeonInn.Application.Actors.Equipment
     {
         readonly IItemMasterRepository masterRepository;
         readonly IEventPublisher eventBus;
+        readonly ActorProcessingCandidateService candidateService;
+        readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
-        public UpdateEquipmentUseCase(IItemMasterRepository masterRepository, IEventPublisher eventBus)
+        public UpdateEquipmentUseCase(
+            IItemMasterRepository masterRepository,
+            IEventPublisher eventBus,
+            ActorProcessingCandidateService candidateService)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public void Execute(IGameWorldState worldState)
@@ -30,10 +37,19 @@ namespace DungeonInn.Application.Actors.Equipment
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            foreach (var actor in worldState.Actors)
+            candidateService.CollectEquipmentCandidates(actorIdBuffer);
+            foreach (var actorId in actorIdBuffer)
             {
+                var actor = worldState.FindActor(actorId);
+                if (actor == null)
+                {
+                    candidateService.RemoveActor(actorId);
+                    continue;
+                }
+
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
+                    candidateService.RemoveActor(actor.Id);
                     continue;
                 }
 
@@ -41,10 +57,12 @@ namespace DungeonInn.Application.Actors.Equipment
                     behavior.LifecycleState != AdventurerLifecycleState.Recovering &&
                     behavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
                 {
+                    candidateService.ClearEquipmentCandidate(actor.Id);
                     continue;
                 }
 
                 UpdateEquipment(actor);
+                candidateService.ClearEquipmentCandidate(actor.Id);
             }
         }
 
@@ -160,6 +178,7 @@ namespace DungeonInn.Application.Actors.Equipment
             }
 
             eventBus.Publish(new EquipmentChanged(actor.Id, slot, previousItemId, bestCandidate.ItemId));
+            candidateService.MarkInventoryChanged(actor.Id);
         }
 
         static int CalculateWeaponScore(EquipmentMaster equipment, WeaponMaster weaponMaster, Actor actor)

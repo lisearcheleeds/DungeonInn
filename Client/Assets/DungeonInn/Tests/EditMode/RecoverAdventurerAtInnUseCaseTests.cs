@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,6 +44,8 @@ namespace DungeonInn.Tests.EditMode
 {
     public sealed class RecoverAdventurerAtInnUseCaseTests
     {
+        static ActorProcessingCandidateService currentCandidateService;
+
         [Test]
         public void RecoveringAdventurerWaitsWhenInnIsFull()
         {
@@ -174,7 +176,7 @@ namespace DungeonInn.Tests.EditMode
             actor.GainItem(new ItemStack(1001, 2));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
-            var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus);
+            var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus, new StubGameClock(), currentCandidateService);
 
             useCase.Execute(worldState);
 
@@ -182,24 +184,34 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(1));
         }
 
-        static RecoverAdventurerAtInnUseCase CreateUseCase(IGameEventBus eventBus)
+        static AdvanceInnRecoveryOrchestrator CreateUseCase(IGameEventBus eventBus)
         {
             return CreateUseCase(eventBus, new StubGameClock());
         }
 
-        static RecoverAdventurerAtInnUseCase CreateUseCase(IGameEventBus eventBus, IGameClock gameClock)
+        static AdvanceInnRecoveryOrchestrator CreateUseCase(IGameEventBus eventBus, IGameClock gameClock)
         {
-            return new RecoverAdventurerAtInnUseCase(
-                eventBus,
-                gameClock,
+            return new AdvanceInnRecoveryOrchestrator(
+                new RecoverAdventurerAtInnUseCase(
+                    eventBus,
+                    gameClock,
+                    new AdventurerRecoveryStateService(eventBus),
+                    currentCandidateService),
                 new ChargeInnFeeUseCase(eventBus),
                 new DespawnAdventurerUseCase(eventBus),
-                new AdventurerRecoveryStateService(eventBus));
+                eventBus,
+                gameClock,
+                currentCandidateService);
         }
 
         static GameWorldState CreateInitializedWorldState()
         {
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            currentCandidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var worldState = new GameWorldState(
+                new ActorSpatialIndexService(),
+                new ItemSpatialIndexService(),
+                currentCandidateService,
+                new ActorViewDataStore());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),

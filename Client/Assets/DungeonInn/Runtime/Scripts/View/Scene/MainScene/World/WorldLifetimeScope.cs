@@ -38,11 +38,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ActorSpriteVisualConfig>(Lifetime.Scoped);
             builder.RegisterInstance(new WorldCameraSettings()).AsSelf();
             builder.Register<WorldMapView>(Lifetime.Scoped);
+            builder.Register<WorldActorViewPool>(Lifetime.Scoped);
             builder.Register<WorldActorViewRegistry>(Lifetime.Scoped);
             builder.Register<WorldActorPresenter>(Lifetime.Scoped);
             builder.Register<WorldCameraController>(Lifetime.Scoped);
             builder.Register<WorldLayerViewController>(Lifetime.Scoped);
-            builder.RegisterEntryPoint<WorldGameLogPresenter>(Lifetime.Scoped);
+#if DEBUG
+            builder.RegisterEntryPoint<WorldDebugGameLogPresenter>(Lifetime.Scoped);
+#endif
 
             builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();
             builder.Register<GameEventHistoryService>(Lifetime.Scoped)
@@ -55,14 +58,17 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .As<IEventSubscriber>()
                 .AsSelf();
             builder.Register<AdventurerBattleRecordService>(Lifetime.Scoped);
+            builder.Register<ActorExplorationAchievementRegistry>(Lifetime.Scoped);
             builder.Register<AdventurerReturnTrackingService>(Lifetime.Scoped);
             builder.Register<AdventurerRecoveryStateService>(Lifetime.Scoped);
+            builder.Register<ActorProcessingCandidateService>(Lifetime.Scoped);
             builder.Register<AdventurerExplorationStateService>(Lifetime.Scoped);
 
             builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
             builder.Register<ActorCombatService>(Lifetime.Scoped).As<IActorCombatService>();
             builder.Register<ActorSpatialIndexService>(Lifetime.Scoped);
+            builder.Register<ItemSpatialIndexService>(Lifetime.Scoped);
 
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
             builder.Register<GameWorldState>(Lifetime.Scoped)
@@ -127,6 +133,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);
             builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<RecoverAdventurerAtInnUseCase>(Lifetime.Scoped);
+            builder.Register<AdvanceInnRecoveryOrchestrator>(Lifetime.Scoped);
             builder.Register<PublishInnDailyReportUseCase>(Lifetime.Scoped);
             builder.Register<PayStaffSalaryUseCase>(Lifetime.Scoped);
             builder.Register<ProcessAdventurerSaleUseCase>(Lifetime.Scoped);

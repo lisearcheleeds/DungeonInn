@@ -14,6 +14,15 @@ namespace DungeonInn.Domain.Actor
             Salary = salary ?? throw new ArgumentNullException(nameof(salary));
         }
 
+        public void OnRecovered(
+            int hpAmount,
+            int mpAmount,
+            int fatigueReduction,
+            int stressReduction,
+            int injuryReduction)
+        {
+        }
+
         public int CalculateFacilityPoint(Actor actor, FacilityType facilityType)
         {
             switch (facilityType)

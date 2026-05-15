@@ -1,10 +1,13 @@
-using DungeonInn.Application.World;
 using System;
+using System.Collections.Generic;
+using DungeonInn.Application.Actors.Lifecycle;
+using DungeonInn.Application.World;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Item;
 using VContainer;
 
 namespace DungeonInn.Application.Items
@@ -12,11 +15,21 @@ namespace DungeonInn.Application.Items
     public sealed class PickUpItemUseCase
     {
         readonly IEventPublisher eventBus;
+        readonly ItemSpatialIndexService itemSpatialIndexService;
+        readonly ActorProcessingCandidateService candidateService;
+        readonly List<Guid> actorIdBuffer = new();
+        readonly List<ItemInstance> itemBuffer = new();
 
         [Inject]
-        public PickUpItemUseCase(IEventPublisher eventBus)
+        public PickUpItemUseCase(
+            IEventPublisher eventBus,
+            ItemSpatialIndexService itemSpatialIndexService,
+            ActorProcessingCandidateService candidateService)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.itemSpatialIndexService = itemSpatialIndexService
+                ?? throw new ArgumentNullException(nameof(itemSpatialIndexService));
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public void Execute(IGameWorldState worldState)
@@ -26,15 +39,25 @@ namespace DungeonInn.Application.Items
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            foreach (var actor in worldState.Actors)
+            candidateService.CollectItemPickupCandidates(actorIdBuffer);
+            foreach (var actorId in actorIdBuffer)
             {
+                var actor = worldState.FindActor(actorId);
+                if (actor == null)
+                {
+                    candidateService.RemoveActor(actorId);
+                    continue;
+                }
+
                 if (actor.Hp <= 0 || actor.Behavior is not AdventurerBehavior behavior)
                 {
+                    candidateService.RemoveActor(actor.Id);
                     continue;
                 }
 
                 if (behavior.LifecycleState != AdventurerLifecycleState.Exploring)
                 {
+                    candidateService.RemoveActor(actor.Id);
                     continue;
                 }
 
@@ -46,9 +69,15 @@ namespace DungeonInn.Application.Items
         {
             var pickupRadius = GameConstants.AdventurerItemPickupRadiusMeters;
             var pickupRadiusSq = pickupRadius * pickupRadius;
-            for (var i = worldState.Items.Count - 1; 0 <= i; i--)
+            var neighborCellRadius = Math.Max(
+                0,
+                (int)Math.Ceiling(pickupRadius / GameConstants.ActorSpatialIndexCellSizeMeters));
+
+            itemBuffer.Clear();
+            itemSpatialIndexService.CollectNearbyItems(actor.Position, neighborCellRadius, itemBuffer);
+            for (var i = itemBuffer.Count - 1; 0 <= i; i--)
             {
-                var item = worldState.Items[i];
+                var item = itemBuffer[i];
                 if (!actor.Position.LayerId.Equals(item.Position.LayerId))
                 {
                     continue;

@@ -95,10 +95,7 @@ namespace DungeonInn.Domain.Actor
             Fatigue = Math.Max(0, Fatigue - Math.Max(0, fatigueReduction));
             InjurySeverity = Math.Max(0, InjurySeverity - Math.Max(0, injuryReduction));
 
-            if (Behavior is AdventurerBehavior adventurerBehavior)
-            {
-                adventurerBehavior.ReduceStress(stressReduction);
-            }
+            Behavior.OnRecovered(hpAmount, mpAmount, fatigueReduction, stressReduction, injuryReduction);
         }
 
         public void ReceiveDamage(int amount)
@@ -367,7 +364,7 @@ namespace DungeonInn.Domain.Actor
 
         void RefreshParams()
         {
-            Params = new ActorParamCalculator().Calculate(Stats, Equipment.All, Behavior, Level);
+            Params = ActorParamCalculator.Calculate(Stats, Equipment.All, Behavior, Level);
             RefreshWeaponAttack();
             RefreshWeaponCombatParams();
         }

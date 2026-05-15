@@ -11,20 +11,11 @@ namespace DungeonInn.Application.Combat
     public sealed class CombatDefeatResolver
     {
         readonly IActorCombatService actorCombatService;
-        readonly IEventPublisher eventBus;
 
         [Inject]
-        public CombatDefeatResolver(
-            IActorCombatService actorCombatService,
-            IEventPublisher eventBus)
+        public CombatDefeatResolver(IActorCombatService actorCombatService)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-        }
-
-        public void Resolve(IGameWorldState worldState, Actor attacker, Actor target)
-        {
-            Resolve(worldState, attacker, target, eventBus);
         }
 
         public void Resolve(IGameWorldState worldState, Actor attacker, Actor target, IEventPublisher eventPublisher)

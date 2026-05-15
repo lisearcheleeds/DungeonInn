@@ -36,17 +36,6 @@ namespace DungeonInn.Application.Combat
             this.dropItemUseCase = dropItemUseCase ?? throw new ArgumentNullException(nameof(dropItemUseCase));
         }
 
-        public void Execute(IGameWorldState worldState, Actor attacker, Actor target)
-        {
-            if (attacker != null)
-            {
-                grantExperienceUseCase.Execute(attacker, target);
-            }
-
-            dropItemUseCase.Execute(target, worldState);
-            combatDefeatResolver.Resolve(worldState, attacker, target);
-        }
-
         public void Execute(IGameWorldState worldState, Actor attacker, Actor target, IEventPublisher eventPublisher)
         {
             if (eventPublisher == null)
@@ -54,13 +43,12 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(eventPublisher));
             }
 
+            combatDefeatResolver.Resolve(worldState, attacker, target, eventPublisher);
+            dropItemUseCase.Execute(target, worldState, eventPublisher);
             if (attacker != null)
             {
                 grantExperienceUseCase.Execute(attacker, target, eventPublisher);
             }
-
-            dropItemUseCase.Execute(target, worldState, eventPublisher);
-            combatDefeatResolver.Resolve(worldState, attacker, target, eventPublisher);
         }
     }
 }

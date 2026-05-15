@@ -122,13 +122,12 @@ namespace DungeonInn.Application.Combat
                 return true;
             }
 
-            var halfAngle = areaEffect.AreaSpec.AngleDegrees * 0.5f;
-            if (90f <= halfAngle)
+            var cos = areaEffect.HalfAngleCos;
+            if (cos <= 0.0)
             {
                 return true;
             }
 
-            var cos = Math.Cos(halfAngle * Math.PI / 180f);
             return distSq * cos * cos <= dz * dz;
         }
     }

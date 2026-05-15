@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,7 +44,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitDealsDamagePublishesEventsAndRemovesProjectile()
         {
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState(new ActorSpatialIndexService());
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceProjectileUseCase(combatService, eventBus);
@@ -67,6 +67,7 @@ namespace DungeonInn.Tests.EditMode
 
             var projectileHits = eventBus.GetEvents<ProjectileHit>();
             var attacks = eventBus.GetEvents<CombatAttackOccurred>();
+            var publishedEvents = eventBus.GetEvents();
             Assert.That(worldState.Projectiles.Count, Is.EqualTo(0));
             Assert.That(target.Hp, Is.EqualTo(43));
             Assert.That(projectileHits.Count, Is.EqualTo(1));
@@ -75,13 +76,18 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(attacks.Count, Is.EqualTo(1));
             Assert.That(attacks[0].Damage, Is.EqualTo(7));
             Assert.That(attacks[0].TargetRemainingHp, Is.EqualTo(43));
+            Assert.That(publishedEvents.Select(gameEvent => gameEvent.GetType()).ToArray(), Is.EqualTo(new[]
+            {
+                typeof(ProjectileHit),
+                typeof(CombatAttackOccurred)
+            }));
         }
 
         [Test]
         public void ProjectileHitCanCreateAreaThatDealsLinkedDirectDamage()
         {
             var spatialIndex = new ActorSpatialIndexService();
-            var worldState = new GameWorldState(spatialIndex, new ActorViewDataStore());
+            var worldState = CreateWorldState(spatialIndex);
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var executor = CreateCombatEffectExecutor(combatService, eventBus);
@@ -139,6 +145,11 @@ namespace DungeonInn.Tests.EditMode
 
             public IReadOnlyList<T> GetEvents<T>() where T : class, IGameEvent
                 => events.OfType<T>().ToList();
+
+            public IReadOnlyList<IGameEvent> GetEvents()
+            {
+                return events.ToArray();
+            }
         }
 
         sealed class ThrowingMasterRepository : IMasterRepository
@@ -177,7 +188,7 @@ namespace DungeonInn.Tests.EditMode
 
         static GrantExperienceUseCase CreateGrantExperienceUseCase(IGameEventBus eventBus)
         {
-            return new GrantExperienceUseCase(new ThrowingMasterRepository(), eventBus);
+            return new GrantExperienceUseCase(new HardcodedMasterRepository(), eventBus);
         }
 
         static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
@@ -189,9 +200,7 @@ namespace DungeonInn.Tests.EditMode
             IActorCombatService combatService,
             IGameEventBus eventBus)
         {
-            return new CombatEffectExecutor(
-                eventBus,
-                new CombatDamageResolver(combatService, eventBus));
+            return new CombatEffectExecutor(new CombatDamageResolver(combatService));
         }
 
         static ActorDefeatOrchestrator CreateActorDefeatOrchestrator(
@@ -199,7 +208,7 @@ namespace DungeonInn.Tests.EditMode
             IGameEventBus eventBus)
         {
             return new ActorDefeatOrchestrator(
-                new CombatDefeatResolver(combatService, eventBus),
+                new CombatDefeatResolver(combatService),
                 CreateGrantExperienceUseCase(eventBus),
                 CreateDropItemUseCase(eventBus));
         }
@@ -212,6 +221,15 @@ namespace DungeonInn.Tests.EditMode
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
                 eventBus);
+        }
+
+        static GameWorldState CreateWorldState(ActorSpatialIndexService actorSpatialIndexService)
+        {
+            return new GameWorldState(
+                actorSpatialIndexService,
+                new ItemSpatialIndexService(),
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                new ActorViewDataStore());
         }
 
         static WeaponAttackSpec CreateProjectileAreaDamageAttackSpec(int damage)

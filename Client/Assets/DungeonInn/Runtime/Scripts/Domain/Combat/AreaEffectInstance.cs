@@ -18,6 +18,7 @@ namespace DungeonInn.Domain.Combat
         public int SourceNodeId { get; }
         public CombatEffectExecutionId ExecutionId { get; }
         public AttackAreaSpec AreaSpec { get; }
+        public double HalfAngleCos { get; }
         public int Damage { get; }
         public float RemainingDurationSeconds { get; private set; }
         public IReadOnlyCollection<Guid> HitActorIds => hitActorIds;
@@ -61,6 +62,7 @@ namespace DungeonInn.Domain.Combat
             SourceNodeId = sourceNodeId;
             ExecutionId = executionId;
             AreaSpec = areaSpec ?? throw new ArgumentNullException(nameof(areaSpec));
+            HalfAngleCos = CalculateHalfAngleCos(areaSpec);
             Damage = Math.Max(0, damage);
             RemainingDurationSeconds = areaSpec.DurationType == AttackAreaDurationType.Duration
                 ? Math.Max(0, areaSpec.DurationTicks)
@@ -109,5 +111,21 @@ namespace DungeonInn.Domain.Combat
         public bool IsExpired => AreaSpec.DurationType == AttackAreaDurationType.Instant
             ? hasApplied
             : RemainingDurationSeconds <= 0f;
+
+        static double CalculateHalfAngleCos(AttackAreaSpec areaSpec)
+        {
+            if (areaSpec.Shape != AttackAreaShape.Fan)
+            {
+                return 0.0;
+            }
+
+            var halfAngle = areaSpec.AngleDegrees * 0.5f;
+            if (90f <= halfAngle)
+            {
+                return 0.0;
+            }
+
+            return Math.Cos(halfAngle * Math.PI / 180.0);
+        }
     }
 }

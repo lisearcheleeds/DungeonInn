@@ -39,9 +39,10 @@ namespace DungeonInn.Application.World
         readonly UseRecoveryItemOrchestrator useRecoveryItemUseCase;
         readonly AdvanceActorEffectsUseCase advanceActorEffectsUseCase;
         readonly DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
-        readonly RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
+        readonly AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator;
         readonly PublishInnDailyReportUseCase publishInnDailyReportUseCase;
 
+        const int ScheduleWorkBudgetPerFrame = 3;
         int aiEvaluationFrameId;
 
         [Inject]
@@ -63,7 +64,7 @@ namespace DungeonInn.Application.World
             UseRecoveryItemOrchestrator useRecoveryItemUseCase,
             AdvanceActorEffectsUseCase advanceActorEffectsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
-            RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
+            AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator,
             PublishInnDailyReportUseCase publishInnDailyReportUseCase)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
@@ -83,7 +84,7 @@ namespace DungeonInn.Application.World
             this.useRecoveryItemUseCase = useRecoveryItemUseCase ?? throw new ArgumentNullException(nameof(useRecoveryItemUseCase));
             this.advanceActorEffectsUseCase = advanceActorEffectsUseCase ?? throw new ArgumentNullException(nameof(advanceActorEffectsUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
-            this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
+            this.advanceInnRecoveryOrchestrator = advanceInnRecoveryOrchestrator ?? throw new ArgumentNullException(nameof(advanceInnRecoveryOrchestrator));
             this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
         }
 
@@ -131,10 +132,10 @@ namespace DungeonInn.Application.World
                 request.CancellationToken.ThrowIfCancellationRequested();
             }
 
-            await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
-            request.CancellationToken.ThrowIfCancellationRequested();
             if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
             {
+                await detectCombatEncounterUseCase.ExecuteAsync(gameWorldState);
+                request.CancellationToken.ThrowIfCancellationRequested();
                 await advanceCombatUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 request.CancellationToken.ThrowIfCancellationRequested();
             }
@@ -163,7 +164,7 @@ namespace DungeonInn.Application.World
 
             if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
             {
-                await recoverAdventurerAtInnUseCase.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
+                await advanceInnRecoveryOrchestrator.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 request.CancellationToken.ThrowIfCancellationRequested();
             }
         }
@@ -172,23 +173,69 @@ namespace DungeonInn.Application.World
             GameLoopTickResult result,
             CancellationToken cancellationToken)
         {
+            var workBudget = new ScheduleWorkBudget(ScheduleWorkBudgetPerFrame);
             await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
             cancellationToken.ThrowIfCancellationRequested();
+            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
             await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
             cancellationToken.ThrowIfCancellationRequested();
+            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
 
             var scheduleDeltaGameSeconds = result.AdvancedScheduleTicks;
             await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, scheduleDeltaGameSeconds);
             cancellationToken.ThrowIfCancellationRequested();
-            await recoverAdventurerAtInnUseCase.EnsureReservationsAsync(gameWorldState, result.CurrentScheduleTick);
+            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
+            await advanceInnRecoveryOrchestrator.EnsureReservationsAsync(gameWorldState, result.CurrentScheduleTick);
             cancellationToken.ThrowIfCancellationRequested();
+            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
 
             updateEquipmentUseCase.Execute(gameWorldState);
+            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
             sellItemsUseCase.Execute(gameWorldState);
+            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
             await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
             cancellationToken.ThrowIfCancellationRequested();
+            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
             await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
             cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        static async UniTask YieldIfBudgetExhaustedAsync(
+            ScheduleWorkBudget workBudget,
+            CancellationToken cancellationToken)
+        {
+            workBudget.Consume();
+            if (!workBudget.IsExhausted)
+            {
+                return;
+            }
+
+            await UniTask.Yield(cancellationToken);
+            workBudget.Reset();
+        }
+
+        sealed class ScheduleWorkBudget
+        {
+            readonly int maxWork;
+            int remainingWork;
+
+            public bool IsExhausted => remainingWork <= 0;
+
+            public ScheduleWorkBudget(int maxWork)
+            {
+                this.maxWork = Math.Max(1, maxWork);
+                remainingWork = this.maxWork;
+            }
+
+            public void Consume()
+            {
+                remainingWork--;
+            }
+
+            public void Reset()
+            {
+                remainingWork = maxWork;
+            }
         }
     }
 }

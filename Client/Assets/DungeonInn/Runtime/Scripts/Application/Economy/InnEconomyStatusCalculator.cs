@@ -17,20 +17,7 @@ namespace DungeonInn.Application.Economy
                 currentDay,
                 statistics);
 
-            return new InnEconomyStatus(
-                currentDay,
-                report.Guests,
-                report.RejectedGuests,
-                report.Demand,
-                report.Sales,
-                report.SatisfactionDelta,
-                report.Reputation,
-                report.OccupiedRooms,
-                report.RoomCapacity,
-                report.OccupancyPercent,
-                report.GuildGold,
-                report.RookieSwordStock,
-                report.RookieArmorStock);
+            return new InnEconomyStatus(report.Day, report.Summary);
         }
 
         public InnDailyReport CalculateDailyReport(
@@ -45,18 +32,19 @@ namespace DungeonInn.Application.Economy
 
             return new InnDailyReport(
                 day,
-                statistics.Guests,
-                statistics.RejectedGuests,
-                statistics.Guests + statistics.RejectedGuests,
-                statistics.Sales,
-                statistics.SatisfactionDelta,
-                economy.Reputation,
-                occupiedRooms,
-                roomCapacity,
-                occupancyPercent,
-                CountGold(worldState),
-                CountItem(worldState, GameConstants.InitialRookieSwordItemId),
-                CountItem(worldState, GameConstants.InitialRookieArmorItemId));
+                new InnEconomySummary(
+                    statistics.Guests,
+                    statistics.RejectedGuests,
+                    statistics.Demand,
+                    statistics.Sales,
+                    statistics.SatisfactionDelta,
+                    economy.Reputation,
+                    occupiedRooms,
+                    roomCapacity,
+                    occupancyPercent,
+                    CountGold(worldState),
+                    CountItem(worldState, GameConstants.InitialRookieSwordItemId),
+                    CountItem(worldState, GameConstants.InitialRookieArmorItemId)));
         }
 
         static int CountItem(IGameWorldStateReader worldState, int itemId)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,7 +44,9 @@ namespace DungeonInn.Tests.EditMode
         public void UsePotionAppliesHealOverTimeActorEffectAndConsumesItem()
         {
             var repository = new HardcodedMasterRepository();
-            var useCase = new UseConsumableItemUseCase(repository);
+            var useCase = new UseConsumableItemUseCase(
+                repository,
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
             var actor = CreateAdventurer(20);
             actor.GainItem(new ItemStack(2001, 1));
 
@@ -60,9 +62,10 @@ namespace DungeonInn.Tests.EditMode
         public void PotionHealsThirtyHpOverTenSeconds()
         {
             var repository = new HardcodedMasterRepository();
-            var useItemUseCase = new UseConsumableItemUseCase(repository);
-            var advanceUseCase = new AdvanceActorEffectsUseCase();
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var useItemUseCase = new UseConsumableItemUseCase(repository, candidateService);
+            var advanceUseCase = new AdvanceActorEffectsUseCase(candidateService);
+            var worldState = CreateWorldState(candidateService);
             var actor = CreateAdventurer(20);
             actor.GainItem(new ItemStack(2001, 1));
             worldState.RegisterActor(actor);
@@ -82,9 +85,10 @@ namespace DungeonInn.Tests.EditMode
         public void ReusingPotionAppendsDurationAndHealAmount()
         {
             var repository = new HardcodedMasterRepository();
-            var useItemUseCase = new UseConsumableItemUseCase(repository);
-            var advanceUseCase = new AdvanceActorEffectsUseCase();
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var useItemUseCase = new UseConsumableItemUseCase(repository, candidateService);
+            var advanceUseCase = new AdvanceActorEffectsUseCase(candidateService);
+            var worldState = CreateWorldState(candidateService);
             var actor = CreateAdventurer(0);
             actor.GainItem(new ItemStack(2001, 2));
             worldState.RegisterActor(actor);
@@ -103,9 +107,10 @@ namespace DungeonInn.Tests.EditMode
         {
             var repository = new HardcodedMasterRepository();
             var eventBus = new CollectingEventBus();
-            var useConsumableItemUseCase = new UseConsumableItemUseCase(repository);
-            var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(repository, useConsumableItemUseCase, eventBus);
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var useConsumableItemUseCase = new UseConsumableItemUseCase(repository, candidateService);
+            var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(repository, useConsumableItemUseCase, eventBus, candidateService);
+            var worldState = CreateWorldState(candidateService);
             var actor = CreateAdventurer(30);
             actor.GainItem(new ItemStack(2001, 1));
             worldState.RegisterActor(actor);
@@ -138,6 +143,15 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(1, "Adventurer"),
                 new AdventurerBehavior(0, AdventurerLifecycleState.Exploring),
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
+        }
+
+        static GameWorldState CreateWorldState(ActorProcessingCandidateService candidateService)
+        {
+            return new GameWorldState(
+                new ActorSpatialIndexService(),
+                new ItemSpatialIndexService(),
+                candidateService,
+                new ActorViewDataStore());
         }
 
         sealed class CollectingEventBus : IGameEventBus

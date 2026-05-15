@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using DungeonInn.Master;
 
 namespace DungeonInn.Domain.Actor
 {
-    public sealed class ActorParamCalculator
+    public static class ActorParamCalculator
     {
-        public ActorParams Calculate(
+        public static ActorParams Calculate(
             ActorStats stats,
             IReadOnlyList<EquipmentMaster> equipmentMasters,
             IActorBehavior behavior,
@@ -29,14 +28,31 @@ namespace DungeonInn.Domain.Actor
             }
 
             var equipment = equipmentMasters ?? Array.Empty<EquipmentMaster>();
-            var equipmentDefense = equipment.Sum(x => x.Defense);
+            var equipmentDefense = 0;
+            var strengthBonus = 0;
+            var dexterityBonus = 0;
+            var constitutionBonus = 0;
+            var intelligenceBonus = 0;
+            var wisdomBonus = 0;
 
-            var bonuses = CollectBonuses(equipment);
-            var str = stats.Strength + GetBonusSum(bonuses, StatType.Strength);
-            var dex = stats.Dexterity + GetBonusSum(bonuses, StatType.Dexterity);
-            var con = stats.Constitution + GetBonusSum(bonuses, StatType.Constitution);
-            var intel = stats.Intelligence + GetBonusSum(bonuses, StatType.Intelligence);
-            var wis = stats.Wisdom + GetBonusSum(bonuses, StatType.Wisdom);
+            for (var i = 0; i < equipment.Count; i++)
+            {
+                var equipmentMaster = equipment[i];
+                equipmentDefense += equipmentMaster.Defense;
+                AddStatBonuses(
+                    equipmentMaster.StatBonuses,
+                    ref strengthBonus,
+                    ref dexterityBonus,
+                    ref constitutionBonus,
+                    ref intelligenceBonus,
+                    ref wisdomBonus);
+            }
+
+            var str = stats.Strength + strengthBonus;
+            var dex = stats.Dexterity + dexterityBonus;
+            var con = stats.Constitution + constitutionBonus;
+            var intel = stats.Intelligence + intelligenceBonus;
+            var wis = stats.Wisdom + wisdomBonus;
 
             return new ActorParams(
                 con * 10 + str * 2 + level * 5 + equipmentDefense,
@@ -47,29 +63,36 @@ namespace DungeonInn.Domain.Actor
                 str + dex + intel);
         }
 
-        static List<StatBonus> CollectBonuses(IReadOnlyList<EquipmentMaster> equipment)
+        static void AddStatBonuses(
+            IReadOnlyList<StatBonus> bonuses,
+            ref int strengthBonus,
+            ref int dexterityBonus,
+            ref int constitutionBonus,
+            ref int intelligenceBonus,
+            ref int wisdomBonus)
         {
-            var result = new List<StatBonus>();
-            foreach (var equipmentMaster in equipment)
+            for (var i = 0; i < bonuses.Count; i++)
             {
-                result.AddRange(equipmentMaster.StatBonuses);
-            }
-
-            return result;
-        }
-
-        static int GetBonusSum(List<StatBonus> bonuses, StatType statType)
-        {
-            var sum = 0;
-            foreach (var bonus in bonuses)
-            {
-                if (bonus.StatType == statType)
+                var bonus = bonuses[i];
+                switch (bonus.StatType)
                 {
-                    sum += bonus.Amount;
+                    case StatType.Strength:
+                        strengthBonus += bonus.Amount;
+                        break;
+                    case StatType.Dexterity:
+                        dexterityBonus += bonus.Amount;
+                        break;
+                    case StatType.Constitution:
+                        constitutionBonus += bonus.Amount;
+                        break;
+                    case StatType.Intelligence:
+                        intelligenceBonus += bonus.Amount;
+                        break;
+                    case StatType.Wisdom:
+                        wisdomBonus += bonus.Amount;
+                        break;
                 }
             }
-
-            return sum;
         }
     }
 }

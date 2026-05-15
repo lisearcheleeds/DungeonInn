@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DungeonInn.Application.Actors.Ai;
 
@@ -95,7 +95,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var actor = CreateAdventurer();
             var useCase = new AdvanceActorAiOrchestrator(
-                new ActorDecisionScheduler(),
+                TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
                 new IActorAiPolicy[] { new ThrowingActorAiPolicy() },
                 new ApplyActorAiDecisionUseCase());
 
@@ -134,7 +134,7 @@ namespace DungeonInn.Tests.EditMode
         static AdvanceActorAiOrchestrator CreateUseCase()
         {
             return new AdvanceActorAiOrchestrator(
-                new ActorDecisionScheduler(),
+                TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
                 new IActorAiPolicy[]
                 {
                     new AdventurerAiPolicy(),

@@ -8,14 +8,18 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldActorViewRegistry : IDisposable
     {
+        readonly WorldActorViewPool actorViewPool;
         readonly MapLayerViewRegistry layerViewRegistry;
         readonly Dictionary<Guid, WorldActorView> actorViews = new();
 
         public int Count => actorViews.Count;
 
         [Inject]
-        public WorldActorViewRegistry(MapLayerViewRegistry layerViewRegistry)
+        public WorldActorViewRegistry(
+            WorldActorViewPool actorViewPool,
+            MapLayerViewRegistry layerViewRegistry)
         {
+            this.actorViewPool = actorViewPool ?? throw new ArgumentNullException(nameof(actorViewPool));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
         }
 
@@ -32,12 +36,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return actorView;
             }
 
-            var actorObject = new GameObject($"Actor_{actorId}");
-            actorObject.name = $"Actor_{actorId}";
-            actorObject.layer = WorldRenderingLayer.Layer;
-            var spriteRenderer = actorObject.AddComponent<SpriteRenderer>();
-            spriteRenderer.sprite = sprite;
-            actorView = new WorldActorView(actorObject, spriteRenderer);
+            actorView = actorViewPool.Rent(actorId, sprite);
             actorViews.Add(actorId, actorView);
             SetActorLayer(actorView, position);
             created = true;
@@ -60,8 +59,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            UnityEngine.Object.Destroy(actorView.ActorObject);
             actorViews.Remove(actorId);
+            actorViewPool.Return(actorView);
         }
 
         public void ForEachActorView(Action<WorldActorView> action)
@@ -81,10 +80,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             foreach (var actorView in actorViews.Values)
             {
-                if (actorView.ActorObject != null)
-                {
-                    UnityEngine.Object.Destroy(actorView.ActorObject);
-                }
+                actorViewPool.Return(actorView);
             }
 
             actorViews.Clear();

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
@@ -29,16 +30,20 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IMasterRepository masterRepository;
         readonly UseConsumableItemUseCase useConsumableItemUseCase;
         readonly IEventPublisher eventBus;
+        readonly ActorProcessingCandidateService candidateService;
+        readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
         public UseRecoveryItemOrchestrator(
             IMasterRepository masterRepository,
             UseConsumableItemUseCase useConsumableItemUseCase,
-            IEventPublisher eventBus)
+            IEventPublisher eventBus,
+            ActorProcessingCandidateService candidateService)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.useConsumableItemUseCase = useConsumableItemUseCase ?? throw new ArgumentNullException(nameof(useConsumableItemUseCase));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState)
@@ -48,34 +53,47 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            foreach (var actor in worldState.Actors)
+            candidateService.CollectRecoveryItemCandidates(actorIdBuffer);
+            foreach (var actorId in actorIdBuffer)
             {
+                var actor = worldState.FindActor(actorId);
+                if (actor == null)
+                {
+                    candidateService.RemoveActor(actorId);
+                    continue;
+                }
+
                 if (actor.Behavior is not AdventurerBehavior behavior ||
                     behavior.LifecycleState != AdventurerLifecycleState.Exploring)
                 {
+                    candidateService.ClearRecoveryItemCandidate(actor.Id);
                     continue;
                 }
 
                 if (GameConstants.AdventurerReturnLowHpRatio < actor.Hp / (float)actor.Params.MaxHp)
                 {
+                    candidateService.ClearRecoveryItemCandidate(actor.Id);
                     continue;
                 }
 
                 var itemId = FindRecoveryItemId(actor);
                 if (itemId < 1)
                 {
+                    candidateService.ClearRecoveryItemCandidate(actor.Id);
                     continue;
                 }
 
                 var actorEffectId = masterRepository.GetItemMaster(itemId).ActorEffectMasterId;
                 if (actor.HasActorEffect(actorEffectId))
                 {
+                    candidateService.ClearRecoveryItemCandidate(actor.Id);
                     continue;
                 }
 
                 var used = await useConsumableItemUseCase.ExecuteAsync(actor, itemId);
                 if (used)
                 {
+                    candidateService.ClearRecoveryItemCandidate(actor.Id);
                     eventBus.Publish(new ActorAiDecisionRecorded(
                         actor.Id,
                         AiDecisionType.UseRecoveryItem,

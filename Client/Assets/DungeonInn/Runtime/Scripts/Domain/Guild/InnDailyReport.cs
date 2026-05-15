@@ -19,33 +19,10 @@ namespace DungeonInn.Domain.Guild
 
         public InnDailyReport(
             int day,
-            int guests,
-            int rejectedGuests,
-            int demand,
-            int sales,
-            int satisfactionDelta,
-            int reputation,
-            int occupiedRooms,
-            int roomCapacity,
-            int occupancyPercent,
-            int guildGold,
-            int rookieSwordStock,
-            int rookieArmorStock)
+            InnEconomySummary summary)
         {
             Day = day;
-            Summary = new InnEconomySummary(
-                guests,
-                rejectedGuests,
-                demand,
-                sales,
-                satisfactionDelta,
-                reputation,
-                occupiedRooms,
-                roomCapacity,
-                occupancyPercent,
-                guildGold,
-                rookieSwordStock,
-                rookieArmorStock);
+            Summary = summary;
         }
     }
 }

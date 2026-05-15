@@ -1,13 +1,34 @@
 using System;
 using System.Collections.Generic;
+using R3;
+using VContainer;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Domain.Actor;
 
 namespace DungeonInn.Application.Actors.Ai
 {
-    public sealed class ActorDecisionScheduler
+    public sealed class ActorDecisionScheduler : IDisposable
     {
         readonly Dictionary<Guid, ActorAiRuntimeState> states = new();
         readonly ActorAiEventDirtyMapper dirtyMapper = new();
+        DisposableBag bag;
+
+        [Inject]
+        public ActorDecisionScheduler(IEventSubscriber eventSubscriber)
+        {
+            if (eventSubscriber == null)
+            {
+                throw new ArgumentNullException(nameof(eventSubscriber));
+            }
+
+            eventSubscriber.OnEvent<ActorDefeated>()
+                .Subscribe(gameEvent => { RemoveState(gameEvent.ActorId); })
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ActorDeparted>()
+                .Subscribe(gameEvent => { RemoveState(gameEvent.ActorId); })
+                .AddTo(ref bag);
+        }
 
         public ActorAiRuntimeState GetOrCreateState(Guid actorId)
         {
@@ -29,6 +50,11 @@ namespace DungeonInn.Application.Actors.Ai
         public void MarkEvent(Guid actorId, ActorAiEventType eventType)
         {
             MarkDirty(actorId, dirtyMapper.Map(eventType));
+        }
+
+        public void RemoveState(Guid actorId)
+        {
+            states.Remove(actorId);
         }
 
         public bool TryGetEvaluationTarget(
@@ -54,6 +80,11 @@ namespace DungeonInn.Application.Actors.Ai
             actor = null;
             runtimeState = null;
             return false;
+        }
+
+        public void Dispose()
+        {
+            bag.Dispose();
         }
     }
 }

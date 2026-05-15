@@ -1,6 +1,7 @@
 using DungeonInn.Application.World;
 using System;
 using System.Collections.Generic;
+using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
@@ -22,21 +23,21 @@ namespace DungeonInn.Application.Economy
         readonly PricePolicy pricePolicy = new();
         readonly ExchangeExecutor exchangeExecutor = new();
         readonly List<ItemStack> sellBuffer = new();
+        readonly ActorProcessingCandidateService candidateService;
+        readonly List<Guid> actorIdBuffer = new();
+        readonly Dictionary<ItemCategory, Facility> saleFacilityByCategory = new();
 
         [Inject]
         public SellItemsUseCase(
             IItemMasterRepository masterRepository,
             IEventPublisher eventBus,
-            IGameClock gameClock)
+            IGameClock gameClock,
+            ActorProcessingCandidateService candidateService)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
-        }
-
-        public SellItemsUseCase(IItemMasterRepository masterRepository, IEventPublisher eventBus)
-            : this(masterRepository, eventBus, new NullGameClock())
-        {
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public void Execute(IGameWorldState worldState)
@@ -46,10 +47,19 @@ namespace DungeonInn.Application.Economy
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            foreach (var actor in worldState.Actors)
+            candidateService.CollectSaleCandidates(actorIdBuffer);
+            foreach (var actorId in actorIdBuffer)
             {
+                var actor = worldState.FindActor(actorId);
+                if (actor == null)
+                {
+                    candidateService.RemoveActor(actorId);
+                    continue;
+                }
+
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
+                    candidateService.RemoveActor(actor.Id);
                     continue;
                 }
 
@@ -57,10 +67,12 @@ namespace DungeonInn.Application.Economy
                     behavior.LifecycleState != AdventurerLifecycleState.Recovering &&
                     behavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
                 {
+                    candidateService.ClearSaleCandidate(actor.Id);
                     continue;
                 }
 
                 SellItems(worldState.Guild, actor);
+                candidateService.ClearSaleCandidate(actor.Id);
             }
         }
 
@@ -121,11 +133,17 @@ namespace DungeonInn.Application.Economy
                 guild.RecordTransaction(transaction);
 
                 eventBus.Publish(new ItemSold(actor.Id, stack, price.Count, actor.Inventory.Gold));
+                candidateService.MarkInventoryChanged(actor.Id);
             }
         }
 
-        static bool TryFindSaleFacility(AdventurerGuild guild, ItemCategory itemCategory, out Facility facility)
+        bool TryFindSaleFacility(AdventurerGuild guild, ItemCategory itemCategory, out Facility facility)
         {
+            if (saleFacilityByCategory.TryGetValue(itemCategory, out facility))
+            {
+                return true;
+            }
+
             if (!TryGetSaleFacilityType(itemCategory, out var facilityType))
             {
                 facility = null;
@@ -137,6 +155,7 @@ namespace DungeonInn.Application.Economy
                 if (candidate.Type == facilityType)
                 {
                     facility = candidate;
+                    saleFacilityByCategory[itemCategory] = facility;
                     return true;
                 }
             }
@@ -187,33 +206,5 @@ namespace DungeonInn.Application.Economy
             return false;
         }
 
-        sealed class NullGameClock : IGameClock
-        {
-            public int TotalScheduleTick => 0;
-            public int CurrentScheduleTick => 0;
-            public int CurrentDay => 0;
-            public int CurrentTickOfDay => 0;
-            public float ElapsedRealTimeSeconds => 0f;
-            public float ElapsedGameTimeSeconds => 0f;
-            public float TimeScale => 1f;
-            public bool IsPaused => false;
-
-            public void SetTimeScale(float timeScale)
-            {
-            }
-
-            public void Pause()
-            {
-            }
-
-            public void Resume()
-            {
-            }
-
-            public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
-            {
-                return new GameClockAdvanceResult(0, Array.Empty<int>());
-            }
-        }
     }
 }

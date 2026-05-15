@@ -10,11 +10,15 @@ namespace DungeonInn.Application.Actors.Lifecycle
     public sealed class UseConsumableItemUseCase
     {
         readonly IMasterRepository masterRepository;
+        readonly ActorProcessingCandidateService candidateService;
 
         [Inject]
-        public UseConsumableItemUseCase(IMasterRepository masterRepository)
+        public UseConsumableItemUseCase(
+            IMasterRepository masterRepository,
+            ActorProcessingCandidateService candidateService)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
         }
 
         public UniTask<bool> ExecuteAsync(Actor actor, int itemId)
@@ -38,6 +42,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
             actor.RemoveItem(itemStack);
             actor.AddActorEffect(masterRepository.GetActorEffectMaster(itemMaster.ActorEffectMasterId));
+            candidateService.MarkActorEffectCandidate(actor.Id);
+            candidateService.MarkInventoryChanged(actor.Id);
             return UniTask.FromResult(true);
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -45,7 +45,7 @@ namespace DungeonInn.Tests.EditMode
         public void DirectAttackDealsDamageWhenTargetIsInWeaponRange()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -58,16 +58,21 @@ namespace DungeonInn.Tests.EditMode
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 
             var attacks = eventBus.GetEvents<CombatAttackOccurred>();
+            var events = eventBus.GetEvents();
             Assert.That(attacks.Count, Is.EqualTo(1));
             Assert.That(attacks[0].Damage, Is.EqualTo(attacker.WeaponCombatParams.AttackSpec.Nodes[0].DamageSpec.Amount));
             Assert.That(target.Hp, Is.EqualTo(50 - attacks[0].Damage));
+            Assert.That(events.Select(gameEvent => gameEvent.GetType()).ToArray(), Is.EqualTo(new[]
+            {
+                typeof(CombatAttackOccurred)
+            }));
         }
 
         [Test]
         public void AttackCooldownPreventsRepeatedAttackUntilEnoughGameSecondsPass()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -93,7 +98,7 @@ namespace DungeonInn.Tests.EditMode
         public void DefeatedTargetIsRemovedFromWorldAndCombatTargetsAreCleared()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -119,7 +124,7 @@ namespace DungeonInn.Tests.EditMode
         public void DefeatEventsArePublishedAfterDefeatTransactionCompletes()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -149,10 +154,43 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void DefeatDropAndRewardEventsArePublishedInOrder()
+        {
+            var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
+            var worldState = CreateWorldState();
+            var combatService = new ActorCombatService();
+            var eventBus = new CollectingGameEventBus();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var attacker = CreateActor(
+                "Attacker",
+                1,
+                new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f),
+                50,
+                1);
+            var target = CreateDroppingMonster(new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
+            worldState.RegisterActor(attacker);
+            worldState.RegisterActor(target);
+            combatService.SetTarget(attacker.Id, target.Id);
+            combatService.SetTarget(target.Id, attacker.Id);
+
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            var events = eventBus.GetEvents();
+            Assert.That(events.Select(gameEvent => gameEvent.GetType()).ToArray(), Is.EqualTo(new[]
+            {
+                typeof(CombatAttackOccurred),
+                typeof(CombatEncounterEnded),
+                typeof(ActorDefeated),
+                typeof(ItemDropped),
+                typeof(ExperienceGranted)
+            }));
+        }
+
+        [Test]
         public void AreaAttackCreatesAreaEffectWithoutImmediateDamage()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = new GameWorldState(new ActorSpatialIndexService(), new ActorViewDataStore());
+            var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
@@ -190,6 +228,11 @@ namespace DungeonInn.Tests.EditMode
 
             public IReadOnlyList<T> GetEvents<T>() where T : class, IGameEvent
                 => events.OfType<T>().ToList();
+
+            public IReadOnlyList<IGameEvent> GetEvents()
+            {
+                return events.ToArray();
+            }
 
             public void Clear() => events.Clear();
         }
@@ -240,7 +283,7 @@ namespace DungeonInn.Tests.EditMode
 
         static GrantExperienceUseCase CreateGrantExperienceUseCase(IGameEventBus eventBus)
         {
-            return new GrantExperienceUseCase(new ThrowingMasterRepository(), eventBus);
+            return new GrantExperienceUseCase(new HardcodedMasterRepository(), eventBus);
         }
 
         static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
@@ -252,9 +295,7 @@ namespace DungeonInn.Tests.EditMode
             IActorCombatService combatService,
             IGameEventBus eventBus)
         {
-            return new CombatEffectExecutor(
-                eventBus,
-                new CombatDamageResolver(combatService, eventBus));
+            return new CombatEffectExecutor(new CombatDamageResolver(combatService));
         }
 
         static ActorDefeatOrchestrator CreateActorDefeatOrchestrator(
@@ -262,7 +303,7 @@ namespace DungeonInn.Tests.EditMode
             IGameEventBus eventBus)
         {
             return new ActorDefeatOrchestrator(
-                new CombatDefeatResolver(combatService, eventBus),
+                new CombatDefeatResolver(combatService),
                 CreateGrantExperienceUseCase(eventBus),
                 CreateDropItemUseCase(eventBus));
         }
@@ -283,6 +324,15 @@ namespace DungeonInn.Tests.EditMode
                 new ActorViewDataStore());
         }
 
+        static GameWorldState CreateWorldState()
+        {
+            return new GameWorldState(
+                new ActorSpatialIndexService(),
+                new ItemSpatialIndexService(),
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                new ActorViewDataStore());
+        }
+
         sealed class ZeroGameRandom : IGameRandom
         {
             public int Next() => 0;
@@ -292,9 +342,14 @@ namespace DungeonInn.Tests.EditMode
 
         static Actor CreateActor(string name, int factionId, LayerPosition position, int hp)
         {
+            return CreateActor(name, factionId, position, hp, 0);
+        }
+
+        static Actor CreateActor(string name, int factionId, LayerPosition position, int hp, int archetypeId)
+        {
             return new Actor(
                 Guid.NewGuid(),
-                0,
+                archetypeId,
                 new ActorStats(5, 5, 5, 5, 5, 5),
                 new Inventory(new FixedItemStackLimitResolver()),
                 1,
@@ -307,6 +362,26 @@ namespace DungeonInn.Tests.EditMode
                 position,
                 new ActorFaction(factionId, $"Faction {factionId}"),
                 new AdventurerBehavior(0),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
+        }
+
+        static Actor CreateDroppingMonster(LayerPosition position, int hp)
+        {
+            return new Actor(
+                Guid.NewGuid(),
+                0,
+                new ActorStats(5, 5, 5, 5, 5, 5),
+                new Inventory(new FixedItemStackLimitResolver()),
+                1,
+                10,
+                hp,
+                10,
+                0,
+                0,
+                1,
+                position,
+                new ActorFaction(2, "Faction 2"),
+                new MonsterBehavior(1, new[] { new ActorDropEntry(1001, 1f, 1, 1) }),
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
     }

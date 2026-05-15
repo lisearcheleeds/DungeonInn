@@ -11,8 +11,6 @@ using DungeonInn.Application.Economy;
 using DungeonInn.Application.Facilities;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
-
-using System.Linq;
 using Cysharp.Threading.Tasks;
 
 using DungeonInn.Application.GameLoop;
@@ -56,7 +54,15 @@ namespace DungeonInn.Application.Actors.Spawn
             worldState.SpawnSchedule.LastAdventurerSpawnTick = currentScheduleTick;
 
             // TODO: Spawn limit should come from guild level.
-            var adventurerCount = worldState.Actors.Count(x => x.Behavior is AdventurerBehavior);
+            var adventurerCount = 0;
+            foreach (var worldActor in worldState.Actors)
+            {
+                if (worldActor.Behavior is AdventurerBehavior)
+                {
+                    adventurerCount++;
+                }
+            }
+
             if (adventurerCount >= GameConstants.InitialMaxAdventurerCount)
             {
                 return null;
@@ -103,24 +109,37 @@ namespace DungeonInn.Application.Actors.Spawn
 
         SpawnTableEntryMaster SelectAdventurerSpawnEntry(IGameWorldState worldState, SpawnTableMaster spawnTable)
         {
-            var entries = spawnTable.Entries
-                .Where(entry =>
+            var totalWeight = 0;
+            foreach (var entry in spawnTable.Entries)
+            {
+                var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetMasterId);
+                if (adventurerSpawnMaster.SpawnOnce &&
+                    worldState.SpawnSchedule.HasSpawnedAdventurerSpawn(adventurerSpawnMaster.Id))
                 {
-                    var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetMasterId);
-                    return !adventurerSpawnMaster.SpawnOnce ||
-                        !worldState.SpawnSchedule.HasSpawnedAdventurerSpawn(adventurerSpawnMaster.Id);
-                })
-                .ToArray();
-            if (entries.Length == 0)
+                    continue;
+                }
+
+                totalWeight += entry.Weight;
+            }
+
+            if (totalWeight <= 0)
             {
                 return null;
             }
 
-            var totalWeight = entries.Sum(entry => entry.Weight);
             var roll = gameRandom.Next(totalWeight);
             var currentWeight = 0;
-            foreach (var entry in entries)
+            SpawnTableEntryMaster fallbackEntry = null;
+            foreach (var entry in spawnTable.Entries)
             {
+                var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetMasterId);
+                if (adventurerSpawnMaster.SpawnOnce &&
+                    worldState.SpawnSchedule.HasSpawnedAdventurerSpawn(adventurerSpawnMaster.Id))
+                {
+                    continue;
+                }
+
+                fallbackEntry = entry;
                 currentWeight += entry.Weight;
                 if (roll < currentWeight)
                 {
@@ -128,7 +147,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 }
             }
 
-            return entries[entries.Length - 1];
+            return fallbackEntry;
         }
 
         GridPosition PickRandomEdgePosition()

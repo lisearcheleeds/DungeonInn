@@ -11,35 +11,11 @@ namespace DungeonInn.Application.Combat
     public sealed class CombatDamageResolver
     {
         readonly IActorCombatService actorCombatService;
-        readonly IEventPublisher eventBus;
 
         [Inject]
-        public CombatDamageResolver(
-            IActorCombatService actorCombatService,
-            IEventPublisher eventBus)
+        public CombatDamageResolver(IActorCombatService actorCombatService)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
-            this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-        }
-
-        public bool ApplyDamage(IGameWorldState worldState, Actor attacker, Actor target, int damage)
-        {
-            if (worldState == null)
-            {
-                throw new ArgumentNullException(nameof(worldState));
-            }
-
-            if (attacker == null)
-            {
-                throw new ArgumentNullException(nameof(attacker));
-            }
-
-            return ApplyDamage(worldState, attacker.Id, attacker, target, damage, eventBus);
-        }
-
-        public bool ApplyDamage(IGameWorldState worldState, Guid attackerActorId, Actor attacker, Actor target, int damage)
-        {
-            return ApplyDamage(worldState, attackerActorId, attacker, target, damage, eventBus);
         }
 
         public bool ApplyDamage(

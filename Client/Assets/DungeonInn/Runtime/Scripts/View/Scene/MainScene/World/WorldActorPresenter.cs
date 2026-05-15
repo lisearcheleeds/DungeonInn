@@ -1,12 +1,11 @@
-using DungeonInn.Application.World;
 using System;
-using System.Collections.Generic;
+using DungeonInn.Application.World;
 using DungeonInn.Application.GameLoop;
 using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
-    public sealed class WorldActorPresenter : IDisposable
+    public sealed class WorldActorPresenter
     {
         readonly IActorViewDataProvider viewDataProvider;
         readonly LayerPositionViewMapper positionMapper;
@@ -89,10 +88,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             lastCameraYawDegrees = cameraYawDegrees;
             hasLastCameraYawDegrees = true;
-        }
-
-        public void Dispose()
-        {
         }
 
         static bool IsSamePosition(DungeonInn.Domain.Map.LayerPosition first, DungeonInn.Domain.Map.LayerPosition second)
