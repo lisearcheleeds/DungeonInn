@@ -50,7 +50,7 @@
 |---|---|---|
 | **UseCase** | 単一ユースケースを実行する。ステートレス。他 UseCase を呼ばない | `IDisposable` を実装する / 状態を持つ |
 | **Service** | 長期状態を保持する。`IDisposable` を実装。イベントを購読して状態を更新する | UseCase を注入して呼ぶ |
-| **Orchestrator** | UseCase を定義された順序で呼ぶ。順序制御上の分岐は持ってよい | Domain 判断・業務ルール計算を自身に抱え込む |
+| **Orchestrator** | UseCase を定義された順序で呼ぶ。順序制御上の分岐は持ってよい | Domain 判断・業務ルール計算を自身に抱え込む / コンストラクタパラメータ数を理由に分割する |
 
 DungeonInn では、新規実装の命名を以下に統一する。
 
@@ -63,6 +63,10 @@ DungeonInn では、新規実装の命名を以下に統一する。
 
 Orchestrator が持ってよい分岐は「成功・失敗に応じた次 UseCase の選択」程度に留める。
 戦闘勝敗の判定・料金計算・ビジネスルールの評価を Orchestrator 内で直接計算するのは NG。
+
+Orchestrator はコンストラクタパラメータ数の制約を持たない。
+「複数の UseCase を束ねる」ことが責務であるため、調整対象の UseCase 数が多くなるのは性質上自然であり、パラメータ数を根拠に分割してはならない。
+分割が正当化されるのは「自然なドメイン境界が生まれた場合」（例: 戦闘パイプラインが独立した上位概念として確立された場合）のみで、パラメータ削減自体を目的にしない。
 
 ```csharp
 // Before: UseCase が状態を持ち、IDisposable を実装している
@@ -457,7 +461,8 @@ public sealed class FooStateService : IDisposable
 ### DungeonInn Example
 
 `AdventurerExplorationStateService` / `AdventurerRecoveryStateService` は
-`ActorDefeated`（死亡）では cleanup しているが、`ActorDeparted`（帰還）時の cleanup が未実装。
+`ActorDefeated`（死亡）・`ActorDeparted`（帰還）の両方で cleanup を実装済み（Milestone 5 対応済み）。
+Entity-keyed state を持つ Service を追加するときは、全削除経路への cleanup 実装を設計時に確認すること。
 
 ---
 
@@ -935,7 +940,62 @@ foreach (var c in candidates)
 
 ---
 
-## 17. Registry / Repository クラスは単一責務を守る
+## 17. Frame Loop で一度きりの差分検出を polling しない
+
+Frame Loop は「毎フレーム必要な処理」だけを実行する。
+初期化済みかどうか、新しい layer / entity / chunk が増えたかどうか、といった一度きりまたは低頻度の差分検出を毎フレーム全件走査で行うと、データ数が増えるほど不要な CPU コストが積み上がる。
+
+### Before
+
+```csharp
+public void UpdateVisuals()
+{
+    foreach (var layer in viewDataProvider.GetLayers())
+    {
+        if (scheduledLayerIds.Contains(layer.Id))
+        {
+            continue;
+        }
+
+        EnqueueLayerBuild(layer);
+    }
+
+    BuildQueuedChunks(maxPerFrame);
+}
+```
+
+### After
+
+```csharp
+public void RefreshLayersIfDirty()
+{
+    if (!viewDataProvider.TryConsumeLayerRevision(out var layers))
+    {
+        return;
+    }
+
+    foreach (var layer in layers)
+    {
+        EnqueueLayerBuild(layer);
+    }
+}
+
+public void UpdateVisuals()
+{
+    BuildQueuedChunks(maxPerFrame);
+}
+```
+
+### 適用基準
+
+- Frame Loop に残してよいのは、移動、物理、projectile、area effect、pending queue の一定量消化など、毎フレーム必要な処理
+- 新規 layer / entity / UI item の追加検出は、event、revision、dirty flag、明示 refresh のいずれかで行う
+- `scheduledIds` などで重複処理を防いでいても、毎フレーム全件確認が残るなら polling として扱う
+- 差分検出を View に置く場合でも、Application 側に表示専用 DTO / DataProvider / revision を用意し、View が Domain 集約を直接走査しない
+
+---
+
+## 18. Registry / Repository クラスは単一責務を守る
 
 Registry / Repository クラスは「登録・取得」のみを担い、副作用（イベント発行・ライフサイクル処理など）を持ってはならない。
 副作用が必要なら UseCase または Application Service に委譲する。
@@ -983,7 +1043,7 @@ public sealed class SpawnActorUseCase
 
 ---
 
-## 18. 新旧イベント API は同一クローズアウトで廃止する
+## 19. 新旧イベント API は同一クローズアウトで廃止する
 
 イベント発行に「バッファ付き」「即時」など複数の経路が存在する場合、新 API を導入した時点で旧 API の削除スコープを定義し、新しい API への移行と同じタスク・マイルストーンで完結させる。
 
@@ -997,7 +1057,7 @@ public sealed class SpawnActorUseCase
 
 ---
 
-## 19. イベント発行順序はドキュメント化する
+## 20. イベント発行順序はドキュメント化する
 
 複数のイベントが 1 トランザクション内で発行される場合、発行順序と各イベントの発行タイミング（即時 / トランザクション終了後フラッシュ）をコメントまたは設計ドキュメントに明示する。
 
@@ -1020,7 +1080,7 @@ eventPublisher.PublishAll(events);
 
 ---
 
-## 20. 同一責務を持つ実装はパフォーマンス特性を統一する
+## 21. 同一責務を持つ実装はパフォーマンス特性を統一する
 
 同じ責務（例: スポーン処理）を持つ複数の実装クラスが存在する場合、一方に最適化（LINQ 排除・foreach 化など）を施したなら、他方にも同様の最適化を適用する。
 
@@ -1089,6 +1149,8 @@ eventPublisher.PublishAll(events);
 - [ ] 設計・DI 登録済みの処理が Orchestrator / FrameUseCase 経由で実行パイプラインに実際に接続されているか
 - [ ] ゲームループに追加する処理に実行種別コメントを付けたか（`// [FrameLoop]` 等）
 - [ ] `Frame Loop` に分類した処理で LINQ / `ToList()` / コレクション生成が発生していないか
+- [ ] `Frame Loop` で一度きり・低頻度の差分検出を全件 polling していないか
+- [ ] 新規 layer / entity / UI item の追加検出が event / revision / dirty flag / 明示 refresh のいずれかになっているか
 - [ ] イベント駆動の購読ハンドラ内で Domain State を直接変更していないか
 - [ ] ゲームループ内の UseCase から発行されたイベントを、同一ループ内の別 UseCase が購読して状態変更していないか
 - [ ] ループ内で毎回 `Math.Cos` / `Math.Sqrt` などの高コスト演算を再実行していないか

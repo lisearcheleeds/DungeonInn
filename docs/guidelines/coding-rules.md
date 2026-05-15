@@ -375,6 +375,10 @@ using DungeonInn.Domain.Inn;
 
 ### 10-2. 不要な using は削除する
 
+同一 namespace を `using` する self namespace using も不要 using として削除する。
+例えば `namespace DungeonInn.Application.GameLoop` のファイル内で `using DungeonInn.Application.GameLoop;` を書かない。
+これは compile には影響しないが、依存している外部 namespace と自分自身の境界を読みにくくする。
+
 ---
 
 ## 11. 比較演算子

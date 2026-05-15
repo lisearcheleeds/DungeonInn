@@ -86,6 +86,10 @@ Runtime Instance / State / Entity がマスタ行を参照する場合、原則�
 
 マスタリポジトリは `Id -> Master` の辞書参照を提供できる前提で設計する。
 
+マスタ行オブジェクトそのものを Runtime Instance に保持することも、コピー保持と同じ設計リスクを持つ。
+`EquipmentMaster` / `WeaponMaster` / `StatusEffectSpec` の参照を Entity が持つと、Entity の寿命とマスタデータの寿命が結合し、マスタ差し替え・セーブ互換・外部マスタ管理への移行が難しくなる。
+Runtime Instance は「変化する状態」と「再解決に必要な ID」を持ち、UseCase / Policy / Presenter が必要なタイミングで Repository から Master を解決する。
+
 ### Before
 
 ```csharp
@@ -108,6 +112,18 @@ public sealed class ActorEffectInstance
 ```
 
 表示や再付与判断が必要な UseCase / Presenter は、`ActorEffectMasterId` から Master を引いて値を参照する。
+
+### Master 参照を渡してよい境界
+
+Master 参照は、Domain Entity の長期状態として保持するのではなく、計算メソッドの一時入力として扱う。
+以下のように責務で判断する。
+
+| 場所 | Master 参照 |
+|---|---|
+| Runtime Instance / State / Entity の field / property | 原則 NG。`XxxMasterId` と runtime state に分ける |
+| Domain Calculator / Policy の method parameter | OK。呼び出し側がその時点の Master を解決して渡す |
+| Spec builder / Factory の入力 | OK。ただし生成物が Master 参照を保持する場合は例外理由を記録する |
+| History / Log / Save snapshot | 条件付き OK。当時値を固定する理由を名前・コメント・docs に残す |
 
 ### 例外
 
@@ -642,7 +658,9 @@ public sealed class Actor
 - [ ] プロジェクト内の主要 Entity ID 型が統一されているか（`Guid` 混在・`int` 混在になっていないか）
 - [ ] マスタ行に対応する型は `Master`、複数マスタを束ねた実行時仕様は `Spec` になっているか
 - [ ] Runtime Instance が `XxxMasterId` を保持し、マスタ由来の不変値をコピーしていないか
+- [ ] Runtime Instance が `EquipmentMaster` / `WeaponMaster` / `StatusEffectSpec` などの Master / Spec 参照を長期保持していないか
 - [ ] コピー保持している場合、「スナップショット・現在値・個体固有値」として明示されているか
+- [ ] Master / Spec 参照を例外的に保持する場合、履歴・ログ・セーブ互換・個体固有値のいずれかとして根拠を記録しているか
 - [ ] DTO の責務（現在値・履歴・集計途中）が名前から分かるか
 
 ### Entity 設計

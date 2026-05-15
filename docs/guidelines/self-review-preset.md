@@ -234,6 +234,7 @@ ActorSpatialIndexService.Revision を追加する
 - テスト不足により完了判定が主観的になっていないか
 - PlayMode / uLoop / EditMode test の証跡が不足していないか
 - 命名、フォルダ、namespace が責務と一致しているか
+- 今回のレビュー指摘のうち、他 task / 他プロジェクトでも再利用できる判断基準を guideline に抽象化できないか
 
 ## レビュー項目の必須フォーマット
 

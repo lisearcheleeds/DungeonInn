@@ -37,6 +37,8 @@
 - [ ] テストダブルのスコープが必要最小限で、依存の広さを隠していない
 - [ ] 変更リスクに応じて EditMode test / run-tests / Play mode の確認順序を選んだ
 - [ ] キャッシュ値・Dictionary key・constructor 代入はテストで検出できる
+- [ ] DI 注入された依存が実際に使われ、不要依存を残していない
+- [ ] `IReadOnlyList<T>` property や `All` / `Values` 系 property の裏で allocation が隠れていない
 - [ ] TODO は責務・milestone・task のいずれかに紐付いている
 - [ ] 内部バッファを返す API は `Consume` / `Drain` / `Flush` 等の名前またはコメントで契約を明示している
 - [ ] 一般パターンに反する設計は docs/design または task ログに根拠を記録している
@@ -524,6 +526,100 @@ public sealed class WorldActorPresenter  // IDisposable を実装しない
 
 ---
 
+## 14. DI 依存は使う責務だけを注入する
+
+コンストラクタで注入した依存がクラス内で使われていない場合、そのクラスの責務か依存関係のどちらかが古くなっている。
+未使用依存は compile には影響しないが、LifetimeScope 登録、テストダブル、レビュー観点を広げ、実際の責務を読みにくくする。
+
+### Before
+
+```csharp
+public sealed class ActorCombatPowerCalculator
+{
+    readonly IMasterRepository masterRepository;
+
+    public ActorCombatPowerCalculator(IMasterRepository masterRepository)
+    {
+        this.masterRepository = masterRepository;
+    }
+
+    public int Calculate(Actor actor)
+    {
+        return actor.Stats.Strength + actor.Stats.Dexterity;
+    }
+}
+```
+
+### After
+
+```csharp
+public sealed class ActorCombatPowerCalculator
+{
+    public int Calculate(Actor actor)
+    {
+        return actor.Stats.Strength + actor.Stats.Dexterity;
+    }
+}
+```
+
+### 適用基準
+
+- constructor parameter / field が実処理で使われていない場合は削除する
+- 将来使う予定の依存は追加しない。必要になった task で追加する
+- 依存削除時は LifetimeScope 登録、テスト fixture、stub / fake も合わせて狭める
+- 使っているように見えるが nullable guard だけで終わる依存も未使用として扱う
+
+---
+
+## 15. Property に allocation を隠さない
+
+`IReadOnlyList<T>` や `IReadOnlyDictionary<TKey, TValue>` を返す property は、呼び出し側から見ると軽量な参照取得に見える。
+その裏で `ToArray()`、`ToList()`、`new List<T>()`、LINQ chain を実行すると、呼び出し頻度の高い経路で allocation が見えにくくなる。
+
+### Before
+
+```csharp
+public IReadOnlyList<EquipmentMaster> All => equippedMasters.Values.ToArray();
+
+public IReadOnlyList<StatBonus> AllStatBonuses
+{
+    get
+    {
+        var result = new List<StatBonus>();
+        foreach (var equipment in equippedMasters.Values)
+        {
+            result.AddRange(equipment.StatBonuses);
+        }
+
+        return result;
+    }
+}
+```
+
+### After
+
+```csharp
+public IReadOnlyDictionary<EquipmentSlot, EquipmentMaster> EquippedMasters => equippedMasters;
+
+public void CopyAllStatBonusesTo(List<StatBonus> results)
+{
+    results.Clear();
+    foreach (var equipment in equippedMasters.Values)
+    {
+        results.AddRange(equipment.StatBonuses);
+    }
+}
+```
+
+### 適用基準
+
+- property getter は原則として O(1) 参照取得か、明確に安い計算に限定する
+- allocation を伴う場合は `CreateSnapshot` / `CopyTo` / `DrainTo` など、名前でコストと契約を表す
+- Frame Loop / Entity Loop / AI 評価 / 戦闘評価から呼ばれる property では、`ToArray()` / `ToList()` / LINQ chain を禁止する
+- `IReadOnlyList<T>` にしても、生成済み配列や内部 list の寿命問題は解決しない。snapshot なのか一時 buffer なのかを明示する
+
+---
+
 ## レビュー用チェックリスト
 
 ### 命名
@@ -541,6 +637,8 @@ public sealed class WorldActorPresenter  // IDisposable を実装しない
 ### DI・依存
 
 - [ ] コンストラクタで要求する型が LifetimeScope に登録されているか
+- [ ] 注入された依存が実際に使われているか
+- [ ] 将来用・過去実装の名残の依存が constructor / field に残っていないか
 - [ ] インターフェース分割により「必要最小限の依存」になっているか
 - [ ] テストダブルのスコープが必要最小限か（使わないメソッドが多すぎないか）
 - [ ] テストダブルに `throw new NotSupportedException()` が多い場合、インターフェース分割を検討したか
@@ -570,6 +668,8 @@ public sealed class WorldActorPresenter  // IDisposable を実装しない
 
 ### API コントラクト・コンストラクタ・IDisposable
 
+- [ ] property getter の裏で `ToArray()` / `ToList()` / `new List<T>()` / LINQ chain による allocation が発生していないか
+- [ ] allocation が必要な取得処理は `CreateSnapshot` / `CopyTo` / `DrainTo` など、コストと寿命が名前で分かる API になっているか
 - [ ] 内部バッファを返すメソッドのコントラクトが名前またはコメントで明示されているか
 - [ ] `IReadOnlyList<T>` ラッピングだけで内部バッファ参照問題を解決したと思っていないか
 - [ ] DI で解決すべき依存を手動 `new` する互換コンストラクタが Runtime コードに含まれていないか

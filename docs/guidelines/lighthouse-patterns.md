@@ -169,6 +169,7 @@ await sceneManager.BackScene();
 - 通常のゲーム画面遷移、MainScene 遷移、ModuleScene 遷移ではない
 - 例外理由をコメントまたは設計ドキュメントに明記している
 - 将来 Lighthouse 側に正式な bootstrap API が用意された場合の移行 TODO を残している
+- TODO は直接呼び出しの近くに置き、検索で例外理由と移行先が追える
 
 ```csharp
 // OK: bootstrap / reboot exception.
@@ -194,12 +195,16 @@ public async UniTask<T> LoadAsync() { }
 ```csharp
 // NG
 Button myButton;
+public static IDisposable SubscribeOnClick(this Button button, Action onClick) { }
 
 // OK
 LHButton myButton; // LighthouseExtends.UIComponent
 ```
 
 **理由**: マルチタッチ時の誤タップ防止、`ExclusiveInputService` との統合のため。
+
+未使用の helper / extension であっても `UnityEngine.UI.Button` を受ける Runtime API は残さない。
+呼び出し箇所が 0 件でも、API が存在すると後続実装が Lighthouse の `LHButton` ではなく Unity UI Button に乗る導線になる。
 
 #### 5. 旧 Input System 禁止
 
@@ -314,10 +319,10 @@ GetSceneCameraList() → このシーンが持つカメラリストを返す
 ```csharp
 using Cysharp.Threading.Tasks;
 using DungeonInn.LighthouseGenerated;
-using DungeonInn.Runtime.Scripts.View.Base;
+using DungeonInn.View.Base;
 using Lighthouse.Scene;
 
-namespace DungeonInn.Runtime.Scripts.View.Scene.MainScene.Inn
+namespace DungeonInn.View.Scene.MainScene.Inn
 {
     public class InnScene : ProductCanvasMainSceneBase<InnScene.InnTransitionData>
     {
@@ -384,10 +389,10 @@ namespace DungeonInn.Runtime.Scripts.View.Scene.MainScene.Inn
 
 ```csharp
 using DungeonInn.LighthouseGenerated;
-using DungeonInn.Runtime.Scripts.View.Base;
+using DungeonInn.View.Base;
 using Lighthouse.Scene;
 
-namespace DungeonInn.Runtime.Scripts.View.Scene.ModuleScene.Audio
+namespace DungeonInn.View.Scene.ModuleScene.Audio
 {
     public class AudioModuleScene : ProductCanvasModuleSceneBase
     {
@@ -417,11 +422,11 @@ namespace DungeonInn.Runtime.Scripts.View.Scene.ModuleScene.Audio
 
 ```csharp
 using Cysharp.Threading.Tasks;
-using DungeonInn.Runtime.Scripts.View.Base;
+using DungeonInn.View.Base;
 using LighthouseExtends.ScreenStack;
 using UnityEngine;
 
-namespace DungeonInn.Runtime.Scripts.View.UI.Dialog
+namespace DungeonInn.View.UI.Dialog
 {
     public class ConfirmDialog : StandardDialogBase
     {
@@ -469,7 +474,7 @@ using DungeonInn.Input;
 using LighthouseExtends.InputLayer;
 using UnityEngine.InputSystem;
 
-namespace DungeonInn.Runtime.Scripts.Input.Layer
+namespace DungeonInn.Input.Layer
 {
     public class InnSceneInputLayer : IInputLayer
     {
@@ -689,7 +694,7 @@ static readonly MainSceneId[][] MainSceneGroupList =
 using VContainer;
 using VContainer.Unity;
 
-namespace DungeonInn.Runtime.Scripts.View.Scene.MainScene.Inn
+namespace DungeonInn.View.Scene.MainScene.Inn
 {
     public class InnLifetimeScope : LifetimeScope
     {
@@ -732,7 +737,7 @@ builder.RegisterComponentInNewPrefab(myPrefab, Lifetime.Singleton)
 ## P10. シーン遷移を呼び出す
 
 ```csharp
-using DungeonInn.Runtime.Scripts.Core;
+using DungeonInn.Core;
 using VContainer;
 
 public class SomePresenter
