@@ -216,6 +216,8 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 - uLoopを利用して動作確認すること
 - コーディングルールを必ず守ること
   - 実装時、レビュー時に `docs/guidelines/coding-rules.md` を参照すること
+- 実装品質ルールを必ず守ること
+  - 実装時、レビュー時に `docs/guidelines/implementation-quality-guidelines.md` を参照すること
 - UseCase / Event / Aggregate 境界ルールを必ず守ること
   - 次回以降の新規実装では `docs/guidelines/application-boundary-guidelines.md` を参照すること
   - UseCase のステートレス性、UseCase 間呼び出し、イベント購読による状態変更、Aggregate 境界、Publisher/Subscriber 分離方針を確認すること
@@ -223,16 +225,19 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 
 ## 実装ハードゲート
 
-以下を含む実装は禁止。発見した場合、Codex は実装を停止して `review/{task_id}_question.md` に報告する。
+以下の guideline に記載されたハードゲートを必ず守ること。
 
-- `Addressables.LoadAssetAsync` の直接使用
-- `Resources.Load` / `Resource.Load` の使用
-- `SceneManager.LoadScene` の直接使用
-- `Task` / `ValueTask` の使用
-- `UnityEngine.UI.Button` の使用
-- Lighthouse / VContainer / 既存フレームワークコードの複製
-- DI で解決すべき依存を `new` / static / singleton / 手動検索で生成すること
-- 自動生成ファイル `.g.cs` の手動編集
+- `docs/guidelines/lighthouse-patterns.md`
+- `docs/guidelines/coding-rules.md`
+- `docs/guidelines/domain-design-guidelines.md`
+- `docs/guidelines/application-boundary-guidelines.md`
+- `docs/guidelines/implementation-quality-guidelines.md`
+- `docs/guidelines/self-review-preset.md`
+
+ハードゲート違反を発見した場合、Codex は実装を停止して `review/{task_id}_question.md` に報告する。
+
+ハードゲートは即時停止・修正が必要な最低条件であり、本文の設計方針・判断基準を省略してよいという意味ではない。
+実装・レビュー時は、ハードゲートだけでなく該当 guideline 本文の方針に反していないことを確認する。
 
 ## Codex 完了前チェック
 
@@ -240,26 +245,23 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 > チェックできていない項目が 1 つでもあれば、作業を継続するか、Claude Code に確認を取ること。
 
 - [ ] `uloop.cmd compile --project-path Client` が成功した
-- [ ] `Addressables.LoadAssetAsync` が追加されていない
-- [ ] `Resources.Load` / `Resource.Load` が追加されていない
-- [ ] `Task` / `ValueTask` が追加されていない
-- [ ] DI 登録が必要なクラスは LifetimeScope / Installer に登録されている
-- [ ] LighthouseGenerated 以下を編集していない
+- [ ] `docs/guidelines/` 配下の guideline 本文を確認した
+- [ ] 各 guideline のハードゲートに違反していない
+- [ ] 各 guideline の完了前チェックリストを確認した
+- [ ] ハードゲートだけでなく、本文の設計方針・判断基準に反していないことを確認した
 - [ ] 作業ログに上記チェック結果を記載した
+- [ ] 完了報告時に、上記チェック結果をユーザーへ提示した
 
 ## Claude Code レビュー必須チェック
 
 > **以下を全てチェックするまでタスクを「完了」にしてはならない。**
-> Codex の作業ログの自己申告だけを信用せず、必ず自分で差分と禁止 API を確認すること。
+> Codex の作業ログの自己申告だけを信用せず、必ず自分で差分と guideline 適合性を確認すること。
 
-- [ ] 禁止 API が追加されていないことを検索で確認した
-- [ ] LifetimeScope / Installer への DI 登録漏れがないことを確認した
-- [ ] 公開インターフェース・イベント設計が `docs/guidelines/application-boundary-guidelines.md` の方針に沿っている
+- [ ] `docs/guidelines/` 配下の guideline 本文を確認した
+- [ ] 各 guideline のハードゲートに違反していないことを確認した
+- [ ] 各 guideline の完了前チェックリストを確認した
+- [ ] ハードゲートだけでなく、本文の設計方針・判断基準に反していないことを確認した
 - [ ] コンパイルが通っている（uloop compile または Codex ログで確認）
-
-```powershell
-rg "Addressables\.LoadAssetAsync|Resources\.Load|Resource\.Load|SceneManager\.LoadScene|UnityEngine\.UI\.Button|Task<|ValueTask<|WaitForCompletion|\.Result" Client/Assets
-```
 
 ---
 
@@ -268,9 +270,7 @@ rg "Addressables\.LoadAssetAsync|Resources\.Load|Resource\.Load|SceneManager\.Lo
 > **このファイルを読み終えた AI は、作業を始める前に以下を自問すること。**
 > 全て「YES」でなければ作業を開始してはならない。
 
-- [ ] `docs/guidelines/lighthouse-patterns.md` を確認した（または今回のタスクで参照が不要であることを確認した）
-- [ ] `docs/guidelines/coding-rules.md` を確認した（または今回のタスクで参照が不要であることを確認した）
-- [ ] `docs/guidelines/application-boundary-guidelines.md` を確認した（または今回のタスクで参照が不要であることを確認した）
+- [ ] `docs/guidelines/` 配下の guideline を全て確認した
 - [ ] タスクの目的・スコープを理解した
 - [ ] 仕様ドキュメントに記載のない設計判断が発生していないことを確認した
 - [ ] 「作業を止めてユーザーに確認する条件」に該当する状況がないことを確認した

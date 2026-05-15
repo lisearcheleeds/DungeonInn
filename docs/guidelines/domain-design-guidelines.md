@@ -8,6 +8,38 @@ Domain は View、Infrastructure、Framework、外部 SDK に依存しない。
 
 ---
 
+## ハードゲート
+
+この節は即時停止・修正が必要な禁止事項を列挙する。
+この節に載っていない実装が自動的に許可されるわけではなく、本文の設計方針・判断基準に反する場合もレビュー指摘または作業停止対象とする。
+
+- [ ] Domain 層から View / Infrastructure / Framework / 外部 SDK に依存していない
+- [ ] Domain 層に DI フレームワーク依存を持ち込んでいない
+- [ ] Runtime Instance / State / Entity に、マスタから O(1) で引ける不変値をコピー保持していない
+- [ ] Runtime Object に、実体型から導ける enum / Type / bool 分類を重複保持していない
+- [ ] Domain Validation で AI 判断・業務判断・ゲームデザイン上の選択まで禁止していない
+- [ ] 既存の値型・構造体で表現できる同一概念を、別フィールド・別 DTO として重複定義していない
+- [ ] Factory に AI 判断・ユーザー操作・スポーン文脈・業務フローを抱え込ませていない
+- [ ] Domain Entity から static Catalog / Registry / Locator に依存していない
+- [ ] 状態を持たない Calculator / Policy をメソッド呼び出しごとに `new` していない
+- [ ] Domain 層の Calculator / Policy を DI 注入対象にしていない
+
+## 完了前チェックリスト
+
+このチェックリストは本文の設計方針を省略するためのものではない。
+実装・レビュー時は本文を確認したうえで、最後に確認漏れを防ぐ目的で使用する。
+
+- [ ] `Master` / `Spec` / `Params` / `State` / `Policy` / `Calculator` の命名が責務と一致している
+- [ ] Entity は分類ではなく個体の状態と振る舞いを表している
+- [ ] キャッシュ値を持つ場合、更新経路が Entity 経由に集約されている
+- [ ] 種類ごとに変わる式や判断が Calculator / Policy に分離されている
+- [ ] 新しいフィールドが「本質的な属性」か「文脈依存の属性」か確認した
+- [ ] DTO は現在値・履歴・集計途中の責務で分かれている
+- [ ] 並列 Factory / Request 構造を作る前に共通基盤で表現できないか確認した
+- [ ] 純粋計算クラスの static 化・共有インスタンス化・DI 注入の選択理由が本文の優先順位に沿っている
+
+---
+
 ## 命名規約: Master / Spec / Params / State
 
 マスタデータと、それを組み合わせて生成される実行時用の値は名前で役割を分ける。
@@ -168,6 +200,7 @@ if (actor.Behavior is CustomerBehavior) { ... }
 
 `IActorBehavior` に `ActorBehaviorType Type` を持たせない。
 `ActorBehaviorType` は保存・生成用の識別値として残し、実行時の Behavior には重複保持しない。
+Behavior ごとの固有処理は `ActorBehaviorType` による分岐ではなく、`IActorBehavior` の polymorphic hook で扱う。例えば回復時に冒険者だけがストレスを減らす場合、`Actor` は `Behavior.OnRecovered(...)` だけを呼び、`AdventurerBehavior` 側でストレス処理を実装する。
 
 ---
 

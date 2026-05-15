@@ -187,7 +187,7 @@ actor.Behavior is IActorDropSource → 各エントリを確率ロール → パ
 ### Gold ピックアップ時のウォレット表示
 
 `ItemPickedUp` イベントには所持金残高を持たせていない。  
-ログ表示（`WorldGameLogPresenter`）では Gold ピックアップ時に `worldState.FindActor()` でアクターを引いてから `actor.Inventory.Gold` を読む。  
+Debug ログ表示（`WorldDebugGameLogPresenter`）では Gold ピックアップ時に `worldState.FindActor()` でアクターを引いてから `actor.Inventory.Gold` を読む。
 **理由**：ピックアップ後の残高はすでに `Inventory` に反映されているため、イベントに冗長なスナップショットを持たせるより状態を直接参照する方がシンプル。
 
 ---

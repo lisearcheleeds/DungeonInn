@@ -5,6 +5,38 @@ Claude Code・Codex ともに実装前に本ドキュメントを確認するこ
 
 ---
 
+## ハードゲート
+
+この節は即時停止・修正が必要な禁止事項を列挙する。
+この節に載っていない実装が自動的に許可されるわけではなく、本文の設計方針・判断基準に反する場合もレビュー指摘または作業停止対象とする。
+
+- [ ] `Addressables.LoadAssetAsync` / `Resources.Load` / `Resource.Load` を直接使用していない
+- [ ] `SceneManager.LoadScene` / `SceneManager.LoadSceneAsync` を通常のゲーム画面遷移で直接使用していない
+- [ ] `Task` / `ValueTask` を使わず、非同期処理は `UniTask` に統一している
+- [ ] `UnityEngine.UI.Button` を使わず、Lighthouse の `LHButton` を使っている
+- [ ] 旧 Input System の `Input.GetKey` / `Input.GetAxis` / `Keyboard.current` / `Mouse.current` ポーリングを追加していない
+- [ ] ModuleScene の Activate / Deactivate を手動操作していない
+- [ ] ScreenStack / Modal を手動 `Instantiate` / `Destroy` で管理していない
+- [ ] `Camera.main` 依存や URP カメラスタックの手動構築を追加していない
+- [ ] Lighthouse / VContainer / 既存フレームワークコードを複製していない
+- [ ] LighthouseGenerated 以下の `.g.cs` を手動編集していない
+
+## 完了前チェックリスト
+
+このチェックリストは本文の設計方針を省略するためのものではない。
+実装・レビュー時は本文を確認したうえで、最後に確認漏れを防ぐ目的で使用する。
+
+- [ ] 変更内容に該当する Lighthouse パターン（P1〜P10）を本文で確認した
+- [ ] シーン責務が MainScene / ModuleScene の判断基準に沿っている
+- [ ] アセットロードは `IAssetManager` / `IAssetScope` の寿命ルールに沿っている
+- [ ] シーン遷移は Lighthouse の `ISceneManager` 経由で行っている
+- [ ] 入力は `IInputLayer` と MainScene 登録経由で処理している
+- [ ] ScreenStack / Dialog は Lighthouse の ScreenStack 経由で開閉している
+- [ ] LifetimeScope / ProductLifetimeScope への登録漏れがない
+- [ ] 自動生成が必要な変更では `.g.cs` を手動編集せず、生成元を更新している
+
+---
+
 ## ルール・制約
 
 ### シーン責務の定義（設計の起点）

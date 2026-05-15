@@ -115,7 +115,7 @@ public interface IGameEvent { }
 - `CombatEncounterStarted` を受け取り、戦闘開始回数を加算する
 - `CombatAttackOccurred` を受け取り、ダメージ与/受を集計する
 - `CombatAttackOccurred.TargetRemainingHp <= 0` の攻撃者を撃破数として加算する
-- `CombatEncounterEnded` / `ActorExitedDungeon` は統計の確定条件ではなく、現状は `WorldGameLogPresenter` が累積統計を表示する契機として扱う
+- `CombatEncounterEnded` / `ActorExitedDungeon` は統計の確定条件ではなく、現状は `WorldDebugGameLogPresenter` が累積統計を表示する契機として扱う
 - Application 層に置き、`AdventurerBattleRecordService.TryGetRecord` 経由で参照する
 - 永続化や1戦闘ごとの保管ストアが必要になった場合は、別途 `CombatEncounterEnded` / `ActorExitedDungeon` を契機に確定する Store を追加する
 
@@ -216,3 +216,30 @@ View/
 - `AdvanceCombatResult` は void または空の結果型に簡略化する
 
 既存の `CombatAttackEvent` / `CombatDeathEvent` は `IGameEvent` を実装する形にリネーム・移行する。
+
+## バッファ付きパブリッシュ契約（現状）
+
+戦闘トランザクションヘルパーはグローバルイベントバスの参照を保持せず、バッファなし公開オーバーロードを公開しない。
+`CombatDamageResolver`・`CombatEffectExecutor`・`CombatDefeatResolver` は明示的な `IEventPublisher` 引数を必要とする。
+ランタイムの呼び出し元は `BufferedEventPublisher` を渡し、状態変更を先に完了してから外側の UseCase で一度フラッシュする。
+
+現在の戦闘イベント順:
+
+- 通常攻撃: `CombatAttackOccurred`
+- 飛翔体命中: `ProjectileHit` → `CombatAttackOccurred`
+- 範囲効果命中: `AreaEffectHit` → ターゲットごとに `CombatAttackOccurred`
+- 撃破トランザクション: 直前の命中イベント → `CombatAttackOccurred` → `CombatEncounterEnded` → `ActorDefeated` → `ItemDropped` → `ExperienceGranted` → （任意）`ActorLeveledUp`
+
+上記イベントは、所有 UseCase / Orchestrator がトランザクションを完了した後にのみグローバルバスに発行される。
+
+## `AdvanceFrameAsync` 内の戦闘イベント順序
+
+`WorldSimulationOrchestrator.AdvanceFrameAsync()` は現在、以下のフレーム順序で戦闘関連イベントを発行する。
+これはゲーム状態を変更しないサブスクライバー向けの通知順序契約である。
+サブスクライバーが同一フレーム内の後続イベントに依存する挙動を必要とする場合は、この順序契約を参照し、イベント購読ではなく UseCase / Orchestrator の実行内で状態変更を行うこと。
+
+1. 遭遇検出フェーズ: `DetectCombatEncounterUseCase` は同フレームの攻撃解決より先に実行される。グローバルイベントバスを通じて `CombatEncounterStarted` と `CombatEncounterEnded` を即座に発行する可能性があるため、遭遇開始 / 終了通知は同フレームの攻撃・ダメージ結果通知より先に届く。
+2. 通常攻撃フェーズ: `AdvanceCombatUseCase` が近接 / 直接武器攻撃を解決する。`CombatDamageResolver` が `CombatAttackOccurred` を `BufferedEventPublisher` に記録し、連鎖する戦闘効果で `ProjectileFired` や `AreaEffectCreated` も記録される場合がある。バッファは `AdvanceCombatUseCase` 終了時に一度フラッシュされる。
+3. 撃破解決フェーズ: 通常攻撃・飛翔体命中・範囲効果命中がターゲットの死亡を確認した場合、`ActorDefeatOrchestrator` が所有フェーズ内で実行される。現在の順序は、撃破されたアクターを攻撃していた攻撃者の `CombatEncounterEnded`・`ActorDefeated`・各ドロップの `ItemDropped`・`ExperienceGranted`・（任意）`ActorLeveledUp`。これらのイベントはバッファ済みであり、所有フェーズのフラッシュ時にのみ届く。
+4. 飛翔体フェーズ: `AdvanceProjectileUseCase` が通常攻撃の後に飛翔体を進行させる。命中時、`CombatEffectExecutor.ExecuteProjectileHit()` が `ProjectileHit` を記録し、リンクされた直接ダメージが `CombatAttackOccurred` を記録する。リンクされた効果で `ProjectileFired` や `AreaEffectCreated` などの追加イベントも記録される場合がある。撃破イベントは 3 の順序に従い、飛翔体フェーズ終了時に一度フラッシュされる。
+5. 範囲効果フェーズ: `AdvanceAreaEffectUseCase` が飛翔体の後に範囲効果を進行させる。各ターゲット命中につき、`CombatEffectExecutor.ExecuteAreaHit()` が `AreaEffectHit` を記録し、リンクされた直接ダメージが `CombatAttackOccurred` を記録する。撃破イベントは 3 の順序に従い、範囲効果フェーズ終了時に一度フラッシュされる。

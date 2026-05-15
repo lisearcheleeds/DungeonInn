@@ -5,6 +5,43 @@
 
 ---
 
+## ハードゲート
+
+この節は即時停止・修正が必要な禁止事項を列挙する。
+この節に載っていない実装が自動的に許可されるわけではなく、本文の設計方針・判断基準に反する場合もレビュー指摘または作業停止対象とする。
+
+- [ ] UseCase から他の UseCase を直接呼び出していない
+- [ ] UseCase が長期状態を保持していない
+- [ ] UseCase が `IDisposable` を実装していない
+- [ ] UseCase の constructor でイベント購読していない
+- [ ] イベント DTO に View 用文字列・フォーマット済み値・表示用集計値を含めていない
+- [ ] イベント購読コールバック内で Domain State / `worldState` を変更していない
+- [ ] Entity-keyed state を持つ Service に、全削除経路の cleanup が定義されている
+- [ ] 集約内部の可変オブジェクトを外部から直接変更できる形で公開していない
+- [ ] Domain Entity から static Catalog / Registry / Locator に依存していない
+- [ ] View / Presenter が Application 内部用の広い Reader や Domain 集約を直接受け取っていない
+- [ ] Unity `MonoBehaviour` / EntryPoint にゲーム進行順序を書いていない
+- [ ] `Frame Loop` / `Entity Loop` に LINQ chain / `ToList()` / `ToArray()` / 防御的コピーを追加していない
+- [ ] Registry / Repository がイベント発行・ライフサイクル処理・通知副作用を持っていない
+
+## 完了前チェックリスト
+
+このチェックリストは本文の設計方針を省略するためのものではない。
+実装・レビュー時は本文を確認したうえで、最後に確認漏れを防ぐ目的で使用する。
+
+- [ ] 新規クラス名が UseCase / Service / StateService / Orchestrator の定義と一致している
+- [ ] 複数 UseCase の順序制御は Orchestrator が所有している
+- [ ] 1つの UseCase 実行が、読み取り・判断・状態変更・通知のトランザクションとして完結している
+- [ ] イベントは状態変更後に発行され、複数イベントの順序が必要なら記録されている
+- [ ] イベント Publish と Subscribe の依存が `IEventPublisher` / `IEventSubscriber` に分離されている
+- [ ] WorldState 依存は読み取り・書き込みの必要性に応じて最小の interface になっている
+- [ ] View 層には表示専用 DTO / Query / DataProvider が提供されている
+- [ ] ゲームループへ追加した処理に Frame Loop / Schedule Tick / Event-Driven の分類がある
+- [ ] ゲームループ内の状態変更が決定フェーズと適用フェーズで分かれている
+- [ ] 同一責務の並列実装に、同じ境界ルール・パフォーマンス特性が適用されている
+
+---
+
 ## UseCase / Service / Orchestrator の定義と命名
 
 以下の3種類を明確に区別する。
