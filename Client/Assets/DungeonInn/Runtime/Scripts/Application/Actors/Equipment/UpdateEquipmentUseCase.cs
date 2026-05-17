@@ -69,7 +69,7 @@ namespace DungeonInn.Application.Actors.Equipment
         void UpdateEquipment(Actor actor)
         {
             TryUpgradeWeapon(actor);
-            var weaponType = actor.Equipment.Weapon?.WeaponType ?? actor.NaturalWeaponType;
+            var weaponType = actor.Equipment.EquippedWeaponType ?? actor.NaturalWeaponType;
             var statWeights = WeaponCalculatorFactory.GetStatWeights(weaponType);
             TryUpgradeSlot(actor, EquipmentSlot.Armor, statWeights);
             TryUpgradeSlot(actor, EquipmentSlot.Accessory, statWeights);
@@ -77,8 +77,16 @@ namespace DungeonInn.Application.Actors.Equipment
 
         void TryUpgradeWeapon(Actor actor)
         {
-            actor.Equipment.EquippedMasters.TryGetValue(EquipmentSlot.Weapon, out var currentEquipment);
-            var currentScore = currentEquipment != null ? CalculateWeaponScore(currentEquipment, actor.Equipment.Weapon, actor) : -1;
+            EquipmentMaster currentEquipment = null;
+            WeaponMaster currentWeaponMaster = null;
+            var currentScore = -1;
+            var currentItemId = actor.Equipment.GetEquippedItemId(EquipmentSlot.Weapon);
+            if (currentItemId.HasValue
+                && masterRepository.EquipmentMasters.TryGetValue(currentItemId.Value, out currentEquipment))
+            {
+                currentWeaponMaster = masterRepository.GetWeaponMaster(currentItemId.Value);
+                currentScore = CalculateWeaponScore(currentEquipment, currentWeaponMaster, actor);
+            }
 
             EquipmentMaster bestCandidate = null;
             WeaponMaster bestWeaponMaster = null;
@@ -112,8 +120,14 @@ namespace DungeonInn.Application.Actors.Equipment
 
         void TryUpgradeSlot(Actor actor, EquipmentSlot slot, IReadOnlyList<(StatType stat, int weight)> statWeights)
         {
-            actor.Equipment.EquippedMasters.TryGetValue(slot, out var currentEquipment);
-            var currentScore = currentEquipment != null ? CalculateEquipmentScore(currentEquipment, statWeights) : -1;
+            EquipmentMaster currentEquipment = null;
+            var currentScore = -1;
+            var currentItemId = actor.Equipment.GetEquippedItemId(slot);
+            if (currentItemId.HasValue
+                && masterRepository.EquipmentMasters.TryGetValue(currentItemId.Value, out currentEquipment))
+            {
+                currentScore = CalculateEquipmentScore(currentEquipment, statWeights);
+            }
 
             EquipmentMaster bestCandidate = null;
             var bestScore = currentScore;

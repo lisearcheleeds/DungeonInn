@@ -1,22 +1,11 @@
-using DungeonInn.Application.Combat;
 using System;
-using System.Linq;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
-using VContainer;
 
 namespace DungeonInn.Application.Combat
 {
     public sealed class ActorCombatPowerCalculator
     {
-        readonly IMasterRepository masterRepository;
-
-        [Inject]
-        public ActorCombatPowerCalculator(IMasterRepository masterRepository)
-        {
-            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
-        }
-
         public int Calculate(Actor actor)
         {
             if (actor == null)
@@ -25,9 +14,9 @@ namespace DungeonInn.Application.Combat
             }
 
             return CalculateStats(actor.Stats)
-                + actor.Equipment.AllStatBonuses.Sum(bonus => bonus.Amount)
-                + (actor.Equipment.Weapon?.Attack ?? 0)
-                + actor.Equipment.All.Sum(equipment => equipment.Defense);
+                + actor.Equipment.TotalStatBonusAmount
+                + actor.Equipment.EquippedWeaponAttack
+                + actor.Equipment.TotalDefense;
         }
 
         public int Calculate(ActorArchetypeMaster archetypeMaster)

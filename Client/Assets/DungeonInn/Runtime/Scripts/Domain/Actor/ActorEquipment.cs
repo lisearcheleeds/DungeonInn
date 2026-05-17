@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 
@@ -8,11 +7,12 @@ namespace DungeonInn.Domain.Actor
 {
     public interface IReadOnlyActorEquipment
     {
-        IReadOnlyDictionary<EquipmentSlot, EquipmentMaster> EquippedMasters { get; }
-        EquipmentMaster WeaponEquipment { get; }
-        WeaponMaster Weapon { get; }
-        IReadOnlyList<EquipmentMaster> All { get; }
-        IReadOnlyList<StatBonus> AllStatBonuses { get; }
+        WeaponType? EquippedWeaponType { get; }
+        int EquippedWeaponAttack { get; }
+        int TotalDefense { get; }
+        int TotalStatBonusAmount { get; }
+        int? GetEquippedItemId(EquipmentSlot slot);
+        bool IsEquipped(int itemId);
     }
 
     public sealed class ActorEquipment : IReadOnlyActorEquipment
@@ -20,22 +20,77 @@ namespace DungeonInn.Domain.Actor
         readonly Dictionary<EquipmentSlot, EquipmentMaster> equippedMasters = new();
         WeaponMaster weaponMaster;
 
-        public IReadOnlyDictionary<EquipmentSlot, EquipmentMaster> EquippedMasters => equippedMasters;
-        public EquipmentMaster WeaponEquipment => equippedMasters.TryGetValue(EquipmentSlot.Weapon, out var weapon) ? weapon : null;
-        public WeaponMaster Weapon => weaponMaster;
-        public IReadOnlyList<EquipmentMaster> All => equippedMasters.Values.ToArray();
+        public WeaponType? EquippedWeaponType => weaponMaster?.WeaponType;
+        public int EquippedWeaponAttack => weaponMaster?.Attack ?? 0;
 
-        public IReadOnlyList<StatBonus> AllStatBonuses
+        public int TotalDefense
         {
             get
             {
-                var result = new List<StatBonus>();
+                var total = 0;
                 foreach (var equippedMaster in equippedMasters.Values)
                 {
-                    result.AddRange(equippedMaster.StatBonuses);
+                    total += equippedMaster.Defense;
                 }
+                return total;
+            }
+        }
 
-                return result;
+        public int TotalStatBonusAmount
+        {
+            get
+            {
+                var total = 0;
+                foreach (var equippedMaster in equippedMasters.Values)
+                {
+                    foreach (var bonus in equippedMaster.StatBonuses)
+                    {
+                        total += bonus.Amount;
+                    }
+                }
+                return total;
+            }
+        }
+
+        public int? GetEquippedItemId(EquipmentSlot slot)
+        {
+            return equippedMasters.TryGetValue(slot, out var equippedMaster) ? (int?)equippedMaster.ItemId : null;
+        }
+
+        public bool IsEquipped(int itemId)
+        {
+            foreach (var equippedMaster in equippedMasters.Values)
+            {
+                if (equippedMaster.ItemId == itemId)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Actor 内部計算用（インターフェース外）
+        internal EquipmentMaster WeaponEquipment => equippedMasters.TryGetValue(EquipmentSlot.Weapon, out var weapon) ? weapon : null;
+        internal WeaponMaster Weapon => weaponMaster;
+
+        internal void CopyAllTo(List<EquipmentMaster> buffer)
+        {
+            buffer.Clear();
+            foreach (var equippedMaster in equippedMasters.Values)
+            {
+                buffer.Add(equippedMaster);
+            }
+        }
+
+        internal void CopyAllStatBonusesTo(List<StatBonus> buffer)
+        {
+            buffer.Clear();
+            foreach (var equippedMaster in equippedMasters.Values)
+            {
+                foreach (var bonus in equippedMaster.StatBonuses)
+                {
+                    buffer.Add(bonus);
+                }
             }
         }
 

@@ -195,15 +195,7 @@ namespace DungeonInn.Application.Economy
 
         static bool IsEquipped(Actor actor, int itemId)
         {
-            foreach (var equippedMaster in actor.Equipment.EquippedMasters.Values)
-            {
-                if (equippedMaster.ItemId == itemId)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return actor.Equipment.IsEquipped(itemId);
         }
 
     }

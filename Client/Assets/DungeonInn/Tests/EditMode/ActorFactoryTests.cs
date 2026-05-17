@@ -43,7 +43,7 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(actor.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
             Assert.That(actor.Inventory.Gold, Is.EqualTo(100));
             Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
-            Assert.That(actor.Equipment.Weapon, Is.Null);
+            Assert.That(actor.Equipment.EquippedWeaponType, Is.Null);
             Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));
             Assert.That(actor.Hp, Is.EqualTo(actor.Params.MaxHp));
             Assert.That(actor.Mp, Is.EqualTo(actor.Params.MaxMp));
@@ -67,7 +67,7 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(behavior.SpeciesId, Is.EqualTo(1));
             Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Claws));
-            Assert.That(actor.Equipment.Weapon, Is.Null);
+            Assert.That(actor.Equipment.EquippedWeaponType, Is.Null);
             Assert.That(actor.WeaponCombatParams.AttackIntervalSeconds, Is.EqualTo(0.9f));
         }
 
@@ -127,8 +127,8 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.False);
             Assert.That(actor.Inventory.Has(new ItemStack(3003, 1)), Is.False);
             Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
-            Assert.That(actor.Equipment.Weapon.WeaponType, Is.EqualTo(WeaponType.Sword));
-            Assert.That(actor.Equipment.EquippedMasters.ContainsKey(EquipmentSlot.Armor), Is.True);
+            Assert.That(actor.Equipment.EquippedWeaponType, Is.EqualTo(WeaponType.Sword));
+            Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Armor).HasValue, Is.True);
             Assert.That(guild.Transactions.Count, Is.EqualTo(1));
         }
 

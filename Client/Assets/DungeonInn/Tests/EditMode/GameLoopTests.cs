@@ -448,7 +448,7 @@ namespace DungeonInn.Tests.EditMode
             var masterRepository = new HardcodedMasterRepository();
             return new SelectDungeonTargetFloorUseCase(
                 masterRepository,
-                new ActorCombatPowerCalculator(masterRepository),
+                new ActorCombatPowerCalculator(),
                 new NoOpGameEventBus());
         }
 

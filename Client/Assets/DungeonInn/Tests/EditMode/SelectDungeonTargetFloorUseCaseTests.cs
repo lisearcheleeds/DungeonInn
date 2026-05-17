@@ -71,7 +71,7 @@ namespace DungeonInn.Tests.EditMode
             var masterRepository = new HardcodedMasterRepository();
             var useCase = new SelectDungeonTargetFloorUseCase(
                 masterRepository,
-                new ActorCombatPowerCalculator(masterRepository),
+                new ActorCombatPowerCalculator(),
                 eventBus);
             var actor = CreateActor(new ActorStats(30, 30, 30, 30, 30, 30));
 
@@ -105,7 +105,7 @@ namespace DungeonInn.Tests.EditMode
         {
             return new SelectDungeonTargetFloorUseCase(
                 masterRepository,
-                new ActorCombatPowerCalculator(masterRepository),
+                new ActorCombatPowerCalculator(),
                 new CollectingEventBus());
         }
 

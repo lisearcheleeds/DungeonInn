@@ -194,7 +194,7 @@ namespace DungeonInn.Tests.EditMode
                             new GenerateDungeonFloorUseCase())),
                     new SelectDungeonTargetFloorUseCase(
                         masterRepository,
-                        new ActorCombatPowerCalculator(masterRepository),
+                        new ActorCombatPowerCalculator(),
                         eventBus),
                     new SelectDungeonExplorationGoalUseCase(1),
                     navigationService,

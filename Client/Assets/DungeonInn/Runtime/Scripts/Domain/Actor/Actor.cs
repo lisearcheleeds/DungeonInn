@@ -17,6 +17,8 @@ namespace DungeonInn.Domain.Actor
         public ActorParams Params { get; private set; }
         readonly ActorEquipment equipment;
         readonly Inventory inventory;
+        readonly List<EquipmentMaster> equipmentBuffer = new();
+        readonly List<StatBonus> statBonusBuffer = new();
 
         public IReadOnlyActorEquipment Equipment => equipment;
         public IReadOnlyInventory Inventory => inventory;
@@ -352,10 +354,10 @@ namespace DungeonInn.Domain.Actor
 
         void RefreshWeaponCalculator()
         {
-            var weaponType = Equipment.Weapon == null ? NaturalWeaponType : Equipment.Weapon.WeaponType;
-            var weaponTypeCombatMaster = Equipment.Weapon == null
+            var weaponType = equipment.Weapon == null ? NaturalWeaponType : equipment.Weapon.WeaponType;
+            var weaponTypeCombatMaster = equipment.Weapon == null
                 ? NaturalWeaponTypeCombatMaster
-                : Equipment.Weapon.WeaponTypeCombatMaster;
+                : equipment.Weapon.WeaponTypeCombatMaster;
             WeaponCalculator = WeaponCalculatorFactory.Create(weaponType);
             WeaponCombatCalculator = WeaponCombatCalculatorFactory.Create(weaponTypeCombatMaster);
             RefreshWeaponAttack();
@@ -364,19 +366,21 @@ namespace DungeonInn.Domain.Actor
 
         void RefreshParams()
         {
-            Params = ActorParamCalculator.Calculate(Stats, Equipment.All, Behavior, Level);
+            equipment.CopyAllTo(equipmentBuffer);
+            Params = ActorParamCalculator.Calculate(Stats, equipmentBuffer, Behavior, Level);
             RefreshWeaponAttack();
             RefreshWeaponCombatParams();
         }
 
         void RefreshWeaponAttack()
         {
-            WeaponAttack = WeaponCalculator.CalculateAttack(Stats, Equipment.Weapon, Equipment.WeaponEquipment, Behavior, Level, Equipment.AllStatBonuses);
+            equipment.CopyAllStatBonusesTo(statBonusBuffer);
+            WeaponAttack = WeaponCalculator.CalculateAttack(Stats, equipment.Weapon, equipment.WeaponEquipment, Behavior, Level, statBonusBuffer);
         }
 
         void RefreshWeaponCombatParams()
         {
-            WeaponCombatParams = WeaponCombatCalculator.Calculate(this, Equipment.Weapon);
+            WeaponCombatParams = WeaponCombatCalculator.Calculate(this, equipment.Weapon);
         }
 
         public TBehavior RequireBehavior<TBehavior>() where TBehavior : class, IActorBehavior
