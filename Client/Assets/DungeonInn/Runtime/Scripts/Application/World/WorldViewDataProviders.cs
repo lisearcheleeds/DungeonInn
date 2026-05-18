@@ -1,4 +1,3 @@
-using DungeonInn.Application.World;
 using System;
 using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
@@ -111,7 +110,8 @@ namespace DungeonInn.Application.World
 
     public interface IWorldMapViewDataProvider
     {
-        IReadOnlyList<WorldMapLayerViewData> GetLayers();
+        WorldMapLayerViewData GetLayer(MapLayerId layerId);
+        void InvalidateLayer(MapLayerId layerId);
     }
 
     public interface IActorViewDataProvider
@@ -122,7 +122,6 @@ namespace DungeonInn.Application.World
     public sealed class WorldMapViewDataProvider : IWorldMapViewDataProvider
     {
         readonly IGameWorldStateReader worldState;
-        readonly List<WorldMapLayerViewData> layers = new();
         readonly Dictionary<int, WorldMapLayerViewData> cachedLayers = new();
         readonly List<WorldMapCellViewKind> cellKindBuffer = new();
 
@@ -132,17 +131,25 @@ namespace DungeonInn.Application.World
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
         }
 
-        public IReadOnlyList<WorldMapLayerViewData> GetLayers()
+        public WorldMapLayerViewData GetLayer(MapLayerId layerId)
         {
-            layers.Clear();
-            layers.Add(GetOrCreateGroundLayer(worldState.GroundMap));
-
-            foreach (var pair in worldState.Dungeon.Floors)
+            if (layerId.Value == MapLayerId.Ground.Value)
             {
-                layers.Add(GetOrCreateDungeonLayer(pair.Value));
+                return GetOrCreateGroundLayer(worldState.GroundMap);
             }
 
-            return layers;
+            var floorIndex = layerId.Value;
+            if (worldState.Dungeon.Floors.TryGetValue(floorIndex, out var floor))
+            {
+                return GetOrCreateDungeonLayer(floor);
+            }
+
+            throw new InvalidOperationException($"Layer not found: {layerId.Value}");
+        }
+
+        public void InvalidateLayer(MapLayerId layerId)
+        {
+            cachedLayers.Remove(layerId.Value);
         }
 
         WorldMapLayerViewData GetOrCreateGroundLayer(GroundMap groundMap)

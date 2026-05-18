@@ -2,6 +2,7 @@ using DungeonInn.Application.Economy;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Core;
 using DungeonInn.Input;
 using DungeonInn.Input.Layer;
 using DungeonInn.LighthouseGenerated;
@@ -40,12 +41,16 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         [Inject]
         public void Construct(
+            IProductSceneManager sceneManager,
+            IInputLayerController inputLayerController,
+            InputActions inputActions,
             IWorldPresenter worldPresenter,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
             WorldCameraController worldCameraController,
             WorldLayerViewController worldLayerViewController)
         {
+            ConstructInputLayer(sceneManager, inputLayerController, inputActions);
             this.worldPresenter = worldPresenter;
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;

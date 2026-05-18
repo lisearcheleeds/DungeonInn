@@ -13,24 +13,56 @@ namespace DungeonInn.View.Scene.MainScene.World
         const float PixelsPerUnit = 16f;
 
         readonly Dictionary<ActorBehaviorType, Sprite> placeholderSprites = new();
+        readonly Dictionary<ActorBehaviorType, ActorVisualSizeTier> placeholderSizeTiers = new();
         readonly List<Texture2D> placeholderTextures = new();
+        readonly VisualConfigLoader visualConfigLoader;
 
         [Inject]
-        public ActorSpriteVisualConfig()
+        public ActorSpriteVisualConfig(VisualConfigLoader visualConfigLoader)
         {
-            Add(ActorBehaviorType.Adventurer, new Color(0.1f, 0.45f, 1f, 1f));
-            Add(ActorBehaviorType.Monster, new Color(0.9f, 0.15f, 0.1f, 1f));
-            Add(ActorBehaviorType.None, new Color(1f, 0.85f, 0.1f, 1f));
+            this.visualConfigLoader = visualConfigLoader ?? throw new ArgumentNullException(nameof(visualConfigLoader));
+
+            Add(ActorBehaviorType.Adventurer, new Color(0.1f, 0.45f, 1f, 1f), ActorVisualSizeTier.AdventurerS);
+            Add(ActorBehaviorType.Monster, new Color(0.9f, 0.15f, 0.1f, 1f), ActorVisualSizeTier.MonsterS);
+            Add(ActorBehaviorType.GuildStaff, new Color(0.1f, 0.8f, 0.4f, 1f), ActorVisualSizeTier.AdventurerS);
+            Add(ActorBehaviorType.Pet, new Color(0.8f, 0.5f, 0.1f, 1f), ActorVisualSizeTier.MonsterS);
+            Add(ActorBehaviorType.None, new Color(1f, 0.85f, 0.1f, 1f), ActorVisualSizeTier.AdventurerS);
         }
 
-        public Sprite GetPlaceholderSprite(ActorBehaviorType behaviorType)
+        public Sprite GetSprite(
+            ActorBehaviorType behaviorType,
+            ActorAnimationDirection direction,
+            bool isWalking,
+            int walkFrameIndex)
         {
+            var spriteSet = visualConfigLoader.GetSpriteSet(behaviorType);
+            if (spriteSet != null)
+            {
+                return spriteSet.GetSprite(direction, isWalking, walkFrameIndex);
+            }
+
             if (!placeholderSprites.TryGetValue(behaviorType, out var sprite))
             {
                 return placeholderSprites[ActorBehaviorType.None];
             }
 
             return sprite;
+        }
+
+        public ActorVisualSizeTier GetVisualSizeTier(ActorBehaviorType behaviorType)
+        {
+            var spriteSet = visualConfigLoader.GetSpriteSet(behaviorType);
+            if (spriteSet != null)
+            {
+                return spriteSet.VisualSizeTier;
+            }
+
+            if (!placeholderSizeTiers.TryGetValue(behaviorType, out var sizeTier))
+            {
+                return placeholderSizeTiers[ActorBehaviorType.None];
+            }
+
+            return sizeTier;
         }
 
         public void Dispose()
@@ -55,7 +87,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             placeholderTextures.Clear();
         }
 
-        void Add(ActorBehaviorType behaviorType, Color color)
+        void Add(ActorBehaviorType behaviorType, Color color, ActorVisualSizeTier visualSizeTier)
         {
             var texture = CreatePlaceholderTexture(color);
             var sprite = Sprite.Create(
@@ -65,6 +97,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 PixelsPerUnit);
             placeholderTextures.Add(texture);
             placeholderSprites.Add(behaviorType, sprite);
+            placeholderSizeTiers.Add(behaviorType, visualSizeTier);
         }
 
         static Texture2D CreatePlaceholderTexture(Color color)

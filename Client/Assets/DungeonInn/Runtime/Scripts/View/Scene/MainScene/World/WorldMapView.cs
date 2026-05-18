@@ -1,10 +1,11 @@
-using DungeonInn.Application.World;
 using System;
 using System.Collections.Generic;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
@@ -13,31 +14,61 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly IWorldMapViewDataProvider viewDataProvider;
         readonly MapLayerViewRegistry layerViewRegistry;
         readonly MapMeshBuildService mapMeshBuildService;
+        readonly NavMeshBuildService navMeshBuildService;
+        readonly EnvironmentObjectPlacer environmentObjectPlacer;
         readonly HashSet<int> scheduledLayerIds = new();
         readonly HashSet<int> completedLayerIds = new();
         readonly Dictionary<int, int> remainingChunkCountsByLayer = new();
+        readonly Dictionary<int, int> layerBuildVersions = new();
         readonly Queue<MapChunkBuildRequest> pendingChunkBuilds = new();
         readonly List<Mesh> generatedMeshes = new();
 
+        [Inject]
         public WorldMapView(
             IWorldMapViewDataProvider viewDataProvider,
             MapLayerViewRegistry layerViewRegistry,
-            MapMeshBuildService mapMeshBuildService)
+            MapMeshBuildService mapMeshBuildService,
+            NavMeshBuildService navMeshBuildService,
+            EnvironmentObjectPlacer environmentObjectPlacer)
         {
             this.viewDataProvider = viewDataProvider ?? throw new ArgumentNullException(nameof(viewDataProvider));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.mapMeshBuildService = mapMeshBuildService ?? throw new ArgumentNullException(nameof(mapMeshBuildService));
+            this.navMeshBuildService = navMeshBuildService ?? throw new ArgumentNullException(nameof(navMeshBuildService));
+            this.environmentObjectPlacer = environmentObjectPlacer ?? throw new ArgumentNullException(nameof(environmentObjectPlacer));
         }
 
         public void UpdateVisuals()
         {
-            EnqueueMissingLayerTiles();
             BuildQueuedChunks(GameConstants.MapChunkBuildsPerFrame);
+        }
+
+        public void NotifyLayerAdded(MapLayerId layerId)
+        {
+            if (scheduledLayerIds.Contains(layerId.Value))
+            {
+                return;
+            }
+
+            var layerData = viewDataProvider.GetLayer(layerId);
+            EnqueueLayerChunks(layerData);
+            scheduledLayerIds.Add(layerId.Value);
         }
 
         public bool IsTileBuildCompleted(MapLayerId layerId)
         {
             return completedLayerIds.Contains(layerId.Value);
+        }
+
+        public void InvalidateLayer(MapLayerId layerId)
+        {
+            scheduledLayerIds.Remove(layerId.Value);
+            completedLayerIds.Remove(layerId.Value);
+            remainingChunkCountsByLayer.Remove(layerId.Value);
+            IncrementLayerBuildVersion(layerId.Value);
+            layerViewRegistry.DestroyLayerRoot(layerId);
+            navMeshBuildService.InvalidateLayer(layerId);
+            viewDataProvider.InvalidateLayer(layerId);
         }
 
         public void Dispose()
@@ -46,7 +77,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 if (mesh != null)
                 {
-                    UnityEngine.Object.Destroy(mesh);
+                    DestroyGeneratedMesh(mesh);
                 }
             }
 
@@ -55,24 +86,13 @@ namespace DungeonInn.View.Scene.MainScene.World
             scheduledLayerIds.Clear();
             completedLayerIds.Clear();
             remainingChunkCountsByLayer.Clear();
-        }
-
-        void EnqueueMissingLayerTiles()
-        {
-            foreach (var layerData in viewDataProvider.GetLayers())
-            {
-                if (scheduledLayerIds.Contains(layerData.LayerId.Value))
-                {
-                    continue;
-                }
-
-                EnqueueLayerChunks(layerData);
-                scheduledLayerIds.Add(layerData.LayerId.Value);
-            }
+            layerBuildVersions.Clear();
         }
 
         void EnqueueLayerChunks(WorldMapLayerViewData layerData)
         {
+            var layerIdValue = layerData.LayerId.Value;
+            var buildVersion = IncrementLayerBuildVersion(layerIdValue);
             var layerRoot = CreateLayerRoot(layerData.LayerName, layerData.LayerId);
             var chunkCount = 0;
             for (var z = 0; z < layerData.Height; z += GameConstants.MapChunkTileSize)
@@ -86,11 +106,20 @@ namespace DungeonInn.View.Scene.MainScene.World
                         x,
                         z,
                         Math.Min(GameConstants.MapChunkTileSize, layerData.Width - x),
-                        Math.Min(GameConstants.MapChunkTileSize, layerData.Height - z)));
+                        Math.Min(GameConstants.MapChunkTileSize, layerData.Height - z),
+                        buildVersion));
                 }
             }
 
-            remainingChunkCountsByLayer[layerData.LayerId.Value] = chunkCount;
+            remainingChunkCountsByLayer[layerIdValue] = chunkCount;
+        }
+
+        int IncrementLayerBuildVersion(int layerId)
+        {
+            layerBuildVersions.TryGetValue(layerId, out var version);
+            version++;
+            layerBuildVersions[layerId] = version;
+            return version;
         }
 
         Transform CreateLayerRoot(string layerName, MapLayerId layerId)
@@ -100,7 +129,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void BuildQueuedChunks(int maxChunkCount)
         {
-            for (var count = 0; count < maxChunkCount && pendingChunkBuilds.Count > 0; count++)
+            for (var count = 0; count < maxChunkCount && 0 < pendingChunkBuilds.Count; count++)
             {
                 BuildQueuedChunk(pendingChunkBuilds.Dequeue());
             }
@@ -108,6 +137,13 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void BuildQueuedChunk(MapChunkBuildRequest request)
         {
+            var layerId = request.LayerData.LayerId.Value;
+            if (!layerBuildVersions.TryGetValue(layerId, out var currentVersion) ||
+                currentVersion != request.BuildVersion)
+            {
+                return;
+            }
+
             var chunkMesh = mapMeshBuildService.BuildChunk(
                 request.LayerData.LayerId,
                 request.StartX,
@@ -122,6 +158,13 @@ namespace DungeonInn.View.Scene.MainScene.World
                 request.StartX,
                 request.StartZ,
                 chunkMesh);
+            environmentObjectPlacer.PlaceChunkProps(
+                request.LayerRoot,
+                request.LayerData,
+                request.StartX,
+                request.StartZ,
+                request.Width,
+                request.Height);
             CompleteChunkBuild(request.LayerData.LayerId);
         }
 
@@ -134,7 +177,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             remainingCount--;
-            if (remainingCount > 0)
+            if (0 < remainingCount)
             {
                 remainingChunkCountsByLayer[layerIdValue] = remainingCount;
                 return;
@@ -142,6 +185,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             remainingChunkCountsByLayer.Remove(layerIdValue);
             completedLayerIds.Add(layerIdValue);
+            navMeshBuildService.BakeLayerIfNeeded(layerId);
         }
 
         static TileVisualKind ToTileVisualKind(WorldMapCellViewKind cellViewKind)
@@ -192,7 +236,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 int startX,
                 int startZ,
                 int width,
-                int height)
+                int height,
+                int buildVersion)
             {
                 LayerRoot = layerRoot;
                 LayerData = layerData;
@@ -200,6 +245,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 StartZ = startZ;
                 Width = width;
                 Height = height;
+                BuildVersion = buildVersion;
             }
 
             public Transform LayerRoot { get; }
@@ -208,6 +254,19 @@ namespace DungeonInn.View.Scene.MainScene.World
             public int StartZ { get; }
             public int Width { get; }
             public int Height { get; }
+            public int BuildVersion { get; }
+        }
+
+        static void DestroyGeneratedMesh(Mesh mesh)
+        {
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEngine.Object.DestroyImmediate(mesh);
+                return;
+            }
+#endif
+            UnityEngine.Object.Destroy(mesh);
         }
     }
 }

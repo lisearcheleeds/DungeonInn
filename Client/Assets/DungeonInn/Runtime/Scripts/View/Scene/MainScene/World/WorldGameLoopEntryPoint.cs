@@ -1,8 +1,8 @@
-using DungeonInn.Application.World;
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.World;
 using UnityEngine;
 using VContainer;
 
@@ -14,6 +14,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         WorldMapView worldMapView;
         WorldActorPresenter worldActorPresenter;
         WorldCameraController worldCameraController;
+        VisualConfigLoader visualConfigLoader;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
 
@@ -25,12 +26,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             IWorldSimulationOrchestrator worldSimulationOrchestrator,
             WorldMapView worldMapView,
             WorldActorPresenter worldActorPresenter,
-            WorldCameraController worldCameraController)
+            WorldCameraController worldCameraController,
+            VisualConfigLoader visualConfigLoader)
         {
             this.worldSimulationOrchestrator = worldSimulationOrchestrator ?? throw new ArgumentNullException(nameof(worldSimulationOrchestrator));
             this.worldMapView = worldMapView ?? throw new ArgumentNullException(nameof(worldMapView));
             this.worldActorPresenter = worldActorPresenter ?? throw new ArgumentNullException(nameof(worldActorPresenter));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
+            this.visualConfigLoader = visualConfigLoader ?? throw new ArgumentNullException(nameof(visualConfigLoader));
         }
 
         void Start()
@@ -68,6 +71,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             try
             {
+                await visualConfigLoader.LoadAsync(cancellationToken);
                 var result = await worldSimulationOrchestrator.InitializeAsync(cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 isInitialized = true;

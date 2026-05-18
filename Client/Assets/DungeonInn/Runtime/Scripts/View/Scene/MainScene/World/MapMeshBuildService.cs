@@ -3,21 +3,27 @@ using System.Collections.Generic;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class MapMeshBuildService
     {
+        const float WallHeightMeters = GameConstants.MapCellSizeMeters;
+
         readonly MapTileVisualConfig tileVisualConfig;
+        readonly MapMaterialSet mapMaterialSet;
         readonly List<Vector3> vertices = new();
         readonly List<Vector2> uv = new();
         readonly Dictionary<TileVisualKind, List<int>> trianglesByKind = new();
         readonly List<Material> materials = new();
         readonly List<TileVisualKind> visualKinds = new();
 
-        public MapMeshBuildService(MapTileVisualConfig tileVisualConfig)
+        [Inject]
+        public MapMeshBuildService(MapTileVisualConfig tileVisualConfig, MapMaterialSet mapMaterialSet)
         {
             this.tileVisualConfig = tileVisualConfig ?? throw new ArgumentNullException(nameof(tileVisualConfig));
+            this.mapMaterialSet = mapMaterialSet ?? throw new ArgumentNullException(nameof(mapMaterialSet));
         }
 
         public MapChunkMesh BuildChunk(
@@ -43,7 +49,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                     var position = new GridPosition(x, z);
                     var visualKind = resolveVisualKind(position);
                     var visualDefinition = tileVisualConfig.Get(visualKind);
-                    AddPlane(position, visualDefinition);
+                    AddTileGeometry(position, visualDefinition);
                 }
             }
 
@@ -80,10 +86,10 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void EnsureBufferCapacity(int tileCount)
         {
-            EnsureCapacity(vertices, tileCount * 4);
-            EnsureCapacity(uv, tileCount * 4);
+            EnsureCapacity(vertices, tileCount * 20);
+            EnsureCapacity(uv, tileCount * 20);
 
-            var triangleCount = tileCount * 6;
+            var triangleCount = tileCount * 30;
             foreach (var triangles in trianglesByKind.Values)
             {
                 EnsureCapacity(triangles, triangleCount);
@@ -109,6 +115,24 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
         }
 
+        void AddTileGeometry(
+            GridPosition position,
+            TileVisualDefinition visualDefinition)
+        {
+            switch (visualDefinition.ShapeKind)
+            {
+                case TileMeshShapeKind.Block:
+                    AddBlock(position, visualDefinition);
+                    break;
+                case TileMeshShapeKind.Ramp:
+                    AddRamp(position, visualDefinition);
+                    break;
+                default:
+                    AddPlane(position, visualDefinition);
+                    break;
+            }
+        }
+
         void AddPlane(
             GridPosition position,
             TileVisualDefinition visualDefinition)
@@ -116,18 +140,84 @@ namespace DungeonInn.View.Scene.MainScene.World
             var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
             var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
             var halfSize = GameConstants.MapCellSizeMeters * 0.5f;
-            var vertexStart = vertices.Count;
 
-            vertices.Add(new Vector3(cellCenterX - halfSize, 0f, cellCenterZ - halfSize));
-            vertices.Add(new Vector3(cellCenterX - halfSize, 0f, cellCenterZ + halfSize));
-            vertices.Add(new Vector3(cellCenterX + halfSize, 0f, cellCenterZ + halfSize));
-            vertices.Add(new Vector3(cellCenterX + halfSize, 0f, cellCenterZ - halfSize));
+            AddQuad(
+                visualDefinition,
+                new Vector3(cellCenterX - halfSize, 0f, cellCenterZ - halfSize),
+                new Vector3(cellCenterX - halfSize, 0f, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, 0f, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, 0f, cellCenterZ - halfSize));
+        }
 
-            uv.Add(new Vector2(0f, 0f));
-            uv.Add(new Vector2(0f, 1f));
-            uv.Add(new Vector2(1f, 1f));
-            uv.Add(new Vector2(1f, 0f));
+        void AddBlock(
+            GridPosition position,
+            TileVisualDefinition visualDefinition)
+        {
+            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
+            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
+            var halfSize = GameConstants.MapCellSizeMeters * 0.5f;
+            var wallHeight = WallHeightMeters;
 
+            AddQuad(
+                visualDefinition,
+                new Vector3(cellCenterX - halfSize, wallHeight, cellCenterZ - halfSize),
+                new Vector3(cellCenterX - halfSize, wallHeight, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, wallHeight, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, wallHeight, cellCenterZ - halfSize));
+
+            AddQuad(
+                visualDefinition,
+                new Vector3(cellCenterX - halfSize, 0f, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, 0f, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, wallHeight, cellCenterZ + halfSize),
+                new Vector3(cellCenterX - halfSize, wallHeight, cellCenterZ + halfSize));
+
+            AddQuad(
+                visualDefinition,
+                new Vector3(cellCenterX + halfSize, 0f, cellCenterZ - halfSize),
+                new Vector3(cellCenterX - halfSize, 0f, cellCenterZ - halfSize),
+                new Vector3(cellCenterX - halfSize, wallHeight, cellCenterZ - halfSize),
+                new Vector3(cellCenterX + halfSize, wallHeight, cellCenterZ - halfSize));
+
+            AddQuad(
+                visualDefinition,
+                new Vector3(cellCenterX + halfSize, 0f, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, 0f, cellCenterZ - halfSize),
+                new Vector3(cellCenterX + halfSize, wallHeight, cellCenterZ - halfSize),
+                new Vector3(cellCenterX + halfSize, wallHeight, cellCenterZ + halfSize));
+
+            AddQuad(
+                visualDefinition,
+                new Vector3(cellCenterX - halfSize, 0f, cellCenterZ - halfSize),
+                new Vector3(cellCenterX - halfSize, 0f, cellCenterZ + halfSize),
+                new Vector3(cellCenterX - halfSize, wallHeight, cellCenterZ + halfSize),
+                new Vector3(cellCenterX - halfSize, wallHeight, cellCenterZ - halfSize));
+        }
+
+        void AddRamp(
+            GridPosition position,
+            TileVisualDefinition visualDefinition)
+        {
+            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
+            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
+            var halfSize = GameConstants.MapCellSizeMeters * 0.5f;
+            var wallHeight = WallHeightMeters;
+
+            AddQuad(
+                visualDefinition,
+                new Vector3(cellCenterX - halfSize, 0f, cellCenterZ - halfSize),
+                new Vector3(cellCenterX - halfSize, wallHeight, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, wallHeight, cellCenterZ + halfSize),
+                new Vector3(cellCenterX + halfSize, 0f, cellCenterZ - halfSize));
+        }
+
+        void AddQuad(
+            TileVisualDefinition visualDefinition,
+            Vector3 v0,
+            Vector3 v1,
+            Vector3 v2,
+            Vector3 v3)
+        {
             if (!trianglesByKind.TryGetValue(visualDefinition.Kind, out var triangles))
             {
                 triangles = new List<int>();
@@ -137,8 +227,19 @@ namespace DungeonInn.View.Scene.MainScene.World
             if (triangles.Count == 0)
             {
                 visualKinds.Add(visualDefinition.Kind);
-                materials.Add(visualDefinition.RequireMaterial());
+                materials.Add(mapMaterialSet.Get(visualDefinition.Kind));
             }
+
+            var vertexStart = vertices.Count;
+            vertices.Add(v0);
+            vertices.Add(v1);
+            vertices.Add(v2);
+            vertices.Add(v3);
+
+            uv.Add(new Vector2(0f, 0f));
+            uv.Add(new Vector2(0f, 1f));
+            uv.Add(new Vector2(1f, 1f));
+            uv.Add(new Vector2(1f, 0f));
 
             triangles.Add(vertexStart);
             triangles.Add(vertexStart + 1);

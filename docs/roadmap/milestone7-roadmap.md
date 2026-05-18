@@ -7,6 +7,18 @@
 
 ## 対象範囲
 
+### Actor アニメーション拡張
+
+**経緯**: Milestone 6 では `ActorAnimationState`（enum）、`ActorSpriteAnimator`（plain class）、`ActorSpriteAnimationClip`（ScriptableObject）を追加し、idle / walk のフレーム配列・FPS・loop 設定を `ActorView` prefab 経由で差し替えられるようにした。`SetAnimationState()` / `Tick()` / `CurrentFrameIndex` はすべてスプライト選択に接続済み。
+
+**M7 で拡張する理由**: Milestone 6 の animation は idle / walk の基礎表示に限定する。combat / hit / dead や正式なアニメーション差し替え UI は戦闘表現と合わせて Milestone 7 で扱う。
+
+**M7 での対応内容**:
+- combat / hit / dead の `ActorAnimationState` を追加
+- 状態ごとの `ActorSpriteAnimationClip` を追加
+- 戦闘イベントに応じて `WorldActorPresenter` から animation state を切り替える
+- PlayMode で Actor が戦闘中に combat / hit / dead 表現へ切り替わることを確認
+
 ### 戦闘演出
 
 - 被弾・死亡スプライトアニメーション（combat / hit / dead アニメーション状態の追加）

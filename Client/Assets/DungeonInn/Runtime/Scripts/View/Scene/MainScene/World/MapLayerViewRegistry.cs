@@ -25,9 +25,41 @@ namespace DungeonInn.View.Scene.MainScene.World
             return GetOrCreateLayerRoot(layerId, layerName).TileRoot;
         }
 
+        public Transform GetTileRoot(MapLayerId layerId)
+        {
+            if (!layerRoots.TryGetValue(layerId.Value, out var root))
+            {
+                return null;
+            }
+
+            return root.TileRoot;
+        }
+
         public Transform GetOrCreateActorRoot(MapLayerId layerId)
         {
             return GetOrCreateLayerRoot(layerId, ResolveFallbackLayerName(layerId)).ActorRoot;
+        }
+
+        public void DestroyLayerRoot(MapLayerId layerId)
+        {
+            if (!layerRoots.TryGetValue(layerId.Value, out var root))
+            {
+                return;
+            }
+
+            if (root.Root != null)
+            {
+                DestroyLayerObject(root.Root.gameObject);
+            }
+
+            layerRoots.Remove(layerId.Value);
+            orderedLayerIds.Remove(layerId.Value);
+
+            if (activeLayerId == layerId.Value)
+            {
+                activeLayerId = orderedLayerIds.Count > 0 ? orderedLayerIds[0] : (int?)null;
+                ApplyLayerVisibility();
+            }
         }
 
         public void SelectNextLayer()
@@ -120,6 +152,18 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             return $"Layer{layerId.Value}";
+        }
+
+        static void DestroyLayerObject(GameObject layerObject)
+        {
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEngine.Object.DestroyImmediate(layerObject);
+                return;
+            }
+#endif
+            UnityEngine.Object.Destroy(layerObject);
         }
     }
 }

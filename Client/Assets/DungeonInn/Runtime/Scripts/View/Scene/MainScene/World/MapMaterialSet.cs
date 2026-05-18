@@ -1,15 +1,20 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class MapMaterialSet : IDisposable
     {
+        readonly VisualConfigLoader visualConfigLoader;
         readonly Dictionary<TileVisualKind, Material> materials = new();
 
-        public MapMaterialSet()
+        [Inject]
+        public MapMaterialSet(VisualConfigLoader visualConfigLoader)
         {
+            this.visualConfigLoader = visualConfigLoader ?? throw new ArgumentNullException(nameof(visualConfigLoader));
+
             Add(TileVisualKind.GroundWalkable, new Color(0.24f, 0.32f, 0.24f, 0.45f));
             Add(TileVisualKind.GroundBlocked, new Color(0.25f, 0.25f, 0.25f, 0.65f));
             Add(TileVisualKind.DungeonWalkable, new Color(0.18f, 0.20f, 0.26f, 0.65f));
@@ -21,6 +26,12 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public Material Get(TileVisualKind kind)
         {
+            var loaded = visualConfigLoader.GetMaterial(kind);
+            if (loaded != null)
+            {
+                return loaded;
+            }
+
             if (!materials.TryGetValue(kind, out var material))
             {
                 throw new InvalidOperationException($"Tile material is not registered. Kind={kind}");

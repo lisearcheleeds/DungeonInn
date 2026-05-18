@@ -245,6 +245,14 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 > チェックできていない項目が 1 つでもあれば、作業を継続するか、Claude Code に確認を取ること。
 
 - [ ] `uloop.cmd compile --project-path Client` が成功した
+- [ ] `uloop.cmd run-tests --project-path Client --test-mode EditMode` が全て pass した
+- [ ] **[ハードゲート] 以下のコマンドで 30 秒間 Unity を Play モードで動作させた。`[World] GameWorldState initialized` のログが出力され、エラーログが存在しないことを確認した**
+  ```
+  uloop.cmd control-play-mode --project-path Client --action Play
+  （30秒待機）
+  uloop.cmd control-play-mode --project-path Client --action Stop
+  uloop.cmd get-logs --project-path Client
+  ```
 - [ ] `docs/guidelines/` 配下の guideline 本文を確認した
 - [ ] 各 guideline のハードゲートに違反していない
 - [ ] 各 guideline の完了前チェックリストを確認した
@@ -262,6 +270,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 - [ ] 各 guideline の完了前チェックリストを確認した
 - [ ] ハードゲートだけでなく、本文の設計方針・判断基準に反していないことを確認した
 - [ ] コンパイルが通っている（uloop compile または Codex ログで確認）
+- [ ] **[ハードゲート] `uloop.cmd control-play-mode --action Play` → 30 秒後 Stop → `uloop.cmd get-logs` で `[World] GameWorldState initialized` ログが出力され、エラーログが存在しないことを確認した**
 
 ---
 

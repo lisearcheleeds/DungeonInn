@@ -215,10 +215,9 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(),
-                new InitializeDungeonOrchestrator(
-                    new EnsureDungeonFloorGeneratedOrchestrator(
-                        new GenerateDungeonFloorUseCase())),
-                new HardcodedMasterRepository());
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase()),
+                new HardcodedMasterRepository(),
+                new CollectingEventBus());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(

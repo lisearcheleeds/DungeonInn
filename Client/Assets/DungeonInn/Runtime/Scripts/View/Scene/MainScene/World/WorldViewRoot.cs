@@ -42,8 +42,20 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             if (root != null)
             {
-                UnityEngine.Object.Destroy(root);
+                DestroyRootObject(root);
             }
+        }
+
+        static void DestroyRootObject(GameObject rootObject)
+        {
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEngine.Object.DestroyImmediate(rootObject);
+                return;
+            }
+#endif
+            UnityEngine.Object.Destroy(rootObject);
         }
     }
 }

@@ -1,19 +1,27 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldActorViewPool : IDisposable
     {
-        readonly Stack<WorldActorView> inactiveViews = new();
-        readonly List<WorldActorView> createdViews = new();
+        readonly Stack<ActorView> inactiveViews = new();
+        readonly List<ActorView> createdViews = new();
+        readonly ActorPrefabSource prefabSource;
         bool disposed;
+
+        [Inject]
+        public WorldActorViewPool(ActorPrefabSource prefabSource)
+        {
+            this.prefabSource = prefabSource ?? throw new ArgumentNullException(nameof(prefabSource));
+        }
 
         public int InactiveCount => inactiveViews.Count;
         public int CreatedCount => createdViews.Count;
 
-        public WorldActorView Rent(Guid actorId, Sprite sprite)
+        public ActorView Rent(Guid actorId)
         {
             if (disposed)
             {
@@ -21,33 +29,33 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             var actorView = inactiveViews.Count == 0
-                ? CreateView()
+                ? InstantiateView()
                 : inactiveViews.Pop();
-            actorView.Reset(sprite);
 #if DEBUG
-            actorView.ActorObject.name = $"Actor_{actorId}";
+            actorView.gameObject.name = $"Actor_{actorId}";
 #else
-            actorView.ActorObject.name = "Actor";
+            actorView.gameObject.name = "Actor";
 #endif
-            actorView.ActorObject.layer = WorldRenderingLayer.Layer;
-            actorView.ActorObject.SetActive(true);
+            actorView.gameObject.layer = WorldRenderingLayer.Layer;
+            actorView.gameObject.SetActive(true);
+            actorView.Reset();
             return actorView;
         }
 
-        public void Return(WorldActorView actorView)
+        public void Return(ActorView actorView)
         {
-            if (actorView == null || actorView.ActorObject == null)
+            if (actorView == null || actorView.gameObject == null)
             {
                 return;
             }
 
-            actorView.ActorObject.SetActive(false);
-            actorView.ActorObject.transform.SetParent(null, false);
-            actorView.Reset(null);
+            actorView.gameObject.SetActive(false);
+            actorView.transform.SetParent(null, false);
+            actorView.Reset();
 
             if (disposed)
             {
-                DestroyActorObject(actorView.ActorObject);
+                DestroyActorObject(actorView.gameObject);
                 return;
             }
 
@@ -59,9 +67,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             disposed = true;
             foreach (var actorView in createdViews)
             {
-                if (actorView.ActorObject != null)
+                if (actorView != null && actorView.gameObject != null)
                 {
-                    DestroyActorObject(actorView.ActorObject);
+                    DestroyActorObject(actorView.gameObject);
                 }
             }
 
@@ -69,12 +77,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             createdViews.Clear();
         }
 
-        WorldActorView CreateView()
+        ActorView InstantiateView()
         {
-            var actorObject = new GameObject("Actor");
-            actorObject.layer = WorldRenderingLayer.Layer;
-            var spriteRenderer = actorObject.AddComponent<SpriteRenderer>();
-            var actorView = new WorldActorView(actorObject, spriteRenderer);
+            var actorView = UnityEngine.Object.Instantiate(prefabSource.Prefab);
+            actorView.gameObject.layer = WorldRenderingLayer.Layer;
             createdViews.Add(actorView);
             return actorView;
         }

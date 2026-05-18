@@ -22,20 +22,33 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldLifetimeScope : LifetimeScope
     {
         [SerializeField] WorldScene worldScene;
+        [SerializeField] MapMaterialSetSO mapMaterialSetSO;
+        [SerializeField] ActorSpriteVisualConfigSO actorSpriteVisualConfigSO;
+        [SerializeField] GameObject propPrefab;
 
         protected override void Configure(IContainerBuilder builder)
         {
+            // === View: シーン基盤 ===
             builder.RegisterComponent(worldScene);
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
             builder.Register<WorldViewRoot>(Lifetime.Scoped);
+
+            // === View: マップ描画 ===
             builder.RegisterInstance(new LayerPositionViewSettings()).AsSelf();
+            builder.RegisterInstance(new VisualConfigSettings(mapMaterialSetSO, actorSpriteVisualConfigSO, propPrefab));
+            builder.Register<VisualConfigLoader>(Lifetime.Scoped);
             builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
             builder.Register<MapLayerViewRegistry>(Lifetime.Scoped);
             builder.Register<MapMaterialSet>(Lifetime.Scoped);
             builder.Register<MapTileVisualConfig>(Lifetime.Scoped);
             builder.Register<MapMeshBuildService>(Lifetime.Scoped);
+            builder.Register<NavMeshBuildService>(Lifetime.Scoped);
+            builder.Register<EnvironmentObjectPlacer>(Lifetime.Scoped);
+
+            // === View: アクター描画 ===
             builder.Register<ActorSpriteVisualConfig>(Lifetime.Scoped);
+            builder.Register<ActorPrefabSource>(Lifetime.Scoped);
             builder.RegisterInstance(new WorldCameraSettings()).AsSelf();
             builder.Register<WorldMapView>(Lifetime.Scoped);
             builder.Register<WorldActorViewPool>(Lifetime.Scoped);
@@ -47,6 +60,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterEntryPoint<WorldDebugGameLogPresenter>(Lifetime.Scoped);
 #endif
 
+            // === Application: イベント / アクター状態 ===
             builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();
             builder.Register<GameEventHistoryService>(Lifetime.Scoped)
                 .As<IGameEventHistoryReader>()
@@ -64,12 +78,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ActorProcessingCandidateService>(Lifetime.Scoped);
             builder.Register<AdventurerExplorationStateService>(Lifetime.Scoped);
 
+            // === Application: ナビゲーション / 空間 ===
             builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
+            builder.Register<UnityNavMeshPathProvider>(Lifetime.Scoped).As<INavigationPathProvider>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
             builder.Register<ActorCombatService>(Lifetime.Scoped).As<IActorCombatService>();
             builder.Register<ActorSpatialIndexService>(Lifetime.Scoped);
             builder.Register<ItemSpatialIndexService>(Lifetime.Scoped);
 
+            // === Application: ワールド状態 / ゲームループ ===
             builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
             builder.Register<GameWorldState>(Lifetime.Scoped)
                 .As<IGameWorldState>()
@@ -92,6 +109,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ResumeGameTimeUseCase>(Lifetime.Scoped);
             builder.Register<ToggleGamePauseUseCase>(Lifetime.Scoped);
             builder.Register<GetGameTimeStateUseCase>(Lifetime.Scoped);
+
+            // === Application: 経済 / 宿屋 ===
             builder.Register<GetGameEventHistoryUseCase>(Lifetime.Scoped);
             builder.Register<InnEconomyStatisticsService>(Lifetime.Scoped);
             builder.Register<InnDailyReportStore>(Lifetime.Scoped);
@@ -99,18 +118,24 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<GetInnEconomyStatusUseCase>(Lifetime.Scoped);
             builder.Register<GetInnEconomyReportUseCase>(Lifetime.Scoped);
             builder.Register<AssignStaffUseCase>(Lifetime.Scoped);
+
+            // === Application: アクタースポーン ===
             builder.Register<CalculateScoutCostUseCase>(Lifetime.Scoped);
             builder.Register<CompleteActorSpawnUseCase>(Lifetime.Scoped);
             builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
             builder.Register<SpawnMonsterUseCase>(Lifetime.Scoped);
             builder.Register<SpawnScheduledAdventurerOrchestrator>(Lifetime.Scoped);
             builder.Register<SpawnScheduledMonsterOrchestrator>(Lifetime.Scoped);
+
+            // === Application: アクター移動 / 成長 ===
             builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Scoped);
             builder.Register<ActorCombatPowerCalculator>(Lifetime.Scoped);
             builder.Register<UseDungeonStairOrchestrator>(Lifetime.Scoped);
             builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Scoped);
             builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorLifecycleOrchestrator>(Lifetime.Scoped);
+
+            // === Application: 戦闘 ===
             builder.Register<CombatEncounterTargetResolver>(Lifetime.Scoped);
             builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
             builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);
@@ -129,6 +154,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<CombatEffectExecutor>(Lifetime.Scoped);
             builder.Register<AdvanceProjectileUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceAreaEffectUseCase>(Lifetime.Scoped);
+
+            // === Application: アドベンチャラー帰還 / 宿屋処理 ===
             builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
             builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);
             builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
@@ -141,6 +168,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<ProcessFacilityUsageUseCase>(Lifetime.Scoped);
             builder.Register<RecruitStaffOrchestrator>(Lifetime.Scoped);
 
+            // === Application: AI ===
             builder.Register<ActorDecisionScheduler>(Lifetime.Scoped);
             builder.Register<ApplyActorAiDecisionUseCase>(Lifetime.Scoped);
             builder.Register<AdvanceActorAiOrchestrator>(Lifetime.Scoped);

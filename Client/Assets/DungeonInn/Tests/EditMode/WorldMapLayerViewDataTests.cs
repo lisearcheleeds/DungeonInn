@@ -1,8 +1,8 @@
-using DungeonInn.Application.World;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Dungeon;
@@ -11,6 +11,7 @@ using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using DungeonInn.View.Scene.MainScene.World;
+using LighthouseExtends.Addressable;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -61,31 +62,29 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void WorldMapViewDataProviderAddsCachedLayerForAddedDungeonFloor()
+        public void WorldMapViewDataProviderReturnsCachedLayerByLayerId()
         {
             var dungeon = new Dungeon(123);
             var worldState = new TestWorldState(CreateGroundMap(), dungeon);
             var provider = new WorldMapViewDataProvider(worldState);
 
-            var initialLayers = provider.GetLayers();
-            Assert.That(initialLayers.Count, Is.EqualTo(1));
-            Assert.That(initialLayers[0].LayerId, Is.EqualTo(MapLayerId.Ground));
+            var groundLayer = provider.GetLayer(MapLayerId.Ground);
+            Assert.That(groundLayer.LayerId, Is.EqualTo(MapLayerId.Ground));
 
             var floor = CreateDungeonFloor(1);
             dungeon.AddFloor(floor);
 
-            var layersAfterFloorAdded = provider.GetLayers();
-            Assert.That(layersAfterFloorAdded.Count, Is.EqualTo(2));
-            Assert.That(layersAfterFloorAdded[1].LayerId, Is.EqualTo(MapLayerId.DungeonFloor(1)));
+            var dungeonLayer = provider.GetLayer(MapLayerId.DungeonFloor(1));
+            Assert.That(dungeonLayer.LayerId, Is.EqualTo(MapLayerId.DungeonFloor(1)));
             Assert.That(
-                layersAfterFloorAdded[1].GetCellKind(new GridPosition(0, 0)),
+                dungeonLayer.GetCellKind(new GridPosition(0, 0)),
                 Is.EqualTo(WorldMapCellViewKind.StairUp));
             Assert.That(
-                layersAfterFloorAdded[1].GetCellKind(new GridPosition(1, 1)),
+                dungeonLayer.GetCellKind(new GridPosition(1, 1)),
                 Is.EqualTo(WorldMapCellViewKind.StairDown));
 
-            var repeatedLayers = provider.GetLayers();
-            Assert.That(repeatedLayers[1], Is.EqualTo(layersAfterFloorAdded[1]));
+            var repeatedLayer = provider.GetLayer(MapLayerId.DungeonFloor(1));
+            Assert.That(repeatedLayer, Is.EqualTo(dungeonLayer));
         }
 
         [Test]
@@ -131,7 +130,8 @@ namespace DungeonInn.Tests.EditMode
         {
             var viewRoot = new WorldViewRoot();
             var layerRegistry = new MapLayerViewRegistry(viewRoot);
-            var pool = new WorldActorViewPool();
+            var prefabSource = new ActorPrefabSource(null);
+            var pool = new WorldActorViewPool(prefabSource);
             var registry = new WorldActorViewRegistry(pool, layerRegistry);
 
             try
@@ -140,7 +140,6 @@ namespace DungeonInn.Tests.EditMode
                 var firstView = registry.GetOrCreateActorView(
                     firstActorId,
                     new LayerPosition(MapLayerId.Ground, 1f, 1f),
-                    null,
                     out var firstCreated);
 
                 for (var i = 0; i < 128; i++)
@@ -150,7 +149,6 @@ namespace DungeonInn.Tests.EditMode
                     firstView = registry.GetOrCreateActorView(
                         firstActorId,
                         new LayerPosition(MapLayerId.Ground, i, i),
-                        null,
                         out var repeatedCreated);
 
                     Assert.That(repeatedCreated, Is.True);
@@ -158,18 +156,61 @@ namespace DungeonInn.Tests.EditMode
 
                 Assert.That(firstCreated, Is.True);
                 Assert.That(pool.CreatedCount, Is.EqualTo(1));
-                Assert.That(firstView.ActorObject.activeSelf, Is.True);
+                Assert.That(firstView.gameObject.activeSelf, Is.True);
             }
             finally
             {
                 registry.Dispose();
                 pool.Dispose();
+                prefabSource.Dispose();
                 layerRegistry.Dispose();
                 var rootObject = GameObject.Find("WorldViewRoot");
                 if (rootObject != null)
                 {
                     UnityEngine.Object.DestroyImmediate(rootObject);
                 }
+            }
+        }
+
+        [Test]
+        public void WorldMapViewSkipsQueuedChunksFromInvalidatedLayerBuild()
+        {
+            var provider = new VersionedMapViewDataProvider();
+            var viewRoot = new WorldViewRoot();
+            var layerRegistry = new MapLayerViewRegistry(viewRoot);
+            var loader = new VisualConfigLoader(
+                new ThrowingAssetManager(),
+                new VisualConfigSettings(null, null, null));
+            var materialSet = new MapMaterialSet(loader);
+            var tileConfig = new MapTileVisualConfig(materialSet);
+            var mapView = new WorldMapView(
+                provider,
+                layerRegistry,
+                new MapMeshBuildService(tileConfig, materialSet),
+                new NavMeshBuildService(layerRegistry),
+                new EnvironmentObjectPlacer(new VisualConfigSettings(null, null, null)));
+
+            try
+            {
+                mapView.NotifyLayerAdded(MapLayerId.Ground);
+                mapView.UpdateVisuals();
+
+                provider.AdvanceVersion();
+                mapView.InvalidateLayer(MapLayerId.Ground);
+                mapView.NotifyLayerAdded(MapLayerId.Ground);
+                mapView.UpdateVisuals();
+                mapView.UpdateVisuals();
+
+                Assert.That(GameObject.Find("GroundV0_Chunk_16_0"), Is.Null);
+                Assert.That(GameObject.Find("GroundV1_Chunk_0_0"), Is.Not.Null);
+            }
+            finally
+            {
+                mapView.Dispose();
+                materialSet.Dispose();
+                loader.Dispose();
+                layerRegistry.Dispose();
+                viewRoot.Dispose();
             }
         }
 
@@ -250,6 +291,48 @@ namespace DungeonInn.Tests.EditMode
             public Actor FindActor(Guid actorId)
             {
                 return null;
+            }
+        }
+
+        sealed class VersionedMapViewDataProvider : IWorldMapViewDataProvider
+        {
+            int version;
+
+            public void AdvanceVersion()
+            {
+                version++;
+            }
+
+            public WorldMapLayerViewData GetLayer(MapLayerId layerId)
+            {
+                var cells = new WorldMapCellViewKind[32 * 16];
+                for (var index = 0; index < cells.Length; index++)
+                {
+                    cells[index] = WorldMapCellViewKind.GroundWalkable;
+                }
+
+                return new WorldMapLayerViewData(
+                    layerId,
+                    $"GroundV{version}",
+                    32,
+                    16,
+                    cells);
+            }
+
+            public void InvalidateLayer(MapLayerId layerId)
+            {
+            }
+        }
+
+        sealed class ThrowingAssetManager : IAssetManager
+        {
+            public IAssetScope CreateScope()
+            {
+                throw new NotSupportedException();
+            }
+
+            public void Dispose()
+            {
             }
         }
     }

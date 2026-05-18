@@ -10,7 +10,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly WorldActorViewPool actorViewPool;
         readonly MapLayerViewRegistry layerViewRegistry;
-        readonly Dictionary<Guid, WorldActorView> actorViews = new();
+        readonly Dictionary<Guid, ActorView> actorViews = new();
 
         public int Count => actorViews.Count;
 
@@ -23,32 +23,28 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
         }
 
-        public WorldActorView GetOrCreateActorView(Guid actorId, LayerPosition position, Sprite sprite, out bool created)
+        public ActorView GetOrCreateActorView(Guid actorId, LayerPosition position, out bool created)
         {
             if (actorViews.TryGetValue(actorId, out var actorView))
             {
                 created = false;
-                if (actorView.SpriteRenderer.sprite != sprite)
-                {
-                    actorView.SpriteRenderer.sprite = sprite;
-                }
 
                 return actorView;
             }
 
-            actorView = actorViewPool.Rent(actorId, sprite);
+            actorView = actorViewPool.Rent(actorId);
             actorViews.Add(actorId, actorView);
             SetActorLayer(actorView, position);
             created = true;
             return actorView;
         }
 
-        public void SetActorLayer(WorldActorView actorView, LayerPosition position)
+        public void SetActorLayer(ActorView actorView, LayerPosition position)
         {
             var actorRoot = layerViewRegistry.GetOrCreateActorRoot(position.LayerId);
-            if (actorView.ActorObject.transform.parent != actorRoot)
+            if (actorView.transform.parent != actorRoot)
             {
-                actorView.ActorObject.transform.SetParent(actorRoot, false);
+                actorView.transform.SetParent(actorRoot, false);
             }
         }
 
@@ -63,16 +59,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             actorViewPool.Return(actorView);
         }
 
-        public void ForEachActorView(Action<WorldActorView> action)
+        public void ForEachActorView(Action<Guid, ActorView> action)
         {
             if (action == null)
             {
                 throw new ArgumentNullException(nameof(action));
             }
 
-            foreach (var actorView in actorViews.Values)
+            foreach (var (id, actorView) in actorViews)
             {
-                action(actorView);
+                action(id, actorView);
             }
         }
 

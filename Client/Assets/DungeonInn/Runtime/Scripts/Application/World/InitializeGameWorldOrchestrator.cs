@@ -1,55 +1,42 @@
 using System;
-using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Combat;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
-using DungeonInn.Application.Actors.Lifecycle;
-using DungeonInn.Application.Actors.Movement;
-using DungeonInn.Application.Actors.Profiles;
-using DungeonInn.Application.Actors.Spawn;
-
 using DungeonInn.Application.Dungeons;
-using DungeonInn.Application.Economy;
-using DungeonInn.Application.Facilities;
-using DungeonInn.Application.Items;
-using DungeonInn.Application.World;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
+using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.World
 {
-    /// <summary>
-    /// World シーン開始時に地上�EチE�E、ダンジョン、�E険老E��ルドを生�Eして GameWorldState へ格納するユースケース、E    /// </summary>
     public sealed class InitializeGameWorldOrchestrator
     {
         readonly IGameWorldState gameWorldState;
         readonly InitializeWorldMapUseCase initializeWorldMapUseCase;
         readonly InitializeDungeonOrchestrator initializeDungeonUseCase;
         readonly IItemStackLimitResolver stackLimitResolver;
+        readonly IEventPublisher eventPublisher;
 
-        /// <summary>
-        /// GameWorldState 初期化ユースケースを作�Eする、E        /// </summary>
         [Inject]
         public InitializeGameWorldOrchestrator(
             IGameWorldState gameWorldState,
             InitializeWorldMapUseCase initializeWorldMapUseCase,
             InitializeDungeonOrchestrator initializeDungeonUseCase,
-            IItemStackLimitResolver stackLimitResolver)
+            IItemStackLimitResolver stackLimitResolver,
+            IEventPublisher eventPublisher)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.initializeWorldMapUseCase = initializeWorldMapUseCase ?? throw new ArgumentNullException(nameof(initializeWorldMapUseCase));
             this.initializeDungeonUseCase = initializeDungeonUseCase ?? throw new ArgumentNullException(nameof(initializeDungeonUseCase));
             this.stackLimitResolver = stackLimitResolver ?? throw new ArgumentNullException(nameof(stackLimitResolver));
+            this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }
 
-        /// <summary>
-        /// GameWorldState が未初期化であれば初期地上�EチE�E、�E期ダンジョン、�E期ギルドを生�Eして格納する、E        /// </summary>
         public async UniTask<IGameWorldState> ExecuteAsync(InitializeGameWorldRequest request)
         {
             if (request == null)
@@ -67,6 +54,12 @@ namespace DungeonInn.Application.World
             var guild = CreateInitialGuild();
 
             gameWorldState.Initialize(guild, groundMap, dungeon);
+            eventPublisher.Publish(new MapLayerAddedEvent(MapLayerId.Ground));
+            foreach (var floorIndex in dungeon.Floors.Keys)
+            {
+                eventPublisher.Publish(new MapLayerAddedEvent(MapLayerId.DungeonFloor(floorIndex)));
+            }
+
             return gameWorldState;
         }
 

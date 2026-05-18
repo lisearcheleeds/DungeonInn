@@ -1,0 +1,178 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: DungeonInn Visual
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: DungeonInn Visual
+  m_GUID: 65aef77b17444ad409039582771618e3
+  m_SerializeEntries:
+  - m_GUID: 097726bc33184a147b7a1774c0c82d72
+    m_Address: Materials/Map/StairUp
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 10babdb29e72fb24aa1f0a13a8b1969c
+    m_Address: Sprites/Goblin/WalkSW1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1752c85273b48c045b589ae2cd17f5a7
+    m_Address: Sprites/Adventurer/WalkSE1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1d9857a21b169f545be000f815da2484
+    m_Address: Materials/Map/GroundWalkable
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 410e51698d4978140b0cf6f6eefbb79d
+    m_Address: Materials/Map/DungeonBlocked
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 43ccfd040e85bc340bec205dd7c8f8e9
+    m_Address: Sprites/Adventurer/WalkSW1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 595aa706333da1444b88cacc03edada8
+    m_Address: Sprites/Goblin/WalkSE2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6fbe503972e17a948a2468568629af40
+    m_Address: Materials/Map/GroundBlocked
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 70152b12e5413114a8522ec09983ba50
+    m_Address: Sprites/Adventurer/WalkNE1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 76a0e8e3c53fad04db73c271746f28a3
+    m_Address: Sprites/Adventurer/WalkNW1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7dfdbb64646ce814fa6827db8c67e1ca
+    m_Address: Sprites/Adventurer/WalkSW2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 856d812941d23e6479d3de51cb4f651b
+    m_Address: Sprites/Adventurer/IdleNW
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8d64e51d442e44f42af59c1e17b4b78e
+    m_Address: Sprites/Goblin/WalkNW2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 90a8751ceac6e14498d25180ac088164
+    m_Address: Sprites/Goblin/WalkNE2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 938608f797168504592e837d1a59031f
+    m_Address: Sprites/Adventurer/WalkNE2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 948b8254438e7c34d9d9c91bf22c0ca0
+    m_Address: Sprites/Goblin/WalkSE1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 98c5a39e6f5f3724795b1338576287b4
+    m_Address: Materials/Map/Facility
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b4e0ab4ef6f078f488e546b7d1aaa2e6
+    m_Address: Sprites/Goblin/WalkSW2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b4e1092b5c9acde48850a46fd2d1b9fa
+    m_Address: Materials/Map/DungeonWalkable
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b5356850def0bcf48bccbcf21af99a6c
+    m_Address: Sprites/Goblin/WalkNW1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bdc03a8c805a3ea41b67f7872bf1e319
+    m_Address: Sprites/Goblin/IdleNW
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c0cf2d6de81e0c4499246cbde92bb33f
+    m_Address: Sprites/Adventurer/WalkNW2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c19de3073d6be5d488e11849eb0aebd4
+    m_Address: Sprites/Goblin/WalkNE1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ce40b55a4e8415c4e8b566cae3624b7b
+    m_Address: Sprites/Goblin/IdleSE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d5075afa2c0e5e946ab28a1a0c200dcc
+    m_Address: Sprites/Adventurer/WalkSE2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: db62ce86e6b06db4c92c97418459feb9
+    m_Address: Sprites/Adventurer/IdleSW
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e20405b2a02f82b4ba0faacc2d696521
+    m_Address: Sprites/Adventurer/IdleNE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e9aa2f72a2e274342ad7ca2b5ccfab54
+    m_Address: Sprites/Goblin/IdleNE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: efe068ecce8bfdd498a93d0fac3a47ff
+    m_Address: Sprites/Goblin/IdleSW
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f16169316ead65f4faaac0e723891a60
+    m_Address: Materials/Map/StairDown
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f97f5c85d5bd5c940a9c9b7d0f4ec593
+    m_Address: Sprites/Adventurer/IdleSE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 18b4c5419e8ee874e87335eb5fba185c, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: ba4bbd327c13f214e9a952842eea8648, type: 2}
+    - {fileID: 11400000, guid: 8afc4495039afff45b0f08e427743c62, type: 2}

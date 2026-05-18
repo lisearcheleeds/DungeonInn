@@ -8,7 +8,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         public LayerPositionViewSettings()
             : this(
                 layerHeightOffset: -240f,
-                actorHeightOffset: 1.5f)
+                actorHeightOffset: 0f)
         {
         }
 

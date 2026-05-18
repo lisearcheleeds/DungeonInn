@@ -204,3 +204,76 @@ AI評価は `GameLoopUseCase` から呼ばない。AIは状態変化でdirtyを�
 - Domain / Application は UnityEngine に依存しない。
 - View は Domain 判定を直接決めない。
 - `SceneManager.LoadScene` を直接使わず、Lighthouse のシーン遷移を使う。
+
+## WorldLifetimeScope 現行登録グループ
+
+現行の `WorldLifetimeScope.cs` は 12 グループ構成で登録する。
+
+- View: シーン基盤
+  - `WorldScene`
+  - `WorldGameLoopEntryPoint`
+  - `WorldPresenter`
+  - `WorldViewRoot`
+- View: マップ描画
+  - `LayerPositionViewSettings`
+  - `VisualConfigSettings`
+  - `VisualConfigLoader`
+  - `LayerPositionViewMapper`
+  - `MapLayerViewRegistry`
+  - `MapMaterialSet`
+  - `MapTileVisualConfig`
+  - `MapMeshBuildService`
+  - `NavMeshBuildService`
+  - `EnvironmentObjectPlacer`
+- View: アクター描画
+  - `ActorSpriteVisualConfig`
+  - `ActorPrefabSource`
+  - `WorldCameraSettings`
+  - `WorldMapView`
+  - `WorldActorViewPool`
+  - `WorldActorViewRegistry`
+  - `WorldActorPresenter`
+  - `WorldCameraController`
+  - `WorldLayerViewController`
+  - `WorldDebugGameLogPresenter`（DEBUG のみ）
+- Application: イベント / アクター状態
+  - `ActorProfileRegistry`
+  - `GameEventHistoryService`
+  - `GameEventBus`
+  - `AdventurerBattleRecordService`
+  - `ActorExplorationAchievementRegistry`
+  - `AdventurerReturnTrackingService`
+  - `AdventurerRecoveryStateService`
+  - `ActorProcessingCandidateService`
+  - `AdventurerExplorationStateService`
+- Application: ナビゲーション / 空間
+  - `GameRandom`
+  - `UnityNavMeshPathProvider` as `INavigationPathProvider`（実体は View 層クラス。Application 境界 interface で隔離する）
+  - `ActorNavigationService`
+  - `ActorCombatService`
+  - `ActorSpatialIndexService`
+  - `ItemSpatialIndexService`
+- Application: ワールド状態 / ゲームループ
+  - `GameClock`
+  - `GameWorldState`
+  - `WorldMapViewDataProvider`
+  - `ActorViewDataStore`
+  - `GameWorldFrameBuffer`
+  - `InitializeWorldMapUseCase`
+  - `GenerateDungeonFloorUseCase`
+  - `EnsureDungeonFloorGeneratedOrchestrator`
+  - `InitializeDungeonOrchestrator`
+  - `InitializeGameWorldOrchestrator`
+  - `GameLoopUseCase`
+  - `WorldSimulationOrchestrator`
+  - `SetGameTimeScaleUseCase`
+  - `PauseGameTimeUseCase`
+  - `ResumeGameTimeUseCase`
+  - `ToggleGamePauseUseCase`
+  - `GetGameTimeStateUseCase`
+- Application: 経済 / 宿屋
+- Application: アクタースポーン
+- Application: アクター移動 / 探索
+- Application: 戦闘
+- Application: アドベンチャラー帰還 / 宿屋処理
+- Application: AI

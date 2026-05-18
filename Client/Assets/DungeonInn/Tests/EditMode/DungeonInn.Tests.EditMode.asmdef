@@ -3,6 +3,10 @@
     "rootNamespace": "",
     "references": [
         "DungeonInn.Runtime",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor",
+        "Unity.ResourceManager",
+        "LighthouseExtends.Addressable.Runtime",
         "UniTask",
         "R3.Unity",
         "UnityEngine.TestRunner",

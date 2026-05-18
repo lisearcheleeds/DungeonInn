@@ -16,10 +16,18 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public static void Dispose(Material material)
         {
-            if (material != null)
+            if (material == null)
+            {
+                return;
+            }
+
+            if (UnityEngine.Application.isPlaying)
             {
                 UnityEngine.Object.Destroy(material);
+                return;
             }
+
+            UnityEngine.Object.DestroyImmediate(material);
         }
 
         static Shader ResolveShader()

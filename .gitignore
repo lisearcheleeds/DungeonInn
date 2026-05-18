@@ -1,2 +1,4 @@
 # Claude Code
 .claude/
+claude-codex-communication.log
+codex_*.tmp

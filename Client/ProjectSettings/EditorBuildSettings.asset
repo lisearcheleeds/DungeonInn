@@ -21,5 +21,6 @@ EditorBuildSettings:
     path: Assets/DungeonInn/Runtime/Scene/ModuleScene/ScreenStack.unity
     guid: 5afa4d0be71c43440ad57b749e93ffa2
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 04cc173dca050324689a4e6d94150610, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

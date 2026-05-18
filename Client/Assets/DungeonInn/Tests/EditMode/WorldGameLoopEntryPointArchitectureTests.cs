@@ -143,7 +143,9 @@ namespace DungeonInn.Tests.EditMode
             var masterRepository = new HardcodedMasterRepository();
             var itemSpatialIndexService = new ItemSpatialIndexService();
             var actorCombatService = new ActorCombatService();
-            var navigationService = new ActorNavigationService(eventBus);
+            var navigationService = new ActorNavigationService(
+                eventBus,
+                new NoOpNavigationPathProvider());
             var profileRegistry = new ActorProfileRegistry();
             var achievementRegistry = new ActorExplorationAchievementRegistry(eventBus);
             var completeActorSpawnUseCase = new CompleteActorSpawnUseCase(profileRegistry, eventBus);
@@ -162,10 +164,9 @@ namespace DungeonInn.Tests.EditMode
                 new InitializeGameWorldOrchestrator(
                     worldState,
                     new InitializeWorldMapUseCase(),
-                    new InitializeDungeonOrchestrator(
-                        new EnsureDungeonFloorGeneratedOrchestrator(
-                            new GenerateDungeonFloorUseCase())),
-                    masterRepository),
+                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase()),
+                    masterRepository,
+                    eventBus),
                 new SpawnScheduledAdventurerOrchestrator(
                     new SpawnAdventurerUseCase(
                         actorFactory,
@@ -190,8 +191,7 @@ namespace DungeonInn.Tests.EditMode
                         actorSpatialIndexService,
                         actorViewDataStore),
                     new UseDungeonStairOrchestrator(
-                        new EnsureDungeonFloorGeneratedOrchestrator(
-                            new GenerateDungeonFloorUseCase())),
+                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(), new NoOpEventPublisher())),
                     new SelectDungeonTargetFloorUseCase(
                         masterRepository,
                         new ActorCombatPowerCalculator(),

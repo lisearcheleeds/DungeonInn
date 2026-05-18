@@ -172,6 +172,8 @@ MonoBehaviour:
   autoRun: 1
   autoInjectGameObjects: []
   worldScene: {fileID: 1636493082}
+  mapMaterialSetSO: {fileID: 11400000, guid: 173807175e395494e98fad3a1af3e092, type: 2}
+  actorSpriteVisualConfigSO: {fileID: 11400000, guid: bc4e4c64fee36f34a9d2535b03dc283f, type: 2}
 --- !u!114 &1636493082
 MonoBehaviour:
   m_ObjectHideFlags: 0

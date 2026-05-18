@@ -4,7 +4,6 @@ using R3;
 using VContainer;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
-using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Application.Actors.Movement
@@ -19,15 +18,21 @@ namespace DungeonInn.Application.Actors.Movement
         readonly Dictionary<GridPosition, int> gScore = new();
         readonly Dictionary<GridPosition, int> fScore = new();
         readonly List<GridPosition> pathBuffer = new();
+        readonly INavigationPathProvider navigationPathProvider;
         DisposableBag bag;
 
         [Inject]
-        public ActorNavigationService(IEventSubscriber eventSubscriber)
+        public ActorNavigationService(
+            IEventSubscriber eventSubscriber,
+            INavigationPathProvider navigationPathProvider)
         {
             if (eventSubscriber == null)
             {
                 throw new ArgumentNullException(nameof(eventSubscriber));
             }
+
+            this.navigationPathProvider = navigationPathProvider ??
+                throw new ArgumentNullException(nameof(navigationPathProvider));
 
             eventSubscriber.OnEvent<ActorDeparted>()
                 .Subscribe(gameEvent => RemovePathState(gameEvent.ActorId))
@@ -52,6 +57,13 @@ namespace DungeonInn.Application.Actors.Movement
 
             if (!state.NeedsRecalculation(goalGrid))
             {
+                return state;
+            }
+
+            var navPath = navigationPathProvider.TryFindPath(layer.Id, startGrid, goalGrid);
+            if (navPath != null)
+            {
+                state.SetPath(navPath, goalGrid);
                 return state;
             }
 

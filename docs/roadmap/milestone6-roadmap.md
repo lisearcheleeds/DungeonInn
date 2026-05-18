@@ -145,7 +145,7 @@ idle / walk のスプライトアニメーションを実装する。
 - `ActorSpriteAnimator` はフレーム配列を受け取り、`Update` で経過時間を加算してフレームを切り替える。
 - `ActorView` MonoBehaviour が `ActorSpriteAnimator` を保持し、`SetAnimationState(ActorAnimationState state)` で状態を渡す。
 - `WorldActorPresenter` が Actor の移動状態（facing 更新あり → Walk、なし → Idle）を判定し `SetAnimationState()` を呼ぶ。この判定は View 層に閉じる。
-- Sprite の方向選択は左右反転方式を基本とする。4 方向 / 8 方向への拡張入口として `ActorSpriteAnimationClip` に方向フレーム配列を持てる設計にするが、Milestone 6 では左右反転のみ実装する。
+- Sprite の方向選択は NE / NW / SE / SW の 4 方向を Milestone 6 で実装する。8 方向への拡張入口として `ActorSpriteAnimationClip` に方向フレーム配列を持てる設計にする。
 - アニメーションフレームは Phase 1 で Addressables からロードした Sprite 配列を使う。
 
 ### 実装前に確認すること
@@ -275,9 +275,10 @@ Phase 4 と Phase 5 は依存しないが、NavMesh の bake 対象となる wal
 
 以下は Milestone 6 のスコープ外と判断した項目。
 
-- 戦闘演出（combat / hit / dead スプライト、プロジェクタイル表示、エリアエフェクト表示）
-- 宿屋 / 店舗の内部 UI / 管理画面
-- 4 方向 / 8 方向スプライト（Milestone 6 は左右反転のみ）
+- 4 方向スプライトは Milestone 6 で実装済み
+- 8 方向スプライト化（Milestone 7 以降）
+- 戦闘アニメーション（combat / hit / dead）
+- 正式 Walk フレーム差し替え（現在は 2 フレームの仮実装）
 - DropItem 正式表示
 - 音声・BGM
 
