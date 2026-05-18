@@ -126,6 +126,21 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(changes.RemovedActorIds[0], Is.EqualTo(actor.Id));
         }
 
+        [TestCaseSource(nameof(ActorBehaviorTypeCases))]
+        public void ActorViewDataStoreMapsBehaviorToViewBehaviorType(
+            IActorBehavior behavior,
+            ActorBehaviorType expectedType)
+        {
+            var store = new ActorViewDataStore();
+            var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f), behavior);
+
+            store.SyncActor(actor);
+            var changes = store.ConsumeChanges();
+
+            Assert.That(changes.ChangedActors.Count, Is.EqualTo(1));
+            Assert.That(changes.ChangedActors[0].BehaviorType, Is.EqualTo(expectedType));
+        }
+
         [Test]
         public void WorldActorViewRegistryReusesPooledViewAcrossRepeatedSpawnAndDespawn()
         {
@@ -255,6 +270,13 @@ namespace DungeonInn.Tests.EditMode
 
         static Actor CreateActor(LayerPosition position)
         {
+            return CreateActor(
+                position,
+                new AdventurerBehavior(0, AdventurerLifecycleState.Arrived));
+        }
+
+        static Actor CreateActor(LayerPosition position, IActorBehavior behavior)
+        {
             return new Actor(
                 Guid.NewGuid(),
                 0,
@@ -269,8 +291,28 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(1, "Adventurer"),
-                new AdventurerBehavior(0, AdventurerLifecycleState.Arrived),
+                behavior,
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
+        }
+
+        static IEnumerable<TestCaseData> ActorBehaviorTypeCases()
+        {
+            yield return new TestCaseData(
+                    new AdventurerBehavior(0, AdventurerLifecycleState.Arrived),
+                    ActorBehaviorType.Adventurer)
+                .SetName("Adventurer maps to Adventurer");
+            yield return new TestCaseData(
+                    new MonsterBehavior(1, Array.Empty<ActorDropEntry>()),
+                    ActorBehaviorType.Monster)
+                .SetName("Monster maps to Monster");
+            yield return new TestCaseData(
+                    new GuildStaffBehavior(Array.Empty<ItemStack>()),
+                    ActorBehaviorType.GuildStaff)
+                .SetName("GuildStaff maps to GuildStaff");
+            yield return new TestCaseData(
+                    new PetBehavior(Guid.NewGuid()),
+                    ActorBehaviorType.Pet)
+                .SetName("Pet maps to Pet");
         }
 
         static GroundMap CreateGroundMap()

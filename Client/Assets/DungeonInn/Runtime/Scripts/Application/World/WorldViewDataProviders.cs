@@ -305,6 +305,16 @@ namespace DungeonInn.Application.World
                 return ActorBehaviorType.Monster;
             }
 
+            if (actor.Behavior is GuildStaffBehavior)
+            {
+                return ActorBehaviorType.GuildStaff;
+            }
+
+            if (actor.Behavior is PetBehavior)
+            {
+                return ActorBehaviorType.Pet;
+            }
+
             return ActorBehaviorType.None;
         }
     }
