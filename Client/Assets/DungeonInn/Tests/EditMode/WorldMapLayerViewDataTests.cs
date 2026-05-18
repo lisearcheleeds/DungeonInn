@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
@@ -214,6 +215,44 @@ namespace DungeonInn.Tests.EditMode
             }
         }
 
+        [Test]
+        public void EnvironmentObjectPlacerInvalidatesPropsByLayer()
+        {
+            var placer = new EnvironmentObjectPlacer(new VisualConfigSettings(null, null, null));
+            var groundRoot = new GameObject("GroundPropRoot");
+            var dungeonRoot = new GameObject("DungeonPropRoot");
+
+            try
+            {
+                placer.PlaceChunkProps(
+                    groundRoot.transform,
+                    CreatePropLayerData(MapLayerId.Ground),
+                    0,
+                    0,
+                    2,
+                    2);
+                placer.PlaceChunkProps(
+                    dungeonRoot.transform,
+                    CreatePropLayerData(MapLayerId.DungeonFloor(1)),
+                    0,
+                    0,
+                    2,
+                    2);
+
+                placer.InvalidateLayer(MapLayerId.Ground);
+
+                Assert.That(groundRoot.transform.childCount, Is.EqualTo(0));
+                Assert.That(dungeonRoot.transform.childCount, Is.EqualTo(2));
+                Assert.That(GetEnvironmentPropLayerCount(placer), Is.EqualTo(1));
+            }
+            finally
+            {
+                placer.Dispose();
+                UnityEngine.Object.DestroyImmediate(groundRoot);
+                UnityEngine.Object.DestroyImmediate(dungeonRoot);
+            }
+        }
+
         static Actor CreateActor(LayerPosition position)
         {
             return new Actor(
@@ -267,6 +306,33 @@ namespace DungeonInn.Tests.EditMode
                 new DungeonStair(DungeonStairType.Down, new GridPosition(1, 1)),
                 Array.Empty<DungeonRoom>(),
                 new DungeonFloorGenerationSettings(0));
+        }
+
+        static WorldMapLayerViewData CreatePropLayerData(MapLayerId layerId)
+        {
+            var cellKinds = new[]
+            {
+                WorldMapCellViewKind.StairUp,
+                WorldMapCellViewKind.GroundWalkable,
+                WorldMapCellViewKind.GroundWalkable,
+                WorldMapCellViewKind.StairDown
+            };
+
+            return new WorldMapLayerViewData(
+                layerId,
+                $"Layer{layerId.Value}",
+                2,
+                2,
+                cellKinds);
+        }
+
+        static int GetEnvironmentPropLayerCount(EnvironmentObjectPlacer placer)
+        {
+            var field = typeof(EnvironmentObjectPlacer).GetField(
+                "propsByLayer",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var propsByLayer = (IReadOnlyDictionary<int, List<GameObject>>)field.GetValue(placer);
+            return propsByLayer.Count;
         }
 
         sealed class TestWorldState : IGameWorldStateReader

@@ -66,6 +66,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             completedLayerIds.Remove(layerId.Value);
             remainingChunkCountsByLayer.Remove(layerId.Value);
             IncrementLayerBuildVersion(layerId.Value);
+            environmentObjectPlacer.InvalidateLayer(layerId);
             layerViewRegistry.DestroyLayerRoot(layerId);
             navMeshBuildService.InvalidateLayer(layerId);
             viewDataProvider.InvalidateLayer(layerId);

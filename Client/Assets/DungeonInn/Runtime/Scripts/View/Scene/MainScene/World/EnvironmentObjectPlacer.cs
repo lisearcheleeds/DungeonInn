@@ -11,7 +11,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class EnvironmentObjectPlacer : IDisposable
     {
         readonly GameObject propPrefab;
-        readonly List<GameObject> placedObjects = new();
+        readonly Dictionary<int, List<GameObject>> propsByLayer = new();
 
         [Inject]
         public EnvironmentObjectPlacer(VisualConfigSettings settings)
@@ -27,6 +27,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             int width,
             int height)
         {
+            var layerProps = GetOrCreateLayerProps(layerData.LayerId);
             for (var z = startZ; z < startZ + height; z++)
             {
                 for (var x = startX; x < startX + width; x++)
@@ -36,26 +37,45 @@ namespace DungeonInn.View.Scene.MainScene.World
                     if (cellKind == WorldMapCellViewKind.StairUp ||
                         cellKind == WorldMapCellViewKind.StairDown)
                     {
-                        PlacePropAt(parent, x, z);
+                        PlacePropAt(parent, layerProps, x, z);
                     }
                 }
             }
         }
 
-        public void Dispose()
+        public void InvalidateLayer(MapLayerId layerId)
         {
-            foreach (var placedObject in placedObjects)
+            if (!propsByLayer.TryGetValue(layerId.Value, out var layerProps))
             {
-                if (placedObject != null)
-                {
-                    UnityEngine.Object.Destroy(placedObject);
-                }
+                return;
             }
 
-            placedObjects.Clear();
+            DestroyProps(layerProps);
+            propsByLayer.Remove(layerId.Value);
         }
 
-        void PlacePropAt(Transform parent, int gridX, int gridZ)
+        public void Dispose()
+        {
+            foreach (var layerProps in propsByLayer.Values)
+            {
+                DestroyProps(layerProps);
+            }
+
+            propsByLayer.Clear();
+        }
+
+        List<GameObject> GetOrCreateLayerProps(MapLayerId layerId)
+        {
+            if (!propsByLayer.TryGetValue(layerId.Value, out var layerProps))
+            {
+                layerProps = new List<GameObject>();
+                propsByLayer.Add(layerId.Value, layerProps);
+            }
+
+            return layerProps;
+        }
+
+        void PlacePropAt(Transform parent, List<GameObject> layerProps, int gridX, int gridZ)
         {
             var worldX = (gridX + 0.5f) * GameConstants.MapCellSizeMeters;
             var worldZ = (gridZ + 0.5f) * GameConstants.MapCellSizeMeters;
@@ -73,11 +93,41 @@ namespace DungeonInn.View.Scene.MainScene.World
                 var collider = propObject.GetComponent<Collider>();
                 if (collider != null)
                 {
-                    UnityEngine.Object.Destroy(collider);
+                    DestroyObject(collider);
                 }
             }
 
-            placedObjects.Add(propObject);
+            layerProps.Add(propObject);
+        }
+
+        static void DestroyProps(List<GameObject> props)
+        {
+            foreach (var prop in props)
+            {
+                if (prop != null)
+                {
+                    DestroyPropObject(prop);
+                }
+            }
+
+            props.Clear();
+        }
+
+        static void DestroyPropObject(GameObject prop)
+        {
+            DestroyObject(prop);
+        }
+
+        static void DestroyObject(UnityEngine.Object target)
+        {
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEngine.Object.DestroyImmediate(target);
+                return;
+            }
+#endif
+            UnityEngine.Object.Destroy(target);
         }
     }
 }
