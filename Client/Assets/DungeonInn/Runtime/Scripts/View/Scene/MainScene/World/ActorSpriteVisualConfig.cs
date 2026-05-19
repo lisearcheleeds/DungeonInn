@@ -8,10 +8,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class ActorSpriteVisualConfig : IDisposable
     {
-        const int SpriteWidth = 32;
-        const int SpriteHeight = 48;
-        const float PixelsPerUnit = 16f;
-
         readonly Dictionary<ActorBehaviorType, Sprite> placeholderSprites = new();
         readonly Dictionary<ActorBehaviorType, ActorVisualSizeTier> placeholderSizeTiers = new();
         readonly List<Texture2D> placeholderTextures = new();
@@ -89,33 +85,10 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void Add(ActorBehaviorType behaviorType, Color color, ActorVisualSizeTier visualSizeTier)
         {
-            var texture = CreatePlaceholderTexture(color);
-            var sprite = Sprite.Create(
-                texture,
-                new Rect(0f, 0f, SpriteWidth, SpriteHeight),
-                new Vector2(0.5f, 0f),
-                PixelsPerUnit);
+            var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
             placeholderTextures.Add(texture);
             placeholderSprites.Add(behaviorType, sprite);
             placeholderSizeTiers.Add(behaviorType, visualSizeTier);
-        }
-
-        static Texture2D CreatePlaceholderTexture(Color color)
-        {
-            var texture = new Texture2D(SpriteWidth, SpriteHeight, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp
-            };
-            var pixels = new Color[SpriteWidth * SpriteHeight];
-            for (var index = 0; index < pixels.Length; index++)
-            {
-                pixels[index] = color;
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return texture;
         }
     }
 }

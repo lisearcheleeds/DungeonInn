@@ -11,10 +11,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class VisualConfigLoader : IDisposable
     {
-        const int SpriteWidth = 32;
-        const int SpriteHeight = 48;
-        const float PixelsPerUnit = 16f;
-
         static readonly ActorAnimationDirection[] AnimationDirections =
         {
             ActorAnimationDirection.NE,
@@ -199,33 +195,10 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         Sprite CreatePlaceholderSprite(Color color)
         {
-            var texture = CreatePlaceholderTexture(color);
-            var sprite = Sprite.Create(
-                texture,
-                new Rect(0f, 0f, SpriteWidth, SpriteHeight),
-                new Vector2(0.5f, 0f),
-                PixelsPerUnit);
+            var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
             fallbackTextures.Add(texture);
             fallbackSprites.Add(sprite);
             return sprite;
-        }
-
-        static Texture2D CreatePlaceholderTexture(Color color)
-        {
-            var texture = new Texture2D(SpriteWidth, SpriteHeight, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp
-            };
-            var pixels = new Color[SpriteWidth * SpriteHeight];
-            for (var index = 0; index < pixels.Length; index++)
-            {
-                pixels[index] = color;
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return texture;
         }
     }
 }
