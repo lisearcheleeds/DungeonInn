@@ -24,6 +24,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         [SerializeField] WorldScene worldScene;
         [SerializeField] MapMaterialSetSO mapMaterialSetSO;
         [SerializeField] ActorSpriteVisualConfigSO actorSpriteVisualConfigSO;
+        [SerializeField] LayerPositionViewSettingsSO layerPositionViewSettingsSO;
+        [SerializeField] WorldCameraSettingsSO worldCameraSettingsSO;
         [SerializeField] GameObject propPrefab;
 
         protected override void Configure(IContainerBuilder builder)
@@ -35,7 +37,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldViewRoot>(Lifetime.Scoped);
 
             // === View: マップ描画 ===
-            builder.RegisterInstance(new LayerPositionViewSettings()).AsSelf();
+            builder.RegisterInstance(ResolveLayerPositionViewSettings()).AsSelf();
             builder.RegisterInstance(new VisualConfigSettings(mapMaterialSetSO, actorSpriteVisualConfigSO, propPrefab));
             builder.Register<VisualConfigLoader>(Lifetime.Scoped);
             builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
@@ -49,7 +51,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             // === View: アクター描画 ===
             builder.Register<ActorSpriteVisualConfig>(Lifetime.Scoped);
             builder.Register<ActorPrefabSource>(Lifetime.Scoped);
-            builder.RegisterInstance(new WorldCameraSettings()).AsSelf();
+            builder.RegisterInstance(ResolveWorldCameraSettings()).AsSelf();
             builder.Register<WorldMapView>(Lifetime.Scoped);
             builder.Register<WorldActorViewPool>(Lifetime.Scoped);
             builder.Register<WorldActorViewRegistry>(Lifetime.Scoped);
@@ -176,6 +178,28 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<MonsterAiPolicy>(Lifetime.Scoped);
             builder.Register<PetAiPolicy>(Lifetime.Scoped);
             builder.Register<GuildStaffAiPolicy>(Lifetime.Scoped);
+        }
+
+        LayerPositionViewSettings ResolveLayerPositionViewSettings()
+        {
+            if (layerPositionViewSettingsSO != null)
+            {
+                return layerPositionViewSettingsSO.ToSettings();
+            }
+
+            Debug.LogWarning("[World] LayerPositionViewSettingsSO is not assigned. Using fallback layer position settings.");
+            return LayerPositionViewSettingsSO.CreateFallbackSettings();
+        }
+
+        WorldCameraSettings ResolveWorldCameraSettings()
+        {
+            if (worldCameraSettingsSO != null)
+            {
+                return worldCameraSettingsSO.ToSettings();
+            }
+
+            Debug.LogWarning("[World] WorldCameraSettingsSO is not assigned. Using fallback camera settings.");
+            return WorldCameraSettingsSO.CreateFallbackSettings();
         }
     }
 }

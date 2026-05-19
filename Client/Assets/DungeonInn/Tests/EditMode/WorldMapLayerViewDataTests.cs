@@ -15,6 +15,7 @@ using DungeonInn.View.Scene.MainScene.World;
 using LighthouseExtends.Addressable;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -208,6 +209,10 @@ namespace DungeonInn.Tests.EditMode
 
             try
             {
+                LogAssert.Expect(
+                    LogType.Warning,
+                    "[MapMaterialSet] Using fallback map material. Kind=GroundWalkable");
+
                 mapView.NotifyLayerAdded(MapLayerId.Ground);
                 mapView.UpdateVisuals();
 

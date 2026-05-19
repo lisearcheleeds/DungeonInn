@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using DungeonInn.View.Scene.MainScene.World;
@@ -11,6 +12,7 @@ using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -18,6 +20,8 @@ namespace DungeonInn.Tests.EditMode
     {
         const string MapMaterialSetPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/MapMaterialSet.asset";
         const string ActorSpriteVisualConfigPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorSpriteVisualConfig.asset";
+        const string LayerPositionViewSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/LayerPositionViewSettings.asset";
+        const string WorldCameraSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/WorldCameraSettings.asset";
         const string AddressablesGroupName = "DungeonInn Visual";
 
         [Test]
@@ -72,6 +76,27 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void WorldViewSettingsAssetsExistAndConvertToRuntimeSettings()
+        {
+            var layerSettingsSo = AssetDatabase.LoadAssetAtPath<LayerPositionViewSettingsSO>(LayerPositionViewSettingsPath);
+            var cameraSettingsSo = AssetDatabase.LoadAssetAtPath<WorldCameraSettingsSO>(WorldCameraSettingsPath);
+
+            Assert.That(layerSettingsSo, Is.Not.Null);
+            Assert.That(cameraSettingsSo, Is.Not.Null);
+
+            var layerSettings = layerSettingsSo.ToSettings();
+            var cameraSettings = cameraSettingsSo.ToSettings();
+
+            Assert.That(layerSettings.LayerHeightOffset, Is.EqualTo(-240f));
+            Assert.That(layerSettings.ActorHeightOffset, Is.EqualTo(0f));
+            Assert.That(cameraSettings.MoveSpeed, Is.EqualTo(32f));
+            Assert.That(cameraSettings.RotationSensitivity, Is.EqualTo(0.2f));
+            Assert.That(cameraSettings.ZoomSensitivity, Is.EqualTo(0.02f));
+            Assert.That(cameraSettings.MinOrthographicSize, Is.EqualTo(12f));
+            Assert.That(cameraSettings.MaxOrthographicSize, Is.EqualTo(120f));
+        }
+
+        [Test]
         public void ActorSpriteVisualConfigContainsVisualSizeTierForEveryEntry()
         {
             var config = AssetDatabase.LoadAssetAtPath<ActorSpriteVisualConfigSO>(ActorSpriteVisualConfigPath);
@@ -122,6 +147,60 @@ namespace DungeonInn.Tests.EditMode
             }
         }
 
+        [Test]
+        public void ActorSpriteVisualConfigLogsWarningWhenPlaceholderIsUsed()
+        {
+            var loader = new VisualConfigLoader(
+                new ThrowingAssetManager(),
+                new VisualConfigSettings(null, null, null));
+            var config = new ActorSpriteVisualConfig(loader);
+
+            try
+            {
+                LogAssert.Expect(
+                    LogType.Warning,
+                    "[ActorSpriteVisualConfig] Using placeholder actor sprite. BehaviorType=GuildStaff");
+
+                var sprite = config.GetSprite(
+                    ActorBehaviorType.GuildStaff,
+                    ActorAnimationDirection.NE,
+                    isWalking: false,
+                    walkFrameIndex: 0);
+
+                Assert.That(sprite, Is.Not.Null);
+            }
+            finally
+            {
+                config.Dispose();
+                loader.Dispose();
+            }
+        }
+
+        [Test]
+        public void MapMaterialSetLogsWarningWhenFallbackIsUsed()
+        {
+            var loader = new VisualConfigLoader(
+                new ThrowingAssetManager(),
+                new VisualConfigSettings(null, null, null));
+            var materialSet = new MapMaterialSet(loader);
+
+            try
+            {
+                LogAssert.Expect(
+                    LogType.Warning,
+                    "[MapMaterialSet] Using fallback map material. Kind=GroundWalkable");
+
+                var material = materialSet.Get(TileVisualKind.GroundWalkable);
+
+                Assert.That(material, Is.Not.Null);
+            }
+            finally
+            {
+                materialSet.Dispose();
+                loader.Dispose();
+            }
+        }
+
         [TestCase(TileVisualKind.GroundWalkable, 4, 6)]
         [TestCase(TileVisualKind.GroundBlocked, 20, 30)]
         [TestCase(TileVisualKind.StairUp, 4, 6)]
@@ -136,6 +215,10 @@ namespace DungeonInn.Tests.EditMode
             var materialSet = new MapMaterialSet(loader);
             var tileConfig = new MapTileVisualConfig(materialSet);
             var service = new MapMeshBuildService(tileConfig, materialSet);
+
+            LogAssert.Expect(
+                LogType.Warning,
+                $"[MapMaterialSet] Using fallback map material. Kind={visualKind}");
 
             var chunkMesh = service.BuildChunk(
                 MapLayerId.Ground,

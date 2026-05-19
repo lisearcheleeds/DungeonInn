@@ -9,6 +9,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly VisualConfigLoader visualConfigLoader;
         readonly Dictionary<TileVisualKind, Material> materials = new();
+        readonly HashSet<TileVisualKind> warnedFallbackKinds = new();
 
         [Inject]
         public MapMaterialSet(VisualConfigLoader visualConfigLoader)
@@ -37,6 +38,11 @@ namespace DungeonInn.View.Scene.MainScene.World
                 throw new InvalidOperationException($"Tile material is not registered. Kind={kind}");
             }
 
+            if (warnedFallbackKinds.Add(kind))
+            {
+                Debug.LogWarning($"[MapMaterialSet] Using fallback map material. Kind={kind}");
+            }
+
             return material;
         }
 
@@ -48,6 +54,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             materials.Clear();
+            warnedFallbackKinds.Clear();
         }
 
         void Add(TileVisualKind kind, Color color)

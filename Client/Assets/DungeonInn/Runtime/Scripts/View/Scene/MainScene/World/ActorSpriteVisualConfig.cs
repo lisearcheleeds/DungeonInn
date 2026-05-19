@@ -10,6 +10,8 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly Dictionary<ActorBehaviorType, Sprite> placeholderSprites = new();
         readonly Dictionary<ActorBehaviorType, ActorVisualSizeTier> placeholderSizeTiers = new();
+        readonly HashSet<ActorBehaviorType> warnedPlaceholderFallbacks = new();
+        readonly HashSet<ActorBehaviorType> warnedSpriteSetFallbacks = new();
         readonly List<Texture2D> placeholderTextures = new();
         readonly VisualConfigLoader visualConfigLoader;
 
@@ -34,9 +36,17 @@ namespace DungeonInn.View.Scene.MainScene.World
             var spriteSet = visualConfigLoader.GetSpriteSet(behaviorType);
             if (spriteSet != null)
             {
-                return spriteSet.GetSprite(direction, isWalking, walkFrameIndex);
+                var spriteSetSprite = spriteSet.GetSprite(direction, isWalking, walkFrameIndex);
+                if (spriteSetSprite == spriteSet.FallbackSprite && warnedSpriteSetFallbacks.Add(behaviorType))
+                {
+                    Debug.LogWarning(
+                        $"[ActorSpriteVisualConfig] Using fallback actor sprite from sprite set. BehaviorType={behaviorType}");
+                }
+
+                return spriteSetSprite;
             }
 
+            WarnPlaceholderFallback(behaviorType);
             if (!placeholderSprites.TryGetValue(behaviorType, out var sprite))
             {
                 return placeholderSprites[ActorBehaviorType.None];
@@ -53,6 +63,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return spriteSet.VisualSizeTier;
             }
 
+            WarnPlaceholderFallback(behaviorType);
             if (!placeholderSizeTiers.TryGetValue(behaviorType, out var sizeTier))
             {
                 return placeholderSizeTiers[ActorBehaviorType.None];
@@ -67,7 +78,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 if (sprite != null)
                 {
-                    UnityEngine.Object.Destroy(sprite);
+                    DisposeUnityObject(sprite);
                 }
             }
 
@@ -75,12 +86,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 if (texture != null)
                 {
-                    UnityEngine.Object.Destroy(texture);
+                    DisposeUnityObject(texture);
                 }
             }
 
             placeholderSprites.Clear();
             placeholderTextures.Clear();
+            warnedPlaceholderFallbacks.Clear();
+            warnedSpriteSetFallbacks.Clear();
         }
 
         void Add(ActorBehaviorType behaviorType, Color color, ActorVisualSizeTier visualSizeTier)
@@ -89,6 +102,28 @@ namespace DungeonInn.View.Scene.MainScene.World
             placeholderTextures.Add(texture);
             placeholderSprites.Add(behaviorType, sprite);
             placeholderSizeTiers.Add(behaviorType, visualSizeTier);
+        }
+
+        void WarnPlaceholderFallback(ActorBehaviorType behaviorType)
+        {
+            if (!warnedPlaceholderFallbacks.Add(behaviorType))
+            {
+                return;
+            }
+
+            Debug.LogWarning($"[ActorSpriteVisualConfig] Using placeholder actor sprite. BehaviorType={behaviorType}");
+        }
+
+        static void DisposeUnityObject(UnityEngine.Object target)
+        {
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEngine.Object.DestroyImmediate(target);
+                return;
+            }
+#endif
+            UnityEngine.Object.Destroy(target);
         }
     }
 }

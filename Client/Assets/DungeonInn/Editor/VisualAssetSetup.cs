@@ -16,6 +16,8 @@ namespace DungeonInn.Editor
         const string MapTextureDirectory = "Assets/DungeonInn/Runtime/Art/Textures/Map";
         const string MapMaterialSoPath = SoDirectory + "/MapMaterialSet.asset";
         const string ActorSpriteSoPath = SoDirectory + "/ActorSpriteVisualConfig.asset";
+        const string LayerPositionViewSettingsPath = SoDirectory + "/LayerPositionViewSettings.asset";
+        const string WorldCameraSettingsPath = SoDirectory + "/WorldCameraSettings.asset";
         const string ActorPrefabPath = SoDirectory + "/ActorView.prefab";
         const string ActorIdleAnimationPath = SoDirectory + "/ActorIdleAnimation.asset";
         const string ActorWalkAnimationPath = SoDirectory + "/ActorWalkAnimation.asset";
@@ -27,6 +29,8 @@ namespace DungeonInn.Editor
         {
             var assetsExist = AssetDatabase.AssetPathExists(MapMaterialSoPath) &&
                 AssetDatabase.AssetPathExists(ActorSpriteSoPath) &&
+                AssetDatabase.AssetPathExists(LayerPositionViewSettingsPath) &&
+                AssetDatabase.AssetPathExists(WorldCameraSettingsPath) &&
                 AssetDatabase.AssetPathExists(ActorPrefabPath) &&
                 AssetDatabase.AssetPathExists(ActorIdleAnimationPath) &&
                 AssetDatabase.AssetPathExists(ActorWalkAnimationPath);
@@ -63,8 +67,10 @@ namespace DungeonInn.Editor
             AssignAnimationClipsToPrefab(actorPrefab, idleClip, walkClip);
             var mapSo = CreateOrLoadMapMaterialSO();
             var actorSo = CreateOrLoadActorSpriteSO(actorPrefab);
+            var layerSettingsSo = CreateOrLoadLayerPositionViewSettingsSO();
+            var cameraSettingsSo = CreateOrLoadWorldCameraSettingsSO();
 
-            AssignToWorldLifetimeScope(mapSo, actorSo);
+            AssignToWorldLifetimeScope(mapSo, actorSo, layerSettingsSo, cameraSettingsSo);
             SetupAddressables();
 
             AssetDatabase.SaveAssets();
@@ -77,6 +83,32 @@ namespace DungeonInn.Editor
         public static void RunAddressablesSetup()
         {
             SetupAddressables();
+        }
+
+        static LayerPositionViewSettingsSO CreateOrLoadLayerPositionViewSettingsSO()
+        {
+            if (AssetDatabase.AssetPathExists(LayerPositionViewSettingsPath))
+            {
+                return AssetDatabase.LoadAssetAtPath<LayerPositionViewSettingsSO>(LayerPositionViewSettingsPath);
+            }
+
+            var settings = ScriptableObject.CreateInstance<LayerPositionViewSettingsSO>();
+            AssetDatabase.CreateAsset(settings, LayerPositionViewSettingsPath);
+            Debug.Log($"[DungeonInn] Created {LayerPositionViewSettingsPath}");
+            return settings;
+        }
+
+        static WorldCameraSettingsSO CreateOrLoadWorldCameraSettingsSO()
+        {
+            if (AssetDatabase.AssetPathExists(WorldCameraSettingsPath))
+            {
+                return AssetDatabase.LoadAssetAtPath<WorldCameraSettingsSO>(WorldCameraSettingsPath);
+            }
+
+            var settings = ScriptableObject.CreateInstance<WorldCameraSettingsSO>();
+            AssetDatabase.CreateAsset(settings, WorldCameraSettingsPath);
+            Debug.Log($"[DungeonInn] Created {WorldCameraSettingsPath}");
+            return settings;
         }
 
         static ActorView CreateOrLoadActorViewPrefab()
@@ -498,7 +530,11 @@ namespace DungeonInn.Editor
             importer.SaveAndReimport();
         }
 
-        static void AssignToWorldLifetimeScope(MapMaterialSetSO mapSo, ActorSpriteVisualConfigSO actorSo)
+        static void AssignToWorldLifetimeScope(
+            MapMaterialSetSO mapSo,
+            ActorSpriteVisualConfigSO actorSo,
+            LayerPositionViewSettingsSO layerSettingsSo,
+            WorldCameraSettingsSO cameraSettingsSo)
         {
             var allObjects = Resources.FindObjectsOfTypeAll<WorldLifetimeScope>();
             foreach (var scope in allObjects)
@@ -506,6 +542,8 @@ namespace DungeonInn.Editor
                 using var serialized = new SerializedObject(scope);
                 var mapProp = serialized.FindProperty("mapMaterialSetSO");
                 var actorProp = serialized.FindProperty("actorSpriteVisualConfigSO");
+                var layerSettingsProp = serialized.FindProperty("layerPositionViewSettingsSO");
+                var cameraSettingsProp = serialized.FindProperty("worldCameraSettingsSO");
 
                 var changed = false;
 
@@ -518,6 +556,18 @@ namespace DungeonInn.Editor
                 if (actorProp != null && actorProp.objectReferenceValue == null)
                 {
                     actorProp.objectReferenceValue = actorSo;
+                    changed = true;
+                }
+
+                if (layerSettingsProp != null && layerSettingsProp.objectReferenceValue == null)
+                {
+                    layerSettingsProp.objectReferenceValue = layerSettingsSo;
+                    changed = true;
+                }
+
+                if (cameraSettingsProp != null && cameraSettingsProp.objectReferenceValue == null)
+                {
+                    cameraSettingsProp.objectReferenceValue = cameraSettingsSo;
                     changed = true;
                 }
 

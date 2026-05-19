@@ -113,6 +113,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
+            Debug.LogWarning("[World] WorldScene camera is not assigned. Creating fallback camera.");
             var cameraObject = new GameObject("WorldCamera");
             cameraObject.layer = WorldRenderingLayer.Layer;
             cameraObject.transform.SetParent(transform, false);
