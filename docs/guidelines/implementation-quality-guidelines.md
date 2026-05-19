@@ -24,6 +24,7 @@
 - [ ] 実挙動・性能に影響する TODO を milestone / task に紐付けずに残していない
 - [ ] 内部バッファ参照を、コントラクト不明な API として返していない
 - [ ] 一般パターンに反する意図的設計を、根拠記録なしに追加していない
+- [ ] DI constructor（非MonoBehaviour）内で UnityEngine.Object（Texture2D / Sprite / Material / Mesh / GameObject 等）を生成していない
 
 ## 完了前チェックリスト
 
@@ -42,6 +43,8 @@
 - [ ] TODO は責務・milestone・task のいずれかに紐付いている
 - [ ] 内部バッファを返す API は `Consume` / `Drain` / `Flush` 等の名前またはコメントで契約を明示している
 - [ ] 一般パターンに反する設計は docs/design または task ログに根拠を記録している
+- [ ] UnityEngine.Object を保持するコレクションで、スコープ無効化（InvalidateXxx）と Dispose のクリーンアップパスが対称に実装されているか確認した
+- [ ] Fallback / Placeholder アセット生成の定数・ロジックが複数クラスに重複していないか確認した
 
 ---
 
@@ -620,6 +623,183 @@ public void CopyAllStatBonusesTo(List<StatBonus> results)
 
 ---
 
+## 16. DI コンストラクタで UnityEngine.Object を生成しない
+
+`[Inject]` コンストラクタ（非MonoBehaviour）内で `new Texture2D()`・`Sprite.Create()`・`new Material()`・`new Mesh()`・`GameObject.CreatePrimitive()` などを呼び出さない。
+
+DI コンテナが依存を解決するフェーズ（Scene起動時）で予測しにくい副作用が生じる。
+EditMode テストでインスタンス化すると UnityEngine.Object が残留し、手動の `DestroyImmediate` 管理が必要になる。
+一見 Pure クラスに見えるが Unity MainThread 依存になるため、テスト・再利用コストが上がる。
+
+初期化が必要な場合は `LoadAsync` / `Initialize()` / Factory / EditorSetup 経由に分離すること。
+
+### Before
+
+```csharp
+public sealed class ActorSpriteVisualConfig
+{
+    [Inject]
+    public ActorSpriteVisualConfig(VisualConfigLoader loader)
+    {
+        // NG: DI コンストラクタ内で UnityEngine.Object を生成している
+        var texture = new Texture2D(32, 48, TextureFormat.RGBA32, false);
+        var sprite = Sprite.Create(texture, new Rect(0, 0, 32, 48), new Vector2(0.5f, 0f), 16f);
+        placeholderSprites.Add(ActorBehaviorType.Adventurer, sprite);
+    }
+}
+```
+
+### After
+
+```csharp
+public sealed class ActorSpriteVisualConfig
+{
+    [Inject]
+    public ActorSpriteVisualConfig(VisualConfigLoader loader)
+    {
+        // OK: コンストラクタは依存の保持のみ
+        this.loader = loader;
+    }
+
+    public void Initialize()
+    {
+        // UnityEngine.Object 生成はここで行う
+        var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
+        placeholderTextures.Add(texture);
+        placeholderSprites.Add(ActorBehaviorType.Adventurer, sprite);
+    }
+}
+```
+
+### 適用基準
+
+- コンストラクタ内の `new Texture2D` / `Sprite.Create` / `new Material` / `new Mesh` は即座にレビュー対象とする
+- 例外的に許容するケース: `Initialize()` / `LoadAsync()` / Factory メソッド / EditorSetup 経由での生成
+- `MonoBehaviour.Awake()` / `Start()` 内での生成は許容する（MonoBehaviour ライフサイクルの範囲内）
+
+---
+
+## 17. UnityEngine.Object を保持するクラスは invalidation 単位と Dispose 単位を揃える
+
+スコープ（Layer・Floor・Actor等）をキーとした UnityEngine.Object のコレクションを持つクラスは、そのスコープが無効化された際に対応するリソースをクリーンアップするメソッドを別途実装すること。`Dispose` のみに依存しない。
+
+「親 GameObject を Destroy したから子の参照リストも大丈夫」とみなさない。
+Unity のオブジェクト破棄後も C# 側の参照は List / Dictionary に残留し続ける。
+
+### Before
+
+```csharp
+public sealed class EnvironmentObjectPlacer : IDisposable
+{
+    readonly List<GameObject> placedObjects = new();
+
+    public void PlaceChunkProps(Transform parent, ...) { ... }
+
+    public void Dispose()
+    {
+        // NG: Dispose 時にのみ破棄。スコープ無効化に対応した破棄パスがない
+        foreach (var obj in placedObjects)
+            if (obj != null) Object.Destroy(obj);
+        placedObjects.Clear();
+    }
+}
+```
+
+TileRoot が `DestroyLayerRoot` で破棄されると子 GameObject も破棄されるが、
+`placedObjects` に破棄済み参照が残り続け、再生成のたびに蓄積する。
+
+### After
+
+```csharp
+public sealed class EnvironmentObjectPlacer : IDisposable
+{
+    readonly Dictionary<int, List<GameObject>> propsByLayer = new();
+
+    public void PlaceChunkProps(Transform parent, WorldMapLayerViewData layerData, ...)
+    {
+        if (!propsByLayer.TryGetValue(layerData.LayerId.Value, out var list))
+        {
+            list = new List<GameObject>();
+            propsByLayer[layerData.LayerId.Value] = list;
+        }
+        // props を生成して list に追加する
+    }
+
+    // スコープ無効化と対称のクリーンアップパス
+    public void InvalidateLayer(MapLayerId layerId)
+    {
+        if (!propsByLayer.TryGetValue(layerId.Value, out var list)) return;
+        foreach (var obj in list)
+            if (obj != null) Object.Destroy(obj);
+        list.Clear();
+        propsByLayer.Remove(layerId.Value);
+    }
+
+    public void Dispose()
+    {
+        foreach (var list in propsByLayer.Values)
+            foreach (var obj in list)
+                if (obj != null) Object.Destroy(obj);
+        propsByLayer.Clear();
+    }
+}
+```
+
+### 適用基準
+
+- Layer / Floor / Actor / Chunk など生成単位ごとに `InvalidateXxx(id)` を実装する
+- 既存の無効化パス（`NavMeshBuildService.InvalidateLayer`・`WorldMapViewDataProvider.InvalidateLayer` 等）と対称に設計する
+- 「親 GameObject が破棄されれば C# の参照リストも整理される」という前提で設計しない
+
+---
+
+## 18. Fallback / Placeholder アセット生成ロジックを複数クラスに持たない
+
+UnityEngine.Object の Fallback（色・サイズ・PPU・ピボット・フィルターモード等）を生成するコードは単一の Factory クラスに集約し、複数クラスに同一ロジックを置かない。
+
+特に `pixelsPerUnit`・サイズ・ピボット・フィルターモードは一箇所でズレると視覚的な不具合（スケールのズレ・ぼやけ等）になりやすいため、定数含めて一元管理する。
+
+### Before
+
+```csharp
+// VisualConfigLoader
+const int SpriteWidth = 32;
+const int SpriteHeight = 48;
+const float PixelsPerUnit = 16f;
+Sprite CreatePlaceholderSprite(Color color) { /* Texture2D 生成ロジック */ }
+
+// ActorSpriteVisualConfig（同一定数・同一ロジックが重複）
+const int SpriteWidth = 32;
+const int SpriteHeight = 48;
+const float PixelsPerUnit = 16f;
+Sprite CreateFallbackSprite(Color color) { /* 実質同一コード */ }
+```
+
+### After
+
+```csharp
+// ActorSpritePlaceholderFactory（一元管理）
+public static class ActorSpritePlaceholderFactory
+{
+    const int SpriteWidth = 32;
+    const int SpriteHeight = 48;
+    const float PixelsPerUnit = 16f;
+
+    public static Sprite Create(Color color, out Texture2D texture) { ... }
+}
+
+// 各クラスは Factory を呼ぶだけ
+var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
+```
+
+### 適用基準
+
+- Fallback Texture / Sprite / Material などのデフォルトビジュアル生成が複数クラスに現れたら Factory に集約する
+- 同一定数（サイズ・PPU・ピボット）が複数箇所にコピーされていないか確認する
+- 状態を持たない生成ロジックは `static class` にする
+
+---
+
 ## レビュー用チェックリスト
 
 ### 命名
@@ -642,6 +822,7 @@ public void CopyAllStatBonusesTo(List<StatBonus> results)
 - [ ] インターフェース分割により「必要最小限の依存」になっているか
 - [ ] テストダブルのスコープが必要最小限か（使わないメソッドが多すぎないか）
 - [ ] テストダブルに `throw new NotSupportedException()` が多い場合、インターフェース分割を検討したか
+- [ ] DI constructor（非MonoBehaviour）内で UnityEngine.Object を生成していないか
 
 ### インターフェース設計
 
@@ -675,6 +856,8 @@ public void CopyAllStatBonusesTo(List<StatBonus> results)
 - [ ] DI で解決すべき依存を手動 `new` する互換コンストラクタが Runtime コードに含まれていないか
 - [ ] `IDisposable.Dispose()` が空の場合、クリーンアップ不要であることをコードで確認したか
 - [ ] `Dispose()` が空なら、インターフェース自体を外すか理由をコメントで明記しているか
+- [ ] UnityEngine.Object を保持するコレクションで、スコープ単位の InvalidateXxx が Dispose と対称に実装されているか
+- [ ] Fallback / Placeholder アセット生成ロジックが複数クラスに重複していないか
 
 ### 設計記録
 

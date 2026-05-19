@@ -23,6 +23,8 @@ Domain は View、Infrastructure、Framework、外部 SDK に依存しない。
 - [ ] Domain Entity から static Catalog / Registry / Locator に依存していない
 - [ ] 状態を持たない Calculator / Policy をメソッド呼び出しごとに `new` していない
 - [ ] Domain 層の Calculator / Policy を DI 注入対象にしていない
+- [ ] 型→型マッピング（is / switch / if-else）で、既知の全派生型・全 enum 値が明示的にケースとして列挙されているか、または catch-all の意図がコメントで明記されているか
+- [ ] View の表示サイズ（VisualSizeTier 等）を Domain 側のサイズ・当たり判定・移動範囲の根拠として使用していない
 
 ## 完了前チェックリスト
 
@@ -37,6 +39,8 @@ Domain は View、Infrastructure、Framework、外部 SDK に依存しない。
 - [ ] DTO は現在値・履歴・集計途中の責務で分かれている
 - [ ] 並列 Factory / Request 構造を作る前に共通基盤で表現できないか確認した
 - [ ] 純粋計算クラスの static 化・共有インスタンス化・DI 注入の選択理由が本文の優先順位に沿っている
+- [ ] 型→型マッピングで全既知ケースが網羅されているか、またはデフォルトの意図が明記されているか確認した
+- [ ] View の表示サイズ（VisualSizeTier 等）を Domain 側のサイズ概念として流用していないか確認した
 
 ---
 
@@ -651,6 +655,102 @@ public sealed class Actor
 
 ---
 
+## 14. 型・enum マッピングは全既知ケースを網羅する
+
+`is` 演算子・`switch`・`if-else` による型→型マッピングでは、全ての既知派生型・enum 値を明示的にケースとして列挙すること。
+
+catch-all（`default` / `return None` 等）に無言で落ちる設計は、新しい型・enum 値が追加された際に誤マッピングが検出されないままゲーム挙動に影響する。
+
+### Before
+
+```csharp
+static ActorBehaviorType ResolveBehaviorType(Actor actor)
+{
+    if (actor.Behavior is AdventurerBehavior) return ActorBehaviorType.Adventurer;
+    if (actor.Behavior is MonsterBehavior)    return ActorBehaviorType.Monster;
+    return ActorBehaviorType.None;
+    // NG: GuildStaff / Pet が None に落ちるが、意図か漏れかコードから判断できない
+}
+```
+
+### After
+
+```csharp
+static ActorBehaviorType ResolveBehaviorType(Actor actor)
+{
+    if (actor.Behavior is AdventurerBehavior) return ActorBehaviorType.Adventurer;
+    if (actor.Behavior is MonsterBehavior)    return ActorBehaviorType.Monster;
+    if (actor.Behavior is GuildStaffBehavior) return ActorBehaviorType.GuildStaff;
+    if (actor.Behavior is PetBehavior)        return ActorBehaviorType.Pet;
+    // OK: catch-all の意図を明示している
+    return ActorBehaviorType.None; // 上記以外は表示なし（None プレースホルダー）
+}
+```
+
+または、未定義ケースを検知可能にする:
+
+```csharp
+return actor.Behavior switch
+{
+    AdventurerBehavior => ActorBehaviorType.Adventurer,
+    MonsterBehavior    => ActorBehaviorType.Monster,
+    GuildStaffBehavior => ActorBehaviorType.GuildStaff,
+    PetBehavior        => ActorBehaviorType.Pet,
+    _                  => throw new ArgumentOutOfRangeException(nameof(actor.Behavior))
+};
+```
+
+### 適用基準
+
+- 型→型マッピングに新ケースを追加したとき、関連する Mapper / Resolver / Presenter / Fallback の全経路を網羅したテストを追加する
+- 意図的なフォールバックはコメントで「なぜ None に落とすか」を明記する
+- enum 値を追加したら、それを参照する全 switch / if-else を検索して更新漏れがないか確認する
+
+### DungeonInn Example
+
+`ActorViewDataStore.ResolveBehaviorType` と `ActorSpriteVisualConfig` のプレースホルダー登録は一致している必要がある。
+どちらかに `GuildStaff` / `Pet` を追加したら、もう一方も同時に確認する。
+
+---
+
+## 15. View の表示サイズと Domain のサイズを混同しない
+
+View の表示に関するサイズ情報（canvas の高さ・スプライトスケール・ピボット・透明余白・`ActorVisualSizeTier` 等）は View 層の責務であり、Domain 層のロジックから参照・利用してはならない。
+
+当たり判定・移動占有範囲・戦闘射程・巨大モンスターのゲーム上サイズは Domain 側で独立した概念として定義すること。
+
+### 境界の例
+
+| 概念 | 層 | 例 |
+|---|---|---|
+| スプライトの表示高さ | View | `ActorVisualSizeTier.AdventurerS → 1.5f meters` |
+| ピクセル数・PPU | View | `SpriteHeight = 48` / `PixelsPerUnit = 16f` |
+| 移動占有タイル数 | Domain | `Actor.OccupiedTileRadius = 1` |
+| 戦闘射程 | Domain | `WeaponMaster.RangeInTiles` |
+| 当たり判定半径 | Domain / Application | `CombatEncounterRadius` |
+
+### Before
+
+```csharp
+// NG: View の表示サイズを Domain の当たり判定に流用している
+var hitRadius = ActorVisualSizeTierCatalog.GetCanvasHeightMeters(actor.VisualSizeTier) * 0.5f;
+```
+
+### After
+
+```csharp
+// OK: Domain 側で独立して定義された値を使う
+var hitRadius = GameConstants.Combat.DefaultMeleeRangeMeters;
+```
+
+### 適用基準
+
+- `ActorVisualSizeTier` / `GetCanvasHeightMeters` が Domain / Application 層から参照されていないか確認する
+- 巨大モンスターの占有範囲やゲーム上サイズは Domain で `OccupyRadius` / `BodySizeTiles` などの専用フィールドとして持つ
+- View サイズと Domain サイズが偶然一致していても、参照は切り離す（一方が変更されたとき他方に波及しないため）
+
+---
+
 ## レビュー用チェックリスト
 
 ### 命名・分類
@@ -671,6 +771,8 @@ public sealed class Actor
 - [ ] キャッシュを持つ場合、変更経路が Entity 経由に集約されているか
 - [ ] Domain Validation が「不変条件」ではなく「AI判断」や「業務判断」まで禁止していないか
 - [ ] 将来の Behavior / Faction / Policy 追加で既存クラス名が破綻しないか
+- [ ] 型→型マッピングで catch-all に無言で落ちる未マッピングケースがないか
+- [ ] View の表示サイズ（ActorVisualSizeTier 等）を Domain 側の当たり判定・移動範囲・戦闘射程の根拠として使っていないか
 
 ### 型・概念の重複
 
