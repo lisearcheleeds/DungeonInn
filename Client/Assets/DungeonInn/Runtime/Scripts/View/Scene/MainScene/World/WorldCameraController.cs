@@ -79,8 +79,11 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void InitializeCamera(Camera camera)
         {
-            yawDegrees = camera.transform.eulerAngles.y;
-            pitchDegrees = camera.transform.eulerAngles.x;
+            yawDegrees = settings.InitialYawDegrees;
+            pitchDegrees = settings.InitialPitchDegrees;
+            camera.transform.position = settings.InitialPosition;
+            camera.orthographicSize = settings.InitialOrthographicSize;
+            ApplyRotation(camera);
             initialized = true;
         }
 

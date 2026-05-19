@@ -19,16 +19,13 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldScene : ProductMainSceneBase<WorldScene.WorldTransitionData>
     {
-        static readonly Vector3 FallbackWorldCameraPosition = new(64f, 80f, -64f);
-        static readonly Quaternion FallbackWorldCameraRotation = Quaternion.Euler(60f, 45f, 0f);
-        const float FallbackWorldCameraOrthographicSize = 48f;
-
         [SerializeField] Camera worldCamera;
 
         IWorldPresenter worldPresenter;
         ToggleGamePauseUseCase toggleGamePauseUseCase;
         GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
         WorldCameraController worldCameraController;
+        WorldCameraSettings worldCameraSettings;
         WorldLayerViewController worldLayerViewController;
         WorldSceneCamera worldSceneCamera;
 
@@ -48,6 +45,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
             WorldCameraController worldCameraController,
+            WorldCameraSettings worldCameraSettings,
             WorldLayerViewController worldLayerViewController)
         {
             ConstructInputLayer(sceneManager, inputLayerController, inputActions);
@@ -55,6 +53,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
             this.worldCameraController = worldCameraController;
+            this.worldCameraSettings = worldCameraSettings;
             this.worldLayerViewController = worldLayerViewController;
         }
 
@@ -119,11 +118,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             cameraObject.transform.SetParent(transform, false);
             worldCamera = cameraObject.AddComponent<Camera>();
             worldCamera.orthographic = true;
-            worldCamera.orthographicSize = FallbackWorldCameraOrthographicSize;
+            worldCamera.orthographicSize = worldCameraSettings.InitialOrthographicSize;
             worldCamera.cullingMask = WorldRenderingLayer.Mask;
             worldCamera.transform.SetPositionAndRotation(
-                FallbackWorldCameraPosition,
-                FallbackWorldCameraRotation);
+                worldCameraSettings.InitialPosition,
+                Quaternion.Euler(
+                    worldCameraSettings.InitialPitchDegrees,
+                    worldCameraSettings.InitialYawDegrees,
+                    0f));
             EnsureUniversalCameraData(cameraObject);
             worldSceneCamera = new WorldSceneCamera(worldCamera);
         }

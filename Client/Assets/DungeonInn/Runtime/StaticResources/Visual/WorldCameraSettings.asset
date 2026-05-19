@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7be208a61dd34ed0a7fca1b1ec016e94, type: 3}
   m_Name: WorldCameraSettings
   m_EditorClassIdentifier: DungeonInn.Runtime::DungeonInn.View.Scene.MainScene.World.WorldCameraSettingsSO
+  initialPosition: {x: 64, y: 80, z: -64}
+  initialPitchDegrees: 45
+  initialYawDegrees: 45
+  initialOrthographicSize: 48
   moveSpeed: 32
   rotationSensitivity: 0.2
   zoomSensitivity: 0.02

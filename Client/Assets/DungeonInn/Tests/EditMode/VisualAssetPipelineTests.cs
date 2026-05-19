@@ -89,11 +89,55 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(layerSettings.LayerHeightOffset, Is.EqualTo(-240f));
             Assert.That(layerSettings.ActorHeightOffset, Is.EqualTo(0f));
+            Assert.That(cameraSettings.InitialPosition, Is.EqualTo(new Vector3(64f, 80f, -64f)));
+            Assert.That(cameraSettings.InitialPitchDegrees, Is.EqualTo(45f));
+            Assert.That(cameraSettings.InitialYawDegrees, Is.EqualTo(45f));
+            Assert.That(cameraSettings.InitialOrthographicSize, Is.EqualTo(48f));
             Assert.That(cameraSettings.MoveSpeed, Is.EqualTo(32f));
             Assert.That(cameraSettings.RotationSensitivity, Is.EqualTo(0.2f));
             Assert.That(cameraSettings.ZoomSensitivity, Is.EqualTo(0.02f));
             Assert.That(cameraSettings.MinOrthographicSize, Is.EqualTo(12f));
             Assert.That(cameraSettings.MaxOrthographicSize, Is.EqualTo(120f));
+        }
+
+        [Test]
+        public void WorldCameraControllerInitializesCameraFromSettings()
+        {
+            var cameraObject = new GameObject("WorldCameraControllerInitializesCameraFromSettings");
+            var camera = cameraObject.AddComponent<Camera>();
+            var settings = new WorldCameraSettings(
+                new Vector3(10f, 20f, -30f),
+                initialPitchDegrees: 33f,
+                initialYawDegrees: 77f,
+                initialOrthographicSize: 22f,
+                moveSpeed: 1f,
+                rotationSensitivity: 1f,
+                zoomSensitivity: 1f,
+                minOrthographicSize: 5f,
+                maxOrthographicSize: 40f);
+            var controller = new WorldCameraController(settings);
+
+            try
+            {
+                camera.transform.SetPositionAndRotation(
+                    Vector3.zero,
+                    Quaternion.Euler(1f, 2f, 3f));
+                camera.orthographicSize = 9f;
+
+                controller.BindCamera(camera);
+                controller.UpdateCamera(0f);
+
+                Assert.That(camera.transform.position, Is.EqualTo(new Vector3(10f, 20f, -30f)));
+                Assert.That(camera.transform.eulerAngles.x, Is.EqualTo(33f).Within(0.0001f));
+                Assert.That(camera.transform.eulerAngles.y, Is.EqualTo(77f).Within(0.0001f));
+                Assert.That(camera.transform.eulerAngles.z, Is.EqualTo(0f).Within(0.0001f));
+                Assert.That(camera.orthographicSize, Is.EqualTo(22f));
+                Assert.That(controller.CurrentYawDegrees, Is.EqualTo(77f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+            }
         }
 
         [Test]
