@@ -31,7 +31,7 @@ namespace DungeonInn.Application.Dungeons
                 MapLayerId.DungeonFloor(floorIndex),
                 GameConstants.DungeonFloorWidth,
                 GameConstants.DungeonFloorDepth,
-                GameConstants.MapCellSizeMeters);
+                GameConstants.MapCellWidthMeters);
             var random = new Random(dungeon.Seed + floorIndex * GameConstants.DungeonFloorSeedMultiplier);
             var blueprint = CreateBlueprint(layer, settings, random);
             var cells = CreateCells(layer, blueprint);

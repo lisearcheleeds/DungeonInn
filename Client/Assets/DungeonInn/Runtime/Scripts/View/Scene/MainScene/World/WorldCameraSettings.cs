@@ -13,6 +13,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         public float ZoomSensitivity { get; }
         public float MinOrthographicSize { get; }
         public float MaxOrthographicSize { get; }
+        public float ActorViewportMargin { get; }
 
         public WorldCameraSettings(
             Vector3 initialPosition,
@@ -23,7 +24,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             float rotationSensitivity,
             float zoomSensitivity,
             float minOrthographicSize,
-            float maxOrthographicSize)
+            float maxOrthographicSize,
+            float actorViewportMargin)
         {
             InitialPosition = initialPosition;
             InitialPitchDegrees = initialPitchDegrees;
@@ -34,6 +36,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             ZoomSensitivity = zoomSensitivity;
             MinOrthographicSize = minOrthographicSize;
             MaxOrthographicSize = maxOrthographicSize;
+            ActorViewportMargin = actorViewportMargin;
         }
     }
 }

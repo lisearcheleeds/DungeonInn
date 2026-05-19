@@ -25,6 +25,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             return GetOrCreateLayerRoot(layerId, layerName).TileRoot;
         }
 
+        public MapLayerId? ActiveLayerId => activeLayerId.HasValue
+            ? new MapLayerId(activeLayerId.Value)
+            : (MapLayerId?)null;
+
         public Transform GetTileRoot(MapLayerId layerId)
         {
             if (!layerRoots.TryGetValue(layerId.Value, out var root))

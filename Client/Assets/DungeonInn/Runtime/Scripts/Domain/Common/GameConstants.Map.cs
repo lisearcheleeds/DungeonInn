@@ -2,8 +2,11 @@ namespace DungeonInn.Domain.Common
 {
     public static partial class GameConstants
     {
-        // グリッド1マスの一辺の長さ。単位はメートル。
-        public const float MapCellSizeMeters = 5f;
+        // グリッド1マスの幅。単位はメートル。
+        public const float MapCellWidthMeters = 5f;
+
+        // ブロック・ランプタイルの高さ。単位はメートル。
+        public const float MapTileHeightMeters = 2f;
 
         // 地上マップの横幅。単位はグリッドセル数。
         public const int GroundMapWidth = 30;

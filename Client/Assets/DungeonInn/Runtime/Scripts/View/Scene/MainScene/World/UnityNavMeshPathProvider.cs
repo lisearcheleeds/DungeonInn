@@ -61,8 +61,8 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         static Vector3 GridToWorld(Transform tileRoot, GridPosition grid)
         {
-            var localX = (grid.X + 0.5f) * GameConstants.MapCellSizeMeters;
-            var localZ = (grid.Z + 0.5f) * GameConstants.MapCellSizeMeters;
+            var localX = (grid.X + 0.5f) * GameConstants.MapCellWidthMeters;
+            var localZ = (grid.Z + 0.5f) * GameConstants.MapCellWidthMeters;
             return tileRoot.TransformPoint(new Vector3(localX, 0f, localZ));
         }
 
@@ -70,8 +70,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             var local = tileRoot.InverseTransformPoint(worldPoint);
             return new GridPosition(
-                Mathf.FloorToInt(local.x / GameConstants.MapCellSizeMeters),
-                Mathf.FloorToInt(local.z / GameConstants.MapCellSizeMeters));
+                Mathf.FloorToInt(local.x / GameConstants.MapCellWidthMeters),
+                Mathf.FloorToInt(local.z / GameConstants.MapCellWidthMeters));
         }
     }
 }

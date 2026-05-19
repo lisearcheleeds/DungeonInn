@@ -14,6 +14,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         WorldMapView worldMapView;
         WorldActorPresenter worldActorPresenter;
         WorldCameraController worldCameraController;
+        MapLayerViewRegistry layerViewRegistry;
         VisualConfigLoader visualConfigLoader;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
@@ -27,12 +28,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             WorldMapView worldMapView,
             WorldActorPresenter worldActorPresenter,
             WorldCameraController worldCameraController,
+            MapLayerViewRegistry layerViewRegistry,
             VisualConfigLoader visualConfigLoader)
         {
             this.worldSimulationOrchestrator = worldSimulationOrchestrator ?? throw new ArgumentNullException(nameof(worldSimulationOrchestrator));
             this.worldMapView = worldMapView ?? throw new ArgumentNullException(nameof(worldMapView));
             this.worldActorPresenter = worldActorPresenter ?? throw new ArgumentNullException(nameof(worldActorPresenter));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
+            this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.visualConfigLoader = visualConfigLoader ?? throw new ArgumentNullException(nameof(visualConfigLoader));
         }
 
@@ -92,7 +95,10 @@ namespace DungeonInn.View.Scene.MainScene.World
             try
             {
                 await worldSimulationOrchestrator.AdvanceFrameAsync(
-                    new WorldFrameAdvanceRequest(Time.unscaledDeltaTime, cancellationToken));
+                    new WorldFrameAdvanceRequest(
+                        Time.unscaledDeltaTime,
+                        cancellationToken,
+                        layerViewRegistry.ActiveLayerId));
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

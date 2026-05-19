@@ -77,8 +77,8 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void PlacePropAt(Transform parent, List<GameObject> layerProps, int gridX, int gridZ)
         {
-            var worldX = (gridX + 0.5f) * GameConstants.MapCellSizeMeters;
-            var worldZ = (gridZ + 0.5f) * GameConstants.MapCellSizeMeters;
+            var worldX = (gridX + 0.5f) * GameConstants.MapCellWidthMeters;
+            var worldZ = (gridZ + 0.5f) * GameConstants.MapCellWidthMeters;
             var propObject = propPrefab != null
                 ? UnityEngine.Object.Instantiate(propPrefab)
                 : GameObject.CreatePrimitive(PrimitiveType.Cube);

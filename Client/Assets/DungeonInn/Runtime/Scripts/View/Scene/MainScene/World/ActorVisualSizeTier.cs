@@ -21,5 +21,10 @@ namespace DungeonInn.View.Scene.MainScene.World
                 _ => throw new ArgumentOutOfRangeException(nameof(sizeTier), sizeTier, null)
             };
         }
+
+        public static float GetGroundAnchorOffsetMeters(ActorVisualSizeTier sizeTier)
+        {
+            return GetCanvasHeightMeters(sizeTier) * 0.5f;
+        }
     }
 }

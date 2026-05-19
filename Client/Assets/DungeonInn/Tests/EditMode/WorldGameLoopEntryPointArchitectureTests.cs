@@ -131,6 +131,118 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(eventBus.GetEvents<ActorAiDecisionRecorded>(), Is.Empty);
         }
 
+        [Test]
+        public void ActiveLayerFrameMovementIsNotRepeatedByScheduleMovement()
+        {
+            var eventBus = new CollectingEventBus();
+            var gameClock = new StubGameClock();
+            var actorSpatialIndexService = new ActorSpatialIndexService();
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var actorViewDataStore = new ActorViewDataStore();
+            var worldState = CreateWorldState(
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore);
+            var actor = CreateActor(1, new LayerPosition(MapLayerId.Ground, 20.5f, 0.5f));
+            actor.RequireBehavior<AdventurerBehavior>()
+                .ChangeLifecycleState(AdventurerLifecycleState.GoingToDungeon);
+            worldState.RegisterActor(actor);
+            var before = actor.Position;
+            var orchestrator = CreateWorldSimulationOrchestrator(
+                new TestGameLoopUseCase(new GameLoopTickResult(
+                    1,
+                    1,
+                    Array.Empty<int>(),
+                    0.5f,
+                    1f,
+                    1f,
+                    false)),
+                worldState,
+                eventBus,
+                gameClock,
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore,
+                new DirectNavigationPathProvider());
+
+            orchestrator.AdvanceFrameAsync(
+                    new WorldFrameAdvanceRequest(
+                        0.5f,
+                        default,
+                        MapLayerId.Ground))
+                .GetAwaiter()
+                .GetResult();
+
+            var movedDistance = Math.Sqrt(before.DistanceSquaredTo(actor.Position));
+            Assert.That(
+                movedDistance,
+                Is.EqualTo(GameConstants.ActorMoveSpeedMetersPerSecond).Within(0.0001f));
+        }
+
+        [Test]
+        public void EmptyRealtimeLayerDoesNotReduceLaterScheduledMovement()
+        {
+            var eventBus = new CollectingEventBus();
+            var gameClock = new StubGameClock();
+            var actorSpatialIndexService = new ActorSpatialIndexService();
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var actorViewDataStore = new ActorViewDataStore();
+            var worldState = CreateWorldState(
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore);
+            var dungeonActor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 20.5f, 0.5f));
+            worldState.RegisterActor(dungeonActor);
+            var orchestrator = CreateWorldSimulationOrchestrator(
+                new SequenceGameLoopUseCase(
+                    new GameLoopTickResult(
+                        0,
+                        0,
+                        Array.Empty<int>(),
+                        0.5f,
+                        0.5f,
+                        1f,
+                        false),
+                    new GameLoopTickResult(
+                        1,
+                        1,
+                        Array.Empty<int>(),
+                        0.5f,
+                        1f,
+                        1f,
+                        false)),
+                worldState,
+                eventBus,
+                gameClock,
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore,
+                new DirectNavigationPathProvider());
+
+            orchestrator.AdvanceFrameAsync(
+                    new WorldFrameAdvanceRequest(
+                        0.5f,
+                        default,
+                        MapLayerId.Ground))
+                .GetAwaiter()
+                .GetResult();
+
+            var groundActor = CreateActor(1, new LayerPosition(MapLayerId.Ground, 20.5f, 0.5f));
+            groundActor.RequireBehavior<AdventurerBehavior>()
+                .ChangeLifecycleState(AdventurerLifecycleState.GoingToDungeon);
+            worldState.RegisterActor(groundActor);
+            var before = groundActor.Position;
+
+            orchestrator.AdvanceFrameAsync(new WorldFrameAdvanceRequest(0f, default))
+                .GetAwaiter()
+                .GetResult();
+
+            var movedDistance = Math.Sqrt(before.DistanceSquaredTo(groundActor.Position));
+            Assert.That(
+                movedDistance,
+                Is.EqualTo(GameConstants.ActorMoveSpeedMetersPerSecond).Within(0.0001f));
+        }
+
         static WorldSimulationOrchestrator CreateWorldSimulationOrchestrator(
             IGameLoopUseCase gameLoopUseCase,
             GameWorldState worldState,
@@ -138,14 +250,15 @@ namespace DungeonInn.Tests.EditMode
             IGameClock gameClock,
             ActorSpatialIndexService actorSpatialIndexService,
             ActorProcessingCandidateService candidateService,
-            ActorViewDataStore actorViewDataStore)
+            ActorViewDataStore actorViewDataStore,
+            INavigationPathProvider navigationPathProvider = null)
         {
             var masterRepository = new HardcodedMasterRepository();
             var itemSpatialIndexService = new ItemSpatialIndexService();
             var actorCombatService = new ActorCombatService();
             var navigationService = new ActorNavigationService(
                 eventBus,
-                new NoOpNavigationPathProvider());
+                navigationPathProvider ?? new NoOpNavigationPathProvider());
             var profileRegistry = new ActorProfileRegistry();
             var achievementRegistry = new ActorExplorationAchievementRegistry(eventBus);
             var completeActorSpawnUseCase = new CompleteActorSpawnUseCase(profileRegistry, eventBus);
@@ -183,7 +296,7 @@ namespace DungeonInn.Tests.EditMode
                     new GameRandom(2)),
                 new AdvanceActorAiOrchestrator(
                     TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
-                    Array.Empty<IActorAiPolicy>(),
+                    new IActorAiPolicy[] { new AdventurerAiPolicy() },
                     new ApplyActorAiDecisionUseCase()),
                 new AdvanceActorLifecycleOrchestrator(
                     new MoveActorTowardDestinationUseCase(
@@ -292,7 +405,7 @@ namespace DungeonInn.Tests.EditMode
 
         static GroundMap CreateGroundMap()
         {
-            var layer = new MapLayer(MapLayerId.Ground, 4, 4, 1f);
+            var layer = new MapLayer(MapLayerId.Ground, 64, 64, 1f);
             var cells = new GroundCell[layer.Width * layer.Depth];
             for (var z = 0; z < layer.Depth; z++)
             {
@@ -365,6 +478,39 @@ namespace DungeonInn.Tests.EditMode
             public UniTask<GameLoopTickResult> ExecuteAsync(GameLoopTickRequest request)
             {
                 return UniTask.FromResult(result);
+            }
+        }
+
+        sealed class SequenceGameLoopUseCase : IGameLoopUseCase
+        {
+            readonly Queue<GameLoopTickResult> results = new();
+
+            public SequenceGameLoopUseCase(params GameLoopTickResult[] results)
+            {
+                foreach (var result in results)
+                {
+                    this.results.Enqueue(result);
+                }
+            }
+
+            public UniTask<GameLoopTickResult> ExecuteAsync(GameLoopTickRequest request)
+            {
+                return UniTask.FromResult(results.Dequeue());
+            }
+        }
+
+        sealed class DirectNavigationPathProvider : INavigationPathProvider
+        {
+            readonly List<GridPosition> path = new();
+
+            public IReadOnlyList<GridPosition> TryFindPath(
+                MapLayerId layerId,
+                GridPosition start,
+                GridPosition goal)
+            {
+                path.Clear();
+                path.Add(goal);
+                return path;
             }
         }
 

@@ -98,6 +98,7 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(cameraSettings.ZoomSensitivity, Is.EqualTo(0.02f));
             Assert.That(cameraSettings.MinOrthographicSize, Is.EqualTo(12f));
             Assert.That(cameraSettings.MaxOrthographicSize, Is.EqualTo(120f));
+            Assert.That(cameraSettings.ActorViewportMargin, Is.EqualTo(0.08f));
         }
 
         [Test]
@@ -114,7 +115,8 @@ namespace DungeonInn.Tests.EditMode
                 rotationSensitivity: 1f,
                 zoomSensitivity: 1f,
                 minOrthographicSize: 5f,
-                maxOrthographicSize: 40f);
+                maxOrthographicSize: 40f,
+                actorViewportMargin: 0.25f);
             var controller = new WorldCameraController(settings);
 
             try
@@ -133,6 +135,41 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(camera.transform.eulerAngles.z, Is.EqualTo(0f).Within(0.0001f));
                 Assert.That(camera.orthographicSize, Is.EqualTo(22f));
                 Assert.That(controller.CurrentYawDegrees, Is.EqualTo(77f));
+                Assert.That(controller.ActorViewportMargin, Is.EqualTo(0.25f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+            }
+        }
+
+        [Test]
+        public void WorldCameraControllerDetectsViewportVisibilityWithMargin()
+        {
+            var cameraObject = new GameObject("WorldCameraControllerDetectsViewportVisibilityWithMargin");
+            var camera = cameraObject.AddComponent<Camera>();
+            var settings = new WorldCameraSettings(
+                Vector3.zero,
+                initialPitchDegrees: 0f,
+                initialYawDegrees: 0f,
+                initialOrthographicSize: 5f,
+                moveSpeed: 1f,
+                rotationSensitivity: 1f,
+                zoomSensitivity: 1f,
+                minOrthographicSize: 1f,
+                maxOrthographicSize: 10f,
+                actorViewportMargin: 0.1f);
+            var controller = new WorldCameraController(settings);
+
+            try
+            {
+                camera.orthographic = true;
+                controller.BindCamera(camera);
+                controller.UpdateCamera(0f);
+
+                Assert.That(controller.IsWorldPositionVisible(new Vector3(0f, 0f, 5f), 0f), Is.True);
+                Assert.That(controller.IsWorldPositionVisible(new Vector3(100f, 0f, 5f), 0f), Is.False);
+                Assert.That(controller.IsWorldPositionVisible(new Vector3(0f, 0f, -5f), 0f), Is.False);
             }
             finally
             {
@@ -182,6 +219,71 @@ namespace DungeonInn.Tests.EditMode
                 actorView.SetSprite(sprite);
 
                 Assert.That(actorView.transform.localScale.y, Is.EqualTo(1.5f / 32f).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sprite);
+                UnityEngine.Object.DestroyImmediate(texture);
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void ActorVisualSizeTierGroundAnchorOffsetUsesHalfCanvasHeight()
+        {
+            Assert.That(
+                ActorVisualSizeTierCatalog.GetGroundAnchorOffsetMeters(ActorVisualSizeTier.AdventurerS),
+                Is.EqualTo(0.75f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ActorViewVisibilityTogglesSpriteRendererWithoutChangingGameObjectActiveState()
+        {
+            var gameObject = new GameObject("ActorViewVisibilityTest");
+            var actorView = gameObject.AddComponent<ActorView>();
+
+            try
+            {
+                var spriteRenderer = gameObject.GetComponent<SpriteRenderer>();
+
+                actorView.SetVisible(false);
+
+                Assert.That(spriteRenderer.enabled, Is.False);
+                Assert.That(gameObject.activeSelf, Is.True);
+
+                actorView.SetVisible(true);
+
+                Assert.That(spriteRenderer.enabled, Is.True);
+                Assert.That(gameObject.activeSelf, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void ActorViewKeepsScaleStableWhenSameVisualValuesAreAppliedRepeatedly()
+        {
+            var gameObject = new GameObject("ActorViewRepeatedVisualUpdateTest");
+            var actorView = gameObject.AddComponent<ActorView>();
+            var texture = new Texture2D(512, 512, TextureFormat.RGBA32, false);
+            var sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, 512f, 512f),
+                new Vector2(0.5f, 0f),
+                16f);
+
+            try
+            {
+                actorView.SetSprite(sprite);
+                actorView.SetVisualCanvasHeight(1.5f);
+                var firstScale = actorView.transform.localScale;
+
+                actorView.SetSprite(sprite);
+                actorView.SetVisualCanvasHeight(1.5f);
+
+                Assert.That(actorView.transform.localScale, Is.EqualTo(firstScale));
             }
             finally
             {
@@ -277,6 +379,42 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(chunkMesh.Mesh.vertexCount, Is.EqualTo(expectedVertexCount));
                 Assert.That(chunkMesh.Mesh.triangles.Length, Is.EqualTo(expectedTriangleIndexCount));
                 Assert.That(chunkMesh.Materials.Length, Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(chunkMesh.Mesh);
+                materialSet.Dispose();
+                loader.Dispose();
+            }
+        }
+
+        [Test]
+        public void MapMeshBuildServiceUsesSeparateTileWidthAndHeightConstants()
+        {
+            var loader = new VisualConfigLoader(
+                new ThrowingAssetManager(),
+                new VisualConfigSettings(null, null, null));
+            var materialSet = new MapMaterialSet(loader);
+            var tileConfig = new MapTileVisualConfig(materialSet);
+            var service = new MapMeshBuildService(tileConfig, materialSet);
+
+            LogAssert.Expect(
+                LogType.Warning,
+                "[MapMaterialSet] Using fallback map material. Kind=GroundBlocked");
+
+            var chunkMesh = service.BuildChunk(
+                MapLayerId.Ground,
+                0,
+                0,
+                1,
+                1,
+                _ => TileVisualKind.GroundBlocked);
+
+            try
+            {
+                Assert.That(chunkMesh.Mesh.bounds.size.x, Is.EqualTo(GameConstants.MapCellWidthMeters).Within(0.0001f));
+                Assert.That(chunkMesh.Mesh.bounds.size.y, Is.EqualTo(GameConstants.MapTileHeightMeters).Within(0.0001f));
+                Assert.That(chunkMesh.Mesh.bounds.size.z, Is.EqualTo(GameConstants.MapCellWidthMeters).Within(0.0001f));
             }
             finally
             {

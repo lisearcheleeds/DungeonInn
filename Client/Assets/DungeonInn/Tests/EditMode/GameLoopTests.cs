@@ -261,6 +261,43 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void ActorLifecycleAdvanceScopeMovesOnlyIncludedLayer()
+        {
+            var worldState = CreateInitializedWorldState();
+            var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(
+                new GenerateDungeonFloorUseCase(),
+                new NoOpEventPublisher());
+            var firstFloor = worldState.Dungeon.GetFloor(1);
+            var secondFloor = floorGenerator.ExecuteAsync(
+                    worldState.Dungeon,
+                    2,
+                    Array.Empty<DungeonDepthBandConfig>())
+                .GetAwaiter()
+                .GetResult();
+            var activeActor = CreateExploringAdventurer(firstFloor.GetArrivalPosition(DungeonStairType.Up));
+            var inactiveActor = CreateExploringAdventurer(secondFloor.GetArrivalPosition(DungeonStairType.Up));
+            worldState.RegisterActor(activeActor);
+            worldState.RegisterActor(inactiveActor);
+
+            var useCase = CreateLifecycleUseCase();
+            var activeBefore = activeActor.Position;
+            var inactiveBefore = inactiveActor.Position;
+
+            for (var i = 0; i < 10 && activeActor.Position.DistanceSquaredTo(activeBefore) <= 0f; i++)
+            {
+                useCase.ExecuteAsync(
+                        worldState,
+                        1f,
+                        ActorLifecycleAdvanceScope.Only(firstFloor.Layer.Id))
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
+            Assert.That(activeActor.Position.DistanceSquaredTo(activeBefore), Is.GreaterThan(0f));
+            Assert.That(inactiveActor.Position, Is.EqualTo(inactiveBefore));
+        }
+
+        [Test]
         public void ExploringAdventurerReturnsAfterArrivingAtEightRoomDestinations()
         {
             var worldState = CreateInitializedWorldState();

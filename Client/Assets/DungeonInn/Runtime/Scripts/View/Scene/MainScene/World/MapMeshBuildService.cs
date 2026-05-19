@@ -9,7 +9,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class MapMeshBuildService
     {
-        const float WallHeightMeters = GameConstants.MapCellSizeMeters;
+        const float WallHeightMeters = GameConstants.MapTileHeightMeters;
 
         readonly MapTileVisualConfig tileVisualConfig;
         readonly MapMaterialSet mapMaterialSet;
@@ -137,9 +137,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             GridPosition position,
             TileVisualDefinition visualDefinition)
         {
-            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
-            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
-            var halfSize = GameConstants.MapCellSizeMeters * 0.5f;
+            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellWidthMeters;
+            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellWidthMeters;
+            var halfSize = GameConstants.MapCellWidthMeters * 0.5f;
 
             AddQuad(
                 visualDefinition,
@@ -153,9 +153,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             GridPosition position,
             TileVisualDefinition visualDefinition)
         {
-            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
-            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
-            var halfSize = GameConstants.MapCellSizeMeters * 0.5f;
+            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellWidthMeters;
+            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellWidthMeters;
+            var halfSize = GameConstants.MapCellWidthMeters * 0.5f;
             var wallHeight = WallHeightMeters;
 
             AddQuad(
@@ -198,9 +198,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             GridPosition position,
             TileVisualDefinition visualDefinition)
         {
-            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellSizeMeters;
-            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellSizeMeters;
-            var halfSize = GameConstants.MapCellSizeMeters * 0.5f;
+            var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellWidthMeters;
+            var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellWidthMeters;
+            var halfSize = GameConstants.MapCellWidthMeters * 0.5f;
             var wallHeight = WallHeightMeters;
 
             AddQuad(

@@ -5,18 +5,20 @@ using DungeonInn.Domain.Map;
 namespace DungeonInn.Application.Dungeons
 {
     /// <summary>
-    /// 地上�EチE�Eの初期状態を作�Eするユースケース、E    /// </summary>
+    /// 地上マップの初期状態を作成するユースケース。
+    /// </summary>
     public sealed class InitializeWorldMapUseCase
     {
         /// <summary>
-        /// 定数で定義された地上�EチE�Eを作�Eし、中央のダンジョン入口と周辺施設の占有セルを設定する、E        /// </summary>
+        /// 定数で定義された地上マップを作成し、中央のダンジョン入口と周辺施設の占有セルを設定する。
+        /// </summary>
         public UniTask<GroundMap> ExecuteAsync()
         {
             var layer = new MapLayer(
                 MapLayerId.Ground,
                 GameConstants.GroundMapWidth,
                 GameConstants.GroundMapDepth,
-                GameConstants.MapCellSizeMeters);
+                GameConstants.MapCellWidthMeters);
             var cells = CreateOpenCells(layer);
             var dungeonEntrance = new GridPosition(
                 GameConstants.GroundMapWidth / 2,

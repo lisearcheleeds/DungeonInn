@@ -18,11 +18,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly Action<Guid, ActorView> updateActorViewAction;
         readonly Dictionary<Guid, ActorBehaviorType> actorBehaviorTypes = new();
         readonly HashSet<Guid> walkingActorsThisFrame = new();
-        bool hasLastCameraYawDegrees;
-        float lastCameraYawDegrees;
         float frameYawDegrees;
         float frameDeltaTime;
-        bool frameYawChanged;
 
         [Inject]
         public WorldActorPresenter(
@@ -43,8 +40,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void UpdateVisuals()
         {
             frameYawDegrees = worldCameraController.CurrentYawDegrees;
-            frameYawChanged = !hasLastCameraYawDegrees ||
-                !Mathf.Approximately(lastCameraYawDegrees, frameYawDegrees);
             frameDeltaTime = Time.unscaledDeltaTime;
             var changes = viewDataProvider.ConsumeChanges();
             walkingActorsThisFrame.Clear();
@@ -73,21 +68,27 @@ namespace DungeonInn.View.Scene.MainScene.World
                         actorViewRegistry.SetActorLayer(actorView, actor.Position);
                     }
 
-                    actorView.SetLocalPosition(positionMapper.ToActorLayerLocalPosition(actor.Position));
+                    actorView.SetLocalPosition(ResolveActorLocalPosition(actor));
                     actorView.UpdateFacing(actor.Position);
                     walkingActorsThisFrame.Add(actor.ActorId);
                 }
             }
 
             actorViewRegistry.ForEachActorView(updateActorViewAction);
-
-            lastCameraYawDegrees = frameYawDegrees;
-            hasLastCameraYawDegrees = true;
         }
 
         void UpdateSingleActorView(Guid actorId, ActorView actorView)
         {
             var isWalking = walkingActorsThisFrame.Contains(actorId);
+            var isVisible = worldCameraController.IsWorldPositionVisible(
+                actorView.transform.position,
+                worldCameraController.ActorViewportMargin);
+            actorView.SetVisible(isVisible);
+            if (!isVisible)
+            {
+                return;
+            }
+
             actorView.SetAnimationState(isWalking ? ActorAnimationState.Walk : ActorAnimationState.Idle);
             actorView.Tick(frameDeltaTime);
 
@@ -103,12 +104,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             var sizeTier = actorSpriteVisualConfig.GetVisualSizeTier(behaviorType);
             actorView.SetSprite(sprite);
             actorView.SetVisualCanvasHeight(ActorVisualSizeTierCatalog.GetCanvasHeightMeters(sizeTier));
-            if (frameYawChanged || isWalking)
-            {
-                actorView.SetRotationY(frameYawDegrees);
-            }
-
+            actorView.SetRotationY(frameYawDegrees);
             actorView.SetFlip(false);
+        }
+
+        Vector3 ResolveActorLocalPosition(ActorViewData actor)
+        {
+            var sizeTier = actorSpriteVisualConfig.GetVisualSizeTier(actor.BehaviorType);
+            var groundAnchorOffset = ActorVisualSizeTierCatalog.GetGroundAnchorOffsetMeters(sizeTier);
+            return positionMapper.ToActorLayerLocalPosition(actor.Position) + Vector3.up * groundAnchorOffset;
         }
 
         static bool IsSamePosition(DungeonInn.Domain.Map.LayerPosition first, DungeonInn.Domain.Map.LayerPosition second)

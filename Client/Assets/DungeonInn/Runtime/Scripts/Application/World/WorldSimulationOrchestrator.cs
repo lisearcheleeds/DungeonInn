@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Actors.Ai;
@@ -16,6 +17,7 @@ using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Map;
 using VContainer;
 
 namespace DungeonInn.Application.World
@@ -41,8 +43,9 @@ namespace DungeonInn.Application.World
         readonly DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         readonly AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator;
         readonly PublishInnDailyReportUseCase publishInnDailyReportUseCase;
+        readonly Dictionary<int, float> realtimeMovedSecondsByLayer = new();
+        readonly HashSet<int> scheduledActorLayerIds = new();
 
-        const int ScheduleWorkBudgetPerFrame = 3;
         int aiEvaluationFrameId;
 
         [Inject]
@@ -116,9 +119,24 @@ namespace DungeonInn.Application.World
                 await publishInnDailyReportUseCase.ExecuteAsync(completedDay);
             }
 
+            if (shouldAdvanceTimeDependentSystems &&
+                request.RealtimeLayerId.HasValue &&
+                HasActorOnLayer(request.RealtimeLayerId.Value))
+            {
+                await advanceActorSimpleLifecycleUseCase.ExecuteAsync(
+                    gameWorldState,
+                    frameDeltaGameSeconds,
+                    ActorLifecycleAdvanceScope.Only(request.RealtimeLayerId.Value));
+                AddRealtimeMovedSeconds(request.RealtimeLayerId.Value, frameDeltaGameSeconds);
+                request.CancellationToken.ThrowIfCancellationRequested();
+            }
+
             if (0 < result.AdvancedScheduleTicks)
             {
-                await AdvanceScheduleSystemsAsync(result, request.CancellationToken);
+                await AdvanceScheduleSystemsAsync(
+                    result.AdvancedScheduleTicks,
+                    result.CurrentScheduleTick,
+                    request.CancellationToken);
             }
 
             if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
@@ -170,72 +188,109 @@ namespace DungeonInn.Application.World
         }
 
         async UniTask AdvanceScheduleSystemsAsync(
-            GameLoopTickResult result,
+            int scheduleTicks,
+            int currentScheduleTick,
             CancellationToken cancellationToken)
         {
-            var workBudget = new ScheduleWorkBudget(ScheduleWorkBudgetPerFrame);
-            await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+            await spawnScheduledAdventurerUseCase.ExecuteAsync(gameWorldState, currentScheduleTick);
             cancellationToken.ThrowIfCancellationRequested();
-            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
-            await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, result.CurrentScheduleTick);
+            await spawnScheduledMonsterUseCase.ExecuteAsync(gameWorldState, currentScheduleTick);
             cancellationToken.ThrowIfCancellationRequested();
-            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
 
-            var scheduleDeltaGameSeconds = result.AdvancedScheduleTicks;
-            await advanceActorSimpleLifecycleUseCase.ExecuteAsync(gameWorldState, scheduleDeltaGameSeconds);
+            await AdvanceScheduledActorLifecycleAsync(scheduleTicks);
             cancellationToken.ThrowIfCancellationRequested();
-            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
-            await advanceInnRecoveryOrchestrator.EnsureReservationsAsync(gameWorldState, result.CurrentScheduleTick);
+            await advanceInnRecoveryOrchestrator.EnsureReservationsAsync(gameWorldState, currentScheduleTick);
             cancellationToken.ThrowIfCancellationRequested();
-            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
 
             updateEquipmentUseCase.Execute(gameWorldState);
-            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
             sellItemsUseCase.Execute(gameWorldState);
-            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
             await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
             cancellationToken.ThrowIfCancellationRequested();
-            await YieldIfBudgetExhaustedAsync(workBudget, cancellationToken);
             await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        static async UniTask YieldIfBudgetExhaustedAsync(
-            ScheduleWorkBudget workBudget,
-            CancellationToken cancellationToken)
+        async UniTask AdvanceScheduledActorLifecycleAsync(int scheduleTicks)
         {
-            workBudget.Consume();
-            if (!workBudget.IsExhausted)
+            if (gameWorldState.Actors.Count == 0)
+            {
+                ConsumeRealtimeMovedSeconds(scheduleTicks);
+                return;
+            }
+
+            scheduledActorLayerIds.Clear();
+            foreach (var actor in gameWorldState.Actors)
+            {
+                scheduledActorLayerIds.Add(actor.Position.LayerId.Value);
+            }
+
+            foreach (var layerIdValue in scheduledActorLayerIds)
+            {
+                var layerId = new MapLayerId(layerIdValue);
+                var consumedSeconds = GetRealtimeMovedSeconds(layerId);
+                var deltaGameSeconds = Math.Max(0f, scheduleTicks - consumedSeconds);
+                if (deltaGameSeconds <= 0f)
+                {
+                    continue;
+                }
+
+                await advanceActorSimpleLifecycleUseCase.ExecuteAsync(
+                    gameWorldState,
+                    deltaGameSeconds,
+                    ActorLifecycleAdvanceScope.Only(layerId));
+            }
+
+            scheduledActorLayerIds.Clear();
+            ConsumeRealtimeMovedSeconds(scheduleTicks);
+        }
+
+        bool HasActorOnLayer(MapLayerId layerId)
+        {
+            foreach (var actor in gameWorldState.Actors)
+            {
+                if (actor.Position.LayerId.Equals(layerId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void AddRealtimeMovedSeconds(MapLayerId layerId, float deltaGameSeconds)
+        {
+            var layerIdValue = layerId.Value;
+            realtimeMovedSecondsByLayer.TryGetValue(layerIdValue, out var current);
+            realtimeMovedSecondsByLayer[layerIdValue] = current + deltaGameSeconds;
+        }
+
+        float GetRealtimeMovedSeconds(MapLayerId layerId)
+        {
+            realtimeMovedSecondsByLayer.TryGetValue(layerId.Value, out var value);
+            return value;
+        }
+
+        void ConsumeRealtimeMovedSeconds(float consumedSeconds)
+        {
+            if (realtimeMovedSecondsByLayer.Count == 0)
             {
                 return;
             }
 
-            await UniTask.Yield(cancellationToken);
-            workBudget.Reset();
-        }
-
-        sealed class ScheduleWorkBudget
-        {
-            readonly int maxWork;
-            int remainingWork;
-
-            public bool IsExhausted => remainingWork <= 0;
-
-            public ScheduleWorkBudget(int maxWork)
+            var layerIds = new List<int>(realtimeMovedSecondsByLayer.Keys);
+            foreach (var layerId in layerIds)
             {
-                this.maxWork = Math.Max(1, maxWork);
-                remainingWork = this.maxWork;
-            }
-
-            public void Consume()
-            {
-                remainingWork--;
-            }
-
-            public void Reset()
-            {
-                remainingWork = maxWork;
+                var remainingSeconds = realtimeMovedSecondsByLayer[layerId] - consumedSeconds;
+                if (remainingSeconds <= 0f)
+                {
+                    realtimeMovedSecondsByLayer.Remove(layerId);
+                }
+                else
+                {
+                    realtimeMovedSecondsByLayer[layerId] = remainingSeconds;
+                }
             }
         }
+
     }
 }

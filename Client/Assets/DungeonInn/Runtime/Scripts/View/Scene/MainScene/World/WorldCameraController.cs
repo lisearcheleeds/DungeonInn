@@ -18,6 +18,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         float pitchDegrees;
 
         public float CurrentYawDegrees => yawDegrees;
+        public float ActorViewportMargin => settings.ActorViewportMargin;
 
         [Inject]
         public WorldCameraController(WorldCameraSettings settings)
@@ -75,6 +76,21 @@ namespace DungeonInn.View.Scene.MainScene.World
             UpdatePosition(camera, deltaSeconds);
             UpdateZoom(camera);
             ApplyRotation(camera);
+        }
+
+        public bool IsWorldPositionVisible(Vector3 worldPosition, float viewportMargin)
+        {
+            if (camera == null)
+            {
+                return true;
+            }
+
+            var viewportPosition = camera.WorldToViewportPoint(worldPosition);
+            return 0f < viewportPosition.z &&
+                -viewportMargin <= viewportPosition.x &&
+                viewportPosition.x <= 1f + viewportMargin &&
+                -viewportMargin <= viewportPosition.y &&
+                viewportPosition.y <= 1f + viewportMargin;
         }
 
         void InitializeCamera(Camera camera)

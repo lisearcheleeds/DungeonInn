@@ -12,6 +12,12 @@ namespace DungeonInn.View.Scene.MainScene.World
         SpriteRenderer spriteRenderer;
         ActorSpriteAnimator animator;
         float targetCanvasHeightMeters;
+        Sprite currentSprite;
+        float currentVisualScale = 1f;
+        bool hasRotationY;
+        bool visible = true;
+        bool currentFlipX;
+        float currentRotationY;
 
         public Vector2 Facing { get; private set; }
         public LayerPosition LastPosition { get; private set; }
@@ -31,6 +37,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             SetSprite(null);
             SetFlip(false);
             SetVisualCanvasHeight(0f);
+            SetVisible(true);
+            hasRotationY = false;
             Facing = Vector2.down;
             LastPosition = default;
             HasLastPosition = false;
@@ -58,12 +66,23 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void SetSprite(Sprite sprite)
         {
             spriteRenderer ??= GetComponent<SpriteRenderer>();
+            if (currentSprite == sprite)
+            {
+                return;
+            }
+
+            currentSprite = sprite;
             spriteRenderer.sprite = sprite;
             ApplyVisualScale();
         }
 
         public void SetVisualCanvasHeight(float heightMeters)
         {
+            if (Mathf.Approximately(targetCanvasHeightMeters, heightMeters))
+            {
+                return;
+            }
+
             targetCanvasHeightMeters = heightMeters;
             ApplyVisualScale();
         }
@@ -71,11 +90,36 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void SetFlip(bool flipX)
         {
             spriteRenderer ??= GetComponent<SpriteRenderer>();
+            if (currentFlipX == flipX)
+            {
+                return;
+            }
+
+            currentFlipX = flipX;
             spriteRenderer.flipX = flipX;
+        }
+
+        public void SetVisible(bool value)
+        {
+            spriteRenderer ??= GetComponent<SpriteRenderer>();
+            if (visible == value && spriteRenderer.enabled == value)
+            {
+                return;
+            }
+
+            visible = value;
+            spriteRenderer.enabled = value;
         }
 
         public void SetRotationY(float degrees)
         {
+            if (hasRotationY && Mathf.Approximately(currentRotationY, degrees))
+            {
+                return;
+            }
+
+            currentRotationY = degrees;
+            hasRotationY = true;
             transform.rotation = Quaternion.Euler(0f, degrees, 0f);
         }
 
@@ -120,11 +164,22 @@ namespace DungeonInn.View.Scene.MainScene.World
             var sprite = spriteRenderer.sprite;
             if (targetCanvasHeightMeters <= 0f || sprite == null || sprite.bounds.size.y <= 0f)
             {
-                transform.localScale = Vector3.one;
+                ApplyScale(1f);
                 return;
             }
 
             var scale = targetCanvasHeightMeters / sprite.bounds.size.y;
+            ApplyScale(scale);
+        }
+
+        void ApplyScale(float scale)
+        {
+            if (Mathf.Approximately(currentVisualScale, scale))
+            {
+                return;
+            }
+
+            currentVisualScale = scale;
             transform.localScale = new Vector3(scale, scale, scale);
         }
     }

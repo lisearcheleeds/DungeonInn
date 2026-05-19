@@ -14,6 +14,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         const float DefaultZoomSensitivity = 0.02f;
         const float DefaultMinOrthographicSize = 12f;
         const float DefaultMaxOrthographicSize = 120f;
+        const float DefaultActorViewportMargin = 0.08f;
 
         [SerializeField] Vector3 initialPosition = DefaultInitialPosition;
         [SerializeField] float initialPitchDegrees = DefaultInitialPitchDegrees;
@@ -24,6 +25,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         [SerializeField] float zoomSensitivity = DefaultZoomSensitivity;
         [SerializeField] float minOrthographicSize = DefaultMinOrthographicSize;
         [SerializeField] float maxOrthographicSize = DefaultMaxOrthographicSize;
+        [SerializeField] float actorViewportMargin = DefaultActorViewportMargin;
 
         public WorldCameraSettings ToSettings()
         {
@@ -36,7 +38,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 rotationSensitivity,
                 zoomSensitivity,
                 minOrthographicSize,
-                maxOrthographicSize);
+                maxOrthographicSize,
+                actorViewportMargin);
         }
 
         internal static WorldCameraSettings CreateFallbackSettings()
@@ -50,7 +53,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 DefaultRotationSensitivity,
                 DefaultZoomSensitivity,
                 DefaultMinOrthographicSize,
-                DefaultMaxOrthographicSize);
+                DefaultMaxOrthographicSize,
+                DefaultActorViewportMargin);
         }
     }
 }

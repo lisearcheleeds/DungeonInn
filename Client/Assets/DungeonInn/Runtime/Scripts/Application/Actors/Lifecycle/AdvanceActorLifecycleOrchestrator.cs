@@ -84,6 +84,14 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
         {
+            await ExecuteAsync(worldState, deltaGameSeconds, ActorLifecycleAdvanceScope.All);
+        }
+
+        public async UniTask ExecuteAsync(
+            IGameWorldState worldState,
+            float deltaGameSeconds,
+            ActorLifecycleAdvanceScope scope)
+        {
             if (worldState == null)
             {
                 throw new ArgumentNullException(nameof(worldState));
@@ -92,6 +100,11 @@ namespace DungeonInn.Application.Actors.Lifecycle
             var actors = worldState.Actors;
             foreach (var actor in actors)
             {
+                if (!scope.Contains(actor.Position.LayerId))
+                {
+                    continue;
+                }
+
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
                     continue;

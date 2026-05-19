@@ -190,6 +190,54 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void WorldActorPresenterOffsetsActorLocalYByVisualSizeHalfHeight()
+        {
+            var actorId = Guid.NewGuid();
+            var actorPosition = new LayerPosition(MapLayerId.Ground, 2f, 3f);
+            var viewRoot = new WorldViewRoot();
+            var layerRegistry = new MapLayerViewRegistry(viewRoot);
+            var prefabSource = new ActorPrefabSource(null);
+            var pool = new WorldActorViewPool(prefabSource);
+            var registry = new WorldActorViewRegistry(pool, layerRegistry);
+            var loader = new VisualConfigLoader(
+                new ThrowingAssetManager(),
+                new VisualConfigSettings(null, null, null));
+            var actorSpriteVisualConfig = new ActorSpriteVisualConfig(loader);
+            var presenter = new WorldActorPresenter(
+                new FixedActorViewDataProvider(
+                    new ActorViewData(actorId, actorPosition, ActorBehaviorType.Adventurer)),
+                new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
+                registry,
+                actorSpriteVisualConfig,
+                new WorldCameraController(CreateWorldCameraSettings()));
+
+            try
+            {
+                LogAssert.Expect(
+                    LogType.Warning,
+                    "[ActorSpriteVisualConfig] Using placeholder actor sprite. BehaviorType=Adventurer");
+
+                presenter.UpdateVisuals();
+                var actorView = registry.GetOrCreateActorView(actorId, actorPosition, out var created);
+
+                Assert.That(created, Is.False);
+                Assert.That(actorView.transform.localPosition.x, Is.EqualTo(2f).Within(0.0001f));
+                Assert.That(actorView.transform.localPosition.y, Is.EqualTo(0.75f).Within(0.0001f));
+                Assert.That(actorView.transform.localPosition.z, Is.EqualTo(3f).Within(0.0001f));
+            }
+            finally
+            {
+                registry.Dispose();
+                pool.Dispose();
+                prefabSource.Dispose();
+                actorSpriteVisualConfig.Dispose();
+                loader.Dispose();
+                layerRegistry.Dispose();
+                viewRoot.Dispose();
+            }
+        }
+
+        [Test]
         public void WorldMapViewSkipsQueuedChunksFromInvalidatedLayerBuild()
         {
             var provider = new VersionedMapViewDataProvider();
@@ -382,6 +430,21 @@ namespace DungeonInn.Tests.EditMode
             return propsByLayer.Count;
         }
 
+        static WorldCameraSettings CreateWorldCameraSettings()
+        {
+            return new WorldCameraSettings(
+                Vector3.zero,
+                initialPitchDegrees: 45f,
+                initialYawDegrees: 45f,
+                initialOrthographicSize: 48f,
+                moveSpeed: 32f,
+                rotationSensitivity: 0.2f,
+                zoomSensitivity: 0.02f,
+                minOrthographicSize: 12f,
+                maxOrthographicSize: 120f,
+                actorViewportMargin: 0.08f);
+        }
+
         sealed class TestWorldState : IGameWorldStateReader
         {
             public TestWorldState(GroundMap groundMap, Dungeon dungeon)
@@ -434,6 +497,32 @@ namespace DungeonInn.Tests.EditMode
 
             public void InvalidateLayer(MapLayerId layerId)
             {
+            }
+        }
+
+        sealed class FixedActorViewDataProvider : IActorViewDataProvider
+        {
+            readonly ActorViewDataChangeBuffer initialChanges;
+            bool consumed;
+
+            public FixedActorViewDataProvider(ActorViewData actor)
+            {
+                initialChanges = new ActorViewDataChangeBuffer(
+                    new[] { actor },
+                    Array.Empty<Guid>());
+            }
+
+            public ActorViewDataChangeBuffer ConsumeChanges()
+            {
+                if (consumed)
+                {
+                    return new ActorViewDataChangeBuffer(
+                        Array.Empty<ActorViewData>(),
+                        Array.Empty<Guid>());
+                }
+
+                consumed = true;
+                return initialChanges;
             }
         }
 
