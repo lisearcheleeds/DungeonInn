@@ -36,7 +36,10 @@ namespace DungeonInn.View.Scene.MainScene.World
 #else
             actorView.gameObject.name = "Actor";
 #endif
-            actorView.gameObject.layer = WorldRenderingLayer.Layer;
+            foreach (var t in actorView.GetComponentsInChildren<Transform>(true))
+            {
+                t.gameObject.layer = WorldRenderingLayer.Layer;
+            }
             actorView.gameObject.SetActive(true);
             actorView.Reset();
             return actorView;

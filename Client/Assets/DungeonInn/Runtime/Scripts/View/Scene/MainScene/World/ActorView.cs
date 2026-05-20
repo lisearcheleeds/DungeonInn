@@ -3,13 +3,12 @@ using UnityEngine;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
-    [RequireComponent(typeof(SpriteRenderer))]
     public sealed class ActorView : MonoBehaviour
     {
+        [SerializeField] SpriteRenderer spriteRenderer;
         [SerializeField] ActorSpriteAnimationClip idleAnimationClip;
         [SerializeField] ActorSpriteAnimationClip walkAnimationClip;
 
-        SpriteRenderer spriteRenderer;
         ActorSpriteAnimator animator;
         float targetCanvasHeightMeters;
         Sprite currentSprite;
@@ -26,7 +25,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void Awake()
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
             animator = new ActorSpriteAnimator();
             animator.Setup(idleAnimationClip, walkAnimationClip);
             Facing = Vector2.down;
@@ -65,7 +63,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void SetSprite(Sprite sprite)
         {
-            spriteRenderer ??= GetComponent<SpriteRenderer>();
             if (currentSprite == sprite)
             {
                 return;
@@ -89,7 +86,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void SetFlip(bool flipX)
         {
-            spriteRenderer ??= GetComponent<SpriteRenderer>();
             if (currentFlipX == flipX)
             {
                 return;
@@ -101,7 +97,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void SetVisible(bool value)
         {
-            spriteRenderer ??= GetComponent<SpriteRenderer>();
             if (visible == value && spriteRenderer.enabled == value)
             {
                 return;
@@ -160,7 +155,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void ApplyVisualScale()
         {
-            spriteRenderer ??= GetComponent<SpriteRenderer>();
             var sprite = spriteRenderer.sprite;
             if (targetCanvasHeightMeters <= 0f || sprite == null || sprite.bounds.size.y <= 0f)
             {
