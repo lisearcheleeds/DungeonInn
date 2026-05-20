@@ -250,15 +250,35 @@ namespace DungeonInn.Tests.EditMode
             IGameClock gameClock,
             ActorSpatialIndexService actorSpatialIndexService,
             ActorProcessingCandidateService candidateService,
+            ActorViewDataStore actorViewDataStore)
+        {
+            return CreateWorldSimulationOrchestrator(
+                gameLoopUseCase,
+                worldState,
+                eventBus,
+                gameClock,
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore,
+                new NoOpNavigationPathProvider());
+        }
+
+        static WorldSimulationOrchestrator CreateWorldSimulationOrchestrator(
+            IGameLoopUseCase gameLoopUseCase,
+            GameWorldState worldState,
+            CollectingEventBus eventBus,
+            IGameClock gameClock,
+            ActorSpatialIndexService actorSpatialIndexService,
+            ActorProcessingCandidateService candidateService,
             ActorViewDataStore actorViewDataStore,
-            INavigationPathProvider navigationPathProvider = null)
+            INavigationPathProvider navigationPathProvider)
         {
             var masterRepository = new HardcodedMasterRepository();
             var itemSpatialIndexService = new ItemSpatialIndexService();
             var actorCombatService = new ActorCombatService();
             var navigationService = new ActorNavigationService(
                 eventBus,
-                navigationPathProvider ?? new NoOpNavigationPathProvider());
+                navigationPathProvider);
             var profileRegistry = new ActorProfileRegistry();
             var achievementRegistry = new ActorExplorationAchievementRegistry(eventBus);
             var completeActorSpawnUseCase = new CompleteActorSpawnUseCase(profileRegistry, eventBus);
@@ -300,9 +320,10 @@ namespace DungeonInn.Tests.EditMode
                     new ApplyActorAiDecisionUseCase()),
                 new AdvanceActorLifecycleOrchestrator(
                     new MoveActorTowardDestinationUseCase(
-                        navigationService,
-                        actorSpatialIndexService,
-                        actorViewDataStore),
+                        new ActorMovementService(
+                            navigationService,
+                            actorSpatialIndexService,
+                            actorViewDataStore)),
                     new UseDungeonStairOrchestrator(
                         new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(), new NoOpEventPublisher())),
                     new SelectDungeonTargetFloorUseCase(
@@ -330,8 +351,10 @@ namespace DungeonInn.Tests.EditMode
                     combatEffectExecutor,
                     actorDefeatOrchestrator,
                     eventBus,
-                    actorSpatialIndexService,
-                    actorViewDataStore),
+                    new ActorMovementService(
+                        navigationService,
+                        actorSpatialIndexService,
+                        actorViewDataStore)),
                 new AdvanceProjectileUseCase(combatEffectExecutor, actorDefeatOrchestrator, eventBus),
                 new AdvanceAreaEffectUseCase(
                     new AttackAreaTargetResolver(actorSpatialIndexService),

@@ -4,7 +4,7 @@ using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Domain.Dungeon
 {
-    public sealed class DungeonFloor
+    public sealed class DungeonFloor : IGridWalkability
     {
         readonly DungeonCell[] cells;
 

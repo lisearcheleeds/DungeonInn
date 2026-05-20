@@ -66,6 +66,7 @@ docs/
 | `docs/guidelines/domain-design-guidelines.md` | Domain / Entity / Calculator / DTO の設計判断基準 |
 | `docs/guidelines/application-boundary-guidelines.md` | UseCase / Service / Event / Aggregate / ゲームループの境界ルール |
 | `docs/guidelines/implementation-quality-guidelines.md` | 命名・DI・テスト・定数・TODO 管理の判断基準 |
+| `docs/guidelines/debugging-policy.md` | 不具合調査・ログ計測・再現確認・一時診断コードの扱い |
 | `docs/guidelines/self-review-preset.md` | マイルストーン完了レビュー・全体レビューの標準プロンプトと出力ルール |
 
 ### プロジェクト固有ドキュメント
@@ -232,6 +233,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 - `docs/guidelines/domain-design-guidelines.md`
 - `docs/guidelines/application-boundary-guidelines.md`
 - `docs/guidelines/implementation-quality-guidelines.md`
+- `docs/guidelines/debugging-policy.md`
 - `docs/guidelines/self-review-preset.md`
 
 ハードゲート違反を発見した場合、Codex は実装を停止して `review/{task_id}_question.md` に報告する。

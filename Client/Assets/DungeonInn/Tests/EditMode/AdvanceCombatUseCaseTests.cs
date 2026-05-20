@@ -1,41 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DungeonInn.Application.Combat;
-using DungeonInn.Application.Event;
-using DungeonInn.Application.Event.Events;
-using DungeonInn.Application.GameLoop;
+using NUnit.Framework;
+using R3;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
-
+using DungeonInn.Application.Combat;
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.Facilities;
+using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
-
-
-
-
-
-
-
-
-
-
-
-
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
+using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Facility;
+using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
-using NUnit.Framework;
-using R3;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -212,6 +202,39 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(target.Hp, Is.EqualTo(50));
         }
 
+        [Test]
+        public void CombatApproachUsesNavigationPathInsteadOfDirectWallCrossing()
+        {
+            var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
+            var worldState = CreateWorldState();
+            worldState.Initialize(
+                CreateGuild(),
+                CreateGroundMap(),
+                CreateDungeonWithWall(new GridPosition(1, 1)));
+            var combatService = new ActorCombatService();
+            var eventBus = new CollectingGameEventBus();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var attacker = CreateActor(
+                "Attacker",
+                1,
+                new LayerPosition(MapLayerId.DungeonFloor(1), 0.5f, 1.5f),
+                50);
+            var target = CreateActor(
+                "Target",
+                2,
+                new LayerPosition(MapLayerId.DungeonFloor(1), 2.5f, 1.5f),
+                50);
+            worldState.RegisterActor(attacker);
+            worldState.RegisterActor(target);
+            combatService.SetTarget(attacker.Id, target.Id);
+
+            useCase.ExecuteAsync(worldState, 1f).GetAwaiter().GetResult();
+
+            Assert.That(attacker.Position.X, Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(attacker.Position.Z, Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(eventBus.GetEvents<CombatAttackOccurred>().Count, Is.EqualTo(0));
+        }
+
         sealed class CollectingGameEventBus : IGameEventBus
         {
             readonly List<IGameEvent> events = new();
@@ -224,17 +247,36 @@ namespace DungeonInn.Tests.EditMode
             }
 
             public Observable<T> OnEvent<T>() where T : class, IGameEvent
-                => throw new NotSupportedException();
+            {
+                throw new NotSupportedException();
+            }
 
             public IReadOnlyList<T> GetEvents<T>() where T : class, IGameEvent
-                => events.OfType<T>().ToList();
+            {
+                return events.OfType<T>().ToList();
+            }
 
             public IReadOnlyList<IGameEvent> GetEvents()
             {
                 return events.ToArray();
             }
 
-            public void Clear() => events.Clear();
+            public void Clear()
+            {
+                events.Clear();
+            }
+        }
+
+        sealed class NoOpGameEventBus : IGameEventBus
+        {
+            public void Publish(IGameEvent gameEvent)
+            {
+            }
+
+            public Observable<T> OnEvent<T>() where T : class, IGameEvent
+            {
+                return Observable.Empty<T>();
+            }
         }
 
         sealed class ThrowingMasterRepository : IMasterRepository
@@ -250,18 +292,65 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
             public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
-            public ItemMaster GetItemMaster(int itemId) => throw new NotSupportedException();
-            public EquipmentMaster GetEquipmentMaster(int itemId) => throw new NotSupportedException();
-            public WeaponMaster GetWeaponMaster(int itemId) => throw new NotSupportedException();
-            public WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType) => throw new NotSupportedException();
-            public ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId) => throw new NotSupportedException();
-            public AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId) => throw new NotSupportedException();
-            public ActorEffectMaster GetActorEffectMaster(int actorEffectId) => throw new NotSupportedException();
-            public SpeciesMaster GetSpeciesMaster(int speciesId) => throw new NotSupportedException();
-            public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
-            public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
-            public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex) => throw new NotSupportedException();
-            public int GetMaxStackCount(int itemId) => throw new NotSupportedException();
+            public ItemMaster GetItemMaster(int itemId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public EquipmentMaster GetEquipmentMaster(int itemId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public WeaponMaster GetWeaponMaster(int itemId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType)
+            {
+                throw new NotSupportedException();
+            }
+
+            public ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public ActorEffectMaster GetActorEffectMaster(int actorEffectId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public SpeciesMaster GetSpeciesMaster(int speciesId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public SpawnTableMaster GetSpawnTableMaster(int spawnTableId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public LevelTable GetLevelTable(int levelTableId)
+            {
+                throw new NotSupportedException();
+            }
+
+            public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex)
+            {
+                throw new NotSupportedException();
+            }
+
+            public int GetMaxStackCount(int itemId)
+            {
+                throw new NotSupportedException();
+            }
         }
 
         sealed class FakeGameClock : IGameClock
@@ -278,7 +367,9 @@ namespace DungeonInn.Tests.EditMode
             public void Pause() { }
             public void Resume() { }
             public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
-                => new GameClockAdvanceResult(0, Array.Empty<int>());
+            {
+                return new GameClockAdvanceResult(0, Array.Empty<int>());
+            }
         }
 
         static GrantExperienceUseCase CreateGrantExperienceUseCase(IGameEventBus eventBus)
@@ -313,6 +404,11 @@ namespace DungeonInn.Tests.EditMode
             IGameClock clock,
             IGameEventBus eventBus)
         {
+            var spatialIndex = new ActorSpatialIndexService();
+            var actorViewDataStore = new ActorViewDataStore();
+            var navigationService = new ActorNavigationService(
+                new NoOpGameEventBus(),
+                new NoOpNavigationPathProvider());
             return new AdvanceCombatUseCase(
                 combatService,
                 clock,
@@ -320,8 +416,10 @@ namespace DungeonInn.Tests.EditMode
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
                 eventBus,
-                new ActorSpatialIndexService(),
-                new ActorViewDataStore());
+                new ActorMovementService(
+                    navigationService,
+                    spatialIndex,
+                    actorViewDataStore));
         }
 
         static GameWorldState CreateWorldState()
@@ -333,11 +431,66 @@ namespace DungeonInn.Tests.EditMode
                 new ActorViewDataStore());
         }
 
+        static AdventurerGuild CreateGuild()
+        {
+            return new AdventurerGuild(
+                Guid.NewGuid(),
+                new Inventory(new FixedItemStackLimitResolver()),
+                Array.Empty<Facility>());
+        }
+
+        static GroundMap CreateGroundMap()
+        {
+            var layer = new MapLayer(MapLayerId.Ground, 1, 1, 1f);
+            return new GroundMap(
+                layer,
+                new GridPosition(0, 0),
+                new[] { new GroundCell(new GridPosition(0, 0), GroundCellType.Open, MapCellBlockType.Walkable) });
+        }
+
+        static Dungeon CreateDungeonWithWall(GridPosition wall)
+        {
+            var dungeon = new Dungeon(1);
+            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 5, 3, 1f);
+            var cells = new DungeonCell[layer.Width * layer.Depth];
+            for (var z = 0; z < layer.Depth; z++)
+            {
+                for (var x = 0; x < layer.Width; x++)
+                {
+                    var position = new GridPosition(x, z);
+                    cells[z * layer.Width + x] = new DungeonCell(
+                        position,
+                        position.Equals(wall) ? DungeonCellType.Wall : DungeonCellType.Room);
+                }
+            }
+
+            dungeon.AddFloor(new DungeonFloor(
+                1,
+                layer,
+                cells,
+                new DungeonStair(DungeonStairType.Up, new GridPosition(0, 0)),
+                new DungeonStair(DungeonStairType.Down, new GridPosition(4, 2)),
+                Array.Empty<DungeonRoom>(),
+                new DungeonFloorGenerationSettings(0)));
+            return dungeon;
+        }
+
         sealed class ZeroGameRandom : IGameRandom
         {
-            public int Next() => 0;
-            public int Next(int maxExclusive) => 0;
-            public int Next(int minInclusive, int maxExclusive) => minInclusive;
+            public int Next()
+            {
+                return 0;
+            }
+
+            public int Next(int maxExclusive)
+            {
+                return 0;
+            }
+
+            public int Next(int minInclusive, int maxExclusive)
+            {
+                return minInclusive;
+            }
         }
 
         static Actor CreateActor(string name, int factionId, LayerPosition position, int hp)

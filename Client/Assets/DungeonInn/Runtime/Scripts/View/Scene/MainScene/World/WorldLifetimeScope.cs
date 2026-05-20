@@ -130,6 +130,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<SpawnScheduledMonsterOrchestrator>(Lifetime.Scoped);
 
             // === Application: アクター移動 / 成長 ===
+            builder.Register<ActorMovementService>(Lifetime.Scoped);
             builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Scoped);
             builder.Register<ActorCombatPowerCalculator>(Lifetime.Scoped);
             builder.Register<UseDungeonStairOrchestrator>(Lifetime.Scoped);

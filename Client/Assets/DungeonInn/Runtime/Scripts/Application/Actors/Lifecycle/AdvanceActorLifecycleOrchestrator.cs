@@ -1,28 +1,24 @@
 using System;
+using Cysharp.Threading.Tasks;
+using VContainer;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
-using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
-using DungeonInn.Application.Facilities;
-using DungeonInn.Application.Items;
-using DungeonInn.Application.World;
-using Cysharp.Threading.Tasks;
-
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Application.GameLoop;
-
-
+using DungeonInn.Application.Items;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
-using VContainer;
 
 namespace DungeonInn.Application.Actors.Lifecycle
 {
@@ -153,7 +149,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 actor,
                 destination,
                 groundMap.Layer,
-                pos => groundMap.IsWalkable(pos),
+                groundMap,
                 GameConstants.ActorMoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
@@ -246,7 +242,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 actor,
                 destination,
                 floor.Layer,
-                pos => floor.IsWalkable(pos),
+                floor,
                 GameConstants.ActorMoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
@@ -275,7 +271,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 actor,
                 downStairDestination,
                 floor.Layer,
-                pos => floor.IsWalkable(pos),
+                floor,
                 GameConstants.ActorMoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
@@ -305,6 +301,11 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 return;
             }
 
+            if (actorCombatService.HasTarget(actor.Id))
+            {
+                return;
+            }
+
             var floorIndex = actor.Position.LayerId.Value;
             var floor = worldState.Dungeon.GetFloor(floorIndex);
             var upStairDestination = floor.GetArrivalPosition(DungeonStairType.Up);
@@ -313,7 +314,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 actor,
                 upStairDestination,
                 floor.Layer,
-                pos => floor.IsWalkable(pos),
+                floor,
                 GameConstants.ActorMoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 

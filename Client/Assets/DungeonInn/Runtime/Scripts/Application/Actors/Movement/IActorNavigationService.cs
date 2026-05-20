@@ -1,5 +1,4 @@
 using System;
-using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Application.Actors.Movement
@@ -9,7 +8,7 @@ namespace DungeonInn.Application.Actors.Movement
         ActorPathState GetOrComputePathState(
             Guid actorId,
             MapLayer layer,
-            System.Func<GridPosition, bool> isWalkable,
+            IGridWalkability walkability,
             GridPosition startGrid,
             GridPosition goalGrid);
 

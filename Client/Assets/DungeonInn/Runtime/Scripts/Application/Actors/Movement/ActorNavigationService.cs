@@ -45,7 +45,7 @@ namespace DungeonInn.Application.Actors.Movement
         public ActorPathState GetOrComputePathState(
             Guid actorId,
             MapLayer layer,
-            Func<GridPosition, bool> isWalkable,
+            IGridWalkability walkability,
             GridPosition startGrid,
             GridPosition goalGrid)
         {
@@ -55,7 +55,7 @@ namespace DungeonInn.Application.Actors.Movement
                 pathStates[actorId] = state;
             }
 
-            if (!state.NeedsRecalculation(goalGrid))
+            if (!state.TryConsumeRecalculationRequest(layer.Id, startGrid, goalGrid))
             {
                 return state;
             }
@@ -63,13 +63,13 @@ namespace DungeonInn.Application.Actors.Movement
             var navPath = navigationPathProvider.TryFindPath(layer.Id, startGrid, goalGrid);
             if (navPath != null)
             {
-                state.SetPath(navPath, goalGrid);
+                state.SetPath(layer.Id, startGrid, navPath, goalGrid);
                 return state;
             }
 
             if (!AStarPathfinder.TryFindPath(
                 layer,
-                isWalkable,
+                walkability,
                 startGrid,
                 goalGrid,
                 openQueue,
@@ -79,11 +79,11 @@ namespace DungeonInn.Application.Actors.Movement
                 fScore,
                 pathBuffer))
             {
-                state.MarkFailed();
+                state.MarkFailed(layer.Id, startGrid, goalGrid);
             }
             else
             {
-                state.SetPath(pathBuffer, goalGrid);
+                state.SetPath(layer.Id, startGrid, pathBuffer, goalGrid);
             }
 
             return state;

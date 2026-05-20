@@ -352,6 +352,20 @@ NavMesh 経路取得はゲームルールそのものではなく、表示中環
 現在の実装では、Application 側の `ActorNavigationService` が `ActorPathState` と `AStarPathfinder` を使って経路を更新する。
 旧 `Application/Navigation` の `INavigationPathProvider` / `NavigationPath*` は削除済みで、表示側 NavMesh 連携を再導入する場合は現行の `IActorNavigationService` 契約へ統合する。
 
+`IGridWalkability` は、Domain 側の地形が「グリッド座標を通行できるか」をApplicationへ渡すための最小契約とする。
+`GroundMap` と `DungeonFloor` はこの契約を実装し、Application の移動処理は `Func<GridPosition, bool>` を毎フレーム生成せずに通行可能判定を参照する。
+
+`ActorMovementService` は通常移動と戦闘接近移動で共有するApplication Serviceであり、責務は以下に限定する。
+
+- 到達距離の判定
+- `IActorNavigationService` 経由の経路取得
+- waypoint への連続座標移動
+- Actor座標更新後の `ActorSpatialIndexService` と `ActorViewDataStore` の同期
+
+`MoveActorTowardDestinationUseCase` は通常AI移動のユースケース入口であり、通常移動用の到達距離と到着時に目的地へsnapする方針だけを持つ。
+戦闘接近移動は `AdvanceCombatUseCase` が戦闘判断と射程を所有し、移動の実処理だけを `ActorMovementService` に委譲する。
+`ActorNavigationService` はActorごとの経路状態と探索バッファを所有し、NavMesh優先、A* fallback、失敗経路の再試行間隔を管理する。
+
 ## 移動 UseCase 方針
 
 `ActorNavigationService` は Domain のセル情報をもとに A* 経路を取得し、移動目標を更新する。

@@ -2,7 +2,7 @@ using System;
 
 namespace DungeonInn.Domain.Map
 {
-    public sealed class GroundMap
+    public sealed class GroundMap : IGridWalkability
     {
         readonly GroundCell[] cells;
 

@@ -10,7 +10,7 @@ namespace DungeonInn.Application.Actors.Movement
 
         public static IReadOnlyList<GridPosition> FindPath(
             MapLayer layer,
-            Func<GridPosition, bool> isWalkable,
+            IGridWalkability walkability,
             GridPosition start,
             GridPosition goal)
         {
@@ -20,14 +20,14 @@ namespace DungeonInn.Application.Actors.Movement
             var gScore = new Dictionary<GridPosition, int>();
             var fScore = new Dictionary<GridPosition, int>();
             var path = new List<GridPosition>();
-            return TryFindPath(layer, isWalkable, start, goal, openQueue, openSet, cameFrom, gScore, fScore, path)
+            return TryFindPath(layer, walkability, start, goal, openQueue, openSet, cameFrom, gScore, fScore, path)
                 ? path
                 : null;
         }
 
         public static bool TryFindPath(
             MapLayer layer,
-            Func<GridPosition, bool> isWalkable,
+            IGridWalkability walkability,
             GridPosition start,
             GridPosition goal,
             SortedSet<OpenSetNode> openQueue,
@@ -49,7 +49,7 @@ namespace DungeonInn.Application.Actors.Movement
                 return true;
             }
 
-            if (!isWalkable(goal))
+            if (!walkability.IsWalkable(goal))
             {
                 return false;
             }
@@ -60,7 +60,7 @@ namespace DungeonInn.Application.Actors.Movement
             gScore[start] = 0;
             fScore[start] = Heuristic(start, goal);
 
-            while (openQueue.Count > 0)
+            while (0 < openQueue.Count)
             {
                 var current = PopLowestF(openQueue, openSet);
                 if (!current.HasValue)
@@ -78,13 +78,13 @@ namespace DungeonInn.Application.Actors.Movement
                 {
                     var (dx, dz) = Directions[i];
                     var neighbor = new GridPosition(current.Value.X + dx, current.Value.Z + dz);
-                    if (!layer.Contains(neighbor) || !isWalkable(neighbor))
+                    if (!layer.Contains(neighbor) || !walkability.IsWalkable(neighbor))
                     {
                         continue;
                     }
 
                     var tentativeG = gScore[current.Value] + 1;
-                    if (gScore.TryGetValue(neighbor, out var knownG) && tentativeG >= knownG)
+                    if (gScore.TryGetValue(neighbor, out var knownG) && knownG <= tentativeG)
                     {
                         continue;
                     }
@@ -104,7 +104,7 @@ namespace DungeonInn.Application.Actors.Movement
 
         static GridPosition? PopLowestF(SortedSet<OpenSetNode> openQueue, HashSet<GridPosition> openSet)
         {
-            while (openQueue.Count > 0)
+            while (0 < openQueue.Count)
             {
                 var node = openQueue.Min;
                 openQueue.Remove(node);

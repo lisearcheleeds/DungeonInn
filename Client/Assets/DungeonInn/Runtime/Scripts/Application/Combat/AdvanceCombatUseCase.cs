@@ -1,24 +1,22 @@
 using System;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Application.Combat;
-using DungeonInn.Application.Event;
-using DungeonInn.Application.GameLoop;
+using VContainer;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
-
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
+using DungeonInn.Application.Event;
+using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Facilities;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
-using VContainer;
 
 namespace DungeonInn.Application.Combat
 {
@@ -30,8 +28,7 @@ namespace DungeonInn.Application.Combat
         readonly CombatEffectExecutor combatEffectExecutor;
         readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
         readonly IEventPublisher eventPublisher;
-        readonly ActorSpatialIndexService actorSpatialIndexService;
-        readonly ActorViewDataStore actorViewDataStore;
+        readonly ActorMovementService actorMovementService;
 
         [Inject]
         public AdvanceCombatUseCase(
@@ -41,8 +38,7 @@ namespace DungeonInn.Application.Combat
             CombatEffectExecutor combatEffectExecutor,
             ActorDefeatOrchestrator actorDefeatOrchestrator,
             IEventPublisher eventPublisher,
-            ActorSpatialIndexService actorSpatialIndexService,
-            ActorViewDataStore actorViewDataStore)
+            ActorMovementService actorMovementService)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -55,10 +51,8 @@ namespace DungeonInn.Application.Combat
             this.actorDefeatOrchestrator = actorDefeatOrchestrator
                 ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
-            this.actorSpatialIndexService = actorSpatialIndexService
-                ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
-            this.actorViewDataStore = actorViewDataStore
-                ?? throw new ArgumentNullException(nameof(actorViewDataStore));
+            this.actorMovementService = actorMovementService
+                ?? throw new ArgumentNullException(nameof(actorMovementService));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -94,7 +88,7 @@ namespace DungeonInn.Application.Combat
 
                 if (!IsWithinWeaponRange(actor, target))
                 {
-                    MoveTowardTarget(actor, target, deltaGameSeconds);
+                    MoveTowardTarget(worldState, actor, target, deltaGameSeconds);
 
                     continue;
                 }
@@ -123,30 +117,28 @@ namespace DungeonInn.Application.Combat
             return UniTask.CompletedTask;
         }
 
-        void MoveTowardTarget(Actor actor, Actor target, float deltaGameSeconds)
+        void MoveTowardTarget(IGameWorldState worldState, Actor actor, Actor target, float deltaGameSeconds)
         {
             if (!actor.Position.LayerId.Equals(target.Position.LayerId))
             {
                 return;
             }
 
-            var dx = target.Position.X - actor.Position.X;
-            var dz = target.Position.Z - actor.Position.Z;
-            var distSq = dx * dx + dz * dz;
-            if (distSq <= 0f)
+            if (actor.Position.LayerId.Equals(MapLayerId.Ground))
             {
                 return;
             }
 
-            var dist = (float)Math.Sqrt(distSq);
-            var step = Math.Min(dist, GameConstants.ActorMoveSpeedMetersPerSecond * deltaGameSeconds);
-            var ratio = step / dist;
-            actor.MoveTo(new LayerPosition(
-                actor.Position.LayerId,
-                actor.Position.X + dx * ratio,
-                actor.Position.Z + dz * ratio));
-            actorSpatialIndexService.SyncActor(actor);
-            actorViewDataStore.SyncActor(actor);
+            var floor = worldState.Dungeon.GetFloor(actor.Position.LayerId.Value);
+            actorMovementService.MoveToward(
+                actor,
+                target.Position,
+                floor.Layer,
+                floor,
+                GameConstants.ActorMoveSpeedMetersPerSecond,
+                deltaGameSeconds,
+                actor.WeaponCombatParams.RangeMeters,
+                snapToDestinationOnArrival: false);
         }
 
         static bool IsWithinWeaponRange(Actor actor, Actor target)
