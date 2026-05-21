@@ -25,6 +25,8 @@
 - [ ] 内部バッファ参照を、コントラクト不明な API として返していない
 - [ ] 一般パターンに反する意図的設計を、根拠記録なしに追加していない
 - [ ] DI constructor（非MonoBehaviour）内で UnityEngine.Object（Texture2D / Sprite / Material / Mesh / GameObject 等）を生成していない
+- [ ] LifetimeScope / Installer にゲームコンテンツ Prefab、UI View Prefab、Popup View 実体を `SerializedField` していない
+- [ ] View 実体を直接 DI 登録せず、Presenter / Pool / Factory の責務境界を通して操作している
 - [ ] 既存 guideline 上で適切な命名・責務・設定配置が判断できるのに、「最小差分」を理由に曖昧な旧名・不適切な責務・互換用 API を残していない
 
 ## 完了前チェックリスト
@@ -46,6 +48,8 @@
 - [ ] 一般パターンに反する設計は docs/design または task ログに根拠を記録している
 - [ ] UnityEngine.Object を保持するコレクションで、スコープ無効化（InvalidateXxx）と Dispose のクリーンアップパスが対称に実装されているか確認した
 - [ ] Fallback / Placeholder アセット生成の定数・ロジックが複数クラスに重複していないか確認した
+- [ ] LifetimeScope がコンテンツ catalog 化していないか確認した
+- [ ] Popup / HUD / View の操作入口が Presenter / Pool / Factory に限定されているか確認した
 - [ ] 最小差分を理由に、本文ルールに沿ったリネーム・責務移動・不要 API 削除を省略していない
 
 ---
@@ -693,7 +697,54 @@ public sealed class ActorSpriteVisualConfig
 
 ---
 
-## 17. UnityEngine.Object を保持するクラスは invalidation 単位と Dispose 単位を揃える
+## 17. LifetimeScope をコンテンツ Catalog にしない
+
+`LifetimeScope` / Installer は DI の composition root であり、ゲームコンテンツや UI View の一覧を保持する場所ではない。
+コンテンツ種別が増えるたびに `SerializedField` が増える `LifetimeScope` は、責務が膨らみ、Prefab 選択の発生元が読めなくなる。
+
+### 禁止
+
+```csharp
+public sealed class WorldLifetimeScope : LifetimeScope
+{
+    [SerializeField] GameObject projectilePrefab;
+    [SerializeField] GameObject areaEffectPrefab;
+    [SerializeField] ActorStatusView actorStatusViewPrefab;
+    [SerializeField] ActorDetailPopup actorDetailPopup;
+}
+```
+
+### 推奨
+
+- Projectile / AreaEffect / Prop などのゲームコンテンツ Prefab は、発生元 Master / Spec / Definition から visual id / Addressable address を解決する。
+- UI View Prefab は UI ModuleScene 用 Factory / Pool が Addressable 経由で生成する。
+- Popup View は Presenter の内部実装として保持し、他クラスが View 実体を直接 DI できる登録を避ける。
+- `LifetimeScope` に置いてよい `SerializedField` は、Scene root、設定 ScriptableObject、composition に必要な scene-owned component に限定する。
+
+```csharp
+public sealed class WorldLifetimeScope : LifetimeScope
+{
+    [SerializeField] WorldScene worldScene;
+    [SerializeField] WorldCameraSettingsSO worldCameraSettingsSO;
+
+    protected override void Configure(IContainerBuilder builder)
+    {
+        builder.RegisterComponent(worldScene);
+        builder.Register<WorldViewFactory>(Lifetime.Scoped).AsSelf();
+        builder.Register<WorldProjectileViewPool>(Lifetime.Scoped);
+    }
+}
+```
+
+### レビュー観点
+
+- `LifetimeScope` の `SerializedField` が増えた場合、Scene root / 設定 SO / scene-owned component のいずれかか確認する。
+- Prefab や View 実体であれば、Addressable Factory / Pool / Presenter へ移す。
+- 「暫定」「最小差分」を理由に直接参照を残さない。コンテンツ増加時に必ず破綻するため、ハードゲート違反として扱う。
+
+---
+
+## 18. UnityEngine.Object を保持するクラスは invalidation 単位と Dispose 単位を揃える
 
 スコープ（Layer・Floor・Actor等）をキーとした UnityEngine.Object のコレクションを持つクラスは、そのスコープが無効化された際に対応するリソースをクリーンアップするメソッドを別途実装すること。`Dispose` のみに依存しない。
 
@@ -837,6 +888,8 @@ var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
 - [ ] テストダブルのスコープが必要最小限か（使わないメソッドが多すぎないか）
 - [ ] テストダブルに `throw new NotSupportedException()` が多い場合、インターフェース分割を検討したか
 - [ ] DI constructor（非MonoBehaviour）内で UnityEngine.Object を生成していないか
+- [ ] LifetimeScope / Installer が Prefab や View 実体の置き場になっていないか
+- [ ] Popup / HUD / View 実体が直接 DI されず、Presenter / Pool / Factory 経由で操作されているか
 
 ### インターフェース設計
 
@@ -872,6 +925,7 @@ var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
 - [ ] `Dispose()` が空なら、インターフェース自体を外すか理由をコメントで明記しているか
 - [ ] UnityEngine.Object を保持するコレクションで、スコープ単位の InvalidateXxx が Dispose と対称に実装されているか
 - [ ] Fallback / Placeholder アセット生成ロジックが複数クラスに重複していないか
+- [ ] コンテンツ Prefab の Addressable address が発生元 Master / Spec / Definition から解決されているか
 
 ### 設計記録
 

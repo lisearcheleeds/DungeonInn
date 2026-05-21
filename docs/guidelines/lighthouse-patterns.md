@@ -17,6 +17,9 @@ Claude Code・Codex ともに実装前に本ドキュメントを確認するこ
 - [ ] 旧 Input System の `Input.GetKey` / `Input.GetAxis` / `Keyboard.current` / `Mouse.current` ポーリングを追加していない
 - [ ] ModuleScene の Activate / Deactivate を手動操作していない
 - [ ] ScreenStack / Modal を手動 `Instantiate` / `Destroy` で管理していない
+- [ ] 3D / World 系 MainScene に Screen Space Overlay の UI Canvas / HUD / Popup を直接配置していない
+- [ ] LifetimeScope にゲームコンテンツ Prefab / UI View Prefab / Popup View の実体を `SerializedField` していない
+- [ ] Projectile / AreaEffect / Prop 等のコンテンツ Prefab アドレスを、World 横断の Prefab 一覧ではなく発生元 Master / Spec / Definition から解決している
 - [ ] `Camera.main` 依存や URP カメラスタックの手動構築を追加していない
 - [ ] Lighthouse / VContainer / 既存フレームワークコードを複製していない
 - [ ] LighthouseGenerated 以下の `.g.cs` を手動編集していない
@@ -28,7 +31,10 @@ Claude Code・Codex ともに実装前に本ドキュメントを確認するこ
 
 - [ ] 変更内容に該当する Lighthouse パターン（P1〜P10）を本文で確認した
 - [ ] シーン責務が MainScene / ModuleScene の判断基準に沿っている
+- [ ] 3D / World 系 MainScene の Canvas / HUD / Popup は Canvas ModuleScene に分離している
 - [ ] アセットロードは `IAssetManager` / `IAssetScope` の寿命ルールに沿っている
+- [ ] Prefab 生成は Addressable Factory / Pool 経由で行い、LifetimeScope に直接 Prefab 参照を置いていない
+- [ ] コンテンツ Prefab の選択責務が発生元 Master / Spec / Definition にある
 - [ ] シーン遷移は Lighthouse の `ISceneManager` 経由で行っている
 - [ ] 入力は `IInputLayer` と MainScene 登録経由で処理している
 - [ ] ScreenStack / Dialog は Lighthouse の ScreenStack 経由で開閉している
@@ -45,17 +51,26 @@ Claude Code・Codex ともに実装前に本ドキュメントを確認するこ
 
 | シーン種別 | 責務 |
 |---|---|
-| **MainScene** | そのゲーム状態における核となるコンテンツ（3D 表現・ゲームロジック起点・シーン固有 UI） |
-| **ModuleScene** | 複数の MainScene をまたいで再利用できる補助システム（カメラ・モーダル・多言語・オーディオ等） |
+| **MainScene** | そのゲーム状態における核となるコンテンツ（3D 表現・ゲームロジック起点・シーン固有 UI。ただし 3D / World 系 MainScene では Canvas UI を置かない） |
+| **ModuleScene** | MainScene と分離して管理・描画すべき補助システム（カメラ・モーダル・多言語・オーディオ・HUD Canvas 等） |
 
-**判断基準**:
+**判断基準（順に確認する）**:
 ```
-「このコンテンツは複数の MainScene で再利用されるか？」
-  Yes → ModuleScene
-  No  → MainScene に直接置く
+1. 複数の MainScene で再利用されるか？
+     Yes → ModuleScene が適切
+2. 1つの MainScene 専用だが、描画パイプライン / Canvas 分離の明確な理由があるか？
+     Yes → ModuleScene として切り出してよい（ユーザーに確認の上）
+   （例: 3D World シーンと Screen Space Overlay Canvas を別シーンで管理することで描画フローを明確にする）
+     No  → MainScene に直接置く
 ```
 
-**禁止**: 「将来再利用するかもしれない」という仮定での ModuleScene 化。実際に再利用が必要になったときにリファクタリングする。
+**禁止**: 「将来再利用するかもしれない」という仮定のみでの ModuleScene 化。描画分離などの具体的な理由がない場合は MainScene に直接置く。
+
+**3D / World 系 MainScene の追加ルール**:
+- World / Dungeon / Battle Field など、3D 表現やゲーム空間を主責務にする MainScene には Screen Space Overlay の UI Canvas を置かない。
+- HUD、ActorStatus、Popup、EventLog、Menu などは Canvas ModuleScene（例: `WorldUI`）へ分離する。
+- MainScene 側の Presenter が UI を操作する場合も、ModuleScene Provider / Addressable Factory / Pool を経由して View を取得する。
+- Canvas が見つからない場合の fallback 生成は開発時の保険に留め、正規経路は ModuleScene に置いた Canvas とする。
 
 **設計時に必ずユーザーへ相談すること**:
 - 各シーンの責務分担を決める前（何を MainScene / ModuleScene に置くか）
@@ -75,6 +90,44 @@ Resources.Load<T>(path);
 ```
 
 **理由**: `IAssetScope` が ref-count を管理しているため、直接呼び出すと解放漏れ・二重解放が発生する。`WaitForCompletion` はメインスレッドをブロックしフリーズを引き起こす。
+
+#### 1-a. コンテンツ Prefab は Addressable Factory / Pool 経由で生成する
+
+ゲームコンテンツや UI View の Prefab は、Scene / LifetimeScope の直参照から生成してはならない。
+
+```csharp
+// NG: LifetimeScope がコンテンツ Prefab を直接保持する
+public sealed class WorldLifetimeScope : LifetimeScope
+{
+    [SerializeField] GameObject projectilePrefab;
+    [SerializeField] ActorStatusView actorStatusViewPrefab;
+    [SerializeField] ActorDetailPopup actorDetailPopup;
+}
+```
+
+```csharp
+// OK: Addressable Factory が scope を持ち、Pool / Presenter は Factory 経由で取得する
+public sealed class WorldViewFactory : IDisposable
+{
+    readonly IAssetScope assetScope;
+
+    public async UniTask LoadAsync(CancellationToken ct)
+    {
+        var handle = await assetScope.LoadAsync<GameObject>(address, ct);
+        cachedPrefab = handle.Asset;
+    }
+}
+```
+
+**コンテンツ Prefab アドレスの置き場所**:
+- Projectile / AreaEffect / SkillEffect: 武器・スキル・効果など、発生元 Master / Spec / Definition に置く。
+- Prop / Environment object: セル種別・施設種別・環境物マスタなど、発生元データに置く。
+- UI 固定 View（ActorStatus / Popup / Log 等）: UI ModuleScene 用 Factory の固定アドレス、または UI 定義マスタに置く。
+
+**禁止**:
+- `WorldContentPrefabConfigSO` のような World 横断の「コンテンツ Prefab 一覧」を作り、Projectile / AreaEffect / Prop の種類選択責務を集約すること。
+- コンテンツ種別が増えるたびに LifetimeScope の `SerializedField` が増える設計。
+- Presenter 以外が Popup View 実体を直接 DI できる登録。
 
 ```csharp
 // OK: IAssetManager → IAssetScope 経由
@@ -712,6 +765,9 @@ namespace DungeonInn.View.Scene.MainScene.Inn
 - LifetimeScope は必ずシーン固有の namespace を持つこと（グローバル namespace は禁止）
 - `ProductLifetimeScope`（ゲーム全体）への登録と混同しないこと
 - シーン MonoBehaviour に `[Inject]` を使う場合は `RegisterComponentInHierarchy` が必須
+- LifetimeScope は composition root であり、コンテンツ catalog ではない。Prefab / Popup / UI View 実体を `SerializedField` して登録してはならない
+- LifetimeScope に許可される `SerializedField` は、Scene root、Camera root、設定 ScriptableObject、または composition に必要な scene-owned component に限定する
+- Prefab は Addressable Factory / Pool / Presenter が生成し、必要なアドレスは発生元 Master / Spec / Definition から受け取る
 
 ---
 

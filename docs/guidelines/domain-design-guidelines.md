@@ -25,6 +25,8 @@ Domain は View、Infrastructure、Framework、外部 SDK に依存しない。
 - [ ] Domain 層の Calculator / Policy を DI 注入対象にしていない
 - [ ] 型→型マッピング（is / switch / if-else）で、既知の全派生型・全 enum 値が明示的にケースとして列挙されているか、または catch-all の意図がコメントで明記されているか
 - [ ] View の表示サイズ（VisualSizeTier 等）を Domain 側のサイズ・当たり判定・移動範囲の根拠として使用していない
+- [ ] Projectile / AreaEffect / Prop 等のコンテンツ Prefab 選択を、World 横断設定ではなく発生元 Master / Spec / Definition から解決している
+- [ ] Domain に UnityEngine.Object / Addressables API / View 型を持ち込まず、必要な場合も visual id / address などのデータ値に留めている
 
 ## 完了前チェックリスト
 
@@ -41,6 +43,7 @@ Domain は View、Infrastructure、Framework、外部 SDK に依存しない。
 - [ ] 純粋計算クラスの static 化・共有インスタンス化・DI 注入の選択理由が本文の優先順位に沿っている
 - [ ] 型→型マッピングで全既知ケースが網羅されているか、またはデフォルトの意図が明記されているか確認した
 - [ ] View の表示サイズ（VisualSizeTier 等）を Domain 側のサイズ概念として流用していないか確認した
+- [ ] コンテンツ Prefab の visual id / address が、その発生元 Master / Spec / Definition に属しているか確認した
 
 ---
 
@@ -80,6 +83,44 @@ public sealed class WeaponAttackSpec { }
 `WeaponAttackSpec`、`CombatEffectNodeSpec`、`DamageSpec` は戦闘処理で参照する不変仕様として扱う。
 マスタが Domain Entity ではなく参照データである場合、`Domain/` ではなく `Master/` などの専用名前空間に置き、Repository から UseCase へ供給する。
 MasterMemory 導入前は、`HardcodedMasterRepository` のような仮 Repository で同じ読み取り契約を満たす。
+
+### コンテンツ Prefab の visual id / address は発生元に置く
+
+Projectile、AreaEffect、Prop、SkillEffect など、ゲーム内容に応じて差し替わる Prefab の visual id / Addressable address は、それを発生させる Master / Spec / Definition に属する。
+World 全体の Prefab 一覧や LifetimeScope にまとめると、どの武器・スキル・施設・セル種別がどの見た目を要求しているか追跡できなくなる。
+
+| Prefab 種別 | address を持つべき発生元 |
+|---|---|
+| 弓の矢 Projectile | `WeaponTypeCombatMaster` / `SkillMaster` / `ProjectileSpec` |
+| 銃の弾 Projectile | 銃の `WeaponMaster` / `SkillMaster` / `ProjectileSpec` |
+| 範囲攻撃 Effect | `SkillMaster` / `AttackAreaSpec` |
+| 階段・施設 Prop | セル種別・施設種別・環境 Prop Master |
+| 固定 UI View | UI ModuleScene Factory / UI 定義 Master |
+
+```csharp
+// NG: World 横断設定がコンテンツ種類を知っている
+public sealed class WorldContentPrefabConfigSO : ScriptableObject
+{
+    public string ProjectileAddress;
+    public string AreaEffectAddress;
+}
+```
+
+```csharp
+// OK: 発生元 Master / Spec が visual address を持つ
+public sealed class WeaponTypeCombatMaster
+{
+    public string ProjectilePrefabAddress { get; }
+}
+
+public sealed class ProjectileSpec
+{
+    public string PrefabAddress { get; }
+}
+```
+
+Domain 層に Unity の型や Addressables API を持ち込んではならない。
+必要な場合は `string PrefabAddress` や `VisualId` のようなデータ値に留め、実際のロードは View / Infrastructure の Factory が `IAssetScope` 経由で行う。
 
 ---
 

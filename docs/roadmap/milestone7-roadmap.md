@@ -83,17 +83,45 @@ M7 の各タスク作成前に、以下を再確認する。
 - Frame Loop に追加する処理では LINQ chain、`ToList()`、`ToArray()`、毎フレームのラムダクロージャ、毎フレームの全件差分 polling を避ける。
 - アセット差し替えは Lighthouse の `IAssetManager` / `IAssetScope` 経由に限定し、`Addressables.LoadAssetAsync` / `Resources.Load` を直接使わない。
 
-### ユーザー確認ゲート
+### 確認済み仕様
 
-以下は実装開始前または該当 Phase の設計時にユーザー確認を行う。
+ユーザーへの確認が完了した設計決定事項。実装タスクはこれらを仕様として扱う。
 
-- Actor 選択操作の入力仕様: クリック選択でよいか、キーボードや一覧選択を併用するか。
-- Actor 詳細パネルの表示項目: M7 では Stats / HP / MP / 疲労 / 装備 / 所持金の簡易表示までに限定してよいか。
-- HP バーと状態アイコンの表現方式: World Space Canvas、SpriteRenderer、または `ActorView` 子 GameObject のどれを採用するか。
-- Projectile / Area Effect の見た目: M7 は placeholder prefab / simple mesh 表示でよいか、最低限必要な正式アセットがあるか。
-- プレイヤー向けイベントログの表示位置と行数: 画面下部の一時ログでよいか、固定パネルにするか。
+**Actor 選択操作（入力）**
+- マウスクリックで Actor を選択する
+- 選択状態のとき、矢印キーで隣の Actor へ切り替える（**未選択時に矢印キーを押しても選択状態にはならない**）
+- キーパッド入力は将来対応。M7 では `IInputLayer` の拡張口のみ設計考慮し、実装はしない
 
-これらの確認が完了していない場合、実装タスクでは暫定実装を進めず、`review/{task_id}_question.md` で確認を返す。
+**Actor 選択解除条件**（以下のいずれか）
+- ESC キー → 未選択状態に戻る
+- 別の Actor をクリック → その Actor の選択状態に切り替わる
+- 詳細 Popup を閉じる → 未選択状態に戻る
+
+**カメラ追従・拡大**
+- 選択時: 選択 Actor をカメラが追従し、Orthographic Size を通常時の 20% に縮小する（定数 `ActorSelectionZoomRatio = 0.20f`。実装後に調整可）
+- 解除時: 追従を停止し、Orthographic Size を元の値に復元する
+
+**HP バーと状態アイコンの表示方式**
+- `WorldHUDModuleScene`（M7 で新規作成する World 専用 Module Scene）上の Screen Space Overlay Canvas に表示する
+- Actor の画面位置は `Camera.WorldToScreenPoint` で変換し、Canvas RectTransform に適用して Actor に追従させる
+- `ActorView` の子 GameObject としては実装しない
+
+**Projectile / Area Effect とその他 placeholder アセット**
+- M7 の全 placeholder Sprite は `Assets/DungeonInn/Runtime/Art/Sprites/Effect/Dummy.png` を使う
+- 後で正式アセットに入れ替える前提
+
+**Actor 詳細パネルの表示形式**
+- ScreenStack の **Popup** として実装する（Dialog ではない）
+- Actor の画面座標の横に追従する（`Camera.WorldToScreenPoint` → Canvas RectTransform 位置設定）
+- 選択時に Popup を push、非選択時に pop する
+- M7 では表示・確認のみ。編集・指示操作は M8 以降
+
+**プレイヤー向けイベントログ**
+- 画面下部に一時フェードログとして表示する（初期値: 表示後 3 秒でフェード開始、1 秒でフェードアウト完了。コード内定数で管理）
+- 通常時は最新ログのみ表示。マウスオーバーで直近 10 件を固定表示する
+- 10 行分の固定 TextView（`ScrollRect` 不使用）の Text だけを更新する 1 行単位 CLI スクロール
+- マウスホイールでスクロール。マウスが離れたらスクロール位置をリセット（最新ログへ戻る）
+- 新ログが来たとき、古いものを上に押し出して最新を下に追加する
 
 ---
 
@@ -240,18 +268,20 @@ Actor の現在 HP と有効な ActorEffect / StatusEffect を、World 上でひ
 
 ### 対応内容
 
-- `ActorStatusView` を `ActorView` の子要素として追加する。
+- `WorldHUDModuleScene` を M7 で新規作成する。World シーン専用の Module Scene とし、Screen Space Overlay Canvas を持つ。
+- `ActorStatusView` は `WorldHUDModuleScene` の Canvas 上に置く。`ActorView` の子 GameObject としては実装しない。
 - HP バーは `ActorStatusView` が表示のみを担当し、HP 比率は Application の Actor view data / status DTO から受け取る。
+- Actor の画面位置は `Camera.WorldToScreenPoint` で変換し、`ActorStatusView` の RectTransform に毎フレーム適用して追従させる。
 - `ActorViewData` または専用 `ActorStatusViewData` に HP / MaxHP / ActorEffect summary を含めるかを設計する。
 - ActorEffect / StatusEffect 表示は ActorEffect 単位を基本とし、StatusEffect は内部計算単位として扱う。
-- アイコン sprite は placeholder を用意し、ActorEffectMasterId / StatusEffectType に応じて差し替えられる構成にする。
+- アイコン sprite は `Dummy.png` を placeholder として使い、ActorEffectMasterId に応じて差し替えられる構成にする。
 - 状態アイコンは View が master 表示名を直接解決しない。必要な表示用 summary は Query / DTO 境界で用意する。
-- HP バーとアイコンの位置は `ActorVisualSizeTier` の ground anchor / canvas height から View 層で計算する。
 
 ### 完了条件
 
-- [ ] Actor 頭上に HP バーが表示され、HP 変化に追従する。
-- [ ] ActorEffect / StatusEffect が有効な Actor に placeholder アイコンが表示される。
+- [ ] `WorldHUDModuleScene` が World シーンのアクティベート / デアクティベートに連動して動作する。
+- [ ] HP バーが `WorldHUDModuleScene` Canvas 上で Actor の画面位置に追従している。
+- [ ] ActorEffect / StatusEffect が有効な Actor に `Dummy.png` placeholder アイコンが表示される。
 - [ ] ActorEffect が expired になったらアイコンが消える。
 - [ ] View が `ActiveStatusEffect` を直接変更していない。
 - [ ] Domain に UI 用表示名・アイコン・表示高さのフィールドを追加していない。
@@ -266,19 +296,31 @@ Actor の現在 HP と有効な ActorEffect / StatusEffect を、World 上でひ
 
 ### 対応内容
 
-- Actor 選択用 input は Lighthouse の `IInputLayer` 経由で扱う。旧 Input System の直接 polling は追加しない。
-- クリック選択を行う場合、camera ray と View registry の表示 bounds / selection proxy を使い、Domain 判定にしない。
-- `SelectedActorStateService` 相当の View scoped state を追加する場合は、所有者・寿命・クリア条件を記録する。
-- `GetActorStatusUseCase` または同等の narrow query を Application 層に追加し、選択 Actor の表示 DTO を返す。
+#### 入力とカメラ制御（Phase 6a / task_0007）
+
+- Actor 選択は `IInputLayer` 経由のマウスクリックで行う。カメラ ray と selection proxy を使い、Domain 判定にしない。
+- 選択状態のとき、矢印キーで隣の Actor へ切り替える。**未選択時に矢印キーを押しても選択状態にはならない。**
+- 選択解除: ESC キー / 別 Actor クリック / Popup 閉じる（いずれかで未選択状態に戻る）。
+- Actor 選択時: カメラが選択 Actor を追従し、Orthographic Size を `ActorSelectionZoomRatio = 0.20f` に縮小する。
+- Actor 選択解除時: 追従を停止し、Orthographic Size を元の値に復元する。
+- キーパッド入力は将来対応。M7 では `IInputLayer` の拡張口のみ設計考慮し実装しない。
+
+#### 詳細 Popup（Phase 6b / task_0008）
+
+- Actor 選択時に ScreenStack **Popup** を push する。非選択時に pop する（Dialog ではない）。
+- Popup の位置は `Camera.WorldToScreenPoint(actorWorldPos)` で Actor の画面座標の横に追従させる。
+- `GetActorDetailQuery` または同等の narrow query を Application 層に追加し、選択 Actor の表示 DTO を返す。
 - DTO には Stats、HP / MP、疲労、装備、所持金、ActorEffect summary を含める。
 - Presenter は DTO を表示するだけにし、`Actor` / `Inventory` / `Equipment` を直接変更しない。
-- UI は World Scene 内の panel として扱い、ScreenStack Dialog にする場合は Lighthouse ScreenStack の P3 パターンに従う。
 
 ### 完了条件
 
-- [ ] Actor を選択すると詳細パネルが表示される。
-- [ ] 選択解除または Actor despawn 時に詳細パネルが閉じる、または空状態になる。
-- [ ] 詳細パネルは narrow query / DTO を使い、広い `IGameWorldStateReader` を Presenter が直接読んでいない。
+- [ ] Actor を選択するとカメラが追従し Orthographic Size が縮小する。
+- [ ] ESC キー / 別 Actor クリック / Popup 閉じる で選択解除でき、カメラが元の Size に戻る。
+- [ ] 矢印キーで選択中の Actor を切り替えられる。未選択時は矢印キーが作用しない。
+- [ ] 選択時に詳細 Popup が Actor の画面座標の横に追従して表示される。
+- [ ] 選択解除または Actor despawn 時に Popup が閉じる。
+- [ ] 詳細 Popup は narrow query / DTO を使い、広い `IGameWorldStateReader` を Presenter が直接読んでいない。
 - [ ] 入力処理が `IInputLayer` 経由で実装されている。
 - [ ] `UnityEngine.UI.Button` を使わず、必要なボタンがある場合は `LHButton` を使っている。
 
@@ -378,3 +420,340 @@ Milestone 7 は以下を満たした時点で完了とする。
 - Debug Presenter と Player UI が分離されている。
 - View / Presenter がゲーム進行や Domain 判定を握っていない。
 - `uloop.cmd compile --project-path Client`、EditMode test、30 秒 PlayMode ログ確認が成功している。
+
+---
+
+## タスク分解と実装詳細
+
+このセクションは各 Phase を具体的なタスクと作成物に分解する。
+`tasks/task_{番号}.md` の作成時に参照する。
+
+### タスク一覧
+
+| Task ID | Phase | タスク名 | 前提タスク |
+|---|---|---|---|
+| task_0001 | Phase 0 | M6 View 基盤フォローアップ | なし |
+| task_0002 | Phase 1 | Actor フルビルボード回転 | task_0001 |
+| task_0003 | Phase 2 | 戦闘 Actor アニメーション拡張 | task_0002 |
+| task_0004 | Phase 3 | Projectile View 表現 | task_0001 |
+| task_0005 | Phase 4 | Area Effect View 表現 | task_0001 |
+| task_0006 | Phase 5 | Actor 頭上ステータス表示 | task_0003 |
+| task_0007 | Phase 6a | Actor 選択入力とカメラ制御 | task_0002, task_0006 |
+| task_0008 | Phase 6b | Actor 詳細 Popup | task_0007 |
+| task_0009 | Phase 7 | プレイヤー向けイベントログ UI | task_0001 |
+| task_0010 | Phase 8 | M7 統合確認とセルフレビュー | task_0003, task_0004, task_0005, task_0006, task_0007, task_0008, task_0009 |
+
+並行可能な組み合わせ:
+
+- task_0004 / task_0005 は task_0001 完了後、task_0002 / task_0003 と並行可能。ただし prefab pool / Destroy helper / fallback asset 生成方針は Phase 0 で揃えてから着手する。
+- task_0009 は task_0001 完了後であれば他タスクと並行可能。
+- task_0006 は task_0003 の status DTO 設計が確定してから着手する。
+- task_0007 は task_0002 と task_0006 の完了後に着手する。
+- task_0008 は task_0007 完了後に着手する。
+
+---
+
+### task_0001: M6 View 基盤フォローアップ
+
+**利用する Lighthouse パターン:** [P5] アセット非同期ロード（IAssetScope）
+
+#### 作るもの
+
+| 変更対象 | 種別 | 内容 |
+|---|---|---|
+| `DungeonInn Visual` Addressables Group | Editor 設定修正 | Packed Assets schema を追加し schema なし状態を解消する |
+| `VisualAssetSetup` | 既存クラス修正 | 副作用なし validation と明示 setup メソッドに分離する。Awake / OnEnable での暗黙実行を排除する |
+| `PlaceholderAssetFactory`（仮称） | 共通 utility 追加 | `VisualConfigLoader` / `ActorSpriteVisualConfig` に重複する placeholder Sprite / Texture 生成定数・ロジックを集約する。重複元のコードを削除する |
+| `UnityNavMeshPathProvider` DI 登録 | `WorldLifetimeScope` 修正 | View: ナビゲーション / 空間グループへ移動する（現在の登録グループを確認の上修正） |
+| `INavigationPathProvider.TryFindPath()` | doc comment 追加 | 返却 `LayerPosition[]` の寿命（フレームを跨いで保持してよいか）を明記する |
+
+---
+
+### task_0002: Actor フルビルボード回転
+
+**利用する Lighthouse パターン:** なし（View 層内完結）
+
+#### 作るもの
+
+| クラス / API | 種別 | 内容 |
+|---|---|---|
+| `WorldCameraController.CurrentCameraRotation` | プロパティ追加 | `Quaternion` 型。現在のカメラ rotation を返す |
+| `ActorView.SetBillboardRotation(Quaternion cameraRotation)` | メソッド追加 | スプライト平面をカメラ回転に正対させる Transform 操作を内部で実行する |
+| `WorldActorPresenter` | 更新 | フレームごとに `WorldCameraController.CurrentCameraRotation` を取得し `ActorView.SetBillboardRotation()` へ渡す |
+
+#### 設計メモ
+
+- `SetRotationY(float degrees)` はアニメーション方向選択専用として維持し、フルビルボード回転と共存させる。
+- ビルボード実装は `transform.rotation = cameraRotation` の直接代入か LookAt 変形で実現する。`Camera.main` は禁止。カメラ参照は `WorldCameraController` 経由で取得する。
+- `ActorVisualSizeTier` の ground anchor offset と `Transform.localPosition` は変更しない。
+
+---
+
+### task_0003: 戦闘 Actor アニメーション拡張
+
+**利用する Lighthouse パターン:** なし（View 層内完結、IGameEventBus 購読）
+
+#### 作るもの
+
+| クラス / API | 種別 | 内容 |
+|---|---|---|
+| `ActorAnimationState.Combat` / `.Hit` / `.Dead` | enum 値追加 | 戦闘中・被弾・死亡状態を追加する |
+| `ActorSpriteAnimator` one-shot 機能 | 機能追加 | one-shot clip 再生後にコールバックを呼び基礎状態へ自動復帰する契約を追加する |
+| `ActorView.SetBaseAnimationState(ActorAnimationState)` | 新メソッド追加 | one-shot 終了後の復帰先基礎状態（Idle / Walk / Combat）を設定する |
+| `ActorSpriteAnimationClip` Combat / Hit / Dead 設定 | ScriptableObject 拡張 | `ActorView` Prefab の Inspector で Combat / Hit / Dead clip を設定できるスロットを追加する |
+| `WorldActorCombatAnimationPresenter` | 新規 Presenter | `IGameEventBus` イベント購読と `ActorView` アニメーション状態切り替えを担当する。`WorldActorPresenter` から分離する |
+
+#### イベント → アニメーション状態マッピング
+
+| イベント | 対象 Actor フィールド | 設定状態 |
+|---|---|---|
+| `CombatAttackOccurred` | `AttackerActorId` | `Combat`（loop） |
+| `CombatAttackOccurred` | `TargetActorId` | `Hit`（one-shot → 復帰） |
+| `ProjectileHit` | `TargetActorId` | `Hit`（one-shot → 復帰） |
+| `AreaEffectHit` | `TargetActorId` | `Hit`（one-shot → 復帰） |
+| `ActorDefeated` | `ActorId` | `Dead`（despawn まで維持） |
+
+#### 設計メモ
+
+- `WorldActorCombatAnimationPresenter` は `IInitializable` / `IDisposable` を実装する。`Initialize()` で購読開始、`Dispose()` で `CompositeDisposable.Dispose()`。
+- `WorldLifetimeScope` 登録グループ: View: アクター描画
+
+---
+
+### task_0004: Projectile View 表現
+
+**利用する Lighthouse パターン:** [P5] アセット非同期ロード（IAssetScope）
+
+#### 作るもの
+
+| クラス / アセット | 種別 | 内容 |
+|---|---|---|
+| `ProjectileView` | MonoBehaviour | `SetPosition(Vector3)` / `SetDirection(Vector3)` / `Deactivate()` を公開する。SpriteRenderer または簡易 Mesh で表示する |
+| `ProjectileViewRegistry` | Service | `ProjectileId` → `ProjectileView` の対応管理と Pool（`Queue<ProjectileView>`）を持つ |
+| `ProjectileViewVisualConfig` | ScriptableObject | Projectile 種別ごとの Prefab アドレスと fallback primitive 設定を持つ |
+| `WorldProjectilePresenter` | Presenter | `ProjectileFired` で View を生成、フレームごとに `GameWorldState.Projectiles` から位置同期、`ProjectileHit` / 消滅で View を返却する |
+
+#### 設計メモ
+
+フレームループ更新:
+- `WorldProjectilePresenter` は `ITickable` にしない。`WorldActorPresenter` と同じ View 更新フェーズで `UpdateProjectileViews()` を呼ぶ。
+- active Projectile のみ走査する。`GameWorldState.Projectiles` が空なら即 return する。全 Actor / 全 event history の走査は禁止。LINQ は使わない。
+
+Pool:
+- `WorldActorViewPool` の実装パターンに揃える（`Queue<ProjectileView>` ベース）。
+- Prefab 未設定時は Quad Primitive + Material の fallback を使い PlayMode が落ちないようにする。
+
+`WorldLifetimeScope` 登録グループ: View: アクター描画
+
+---
+
+### task_0005: Area Effect View 表現
+
+**利用する Lighthouse パターン:** [P5] アセット非同期ロード（IAssetScope）
+
+#### 作るもの
+
+| クラス / アセット | 種別 | 内容 |
+|---|---|---|
+| `AreaEffectView` | MonoBehaviour | `SetNormalizedProgress(float t)` / `SetShape(AttackAreaShape, float radius)` / `TriggerHitPulse()` / `Deactivate()` を公開する |
+| `AreaEffectViewRegistry` | Service | `AreaEffectId` → `AreaEffectView` の対応管理と Pool を持つ |
+| `WorldAreaEffectPresenter` | Presenter | `AreaEffectCreated` で View を生成、フレームごとに残り duration を同期、expired で View を返却する |
+
+#### 形状対応方針
+
+- M7 では `AttackAreaShape.Circle` を正式表示対象とする。
+- `Rectangle` / `Fan` は M7 では placeholder（Circle と同じ表示）とし、TODO コメントで記録する。
+
+#### alpha / scale アニメーション仕様
+
+- `SetNormalizedProgress(t)` で `t = 1` が生成直後、`t = 0` が消滅直前。
+- Duration Area は `残り時間 / 最大時間` を t として渡す。Instant Area は t=1 で表示後、1 フレームで Deactivate する。
+
+`WorldLifetimeScope` 登録グループ: View: アクター描画
+
+---
+
+### task_0006: WorldHUDModuleScene 作成と Actor 頭上ステータス表示
+
+**利用する Lighthouse パターン:** [P2] ModuleScene 作成と登録、[P5] アセット非同期ロード（IAssetScope）
+
+#### 作るもの
+
+| クラス / アセット | 種別 | 内容 |
+|---|---|---|
+| `WorldHUDModuleScene` | 新規 ModuleScene | World 専用 HUD 表示用 Module Scene。Screen Space Overlay Canvas を持つ。World シーン以外では使わない |
+| `WorldHUDLifetimeScope` | 新規 LifetimeScope | `WorldHUDModuleScene` 専用の VContainer LifetimeScope |
+| `ActorStatusView` | UI MonoBehaviour（Canvas 上） | `SetHpRatio(float)` / `SetStatusIcons(IReadOnlyList<ActorEffectIconData>)` / `SetScreenPosition(Vector2)` を公開する。HP バーと状態アイコンスロットを持つ |
+| `ActorHUDViewPool` | Service | `ActorStatusView` の Pool を管理する（`WorldActorViewPool` と同様の `Queue<>` パターン） |
+| `ActorStatusViewData` | DTO | `ActorId` / `float HpRatio` / `IReadOnlyList<ActorEffectIconData> ActiveEffects` を持つ |
+| `ActorEffectIconData` | DTO | `ActorEffectMasterId` / `string DisplayName` / `float RemainingSeconds` を持つ |
+| `GetActorStatusSummaryQuery` | Application Query | `ActorId` を受け取り `ActorStatusViewData` を返す narrow query |
+| `WorldActorStatusPresenter` | Presenter | フレームごとに active Actor の world 位置を `Camera.WorldToScreenPoint` で変換し `ActorStatusView` の位置と HP / Effect を更新する |
+| HP バー / アイコン用 Sprite | アセット | `Dummy.png` を使う |
+
+#### 設計メモ
+
+ModuleScene 作成:
+- `WorldHUDModuleScene` を新規 Unity Scene として作成し、Screen Space Overlay Canvas を配置する。
+- Lighthouse の ModuleScene パターン（P2）に従い、World シーン起動時にアクティベート、World シーン終了時にデアクティベートする。
+
+`ActorStatusView` の位置追従:
+- `WorldActorStatusPresenter` が毎フレーム `Camera.WorldToScreenPoint(actor.WorldPosition)` を取得し、`ActorStatusView.SetScreenPosition(screenPos)` を呼ぶ。
+- `SetScreenPosition` は `RectTransform.position = screenPos`（または `anchoredPosition` 換算）を設定する。
+- `Camera.main` は禁止。`WorldCameraController` 経由でカメラ参照を取得する。
+
+更新頻度:
+- 画面位置更新（`WorldToScreenPoint`）は毎フレーム全 Actor に適用する（位置は常に変化しうるため）。
+- HP / Effect 更新は `ActorViewDataStore` の変化通知を利用し、変化した Actor のみに絞る。
+
+`WorldLifetimeScope` 登録グループ: View: アクター描画（`WorldActorStatusPresenter`、`ActorHUDViewPool`）
+`WorldHUDLifetimeScope` 登録グループ: HUD シーン固有の初期化処理
+
+---
+
+### task_0007: Actor 選択入力とカメラ制御
+
+**利用する Lighthouse パターン:** [P10] Input Layer
+
+#### 作るもの
+
+| クラス / API | 種別 | 内容 |
+|---|---|---|
+| `ActorSelectionService` | View-scoped Service | 選択中 `ActorId?` を `ReactiveProperty<ActorId?>` で保持する。`Select(ActorId)` / `Deselect()` / `SelectNext()` / `SelectPrevious()` を公開する |
+| `WorldActorSelectionInputHandler` | View Component | `IInputLayer` 経由のマウスクリック・矢印キー・ESC キー入力を処理し `ActorSelectionService` を更新する。キーパッド入力の拡張口のみ設計考慮する（M7 では未実装） |
+| `WorldActorCameraFollowController` | View Component | `ActorSelectionService.SelectedActorId` を購読し、選択時にカメラ追従 + Orthographic Size 縮小、解除時に元の値へ復元する |
+
+#### 設計メモ
+
+入力処理:
+- `WorldActorSelectionInputHandler` は `IInputLayer` 経由でマウスクリック・矢印キー・ESC キーを取得する。`Mouse.current` / `Keyboard.current` の直接ポーリングは禁止。
+- クリック選択はカメラ ray + selection proxy で行い Domain 判定にしない。Actor の selection proxy サイズは `ActorVisualSizeTier` の canvas height から View 層で計算する。
+- 矢印キーは **選択状態のときのみ** 作用する。`ActorSelectionService.SelectedActorId == null` の場合は何もしない。
+- 矢印キーで選択する次の Actor の決定（例: 画面上の近傍 Actor、または登録順）は `WorldActorSelectionInputHandler` または `ActorSelectionService.SelectNext()` に閉じる。
+
+カメラ追従・拡大:
+- `WorldActorCameraFollowController` は `WorldCameraController` を通じてカメラ追従と Orthographic Size 変更を行う。
+- `ActorSelectionZoomRatio = 0.20f`（通常 Orthographic Size の 20% へ縮小）。コード内定数として管理し、実装後に調整可。
+
+`WorldLifetimeScope` 登録グループ: View: アクター描画
+
+---
+
+### task_0008: Actor 詳細 Popup
+
+**利用する Lighthouse パターン:** [P3] ScreenStack Popup
+
+#### 作るもの
+
+| クラス / アセット | 種別 | 内容 |
+|---|---|---|
+| `ActorDetailDto` | DTO | `ActorId` / `Name` / `Stats` / `CurrentHp` / `MaxHp` / `CurrentMp` / `MaxMp` / `FatigueLevel` / `EquipmentSummary` / `Gold` / `IReadOnlyList<ActorEffectIconData> ActiveEffects` を持つ |
+| `GetActorDetailQuery` | Application Query | `ActorId` を受け取り `ActorDetailDto` を返す narrow query |
+| `ActorDetailPopupPresenter` | Presenter | `ActorSelectionService.SelectedActorId` を購読し、選択時に Popup push + 位置設定 + DTO 更新、非選択時に Popup pop を行う |
+| `ActorDetailPopup` | Lighthouse Popup Component | Stats / HP / MP / 疲労 / 装備 / 所持金 / ActorEffect を表示する。`LHButton` のみ使用する |
+
+#### 設計メモ
+
+Popup の位置追従:
+- `ActorDetailPopupPresenter` が毎フレーム `Camera.WorldToScreenPoint(actor.WorldPosition)` を取得し、Popup の RectTransform 位置を Actor 画面座標の横に設定する。
+- `Camera.main` は禁止。`WorldCameraController` 経由でカメラ参照を取得する。
+
+ScreenStack Popup の開閉:
+- `ActorSelectionService.SelectedActorId` が non-null に変化 → Popup push。
+- `ActorSelectionService.SelectedActorId` が null に変化 → Popup pop。
+- Popup 側のユーザー操作（閉じる操作）も `ActorSelectionService.Deselect()` を呼んで選択解除する。
+
+M7 の Popup コンテンツは表示・確認のみ。編集・指示操作は M8 以降。
+
+`WorldLifetimeScope` 登録グループ: View: UI
+
+---
+
+### task_0009: プレイヤー向けイベントログ UI
+
+**利用する Lighthouse パターン:** なし
+
+#### 作るもの
+
+| クラス / アセット | 種別 | 内容 |
+|---|---|---|
+| `PlayerEventLogEntry` | DTO | `float Timestamp` / `string Text` / `ActorId? RelatedActorId` を持つ表示エントリ |
+| `PlayerEventLogStore` | Application Service | 直近 N 件（デフォルト 30）の `PlayerEventLogEntry` をインメモリ保持する。`IObservable<PlayerEventLogEntry> OnEntryAdded` を公開する |
+| `PlayerEventLogFormatter` | Application Service | `IGameEvent` → 表示文字列の変換を担当する。`IActorProfileRegistry` で Actor 名を解決する。View 用文字列を `IGameEvent` に持たせない |
+| `PlayerGameEventLogPresenter` | Presenter | 対象イベントを購読し `PlayerEventLogFormatter` → `PlayerEventLogStore.Add()` → View 更新のフローを実装する。`WorldDebugGameLogPresenter` とは完全別クラス |
+| `PlayerEventLogView` | UI Component | 10 行固定の `Text[]` 配列を持つ。`ScrollRect` は使わない。1 行単位スクロールと一時フェードを管理する |
+
+#### フェード仕様
+
+- ログ表示後 **3 秒**でフェードアウト開始、**1 秒**でフェードアウト完了（コード内定数 `LogDisplaySeconds = 3f` / `LogFadeSeconds = 1f` で管理）
+- マウスオーバー中はフェードを停止し 10 行すべてを表示する
+- マウスが離れたらフェードを再開し、スクロール位置を最新ログへリセットする
+
+#### スクロール仕様
+
+- `ScrollRect` は使わない。10 行分の `Text[]` の `.text` だけを更新する
+- マウスホイール上でログが古い方向へスクロール。スクロールは 1 行単位（CLI 表示と同じ動作）
+- 新ログ追加時: 配列を 1 段シフトして最新ログを末尾に追加する
+
+#### M7 対象イベントと表示例
+
+| イベント | 表示例（日本語）|
+|---|---|
+| `CombatAttackOccurred` | `スライム が 冒険者A に 10 ダメージ` |
+| `ProjectileFired` | `冒険者B が 矢 を発射した` |
+| `ProjectileHit` | `矢 が スライム に命中した` |
+| `AreaEffectCreated` | `毒沼 が発生した` |
+| `AreaEffectHit` | `スライム が 毒沼 の影響を受けた` |
+| `ActorDefeated` | `スライム が倒された` |
+| `ItemDropped` | `スライム が アイテム を落とした` |
+| `ItemPickedUp` | `冒険者A が アイテム を拾った` |
+| `ActorLeveledUp` | `冒険者A がレベルアップした` |
+| `ActorRecoveringAtInn` | `冒険者A が宿屋で回復中` |
+| `ActorFullyRecovered` | `冒険者A が回復完了した` |
+
+#### 設計メモ
+
+- `PlayerEventLogFormatter` は `IActorProfileRegistry` 経由で Actor 名を取得する。`GameWorldState` を広く参照しない。
+- `PlayerEventLogStore` は `GameEventHistoryService` とは独立したインメモリ store とする。全履歴への参照は持たない。
+- View 更新は event-driven（`OnEntryAdded` 購読）とし、毎フレーム全履歴 polling は禁止。
+
+`WorldLifetimeScope` 登録グループ: Application: イベント / アクター状態（`PlayerEventLogStore` / `PlayerEventLogFormatter`）、View: UI（`PlayerGameEventLogPresenter` / `PlayerEventLogView`）
+
+---
+
+### task_0010: M7 統合確認とセルフレビュー
+
+追加実装なし。Phase 0〜7 の全表示物が同一 PlayMode で共存することを確認し、M8 に持ち越す残課題を `docs/self-review/milestone7-completion-review-1-claude.md` に記録する。
+
+---
+
+### WorldLifetimeScope / WorldHUDLifetimeScope M7 追加登録まとめ
+
+M7 で追加する DI 登録のグループ別まとめ。
+
+**View: アクター描画（WorldLifetimeScope）**
+- `WorldActorCombatAnimationPresenter`（task_0003）
+- `ProjectileViewRegistry`（task_0004）
+- `WorldProjectilePresenter`（task_0004）
+- `AreaEffectViewRegistry`（task_0005）
+- `WorldAreaEffectPresenter`（task_0005）
+- `WorldActorStatusPresenter`（task_0006）
+- `ActorHUDViewPool`（task_0006）
+- `ActorSelectionService`（task_0007）
+- `WorldActorSelectionInputHandler`（task_0007）
+- `WorldActorCameraFollowController`（task_0007）
+
+**View: UI（WorldLifetimeScope）**
+- `ActorDetailPopupPresenter`（task_0008）
+- `PlayerGameEventLogPresenter`（task_0009）
+
+**WorldHUDLifetimeScope（新規 Module Scene 専用）**
+- `WorldHUDModuleScene` 固有の初期化処理（task_0006）
+
+**Application: イベント / アクター状態（WorldLifetimeScope）**
+- `PlayerEventLogStore`（task_0009）
+- `PlayerEventLogFormatter`（task_0009）
+- `GetActorStatusSummaryQuery`（task_0006）
+- `GetActorDetailQuery`（task_0008）
+
+`ProjectileViewVisualConfig` / `AreaEffectViewVisualConfig` は ScriptableObject として `VisualConfigSettings` 経由でロードするか `WorldLifetimeScope` の Inspector にアサインするかを Phase 0 の方針確定後に決定する。
