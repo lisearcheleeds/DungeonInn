@@ -19,6 +19,7 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
         readonly IReadOnlyDictionary<int, LevelTable> levelTables;
         readonly IReadOnlyDictionary<int, DungeonFloorExplorationMaster> dungeonFloorExplorationMasters;
+        readonly IReadOnlyDictionary<string, EnvironmentPropVisualMaster> environmentPropVisualMasters;
 
         public IReadOnlyDictionary<int, ItemMaster> ItemMasters => itemMasters;
         public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => equipmentMasters;
@@ -31,6 +32,7 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
         public IReadOnlyDictionary<int, LevelTable> LevelTables => levelTables;
         public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => dungeonFloorExplorationMasters;
+        public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => environmentPropVisualMasters;
 
         public HardcodedMasterRepository()
         {
@@ -41,6 +43,7 @@ namespace DungeonInn.Master
             weaponMasters = CreateWeaponMasters();
             levelTables = CreateLevelTables();
             dungeonFloorExplorationMasters = CreateDungeonFloorExplorationMasters();
+            environmentPropVisualMasters = CreateEnvironmentPropVisualMasters();
             speciesMasters = CreateSpeciesMasters();
             actorArchetypeMasters = CreateActorArchetypeMasters();
             adventurerSpawnMasters = CreateAdventurerSpawnMasters();
@@ -108,6 +111,20 @@ namespace DungeonInn.Master
             return GetRequired(dungeonFloorExplorationMasters, floorIndex, nameof(DungeonFloorExplorationMaster));
         }
 
+        public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key)
+        {
+            return GetRequired(environmentPropVisualMasters, key, nameof(EnvironmentPropVisualMaster));
+        }
+
+        static IReadOnlyDictionary<string, EnvironmentPropVisualMaster> CreateEnvironmentPropVisualMasters()
+        {
+            return new[]
+            {
+                new EnvironmentPropVisualMaster("StairUp", "World/Prop/StairUp"),
+                new EnvironmentPropVisualMaster("StairDown", "World/Prop/StairDown")
+            }.ToDictionary(x => x.Key);
+        }
+
         static IReadOnlyDictionary<int, ItemMaster> CreateItemMasters()
         {
             return new[]
@@ -148,9 +165,9 @@ namespace DungeonInn.Master
         {
             return new[]
             {
-                new DungeonFloorExplorationMaster(1, 2, Domain.Common.GameConstants.DungeonFloorDifficultyCoefficient),
-                new DungeonFloorExplorationMaster(2, 3, Domain.Common.GameConstants.DungeonFloorDifficultyCoefficient),
-                new DungeonFloorExplorationMaster(3, 4, Domain.Common.GameConstants.DungeonFloorDifficultyCoefficient)
+                new DungeonFloorExplorationMaster(1, 2, 3.0f),
+                new DungeonFloorExplorationMaster(2, 3, 3.0f),
+                new DungeonFloorExplorationMaster(3, 4, 3.0f)
             }.ToDictionary(x => x.FloorIndex);
         }
 

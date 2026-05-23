@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
 using VContainer;
@@ -15,17 +15,21 @@ namespace DungeonInn.Application.Combat
         readonly ActorSpatialIndexService actorSpatialIndexService;
         readonly List<Actor> candidates = new();
         readonly Dictionary<ActorPairKey, int> successfulLineOfSightTicks = new();
+        readonly CombatBalanceSettings combatBalanceSettings;
         int lineOfSightCacheTick = -1;
         int lineOfSightCacheSpatialIndexRevision = -1;
 
         [Inject]
         public CombatEncounterTargetResolver(
             IGameClock gameClock,
-            ActorSpatialIndexService actorSpatialIndexService)
+            ActorSpatialIndexService actorSpatialIndexService,
+            CombatBalanceSettings combatBalanceSettings)
         {
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+            this.combatBalanceSettings = combatBalanceSettings
+                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
         }
 
         public Actor FindNearestHostile(Dungeon dungeon, Actor actor)
@@ -41,8 +45,8 @@ namespace DungeonInn.Application.Combat
             }
 
             Actor nearest = null;
-            var nearestDistSq = GameConstants.CombatEncounterRangeMeters *
-                GameConstants.CombatEncounterRangeMeters;
+            var nearestDistSq = combatBalanceSettings.EncounterRangeMeters *
+                combatBalanceSettings.EncounterRangeMeters;
             var neighborCellRadius = CalculateNeighborCellRadius();
 
             RefreshLineOfSightCache();
@@ -86,13 +90,13 @@ namespace DungeonInn.Application.Combat
             successfulLineOfSightTicks.Clear();
         }
 
-        static int CalculateNeighborCellRadius()
+        int CalculateNeighborCellRadius()
         {
             return Math.Max(
                 1,
                 (int)Math.Ceiling(
-                    GameConstants.CombatEncounterRangeMeters /
-                    GameConstants.ActorSpatialIndexCellSizeMeters));
+                    combatBalanceSettings.EncounterRangeMeters /
+                    combatBalanceSettings.SpatialIndexCellSizeMeters));
         }
 
         bool HasLineOfSight(Dungeon dungeon, Actor actor, Actor candidate)

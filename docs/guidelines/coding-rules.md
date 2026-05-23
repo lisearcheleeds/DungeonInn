@@ -15,6 +15,7 @@
 - [ ] 比較式は数直線の向きに合わせ、原則 `<` を使っている
 - [ ] DI 注入点の constructor / `Construct` method に `[Inject]` を明示している
 - [ ] コメントは WHAT ではなく WHY を説明している
+- [ ] View / Presenter が画面表示へ直接適用する class / struct は `ViewData` suffix に統一している
 
 ## 完了前チェックリスト
 
@@ -28,6 +29,7 @@
 - [ ] `UniTask` の同期ラップや不要な `async` が本文ルールに沿っている
 - [ ] オーバーロード、デフォルト引数、引数名が本文の判断基準に沿っている
 - [ ] 不要 using と WHAT コメントを残していない
+- [ ] View / Presenter が画面表示へ直接適用する class / struct に `Dto` / 汎用 `Data` suffix を使っていない
 
 ---
 
@@ -554,3 +556,30 @@ public sealed class WorldGameLoopEntryPoint : MonoBehaviour
 - VContainer は public constructor が 1 つなら `[Inject]` なしでも解決できるが、依存解決の入口が読み取りにくくなる。
 - constructor が増えた場合の解決先の揺れを防ぐ。
 - このプロジェクトでは、DI で解決される依存は明示性を優先する。
+
+---
+
+## 16. Prefix / Suffix の意味を揃える
+
+### 16-1. View に適用する表示用データは `ViewData` suffix に統一する
+
+View / Presenter / UI Component が画面表示へ直接適用する class / struct は `XxxViewData` と命名する。
+
+```csharp
+// OK
+public readonly struct ActorStatusViewData { }
+public readonly struct ActorDetailViewData { }
+public readonly struct ActorEffectIconViewData { }
+
+// NG
+public readonly struct ActorDetailDto { }
+public readonly struct ActorEffectIconData { }
+```
+
+判断基準:
+- `ViewData`: View / Presenter が表示内容として直接受け取るデータ。
+- `Dto`: 外部通信、永続化、レイヤー間転送など、用途が View 表示に限定されないデータ。
+- `Data`: Unity / Lighthouse などのフレームワーク契約、画面遷移データ、または既存の抽象名として `ViewData` では意味が狭すぎるデータ。
+
+ハードゲート:
+- View / Presenter が画面表示へ直接適用する class / struct に `Dto` / 汎用 `Data` suffix を使わず、`ViewData` に統一していること。

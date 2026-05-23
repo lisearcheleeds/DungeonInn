@@ -16,6 +16,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly MapMeshBuildService mapMeshBuildService;
         readonly NavMeshBuildService navMeshBuildService;
         readonly EnvironmentObjectPlacer environmentObjectPlacer;
+        readonly WorldMapViewSettings worldMapViewSettings;
         readonly HashSet<int> scheduledLayerIds = new();
         readonly HashSet<int> completedLayerIds = new();
         readonly Dictionary<int, int> remainingChunkCountsByLayer = new();
@@ -29,18 +30,20 @@ namespace DungeonInn.View.Scene.MainScene.World
             MapLayerViewRegistry layerViewRegistry,
             MapMeshBuildService mapMeshBuildService,
             NavMeshBuildService navMeshBuildService,
-            EnvironmentObjectPlacer environmentObjectPlacer)
+            EnvironmentObjectPlacer environmentObjectPlacer,
+            WorldMapViewSettings worldMapViewSettings)
         {
             this.viewDataProvider = viewDataProvider ?? throw new ArgumentNullException(nameof(viewDataProvider));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.mapMeshBuildService = mapMeshBuildService ?? throw new ArgumentNullException(nameof(mapMeshBuildService));
             this.navMeshBuildService = navMeshBuildService ?? throw new ArgumentNullException(nameof(navMeshBuildService));
             this.environmentObjectPlacer = environmentObjectPlacer ?? throw new ArgumentNullException(nameof(environmentObjectPlacer));
+            this.worldMapViewSettings = worldMapViewSettings ?? throw new ArgumentNullException(nameof(worldMapViewSettings));
         }
 
         public void UpdateVisuals()
         {
-            BuildQueuedChunks(GameConstants.MapChunkBuildsPerFrame);
+            BuildQueuedChunks(worldMapViewSettings.ChunkBuildsPerFrame);
         }
 
         public void NotifyLayerAdded(MapLayerId layerId)
@@ -96,9 +99,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             var buildVersion = IncrementLayerBuildVersion(layerIdValue);
             var layerRoot = CreateLayerRoot(layerData.LayerName, layerData.LayerId);
             var chunkCount = 0;
-            for (var z = 0; z < layerData.Height; z += GameConstants.MapChunkTileSize)
+            for (var z = 0; z < layerData.Height; z += worldMapViewSettings.ChunkTileSize)
             {
-                for (var x = 0; x < layerData.Width; x += GameConstants.MapChunkTileSize)
+                for (var x = 0; x < layerData.Width; x += worldMapViewSettings.ChunkTileSize)
                 {
                     chunkCount++;
                     pendingChunkBuilds.Enqueue(new MapChunkBuildRequest(
@@ -106,8 +109,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                         layerData,
                         x,
                         z,
-                        Math.Min(GameConstants.MapChunkTileSize, layerData.Width - x),
-                        Math.Min(GameConstants.MapChunkTileSize, layerData.Height - z),
+                        Math.Min(worldMapViewSettings.ChunkTileSize, layerData.Width - x),
+                        Math.Min(worldMapViewSettings.ChunkTileSize, layerData.Height - z),
                         buildVersion));
                 }
             }

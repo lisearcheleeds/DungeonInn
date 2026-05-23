@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -136,10 +136,11 @@ namespace DungeonInn.Tests.EditMode
             var random = new FixedGameRandom(fixedRoll);
             var useCase = new DropItemUseCase(random, eventBus);
             var worldState = new GameWorldState(
-                new ActorSpatialIndexService(),
-                new ItemSpatialIndexService(),
+                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
             return (useCase, worldState, eventBus, random);
         }
 

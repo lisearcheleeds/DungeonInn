@@ -33,13 +33,13 @@ namespace DungeonInn.Master
         {
             return new[]
             {
-                new WeaponTypeCombatMaster(WeaponType.Sword, 2.0f, 1.2f),
-                new WeaponTypeCombatMaster(WeaponType.Bow, 20.0f, 1.5f),
-                new WeaponTypeCombatMaster(WeaponType.Axe, 2.0f, 1.8f),
-                new WeaponTypeCombatMaster(WeaponType.Scythe, 3.0f, 1.6f),
-                new WeaponTypeCombatMaster(WeaponType.Fist, 1.5f, 1.0f),
-                new WeaponTypeCombatMaster(WeaponType.Claws, 1.5f, 0.9f),
-                new WeaponTypeCombatMaster(WeaponType.Fangs, 1.5f, 1.0f)
+                new WeaponTypeCombatMaster(WeaponType.Sword, 2.0f, 1.2f, "", "", 12f, 3f, 3),
+                new WeaponTypeCombatMaster(WeaponType.Bow, 20.0f, 1.5f, "World/Projectile/Arrow", "", 12f, 3f, 3),
+                new WeaponTypeCombatMaster(WeaponType.Axe, 2.0f, 1.8f, "", "", 12f, 3f, 3),
+                new WeaponTypeCombatMaster(WeaponType.Scythe, 3.0f, 1.6f, "", "World/AreaEffect/Scythe", 12f, 3f, 3),
+                new WeaponTypeCombatMaster(WeaponType.Fist, 1.5f, 1.0f, "", "", 12f, 3f, 3),
+                new WeaponTypeCombatMaster(WeaponType.Claws, 1.5f, 0.9f, "", "", 12f, 3f, 3),
+                new WeaponTypeCombatMaster(WeaponType.Fangs, 1.5f, 1.0f, "", "", 12f, 3f, 3)
             }.ToDictionary(x => x.WeaponType);
         }
     }

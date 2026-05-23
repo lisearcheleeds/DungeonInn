@@ -43,6 +43,7 @@ namespace DungeonInn.Application.World
         readonly DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         readonly AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator;
         readonly PublishInnDailyReportUseCase publishInnDailyReportUseCase;
+        readonly InitialWorldSettings initialWorldSettings;
         readonly Dictionary<int, float> realtimeMovedSecondsByLayer = new();
         readonly HashSet<int> scheduledActorLayerIds = new();
 
@@ -68,7 +69,8 @@ namespace DungeonInn.Application.World
             AdvanceActorEffectsUseCase advanceActorEffectsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator,
-            PublishInnDailyReportUseCase publishInnDailyReportUseCase)
+            PublishInnDailyReportUseCase publishInnDailyReportUseCase,
+            InitialWorldSettings initialWorldSettings)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
@@ -89,13 +91,14 @@ namespace DungeonInn.Application.World
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.advanceInnRecoveryOrchestrator = advanceInnRecoveryOrchestrator ?? throw new ArgumentNullException(nameof(advanceInnRecoveryOrchestrator));
             this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
+            this.initialWorldSettings = initialWorldSettings ?? throw new ArgumentNullException(nameof(initialWorldSettings));
         }
 
         public async UniTask<WorldSimulationInitializeResult> InitializeAsync(CancellationToken cancellationToken)
         {
             await initializeGameWorldUseCase.ExecuteAsync(
                 new InitializeGameWorldRequest(
-                    GameConstants.InitialDungeonSeed,
+                    initialWorldSettings.DungeonSeed,
                     Array.Empty<DungeonDepthBandConfig>()));
 
             cancellationToken.ThrowIfCancellationRequested();

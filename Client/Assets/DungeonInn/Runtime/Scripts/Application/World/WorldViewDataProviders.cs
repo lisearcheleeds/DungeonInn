@@ -119,6 +119,12 @@ namespace DungeonInn.Application.World
         ActorViewDataChangeBuffer ConsumeChanges();
     }
 
+    public interface IActorStatusViewDataProvider
+    {
+        IReadOnlyList<Guid> ConsumeRemovedActorIds();
+        void CopyActiveActorsTo(List<ActorViewData> results);
+    }
+
     public sealed class WorldMapViewDataProvider : IWorldMapViewDataProvider
     {
         readonly IGameWorldStateReader worldState;
@@ -225,13 +231,15 @@ namespace DungeonInn.Application.World
         }
     }
 
-    public sealed class ActorViewDataStore : IActorViewDataProvider
+    public sealed class ActorViewDataStore : IActorViewDataProvider, IActorStatusViewDataProvider
     {
         readonly Dictionary<Guid, ActorViewData> actorViewDataById = new();
         readonly HashSet<Guid> dirtyActorIds = new();
         readonly HashSet<Guid> removedActorIdSet = new();
         readonly List<ActorViewData> changedActors = new();
         readonly List<Guid> removedActorIds = new();
+        readonly HashSet<Guid> statusRemovedActorIdSet = new();
+        readonly List<Guid> statusRemovedActors = new();
 
         public void SyncActor(Actor actor)
         {
@@ -260,6 +268,7 @@ namespace DungeonInn.Application.World
 
             dirtyActorIds.Remove(actorId);
             removedActorIdSet.Add(actorId);
+            statusRemovedActorIdSet.Add(actorId);
         }
 
         public ActorViewDataChangeBuffer ConsumeChanges()
@@ -282,6 +291,32 @@ namespace DungeonInn.Application.World
             dirtyActorIds.Clear();
             removedActorIdSet.Clear();
             return new ActorViewDataChangeBuffer(changedActors, removedActorIds);
+        }
+
+        public IReadOnlyList<Guid> ConsumeRemovedActorIds()
+        {
+            statusRemovedActors.Clear();
+            foreach (var actorId in statusRemovedActorIdSet)
+            {
+                statusRemovedActors.Add(actorId);
+            }
+
+            statusRemovedActorIdSet.Clear();
+            return statusRemovedActors;
+        }
+
+        public void CopyActiveActorsTo(List<ActorViewData> results)
+        {
+            if (results == null)
+            {
+                throw new ArgumentNullException(nameof(results));
+            }
+
+            results.Clear();
+            foreach (var actor in actorViewDataById.Values)
+            {
+                results.Add(actor);
+            }
         }
 
         static bool IsSame(ActorViewData first, ActorViewData second)

@@ -8,7 +8,6 @@ using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Map;
@@ -24,6 +23,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IEventPublisher eventPublisher;
         readonly IGameClock gameClock;
         readonly ActorProcessingCandidateService candidateService;
+        readonly InnBalanceSettings innBalanceSettings;
         readonly List<Guid> reservationActorIdBuffer = new();
 
         [Inject]
@@ -33,7 +33,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             DespawnAdventurerUseCase despawnAdventurerUseCase,
             IEventPublisher eventPublisher,
             IGameClock gameClock,
-            ActorProcessingCandidateService candidateService)
+            ActorProcessingCandidateService candidateService,
+            InnBalanceSettings innBalanceSettings)
         {
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase
                 ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
@@ -44,6 +45,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
+            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
         }
 
         public UniTask EnsureReservationsAsync(IGameWorldState worldState, int currentTick)
@@ -154,7 +156,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             behavior.StartWaitingForInn(gameClock.CurrentDay);
 
             var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;
-            if (GameConstants.AdventurerInnWaitDepartureDays <= waitedDays)
+            if (innBalanceSettings.AdventurerWaitDepartureDays <= waitedDays)
             {
                 candidateService.RemoveActor(actor.Id);
                 despawnAdventurerUseCase.Execute(worldState, actor, waitedDays);
@@ -168,7 +170,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
             eventPublisher.Publish(new InnSatisfactionChanged(
                 actor.Id,
-                GameConstants.InnWaitingSatisfactionDelta,
+                innBalanceSettings.WaitingSatisfactionDelta,
                 InnSatisfactionChangeReason.WaitingForInn));
             eventPublisher.Publish(new ActorAiDecisionRecorded(
                 actor.Id,

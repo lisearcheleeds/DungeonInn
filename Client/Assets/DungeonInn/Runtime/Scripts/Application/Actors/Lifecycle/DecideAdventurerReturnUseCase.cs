@@ -24,6 +24,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly AdventurerReturnTrackingService returnTrackingService;
         readonly IItemMasterRepository itemMasterRepository;
         readonly ActorProcessingCandidateService candidateService;
+        readonly AdventurerReturnPolicySettings returnPolicySettings;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
@@ -32,13 +33,16 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IEventPublisher eventPublisher,
             AdventurerReturnTrackingService returnTrackingService,
             IItemMasterRepository itemMasterRepository,
-            ActorProcessingCandidateService candidateService)
+            ActorProcessingCandidateService candidateService,
+            AdventurerReturnPolicySettings returnPolicySettings)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.returnTrackingService = returnTrackingService ?? throw new ArgumentNullException(nameof(returnTrackingService));
             this.itemMasterRepository = itemMasterRepository ?? throw new ArgumentNullException(nameof(itemMasterRepository));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
+            this.returnPolicySettings = returnPolicySettings
+                ?? throw new ArgumentNullException(nameof(returnPolicySettings));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
@@ -84,7 +88,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 }
 
                 var returnDecision = CalculateReturnDecision(actor);
-                if (returnDecision.Score < GameConstants.AdventurerReturnDecisionThresholdScore)
+                if (returnDecision.Score < returnPolicySettings.DecisionThresholdScore)
                 {
                     returnTrackingService.ClearDirty(actor.Id);
                     continue;
@@ -128,17 +132,17 @@ namespace DungeonInn.Application.Actors.Lifecycle
             var goalCompleted = TryCompleteGoal(actor);
             if (goalCompleted)
             {
-                score += GameConstants.AdventurerReturnGoalCompletedScore;
+                score += returnPolicySettings.GoalCompletedScore;
             }
 
             var hpRatio = actor.Hp / (float)actor.Params.MaxHp;
-            if (hpRatio <= GameConstants.AdventurerReturnCriticalHpRatio)
+            if (hpRatio <= returnPolicySettings.CriticalHpRatio)
             {
-                score += GameConstants.AdventurerReturnCriticalHpScore;
+                score += returnPolicySettings.CriticalHpScore;
             }
-            else if (hpRatio <= GameConstants.AdventurerReturnLowHpRatio && !HasRecoveryItem(actor))
+            else if (hpRatio <= returnPolicySettings.LowHpRatio && !HasRecoveryItem(actor))
             {
-                score += GameConstants.AdventurerReturnLowHpWithoutRecoveryItemScore;
+                score += returnPolicySettings.LowHpWithoutRecoveryItemScore;
             }
 
             var reasonType = AiDecisionReasonType.None;
@@ -146,11 +150,11 @@ namespace DungeonInn.Application.Actors.Lifecycle
             {
                 reasonType = AiDecisionReasonType.GoalCompleted;
             }
-            else if (hpRatio <= GameConstants.AdventurerReturnCriticalHpRatio)
+            else if (hpRatio <= returnPolicySettings.CriticalHpRatio)
             {
                 reasonType = AiDecisionReasonType.CriticalHp;
             }
-            else if (hpRatio <= GameConstants.AdventurerReturnLowHpRatio && !HasRecoveryItem(actor))
+            else if (hpRatio <= returnPolicySettings.LowHpRatio && !HasRecoveryItem(actor))
             {
                 reasonType = AiDecisionReasonType.LowHpWithoutRecoveryItem;
             }

@@ -67,13 +67,25 @@ docs/
 | `docs/guidelines/application-boundary-guidelines.md` | UseCase / Service / Event / Aggregate / ゲームループの境界ルール |
 | `docs/guidelines/implementation-quality-guidelines.md` | 命名・DI・テスト・定数・TODO 管理の判断基準 |
 | `docs/guidelines/debugging-policy.md` | 不具合調査・ログ計測・再現確認・一時診断コードの扱い |
-| `docs/guidelines/self-review-preset.md` | マイルストーン完了レビュー・全体レビューの標準プロンプトと出力ルール |
+| `docs/guidelines/self-review-guidelines.md` | マイルストーン完了レビュー・全体レビューの標準プロンプトと出力ルール |
+
+### リファクタリング依頼時に参照するドキュメント
+
+`docs/guidelines/refactoring-guidelines.md` は、ユーザーが明示的にリファクタリング、整理、構造見直し、定数・ScriptableObject・Master・Prefab 配置・フォルダ分けの見直しを求めた場合に参照する。
+
+このガイドラインは「通常の実装タスクやレビュー完了後に毎回リファクタリングを実行する」ためのものではない。  
+任意のタイミングでユーザーがリファクタリングを依頼したときに、後から整理するための判断基準として提示・適用する。
+
+| ファイル | 内容 |
+|---|---|
+| `docs/guidelines/refactoring-guidelines.md` | 後から整理するための判断基準。`GameConstants` / ScriptableObject / Settings class / Master / Spec / Addressable / LifetimeScope / フォルダ分けの使い分け |
 
 ### プロジェクト固有ドキュメント
 
 | ファイル | 内容 | 生成タイミング |
 |---|---|---|
 | `/AGENTS.md` | プロジェクト共通情報・役割分担・タスクフロー | 最初から |
+| `docs/design/ai-class-relation-index.md` | AI が検索前にプロジェクト全体像・機能別の入口クラス・主要な関係を把握するための索引 | プロジェクト進行中に随時更新 |
 | `docs/spec_prompt.md` | ユーザーからのゲーム仕様となる初期プロンプト | プロジェクトフェーズ1 |
 | `docs/spec.md` | 企画書 | プロジェクトフェーズ1 |
 | `docs/spec_rule.md` | ゲームルールに関して詳細に記載したドキュメント | プロジェクトフェーズ2 |

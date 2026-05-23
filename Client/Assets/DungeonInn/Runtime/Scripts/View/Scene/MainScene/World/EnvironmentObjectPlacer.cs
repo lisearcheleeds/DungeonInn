@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using UnityEngine;
 using VContainer;
 
@@ -10,13 +11,17 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class EnvironmentObjectPlacer : IDisposable
     {
-        readonly GameObject propPrefab;
+        readonly WorldAddressableViewFactory viewFactory;
+        readonly IMasterRepository masterRepository;
         readonly Dictionary<int, List<GameObject>> propsByLayer = new();
 
         [Inject]
-        public EnvironmentObjectPlacer(VisualConfigSettings settings)
+        public EnvironmentObjectPlacer(
+            WorldAddressableViewFactory viewFactory,
+            IMasterRepository masterRepository)
         {
-            propPrefab = settings?.PropPrefab;
+            this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
+            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
         }
 
         public void PlaceChunkProps(
@@ -37,7 +42,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                     if (cellKind == WorldMapCellViewKind.StairUp ||
                         cellKind == WorldMapCellViewKind.StairDown)
                     {
-                        PlacePropAt(parent, layerProps, x, z);
+                        PlacePropAt(parent, layerProps, cellKind, x, z);
                     }
                 }
             }
@@ -75,10 +80,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             return layerProps;
         }
 
-        void PlacePropAt(Transform parent, List<GameObject> layerProps, int gridX, int gridZ)
+        void PlacePropAt(
+            Transform parent,
+            List<GameObject> layerProps,
+            WorldMapCellViewKind cellKind,
+            int gridX,
+            int gridZ)
         {
             var worldX = (gridX + 0.5f) * GameConstants.MapCellWidthMeters;
             var worldZ = (gridZ + 0.5f) * GameConstants.MapCellWidthMeters;
+            var propPrefab = viewFactory.GetPropPrefab(ResolvePropPrefabAddress(cellKind));
             var propObject = propPrefab != null
                 ? UnityEngine.Object.Instantiate(propPrefab)
                 : GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -98,6 +109,19 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             layerProps.Add(propObject);
+        }
+
+        string ResolvePropPrefabAddress(WorldMapCellViewKind cellKind)
+        {
+            switch (cellKind)
+            {
+                case WorldMapCellViewKind.StairUp:
+                    return masterRepository.GetEnvironmentPropVisualMaster("StairUp").PrefabAddress;
+                case WorldMapCellViewKind.StairDown:
+                    return masterRepository.GetEnvironmentPropVisualMaster("StairDown").PrefabAddress;
+                default:
+                    return string.Empty;
+            }
         }
 
         static void DestroyProps(List<GameObject> props)

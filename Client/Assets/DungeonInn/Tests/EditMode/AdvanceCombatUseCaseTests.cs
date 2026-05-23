@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
@@ -292,6 +292,7 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
             public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => throw new NotSupportedException();
             public ItemMaster GetItemMaster(int itemId)
             {
                 throw new NotSupportedException();
@@ -343,6 +344,11 @@ namespace DungeonInn.Tests.EditMode
             }
 
             public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex)
+            {
+                throw new NotSupportedException();
+            }
+
+            public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key)
             {
                 throw new NotSupportedException();
             }
@@ -404,7 +410,7 @@ namespace DungeonInn.Tests.EditMode
             IGameClock clock,
             IGameEventBus eventBus)
         {
-            var spatialIndex = new ActorSpatialIndexService();
+            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var actorViewDataStore = new ActorViewDataStore();
             var navigationService = new ActorNavigationService(
                 new NoOpGameEventBus(),
@@ -419,16 +425,18 @@ namespace DungeonInn.Tests.EditMode
                 new ActorMovementService(
                     navigationService,
                     spatialIndex,
-                    actorViewDataStore));
+                    actorViewDataStore),
+                DungeonInn.Application.World.ActorSimulationSettings.CreateDefault());
         }
 
         static GameWorldState CreateWorldState()
         {
             return new GameWorldState(
-                new ActorSpatialIndexService(),
-                new ItemSpatialIndexService(),
+                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
         static AdventurerGuild CreateGuild()

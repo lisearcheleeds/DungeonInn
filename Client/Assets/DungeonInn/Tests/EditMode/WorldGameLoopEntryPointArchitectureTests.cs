@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +36,8 @@ namespace DungeonInn.Tests.EditMode
 {
     public sealed class WorldGameLoopEntryPointArchitectureTests
     {
+        static readonly ActorSimulationSettings ActorSimulation = ActorSimulationSettings.CreateDefault();
+
         [Test]
         public void EntryPointDoesNotDirectlyDependOnApplicationUseCasesOrOrchestrators()
         {
@@ -96,7 +98,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var gameClock = new StubGameClock();
-            var actorSpatialIndexService = new ActorSpatialIndexService();
+            var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var actorViewDataStore = new ActorViewDataStore();
             var worldState = CreateWorldState(
@@ -136,7 +138,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var gameClock = new StubGameClock();
-            var actorSpatialIndexService = new ActorSpatialIndexService();
+            var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var actorViewDataStore = new ActorViewDataStore();
             var worldState = CreateWorldState(
@@ -176,7 +178,7 @@ namespace DungeonInn.Tests.EditMode
             var movedDistance = Math.Sqrt(before.DistanceSquaredTo(actor.Position));
             Assert.That(
                 movedDistance,
-                Is.EqualTo(GameConstants.ActorMoveSpeedMetersPerSecond).Within(0.0001f));
+                Is.EqualTo(ActorSimulation.MoveSpeedMetersPerSecond).Within(0.0001f));
         }
 
         [Test]
@@ -184,7 +186,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var gameClock = new StubGameClock();
-            var actorSpatialIndexService = new ActorSpatialIndexService();
+            var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var actorViewDataStore = new ActorViewDataStore();
             var worldState = CreateWorldState(
@@ -240,7 +242,7 @@ namespace DungeonInn.Tests.EditMode
             var movedDistance = Math.Sqrt(before.DistanceSquaredTo(groundActor.Position));
             Assert.That(
                 movedDistance,
-                Is.EqualTo(GameConstants.ActorMoveSpeedMetersPerSecond).Within(0.0001f));
+                Is.EqualTo(ActorSimulation.MoveSpeedMetersPerSecond).Within(0.0001f));
         }
 
         static WorldSimulationOrchestrator CreateWorldSimulationOrchestrator(
@@ -274,7 +276,7 @@ namespace DungeonInn.Tests.EditMode
             INavigationPathProvider navigationPathProvider)
         {
             var masterRepository = new HardcodedMasterRepository();
-            var itemSpatialIndexService = new ItemSpatialIndexService();
+            var itemSpatialIndexService = new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var actorCombatService = new ActorCombatService();
             var navigationService = new ActorNavigationService(
                 eventBus,
@@ -296,24 +298,28 @@ namespace DungeonInn.Tests.EditMode
                 worldState,
                 new InitializeGameWorldOrchestrator(
                     worldState,
-                    new InitializeWorldMapUseCase(),
-                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase()),
+                    new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
+                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
                     masterRepository,
-                    eventBus),
+                    eventBus,
+                    DungeonInn.Application.World.InitialWorldSettings.CreateDefault()),
                 new SpawnScheduledAdventurerOrchestrator(
                     new SpawnAdventurerUseCase(
                         actorFactory,
                         masterRepository,
                         completeActorSpawnUseCase),
                     masterRepository,
-                    new GameRandom(1)),
+                    new GameRandom(1),
+                    DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault(),
+                    DungeonInn.Application.World.SpawnBalanceSettings.CreateDefault()),
                 new SpawnScheduledMonsterOrchestrator(
                     new SpawnMonsterUseCase(
                         actorFactory,
                         masterRepository,
                         completeActorSpawnUseCase),
                     masterRepository,
-                    new GameRandom(2)),
+                    new GameRandom(2),
+                    DungeonInn.Application.World.SpawnBalanceSettings.CreateDefault()),
                 new AdvanceActorAiOrchestrator(
                     TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
                     new IActorAiPolicy[] { new AdventurerAiPolicy() },
@@ -323,9 +329,10 @@ namespace DungeonInn.Tests.EditMode
                         new ActorMovementService(
                             navigationService,
                             actorSpatialIndexService,
-                            actorViewDataStore)),
+                            actorViewDataStore),
+                        DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
                     new UseDungeonStairOrchestrator(
-                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(), new NoOpEventPublisher())),
+                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()), new NoOpEventPublisher())),
                     new SelectDungeonTargetFloorUseCase(
                         masterRepository,
                         new ActorCombatPowerCalculator(),
@@ -338,11 +345,12 @@ namespace DungeonInn.Tests.EditMode
                     new AdventurerExplorationStateService(eventBus),
                     actorSpatialIndexService,
                     actorViewDataStore,
-                    TestRuntimeServiceFactory.CreateActorProcessingCandidateService()),
+                    TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
                 new DetectCombatEncounterUseCase(
                     actorCombatService,
                     actorSpatialIndexService,
-                    new CombatEncounterTargetResolver(gameClock, actorSpatialIndexService),
+                    new CombatEncounterTargetResolver(gameClock, actorSpatialIndexService, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                     eventBus),
                 new AdvanceCombatUseCase(
                     actorCombatService,
@@ -354,45 +362,56 @@ namespace DungeonInn.Tests.EditMode
                     new ActorMovementService(
                         navigationService,
                         actorSpatialIndexService,
-                        actorViewDataStore)),
-                new AdvanceProjectileUseCase(combatEffectExecutor, actorDefeatOrchestrator, eventBus),
+                        actorViewDataStore),
+                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
+                new AdvanceProjectileUseCase(combatEffectExecutor, actorDefeatOrchestrator, eventBus, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 new AdvanceAreaEffectUseCase(
-                    new AttackAreaTargetResolver(actorSpatialIndexService),
+                    new AttackAreaTargetResolver(actorSpatialIndexService, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                     combatEffectExecutor,
                     actorDefeatOrchestrator,
                     eventBus),
-                new PickUpItemUseCase(eventBus, itemSpatialIndexService, candidateService),
+                new PickUpItemUseCase(
+                    eventBus,
+                    itemSpatialIndexService,
+                    candidateService,
+                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault(),
+                    DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 new UpdateEquipmentUseCase(masterRepository, eventBus, candidateService),
                 new SellItemsUseCase(masterRepository, eventBus, gameClock, candidateService),
                 new UseRecoveryItemOrchestrator(
                     masterRepository,
                     new UseConsumableItemUseCase(masterRepository, candidateService),
                     eventBus,
-                    candidateService),
+                    candidateService,
+                    DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault()),
                 new AdvanceActorEffectsUseCase(candidateService),
                 new DecideAdventurerReturnUseCase(
                     actorCombatService,
                     eventBus,
                     new AdventurerReturnTrackingService(eventBus, profileRegistry, achievementRegistry),
                     masterRepository,
-                    candidateService),
+                    candidateService,
+                    DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault()),
                 new AdvanceInnRecoveryOrchestrator(
                     new RecoverAdventurerAtInnUseCase(
                         eventBus,
                         gameClock,
                         recoveryStateService,
-                        candidateService),
-                    new ChargeInnFeeUseCase(eventBus),
+                        candidateService,
+                        DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
+                    new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
                     new DespawnAdventurerUseCase(eventBus),
                     eventBus,
                     gameClock,
-                    candidateService),
+                    candidateService,
+                    DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
                 new PublishInnDailyReportUseCase(
                     worldState,
                     new InnEconomyStatisticsService(eventBus, gameClock),
                     new InnDailyReportStore(),
                     eventBus,
-                    new InnEconomyStatusCalculator()));
+                    new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault())),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
         static GameWorldState CreateWorldState(
@@ -402,9 +421,10 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = new GameWorldState(
                 actorSpatialIndexService,
-                new ItemSpatialIndexService(),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 candidateService,
-                actorViewDataStore);
+                actorViewDataStore,
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
             worldState.Initialize(CreateGuild(), CreateGroundMap(), CreateDungeon());
             return worldState;
         }

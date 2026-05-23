@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,6 +44,8 @@ namespace DungeonInn.Tests.EditMode
 {
     public sealed class RecoverAdventurerAtInnUseCaseTests
     {
+        static readonly InitialWorldSettings InitialWorld = InitialWorldSettings.CreateDefault();
+        static readonly InnBalanceSettings InnBalance = InnBalanceSettings.CreateDefault();
         static ActorProcessingCandidateService currentCandidateService;
 
         [Test]
@@ -53,7 +55,7 @@ namespace DungeonInn.Tests.EditMode
             var inn = worldState.Guild.Facilities[0];
             FillInn(worldState, inn.Capacity);
             var eventBus = new CollectingEventBus();
-            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, GameConstants.InnFeePerStay);
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
             worldState.RegisterActor(actor);
             var useCase = CreateUseCase(eventBus);
 
@@ -77,7 +79,7 @@ namespace DungeonInn.Tests.EditMode
             var inn = worldState.Guild.Facilities[0];
             var filler = FillInn(worldState, inn.Capacity)[0];
             var eventBus = new CollectingEventBus();
-            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, GameConstants.InnFeePerStay);
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
             worldState.RegisterActor(actor);
             var useCase = CreateUseCase(eventBus);
             useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
@@ -117,19 +119,19 @@ namespace DungeonInn.Tests.EditMode
             FillInn(worldState, inn.Capacity);
             var eventBus = new CollectingEventBus();
             var clock = new StubGameClock();
-            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, GameConstants.InnFeePerStay);
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
             worldState.RegisterActor(actor);
             var useCase = CreateUseCase(eventBus, clock);
             useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
 
-            clock.CurrentDayValue = GameConstants.AdventurerInnWaitDepartureDays;
+            clock.CurrentDayValue = InnBalance.AdventurerWaitDepartureDays;
             useCase.EnsureReservationsAsync(worldState, 2).GetAwaiter().GetResult();
 
             Assert.That(worldState.FindActor(actor.Id), Is.Null);
             var events = eventBus.GetEvents<ActorDeparted>();
             Assert.That(events.Count, Is.EqualTo(1));
             Assert.That(events[0].ActorId, Is.EqualTo(actor.Id));
-            Assert.That(events[0].WaitedDays, Is.EqualTo(GameConstants.AdventurerInnWaitDepartureDays));
+            Assert.That(events[0].WaitedDays, Is.EqualTo(InnBalance.AdventurerWaitDepartureDays));
         }
 
         [Test]
@@ -138,8 +140,8 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateInitializedWorldState();
             var inn = worldState.Guild.Facilities[0];
             var eventBus = new CollectingEventBus();
-            var clock = new StubGameClock { CurrentDayValue = GameConstants.AdventurerInnWaitDepartureDays };
-            var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, GameConstants.InnFeePerStay);
+            var clock = new StubGameClock { CurrentDayValue = InnBalance.AdventurerWaitDepartureDays };
+            var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, InnBalance.FeePerStay);
             actor.RequireBehavior<AdventurerBehavior>().StartWaitingForInn(0);
             worldState.RegisterActor(actor);
             worldState.Guild.ReserveInn(Guid.NewGuid(), actor, inn.Id, 1);
@@ -157,7 +159,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateInitializedWorldState();
             var eventBus = new CollectingEventBus();
-            var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, GameConstants.InnFeePerStay);
+            var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, InnBalance.FeePerStay);
             var hpBefore = actor.Hp;
             worldState.RegisterActor(actor);
             var useCase = CreateUseCase(eventBus);
@@ -196,32 +198,36 @@ namespace DungeonInn.Tests.EditMode
                     eventBus,
                     gameClock,
                     new AdventurerRecoveryStateService(eventBus),
-                    currentCandidateService),
-                new ChargeInnFeeUseCase(eventBus),
+                    currentCandidateService,
+                    DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
+                new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
                 new DespawnAdventurerUseCase(eventBus),
                 eventBus,
                 gameClock,
-                currentCandidateService);
+                currentCandidateService,
+                DungeonInn.Application.World.InnBalanceSettings.CreateDefault());
         }
 
         static GameWorldState CreateInitializedWorldState()
         {
             currentCandidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var worldState = new GameWorldState(
-                new ActorSpatialIndexService(),
-                new ItemSpatialIndexService(),
+                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 currentCandidateService,
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase()),
+                new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
                 new HardcodedMasterRepository(),
-                new CollectingEventBus());
+                new CollectingEventBus(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
-                        GameConstants.InitialDungeonSeed,
+                        InitialWorld.DungeonSeed,
                         Array.Empty<DungeonDepthBandConfig>()))
                 .GetAwaiter()
                 .GetResult();
@@ -235,7 +241,7 @@ namespace DungeonInn.Tests.EditMode
             var inn = worldState.Guild.Facilities[0];
             for (var i = 0; i < count; i++)
             {
-                var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, GameConstants.InnFeePerStay);
+                var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
                 worldState.Guild.ReserveInn(Guid.NewGuid(), actor, inn.Id, i);
                 actors.Add(actor);
             }

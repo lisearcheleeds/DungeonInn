@@ -30,6 +30,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 19c676b89ae15ae41ac5f7509f9184b7
+    m_Address: World/Prop/StairDown
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1d9857a21b169f545be000f815da2484
     m_Address: Materials/Map/GroundWalkable
     m_ReadOnly: 0
@@ -42,6 +47,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 43ccfd040e85bc340bec205dd7c8f8e9
     m_Address: Sprites/Adventurer/WalkSW1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4bab999258a6aa740940759f2ab6f71b
+    m_Address: World/UI/ActorDetailPopup
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -65,6 +75,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7caeaabc39ee79d418dfed9fbc7207ab
+    m_Address: World/Prop/StairUp
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7dfdbb64646ce814fa6827db8c67e1ca
     m_Address: Sprites/Adventurer/WalkSW2
     m_ReadOnly: 0
@@ -77,6 +92,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 8d64e51d442e44f42af59c1e17b4b78e
     m_Address: Sprites/Goblin/WalkNW2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8e3bc8cf82099174fa0153c9f33f1e80
+    m_Address: World/Projectile/Arrow
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -130,8 +150,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cb61ee1e47df6674ca74c1e6ad7e4a0e
+    m_Address: World/UI/ActorStatusView
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ce40b55a4e8415c4e8b566cae3624b7b
     m_Address: Sprites/Goblin/IdleSE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d50061efd1220fe4cb79c4e2ca6bbff1
+    m_Address: World/AreaEffect/Scythe
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -162,6 +192,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f16169316ead65f4faaac0e723891a60
     m_Address: Materials/Map/StairDown
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f6b2d15dcd9ccda499e9d2c833a1eb77
+    m_Address: World/UI/PlayerEventLogView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

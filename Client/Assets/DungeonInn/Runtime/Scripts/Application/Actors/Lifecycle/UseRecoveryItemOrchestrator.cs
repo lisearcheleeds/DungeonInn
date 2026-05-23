@@ -31,6 +31,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly UseConsumableItemUseCase useConsumableItemUseCase;
         readonly IEventPublisher eventBus;
         readonly ActorProcessingCandidateService candidateService;
+        readonly AdventurerReturnPolicySettings returnPolicySettings;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
@@ -38,12 +39,15 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IMasterRepository masterRepository,
             UseConsumableItemUseCase useConsumableItemUseCase,
             IEventPublisher eventBus,
-            ActorProcessingCandidateService candidateService)
+            ActorProcessingCandidateService candidateService,
+            AdventurerReturnPolicySettings returnPolicySettings)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.useConsumableItemUseCase = useConsumableItemUseCase ?? throw new ArgumentNullException(nameof(useConsumableItemUseCase));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
+            this.returnPolicySettings = returnPolicySettings
+                ?? throw new ArgumentNullException(nameof(returnPolicySettings));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState)
@@ -70,7 +74,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     continue;
                 }
 
-                if (GameConstants.AdventurerReturnLowHpRatio < actor.Hp / (float)actor.Params.MaxHp)
+                if (returnPolicySettings.LowHpRatio < actor.Hp / (float)actor.Params.MaxHp)
                 {
                     candidateService.ClearRecoveryItemCandidate(actor.Id);
                     continue;

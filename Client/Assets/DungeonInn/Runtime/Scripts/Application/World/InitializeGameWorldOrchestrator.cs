@@ -21,6 +21,7 @@ namespace DungeonInn.Application.World
         readonly InitializeDungeonOrchestrator initializeDungeonUseCase;
         readonly IItemStackLimitResolver stackLimitResolver;
         readonly IEventPublisher eventPublisher;
+        readonly InitialWorldSettings initialWorldSettings;
 
         [Inject]
         public InitializeGameWorldOrchestrator(
@@ -28,13 +29,15 @@ namespace DungeonInn.Application.World
             InitializeWorldMapUseCase initializeWorldMapUseCase,
             InitializeDungeonOrchestrator initializeDungeonUseCase,
             IItemStackLimitResolver stackLimitResolver,
-            IEventPublisher eventPublisher)
+            IEventPublisher eventPublisher,
+            InitialWorldSettings initialWorldSettings)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.initializeWorldMapUseCase = initializeWorldMapUseCase ?? throw new ArgumentNullException(nameof(initializeWorldMapUseCase));
             this.initializeDungeonUseCase = initializeDungeonUseCase ?? throw new ArgumentNullException(nameof(initializeDungeonUseCase));
             this.stackLimitResolver = stackLimitResolver ?? throw new ArgumentNullException(nameof(stackLimitResolver));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
+            this.initialWorldSettings = initialWorldSettings ?? throw new ArgumentNullException(nameof(initialWorldSettings));
         }
 
         public async UniTask<IGameWorldState> ExecuteAsync(InitializeGameWorldRequest request)
@@ -66,7 +69,7 @@ namespace DungeonInn.Application.World
         AdventurerGuild CreateInitialGuild()
         {
             var inventory = new Inventory(
-                GameConstants.InitialGuildInventorySlotCapacity,
+                initialWorldSettings.GuildInventorySlotCapacity,
                 stackLimitResolver);
             inventory.AddRange(CreateInitialInventory());
             var facilities = new[]
@@ -75,23 +78,23 @@ namespace DungeonInn.Application.World
                     Guid.NewGuid(),
                     FacilityType.Inn,
                     "First Inn",
-                    GameConstants.InitialInnBasePrice,
-                    GameConstants.InitialInnCapacity,
+                    initialWorldSettings.InnBasePrice,
+                    initialWorldSettings.InnCapacity,
                     CreateInventory()),
                 new Facility(
                     Guid.NewGuid(),
                     FacilityType.GeneralStore,
                     "First General Store",
-                    GameConstants.InitialGeneralStoreBasePrice,
-                    GameConstants.InitialShopCapacity,
-                    CreateInventory(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGeneralStoreGold))),
+                    initialWorldSettings.GeneralStoreBasePrice,
+                    initialWorldSettings.ShopCapacity,
+                    CreateInventory(new ItemStack(SpecialItemIds.Money, initialWorldSettings.GeneralStoreGold))),
                 new Facility(
                     Guid.NewGuid(),
                     FacilityType.EquipmentShop,
                     "First Equipment Shop",
-                    GameConstants.InitialEquipmentShopBasePrice,
-                    GameConstants.InitialShopCapacity,
-                    CreateInventory(new ItemStack(SpecialItemIds.Money, GameConstants.InitialEquipmentShopGold)))
+                    initialWorldSettings.EquipmentShopBasePrice,
+                    initialWorldSettings.ShopCapacity,
+                    CreateInventory(new ItemStack(SpecialItemIds.Money, initialWorldSettings.EquipmentShopGold)))
             };
 
             return new AdventurerGuild(Guid.NewGuid(), inventory, facilities);
@@ -100,20 +103,15 @@ namespace DungeonInn.Application.World
         Inventory CreateInventory(params ItemStack[] items)
         {
             var inventory = new Inventory(
-                GameConstants.InitialGuildInventorySlotCapacity,
+                initialWorldSettings.GuildInventorySlotCapacity,
                 stackLimitResolver);
             inventory.AddRange(items);
             return inventory;
         }
 
-        static IReadOnlyList<ItemStack> CreateInitialInventory()
+        IReadOnlyList<ItemStack> CreateInitialInventory()
         {
-            return new[]
-            {
-                new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildReserveGold),
-                new ItemStack(GameConstants.InitialRookieSwordItemId, GameConstants.InitialRookieSwordCount),
-                new ItemStack(GameConstants.InitialRookieArmorItemId, GameConstants.InitialRookieArmorCount)
-            };
+            return initialWorldSettings.InitialGuildInventory;
         }
     }
 }

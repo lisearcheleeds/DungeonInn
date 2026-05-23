@@ -98,7 +98,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void Add(ActorBehaviorType behaviorType, Color color, ActorVisualSizeTier visualSizeTier)
         {
-            var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
+            var sprite = PlaceholderAssetFactory.CreateActorPlaceholder(color, out var texture);
             placeholderTextures.Add(texture);
             placeholderSprites.Add(behaviorType, sprite);
             placeholderSizeTiers.Add(behaviorType, visualSizeTier);

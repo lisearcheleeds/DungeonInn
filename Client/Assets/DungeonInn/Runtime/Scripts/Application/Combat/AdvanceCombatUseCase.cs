@@ -15,7 +15,6 @@ using DungeonInn.Application.Facilities;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Application.Combat
@@ -29,6 +28,7 @@ namespace DungeonInn.Application.Combat
         readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
         readonly IEventPublisher eventPublisher;
         readonly ActorMovementService actorMovementService;
+        readonly ActorSimulationSettings actorSimulationSettings;
 
         [Inject]
         public AdvanceCombatUseCase(
@@ -38,7 +38,8 @@ namespace DungeonInn.Application.Combat
             CombatEffectExecutor combatEffectExecutor,
             ActorDefeatOrchestrator actorDefeatOrchestrator,
             IEventPublisher eventPublisher,
-            ActorMovementService actorMovementService)
+            ActorMovementService actorMovementService,
+            ActorSimulationSettings actorSimulationSettings)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -53,6 +54,8 @@ namespace DungeonInn.Application.Combat
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.actorMovementService = actorMovementService
                 ?? throw new ArgumentNullException(nameof(actorMovementService));
+            this.actorSimulationSettings = actorSimulationSettings
+                ?? throw new ArgumentNullException(nameof(actorSimulationSettings));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -135,7 +138,7 @@ namespace DungeonInn.Application.Combat
                 target.Position,
                 floor.Layer,
                 floor,
-                GameConstants.ActorMoveSpeedMetersPerSecond,
+                actorSimulationSettings.MoveSpeedMetersPerSecond,
                 deltaGameSeconds,
                 actor.WeaponCombatParams.RangeMeters,
                 snapToDestinationOnArrival: false);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,23 +44,25 @@ namespace DungeonInn.Tests.EditMode
 {
     public sealed class InnEconomyUseCaseTests
     {
+        static readonly InitialWorldSettings InitialWorld = InitialWorldSettings.CreateDefault();
+        static readonly InnBalanceSettings InnBalance = InnBalanceSettings.CreateDefault();
         static ActorProcessingCandidateService currentCandidateService;
 
         [Test]
         public void ChargeInnFeeRecordsSalesGuestAndSatisfaction()
         {
             var worldState = CreateInitializedWorldState();
-            var actor = CreateAdventurer(GameConstants.InnFeePerStay);
+            var actor = CreateAdventurer(InnBalance.FeePerStay);
             var eventBus = new CollectingEventBus();
-            var useCase = new ChargeInnFeeUseCase(eventBus);
+            var useCase = new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault());
 
             var charged = useCase.Execute(actor, worldState.Guild);
 
             Assert.That(charged, Is.True);
             Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(1));
-            Assert.That(eventBus.GetEvents<InnFeeCharged>()[0].FeeAmount, Is.EqualTo(GameConstants.InnFeePerStay));
+            Assert.That(eventBus.GetEvents<InnFeeCharged>()[0].FeeAmount, Is.EqualTo(InnBalance.FeePerStay));
             Assert.That(eventBus.GetEvents<InnSatisfactionChanged>().Count, Is.EqualTo(1));
-            Assert.That(eventBus.GetEvents<InnSatisfactionChanged>()[0].Delta, Is.EqualTo(GameConstants.InnStayedSatisfactionDelta));
+            Assert.That(eventBus.GetEvents<InnSatisfactionChanged>()[0].Delta, Is.EqualTo(InnBalance.StayedSatisfactionDelta));
         }
 
         [Test]
@@ -69,7 +71,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(0);
             var eventBus = new CollectingEventBus();
-            var useCase = new ChargeInnFeeUseCase(eventBus);
+            var useCase = new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault());
 
             var charged = useCase.Execute(actor, worldState.Guild);
 
@@ -107,7 +109,7 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(10));
             Assert.That(actor.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
-            Assert.That(worldState.Guild.Inventory.Gold, Is.EqualTo(GameConstants.InitialGuildReserveGold));
+            Assert.That(worldState.Guild.Inventory.Gold, Is.EqualTo(InitialWorld.GuildReserveGold));
             Assert.That(generalStore.Inventory.Gold, Is.EqualTo(initialGeneralStoreGold - 10));
             Assert.That(generalStore.Inventory.Has(new ItemStack(herbItemId, 2)), Is.True);
             Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(1));
@@ -126,7 +128,7 @@ namespace DungeonInn.Tests.EditMode
             const int herbItemId = 1001;
             var worldState = CreateInitializedWorldState();
             var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
-            ((IExchangeParticipant)generalStore).Remove(new ItemStack(SpecialItemIds.Money, GameConstants.InitialGeneralStoreGold));
+            ((IExchangeParticipant)generalStore).Remove(new ItemStack(SpecialItemIds.Money, InitialWorld.GeneralStoreGold));
             var actor = CreateAdventurer(0);
             actor.GainItem(new ItemStack(herbItemId, 1));
             worldState.RegisterActor(actor);
@@ -167,7 +169,7 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
             Assert.That(actor.Inventory.Has(new ItemStack(armorItemId, 1)), Is.True);
-            Assert.That(CountItem(worldState, armorItemId), Is.EqualTo(GameConstants.InitialRookieArmorCount));
+            Assert.That(CountItem(worldState, armorItemId), Is.EqualTo(20));
             Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(0));
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(0));
         }
@@ -203,19 +205,19 @@ namespace DungeonInn.Tests.EditMode
         public void PublishInnDailyReportSavesSnapshotFromStatistics()
         {
             var worldState = CreateInitializedWorldState();
-            var actor = CreateAdventurer(GameConstants.InnFeePerStay);
+            var actor = CreateAdventurer(InnBalance.FeePerStay);
             worldState.Guild.ReserveInn(Guid.NewGuid(), actor, worldState.Guild.Facilities[0].Id, 1);
             var clock = new StubGameClock { CurrentDayValue = 0 };
             var eventBus = new CollectingEventBus();
             var statisticsService = new InnEconomyStatisticsService(eventBus, clock);
             var reportStore = new InnDailyReportStore();
-            new ChargeInnFeeUseCase(eventBus).Execute(actor, worldState.Guild);
+            new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()).Execute(actor, worldState.Guild);
             var useCase = new PublishInnDailyReportUseCase(
                 worldState,
                 statisticsService,
                 reportStore,
                 eventBus,
-                new InnEconomyStatusCalculator());
+                new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault()));
 
             useCase.ExecuteAsync(0).GetAwaiter().GetResult();
 
@@ -223,9 +225,9 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(reports.Count, Is.EqualTo(1));
             Assert.That(reports[0].Report.Day, Is.EqualTo(0));
             Assert.That(reports[0].Report.Guests, Is.EqualTo(1));
-            Assert.That(reports[0].Report.Sales, Is.EqualTo(GameConstants.InnFeePerStay));
+            Assert.That(reports[0].Report.Sales, Is.EqualTo(InnBalance.FeePerStay));
             Assert.That(reports[0].Report.OccupiedRooms, Is.EqualTo(1));
-            Assert.That(reports[0].Report.RoomCapacity, Is.EqualTo(GameConstants.InitialInnCapacity));
+            Assert.That(reports[0].Report.RoomCapacity, Is.EqualTo(InitialWorld.InnCapacity));
             Assert.That(reportStore.TryGet(0, out var savedReport), Is.True);
             Assert.That(savedReport.Guests, Is.EqualTo(1));
             statisticsService.Dispose();
@@ -235,7 +237,7 @@ namespace DungeonInn.Tests.EditMode
         public void PublishInnDailyReportDoesNotReplenishRookieEquipment()
         {
             var worldState = CreateInitializedWorldState();
-            RemoveStock(worldState, GameConstants.InitialRookieSwordItemId, GameConstants.InitialRookieSwordCount - 2);
+            RemoveStock(worldState, InitialWorld.InitialRookieSwordItemId, 20 - 2);
             var eventBus = new CollectingEventBus();
             var statisticsService = new InnEconomyStatisticsService(eventBus, new StubGameClock());
             var useCase = new PublishInnDailyReportUseCase(
@@ -243,12 +245,12 @@ namespace DungeonInn.Tests.EditMode
                 statisticsService,
                 new InnDailyReportStore(),
                 eventBus,
-                new InnEconomyStatusCalculator());
+                new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault()));
 
             useCase.ExecuteAsync(0).GetAwaiter().GetResult();
 
-            Assert.That(CountItem(worldState, GameConstants.InitialRookieSwordItemId), Is.EqualTo(2));
-            Assert.That(eventBus.GetEvents<GuildSupplyReplenished>().Any(x => x.ItemId == GameConstants.InitialRookieSwordItemId), Is.False);
+            Assert.That(CountItem(worldState, InitialWorld.InitialRookieSwordItemId), Is.EqualTo(2));
+            Assert.That(eventBus.GetEvents<GuildSupplyReplenished>().Any(x => x.ItemId == InitialWorld.InitialRookieSwordItemId), Is.False);
             statisticsService.Dispose();
         }
 
@@ -256,25 +258,25 @@ namespace DungeonInn.Tests.EditMode
         public void GetInnEconomyStatusReturnsCurrentDailyCounters()
         {
             var worldState = CreateInitializedWorldState();
-            var actor = CreateAdventurer(GameConstants.InnFeePerStay);
+            var actor = CreateAdventurer(InnBalance.FeePerStay);
             var clock = new StubGameClock { CurrentDayValue = 2 };
             var eventBus = new CollectingEventBus();
             var statisticsService = new InnEconomyStatisticsService(eventBus, clock);
-            new ChargeInnFeeUseCase(eventBus).Execute(actor, worldState.Guild);
+            new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()).Execute(actor, worldState.Guild);
             var useCase = new GetInnEconomyStatusUseCase(
                 worldState,
                 clock,
                 statisticsService,
-                new InnEconomyStatusCalculator());
+                new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault()));
 
             var status = useCase.ExecuteAsync().GetAwaiter().GetResult();
 
             Assert.That(status.CurrentDay, Is.EqualTo(2));
             Assert.That(status.Current.Guests, Is.EqualTo(1));
             Assert.That(status.Current.Demand, Is.EqualTo(1));
-            Assert.That(status.Current.Sales, Is.EqualTo(GameConstants.InnFeePerStay));
-            Assert.That(status.Current.RoomCapacity, Is.EqualTo(GameConstants.InitialInnCapacity));
-            Assert.That(status.Current.GuildGold, Is.EqualTo(GameConstants.InitialGuildGold + GameConstants.InnFeePerStay));
+            Assert.That(status.Current.Sales, Is.EqualTo(InnBalance.FeePerStay));
+            Assert.That(status.Current.RoomCapacity, Is.EqualTo(InitialWorld.InnCapacity));
+            Assert.That(status.Current.GuildGold, Is.EqualTo(InitialWorld.GuildGold + InnBalance.FeePerStay));
             statisticsService.Dispose();
         }
 
@@ -282,7 +284,7 @@ namespace DungeonInn.Tests.EditMode
         public void InnEconomyStatusUsesDailyReportSummaryAsCanonicalSnapshot()
         {
             var worldState = CreateInitializedWorldState();
-            var calculator = new InnEconomyStatusCalculator();
+            var calculator = new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
             var statistics = new InnEconomyStatistics(2, 1, 30, -1);
 
             var report = calculator.CalculateDailyReport(worldState, 3, statistics);
@@ -297,7 +299,7 @@ namespace DungeonInn.Tests.EditMode
         public void GetInnEconomyReportReturnsSavedDailyReports()
         {
             var store = new InnDailyReportStore();
-            store.Save(CreateReport(1, 1, 0, GameConstants.InnFeePerStay));
+            store.Save(CreateReport(1, 1, 0, InnBalance.FeePerStay));
             store.Save(CreateReport(2, 0, 1, 0));
             var useCase = new GetInnEconomyReportUseCase(store);
 
@@ -325,20 +327,22 @@ namespace DungeonInn.Tests.EditMode
         {
             currentCandidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var worldState = new GameWorldState(
-                new ActorSpatialIndexService(),
-                new ItemSpatialIndexService(),
+                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 currentCandidateService,
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase()),
+                new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
                 new HardcodedMasterRepository(),
-                new CollectingEventBus());
+                new CollectingEventBus(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
-                        GameConstants.InitialDungeonSeed,
+                        InitialWorld.DungeonSeed,
                         Array.Empty<DungeonDepthBandConfig>()))
                 .GetAwaiter()
                 .GetResult();
@@ -398,13 +402,13 @@ namespace DungeonInn.Tests.EditMode
                     guests + rejectedGuests,
                     sales,
                     0,
-                    GameConstants.InitialInnReputation,
+                    InitialWorld.InnReputation,
                     0,
-                    GameConstants.InitialInnCapacity,
+                    InitialWorld.InnCapacity,
                     0,
-                    GameConstants.InitialGuildGold,
-                    GameConstants.InitialRookieSwordCount,
-                    GameConstants.InitialRookieArmorCount));
+                    InitialWorld.GuildGold,
+                    20,
+                    20));
         }
 
         sealed class CollectingEventBus : IGameEventBus

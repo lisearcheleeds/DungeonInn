@@ -189,6 +189,33 @@ namespace DungeonInn.Input
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""WorldActorClick"",
+                    ""type"": ""Button"",
+                    ""id"": ""00000000-0000-0000-0002-000000000011"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""WorldActorSelectNext"",
+                    ""type"": ""Button"",
+                    ""id"": ""00000000-0000-0000-0002-000000000012"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""WorldActorSelectPrevious"",
+                    ""type"": ""Button"",
+                    ""id"": ""00000000-0000-0000-0002-000000000013"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -411,6 +438,61 @@ namespace DungeonInn.Input
                     ""action"": ""NextWorldLayer"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000121"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldActorClick"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000122"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldActorSelectNext"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000123"",
+                    ""path"": ""<Keyboard>/upArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldActorSelectNext"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000124"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldActorSelectPrevious"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00000000-0000-0000-0002-000000000125"",
+                    ""path"": ""<Keyboard>/downArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WorldActorSelectPrevious"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -532,6 +614,9 @@ namespace DungeonInn.Input
             m_Scene_WorldCameraZoom = m_Scene.FindAction("WorldCameraZoom", throwIfNotFound: true);
             m_Scene_PreviousWorldLayer = m_Scene.FindAction("PreviousWorldLayer", throwIfNotFound: true);
             m_Scene_NextWorldLayer = m_Scene.FindAction("NextWorldLayer", throwIfNotFound: true);
+            m_Scene_WorldActorClick = m_Scene.FindAction("WorldActorClick", throwIfNotFound: true);
+            m_Scene_WorldActorSelectNext = m_Scene.FindAction("WorldActorSelectNext", throwIfNotFound: true);
+            m_Scene_WorldActorSelectPrevious = m_Scene.FindAction("WorldActorSelectPrevious", throwIfNotFound: true);
             // ScreenStack
             m_ScreenStack = asset.FindActionMap("ScreenStack", throwIfNotFound: true);
             m_ScreenStack_Back = m_ScreenStack.FindAction("Back", throwIfNotFound: true);
@@ -714,6 +799,9 @@ namespace DungeonInn.Input
         private readonly InputAction m_Scene_WorldCameraZoom;
         private readonly InputAction m_Scene_PreviousWorldLayer;
         private readonly InputAction m_Scene_NextWorldLayer;
+        private readonly InputAction m_Scene_WorldActorClick;
+        private readonly InputAction m_Scene_WorldActorSelectNext;
+        private readonly InputAction m_Scene_WorldActorSelectPrevious;
         /// <summary>
         /// Provides access to input actions defined in input action map "Scene".
         /// </summary>
@@ -765,6 +853,18 @@ namespace DungeonInn.Input
             /// Provides access to the underlying input action "Scene/NextWorldLayer".
             /// </summary>
             public InputAction @NextWorldLayer => m_Wrapper.m_Scene_NextWorldLayer;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/WorldActorClick".
+            /// </summary>
+            public InputAction @WorldActorClick => m_Wrapper.m_Scene_WorldActorClick;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/WorldActorSelectNext".
+            /// </summary>
+            public InputAction @WorldActorSelectNext => m_Wrapper.m_Scene_WorldActorSelectNext;
+            /// <summary>
+            /// Provides access to the underlying input action "Scene/WorldActorSelectPrevious".
+            /// </summary>
+            public InputAction @WorldActorSelectPrevious => m_Wrapper.m_Scene_WorldActorSelectPrevious;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -821,6 +921,15 @@ namespace DungeonInn.Input
                 @NextWorldLayer.started += instance.OnNextWorldLayer;
                 @NextWorldLayer.performed += instance.OnNextWorldLayer;
                 @NextWorldLayer.canceled += instance.OnNextWorldLayer;
+                @WorldActorClick.started += instance.OnWorldActorClick;
+                @WorldActorClick.performed += instance.OnWorldActorClick;
+                @WorldActorClick.canceled += instance.OnWorldActorClick;
+                @WorldActorSelectNext.started += instance.OnWorldActorSelectNext;
+                @WorldActorSelectNext.performed += instance.OnWorldActorSelectNext;
+                @WorldActorSelectNext.canceled += instance.OnWorldActorSelectNext;
+                @WorldActorSelectPrevious.started += instance.OnWorldActorSelectPrevious;
+                @WorldActorSelectPrevious.performed += instance.OnWorldActorSelectPrevious;
+                @WorldActorSelectPrevious.canceled += instance.OnWorldActorSelectPrevious;
             }
 
             /// <summary>
@@ -862,6 +971,15 @@ namespace DungeonInn.Input
                 @NextWorldLayer.started -= instance.OnNextWorldLayer;
                 @NextWorldLayer.performed -= instance.OnNextWorldLayer;
                 @NextWorldLayer.canceled -= instance.OnNextWorldLayer;
+                @WorldActorClick.started -= instance.OnWorldActorClick;
+                @WorldActorClick.performed -= instance.OnWorldActorClick;
+                @WorldActorClick.canceled -= instance.OnWorldActorClick;
+                @WorldActorSelectNext.started -= instance.OnWorldActorSelectNext;
+                @WorldActorSelectNext.performed -= instance.OnWorldActorSelectNext;
+                @WorldActorSelectNext.canceled -= instance.OnWorldActorSelectNext;
+                @WorldActorSelectPrevious.started -= instance.OnWorldActorSelectPrevious;
+                @WorldActorSelectPrevious.performed -= instance.OnWorldActorSelectPrevious;
+                @WorldActorSelectPrevious.canceled -= instance.OnWorldActorSelectPrevious;
             }
 
             /// <summary>
@@ -1098,6 +1216,27 @@ namespace DungeonInn.Input
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnNextWorldLayer(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "WorldActorClick" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnWorldActorClick(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "WorldActorSelectNext" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnWorldActorSelectNext(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "WorldActorSelectPrevious" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnWorldActorSelectPrevious(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "ScreenStack" which allows adding and removing callbacks.

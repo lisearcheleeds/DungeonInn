@@ -107,7 +107,13 @@ namespace DungeonInn.Application.Actors.Movement
                     actor.Position.Z + (nextWaypoint.Z - actor.Position.Z) * ratio));
             }
 
-            return actor.Position.DistanceSquaredTo(destination) <= arrivalDistance * arrivalDistance;
+            var arrived = actor.Position.DistanceSquaredTo(destination) <= arrivalDistance * arrivalDistance;
+            if (arrived && snapToDestinationOnArrival)
+            {
+                MoveTo(actor, destination);
+            }
+
+            return arrived;
         }
 
         void MoveTo(Actor actor, LayerPosition position)

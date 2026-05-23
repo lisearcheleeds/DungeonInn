@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -253,15 +253,21 @@ namespace DungeonInn.Tests.EditMode
         static (PickUpItemUseCase, GameWorldState, CollectingEventBus) CreateContext()
         {
             var eventBus = new CollectingEventBus();
-            var itemSpatialIndexService = new ItemSpatialIndexService();
+            var itemSpatialIndexService = new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             return (
-                new PickUpItemUseCase(eventBus, itemSpatialIndexService, candidateService),
-                new GameWorldState(
-                    new ActorSpatialIndexService(),
+                new PickUpItemUseCase(
+                    eventBus,
                     itemSpatialIndexService,
                     candidateService,
-                    new ActorViewDataStore()),
+                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault(),
+                    DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new GameWorldState(
+                    new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                    itemSpatialIndexService,
+                    candidateService,
+                    new ActorViewDataStore(),
+                    DungeonInn.Application.World.InitialWorldSettings.CreateDefault()),
                 eventBus);
         }
 

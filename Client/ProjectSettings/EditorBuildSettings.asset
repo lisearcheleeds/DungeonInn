@@ -20,6 +20,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/DungeonInn/Runtime/Scene/ModuleScene/ScreenStack.unity
     guid: 5afa4d0be71c43440ad57b749e93ffa2
+  - enabled: 1
+    path: Assets/DungeonInn/Runtime/Scene/ModuleScene/WorldUI.unity
+    guid: f423b3d69dd1bd34b91ee54d9686c24a
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 04cc173dca050324689a4e6d94150610, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

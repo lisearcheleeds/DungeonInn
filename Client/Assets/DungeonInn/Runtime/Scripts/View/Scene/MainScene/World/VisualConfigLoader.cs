@@ -58,6 +58,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 await LoadSpritesAsync(ct);
             }
+
         }
 
         public Material GetMaterial(TileVisualKind kind)
@@ -195,7 +196,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         Sprite CreatePlaceholderSprite(Color color)
         {
-            var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
+            var sprite = PlaceholderAssetFactory.CreateActorPlaceholder(color, out var texture);
             fallbackTextures.Add(texture);
             fallbackSprites.Add(sprite);
             return sprite;

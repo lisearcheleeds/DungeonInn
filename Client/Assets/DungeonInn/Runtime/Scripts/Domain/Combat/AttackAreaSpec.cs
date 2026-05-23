@@ -12,6 +12,7 @@ namespace DungeonInn.Domain.Combat
         public float RadiusMeters { get; }
         public float AngleDegrees { get; }
         public int DurationTicks { get; }
+        public string PrefabAddress { get; }
 
         public AttackAreaSpec(
             AttackAreaShape shape,
@@ -21,7 +22,8 @@ namespace DungeonInn.Domain.Combat
             float lengthMeters,
             float radiusMeters,
             float angleDegrees,
-            int durationTicks)
+            int durationTicks,
+            string prefabAddress = "")
         {
             Shape = shape;
             DurationType = durationType;
@@ -31,6 +33,7 @@ namespace DungeonInn.Domain.Combat
             RadiusMeters = Math.Max(0, radiusMeters);
             AngleDegrees = Math.Max(0, angleDegrees);
             DurationTicks = Math.Max(0, durationTicks);
+            PrefabAddress = prefabAddress ?? string.Empty;
         }
     }
 }

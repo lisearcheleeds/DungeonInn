@@ -15,11 +15,13 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly WorldActorViewRegistry actorViewRegistry;
         readonly ActorSpriteVisualConfig actorSpriteVisualConfig;
         readonly WorldCameraController worldCameraController;
+        readonly ActorCombatAnimationPresenter combatAnimationPresenter;
         readonly Action<Guid, ActorView> updateActorViewAction;
         readonly Dictionary<Guid, ActorBehaviorType> actorBehaviorTypes = new();
         readonly HashSet<Guid> walkingActorsThisFrame = new();
         float frameYawDegrees;
         float frameDeltaTime;
+        Quaternion frameCameraRotation;
 
         [Inject]
         public WorldActorPresenter(
@@ -27,19 +29,23 @@ namespace DungeonInn.View.Scene.MainScene.World
             LayerPositionViewMapper positionMapper,
             WorldActorViewRegistry actorViewRegistry,
             ActorSpriteVisualConfig actorSpriteVisualConfig,
-            WorldCameraController worldCameraController)
+            WorldCameraController worldCameraController,
+            ActorCombatAnimationPresenter combatAnimationPresenter)
         {
             this.viewDataProvider = viewDataProvider ?? throw new ArgumentNullException(nameof(viewDataProvider));
             this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
             this.actorViewRegistry = actorViewRegistry ?? throw new ArgumentNullException(nameof(actorViewRegistry));
             this.actorSpriteVisualConfig = actorSpriteVisualConfig ?? throw new ArgumentNullException(nameof(actorSpriteVisualConfig));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
+            this.combatAnimationPresenter =
+                combatAnimationPresenter ?? throw new ArgumentNullException(nameof(combatAnimationPresenter));
             updateActorViewAction = UpdateSingleActorView;
         }
 
         public void UpdateVisuals()
         {
             frameYawDegrees = worldCameraController.CurrentYawDegrees;
+            frameCameraRotation = worldCameraController.CurrentCameraRotation;
             frameDeltaTime = Time.unscaledDeltaTime;
             var changes = viewDataProvider.ConsumeChanges();
             walkingActorsThisFrame.Clear();
@@ -47,6 +53,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             foreach (var actorId in changes.RemovedActorIds)
             {
                 actorBehaviorTypes.Remove(actorId);
+                combatAnimationPresenter.RemoveActor(actorId);
                 actorViewRegistry.RemoveActorObject(actorId);
             }
 
@@ -89,23 +96,43 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            actorView.SetAnimationState(isWalking ? ActorAnimationState.Walk : ActorAnimationState.Idle);
+            var animState = ResolveAnimationState(actorId, actorView, isWalking);
+            actorView.SetAnimationState(animState);
             actorView.Tick(frameDeltaTime);
 
             var direction = ComputeDirection(actorView.Facing, frameYawDegrees);
             var behaviorType = actorBehaviorTypes.TryGetValue(actorId, out var value)
                 ? value
                 : ActorBehaviorType.None;
+            var isCombatAnimState = animState == ActorAnimationState.Combat ||
+                animState == ActorAnimationState.Hit ||
+                animState == ActorAnimationState.Dead;
             var sprite = actorSpriteVisualConfig.GetSprite(
                 behaviorType,
                 direction,
-                isWalking,
+                !isCombatAnimState && isWalking,
                 actorView.CurrentFrameIndex);
             var sizeTier = actorSpriteVisualConfig.GetVisualSizeTier(behaviorType);
             actorView.SetSprite(sprite);
             actorView.SetVisualCanvasHeight(ActorVisualSizeTierCatalog.GetCanvasHeightMeters(sizeTier));
-            actorView.SetRotationY(frameYawDegrees);
+            actorView.SetBillboardRotation(frameCameraRotation);
             actorView.SetFlip(false);
+        }
+
+        ActorAnimationState ResolveAnimationState(Guid actorId, ActorView actorView, bool isWalking)
+        {
+            if (combatAnimationPresenter.TryGetOverride(actorId, out var overrideState))
+            {
+                if (overrideState == ActorAnimationState.Hit && actorView.IsHitOneShotComplete)
+                {
+                    combatAnimationPresenter.ClearHitOverride(actorId);
+                    return isWalking ? ActorAnimationState.Walk : ActorAnimationState.Idle;
+                }
+
+                return overrideState;
+            }
+
+            return isWalking ? ActorAnimationState.Walk : ActorAnimationState.Idle;
         }
 
         Vector3 ResolveActorLocalPosition(ActorViewData actor)

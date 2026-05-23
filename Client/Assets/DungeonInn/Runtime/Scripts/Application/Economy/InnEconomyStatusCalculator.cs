@@ -1,12 +1,21 @@
 using DungeonInn.Application.World;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
+using VContainer;
 
 namespace DungeonInn.Application.Economy
 {
     public sealed class InnEconomyStatusCalculator
     {
+        readonly InitialWorldSettings initialWorldSettings;
+
+        [Inject]
+        public InnEconomyStatusCalculator(InitialWorldSettings initialWorldSettings)
+        {
+            this.initialWorldSettings = initialWorldSettings
+                ?? throw new System.ArgumentNullException(nameof(initialWorldSettings));
+        }
+
         public InnEconomyStatus Calculate(
             IGameWorldStateReader worldState,
             int currentDay,
@@ -43,8 +52,8 @@ namespace DungeonInn.Application.Economy
                     roomCapacity,
                     occupancyPercent,
                     CountGold(worldState),
-                    CountItem(worldState, GameConstants.InitialRookieSwordItemId),
-                    CountItem(worldState, GameConstants.InitialRookieArmorItemId)));
+                    CountItem(worldState, initialWorldSettings.InitialRookieSwordItemId),
+                    CountItem(worldState, initialWorldSettings.InitialRookieArmorItemId)));
         }
 
         static int CountItem(IGameWorldStateReader worldState, int itemId)

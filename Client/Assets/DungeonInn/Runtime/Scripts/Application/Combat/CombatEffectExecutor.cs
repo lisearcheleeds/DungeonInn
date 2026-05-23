@@ -277,7 +277,8 @@ namespace DungeonInn.Application.Combat
                 executionId,
                 CalculateLinkedDirectDamage(attackSpec, node, CombatEffectTriggerType.OnHit),
                 node.ProjectileSpec.SpeedMetersPerSecond,
-                node.ProjectileSpec.MaxDistanceMeters);
+                node.ProjectileSpec.MaxDistanceMeters,
+                node.ProjectileSpec.PrefabAddress);
             worldState.AddProjectile(projectile);
             eventPublisher.Publish(new ProjectileFired(projectile.Id, attackerActorId, target.Id));
         }
@@ -303,7 +304,8 @@ namespace DungeonInn.Application.Combat
                 node.Id,
                 executionId,
                 node.AreaSpec,
-                CalculateLinkedDirectDamage(attackSpec, node, CombatEffectTriggerType.OnHit));
+                CalculateLinkedDirectDamage(attackSpec, node, CombatEffectTriggerType.OnHit),
+                node.AreaSpec.PrefabAddress);
             worldState.AddAreaEffect(areaEffect);
             eventPublisher.Publish(new AreaEffectCreated(
                 areaEffect.Id,

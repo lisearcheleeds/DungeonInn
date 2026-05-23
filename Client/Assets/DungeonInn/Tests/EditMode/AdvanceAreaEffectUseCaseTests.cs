@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,12 +44,12 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void InstantAreaHitsEnemiesInRadiusAndIgnoresAllies()
         {
-            var spatialIndex = new ActorSpatialIndexService();
+            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var worldState = CreateWorldState(spatialIndex);
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = new AdvanceAreaEffectUseCase(
-                new AttackAreaTargetResolver(spatialIndex),
+                new AttackAreaTargetResolver(spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
                 eventBus);
@@ -102,8 +102,8 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void InstantAreaUsesSpatialIndexCandidates()
         {
-            var spatialIndex = new ActorSpatialIndexService();
-            var resolver = new AttackAreaTargetResolver(spatialIndex);
+            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var resolver = new AttackAreaTargetResolver(spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var attacker = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var indexedEnemy = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             var unindexedEnemy = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 7f, 5f), 50);
@@ -162,6 +162,7 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
             public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => throw new NotSupportedException();
             public ItemMaster GetItemMaster(int itemId) => throw new NotSupportedException();
             public EquipmentMaster GetEquipmentMaster(int itemId) => throw new NotSupportedException();
             public WeaponMaster GetWeaponMaster(int itemId) => throw new NotSupportedException();
@@ -173,6 +174,7 @@ namespace DungeonInn.Tests.EditMode
             public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
             public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
             public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex) => throw new NotSupportedException();
+            public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key) => throw new NotSupportedException();
             public int GetMaxStackCount(int itemId) => throw new NotSupportedException();
         }
 
@@ -214,9 +216,10 @@ namespace DungeonInn.Tests.EditMode
         {
             return new GameWorldState(
                 actorSpatialIndexService,
-                new ItemSpatialIndexService(),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
         static Actor CreateActor(int factionId, LayerPosition position, int hp)

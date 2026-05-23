@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using DungeonInn.Domain.Common;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using VContainer;
 
 namespace DungeonInn.Application.Items
 {
@@ -10,6 +11,14 @@ namespace DungeonInn.Application.Items
     {
         readonly Dictionary<SpatialCellKey, List<ItemInstance>> itemsByCell = new();
         readonly Dictionary<Guid, SpatialCellKey> cellByItemId = new();
+        readonly CombatBalanceSettings combatBalanceSettings;
+
+        [Inject]
+        public ItemSpatialIndexService(CombatBalanceSettings combatBalanceSettings)
+        {
+            this.combatBalanceSettings = combatBalanceSettings
+                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
+        }
 
         public void SyncItem(ItemInstance item)
         {
@@ -18,7 +27,7 @@ namespace DungeonInn.Application.Items
                 throw new ArgumentNullException(nameof(item));
             }
 
-            var nextCell = SpatialCellKey.From(item.Position);
+            var nextCell = SpatialCellKey.From(item.Position, combatBalanceSettings.SpatialIndexCellSizeMeters);
             if (cellByItemId.TryGetValue(item.InstanceId, out var currentCell) && currentCell.Equals(nextCell))
             {
                 return;
@@ -75,7 +84,7 @@ namespace DungeonInn.Application.Items
                 throw new ArgumentOutOfRangeException(nameof(neighborCellRadius));
             }
 
-            var centerCell = SpatialCellKey.From(position);
+            var centerCell = SpatialCellKey.From(position, combatBalanceSettings.SpatialIndexCellSizeMeters);
             for (var z = centerCell.Z - neighborCellRadius; z <= centerCell.Z + neighborCellRadius; z++)
             {
                 for (var x = centerCell.X - neighborCellRadius; x <= centerCell.X + neighborCellRadius; x++)
@@ -107,12 +116,12 @@ namespace DungeonInn.Application.Items
                 Z = z;
             }
 
-            public static SpatialCellKey From(LayerPosition position)
+            public static SpatialCellKey From(LayerPosition position, float cellSizeMeters)
             {
                 return new SpatialCellKey(
                     position.LayerId.Value,
-                    (int)Math.Floor(position.X / GameConstants.ActorSpatialIndexCellSizeMeters),
-                    (int)Math.Floor(position.Z / GameConstants.ActorSpatialIndexCellSizeMeters));
+                    (int)Math.Floor(position.X / cellSizeMeters),
+                    (int)Math.Floor(position.Z / cellSizeMeters));
             }
 
             public bool Equals(SpatialCellKey other)

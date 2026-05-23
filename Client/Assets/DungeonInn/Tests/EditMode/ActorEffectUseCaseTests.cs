@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -109,7 +109,12 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var useConsumableItemUseCase = new UseConsumableItemUseCase(repository, candidateService);
-            var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(repository, useConsumableItemUseCase, eventBus, candidateService);
+            var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(
+                repository,
+                useConsumableItemUseCase,
+                eventBus,
+                candidateService,
+                DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault());
             var worldState = CreateWorldState(candidateService);
             var actor = CreateAdventurer(30);
             actor.GainItem(new ItemStack(2001, 1));
@@ -148,10 +153,11 @@ namespace DungeonInn.Tests.EditMode
         static GameWorldState CreateWorldState(ActorProcessingCandidateService candidateService)
         {
             return new GameWorldState(
-                new ActorSpatialIndexService(),
-                new ItemSpatialIndexService(),
+                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 candidateService,
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
         sealed class CollectingEventBus : IGameEventBus

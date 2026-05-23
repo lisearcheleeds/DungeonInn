@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -310,7 +310,8 @@ namespace DungeonInn.Tests.EditMode
                 eventBus,
                 trackingService,
                 new HardcodedMasterRepository(),
-                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault());
             return new DecideAdventurerReturnUseCaseFixture(useCase, trackingService, achievementRegistry);
         }
 
@@ -322,10 +323,11 @@ namespace DungeonInn.Tests.EditMode
         static GameWorldState CreateWorldState()
         {
             return new GameWorldState(
-                new ActorSpatialIndexService(),
-                new ItemSpatialIndexService(),
+                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
         sealed class CollectingGameEventBus : IGameEventBus, IDisposable

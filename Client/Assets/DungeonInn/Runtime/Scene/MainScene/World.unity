@@ -176,7 +176,7 @@ MonoBehaviour:
   actorSpriteVisualConfigSO: {fileID: 11400000, guid: bc4e4c64fee36f34a9d2535b03dc283f, type: 2}
   layerPositionViewSettingsSO: {fileID: 11400000, guid: e45e18cc8ed74d9385274e72aa984489, type: 2}
   worldCameraSettingsSO: {fileID: 11400000, guid: cf6d6d63cfe24a1aa8a5cb8dc8191ec5, type: 2}
-  propPrefab: {fileID: 0}
+  worldGameSettingsSO: {fileID: 11400000, guid: ffd3ea84a28e7a7489db5e1e1bedad4a, type: 2}
 --- !u!114 &1636493082
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -285,7 +285,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 48
+  orthographic size: 28
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2

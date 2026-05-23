@@ -19,7 +19,7 @@ namespace DungeonInn.Core
             {
                 { DungeonInnMainSceneId.FirstScene, null },
                 { DungeonInnMainSceneId.Title, null },
-                { DungeonInnMainSceneId.World, null },
+                { DungeonInnMainSceneId.World, new[] { DungeonInnModuleSceneId.WorldUI } },
             };
 
         static readonly MainSceneId[][] MainSceneGroupList =

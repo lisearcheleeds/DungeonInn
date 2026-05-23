@@ -1,4 +1,4 @@
-# Milestone 7 Roadmap — 戦闘表現とステータス表示
+﻿# Milestone 7 Roadmap — 戦闘表現とステータス表示
 
 ## ゴール
 
@@ -102,7 +102,7 @@ M7 の各タスク作成前に、以下を再確認する。
 - 解除時: 追従を停止し、Orthographic Size を元の値に復元する
 
 **HP バーと状態アイコンの表示方式**
-- `WorldHUDModuleScene`（M7 で新規作成する World 専用 Module Scene）上の Screen Space Overlay Canvas に表示する
+- `WorldUIModuleScene`（M7 で新規作成する World 専用 Module Scene）上の Screen Space Overlay Canvas に表示する
 - Actor の画面位置は `Camera.WorldToScreenPoint` で変換し、Canvas RectTransform に適用して Actor に追従させる
 - `ActorView` の子 GameObject としては実装しない
 
@@ -111,9 +111,12 @@ M7 の各タスク作成前に、以下を再確認する。
 - 後で正式アセットに入れ替える前提
 
 **Actor 詳細パネルの表示形式**
-- ScreenStack の **Popup** として実装する（Dialog ではない）
+- M7 実装完了時点では、ScreenStack Popup ではなく **WorldUI HUD パネル** として実装する
+  - 変更理由: Actor 詳細はモーダル遷移ではなく、選択中 Actor の画面座標に毎フレーム追従する非ブロッキング HUD 要素であるため
+  - Prefab は Addressable から `WorldAddressableViewFactory` がロードし、Presenter は `ActorDetailPopup` の表示/非表示・内容・位置更新だけを扱う
+  - `ActorDetailPopup` は LifetimeScope に `SerializedField` で直接保持しない
 - Actor の画面座標の横に追従する（`Camera.WorldToScreenPoint` → Canvas RectTransform 位置設定）
-- 選択時に Popup を push、非選択時に pop する
+- 選択時に HUD パネルを表示し、非選択時に非表示にする
 - M7 では表示・確認のみ。編集・指示操作は M8 以降
 
 **プレイヤー向けイベントログ**
@@ -268,8 +271,8 @@ Actor の現在 HP と有効な ActorEffect / StatusEffect を、World 上でひ
 
 ### 対応内容
 
-- `WorldHUDModuleScene` を M7 で新規作成する。World シーン専用の Module Scene とし、Screen Space Overlay Canvas を持つ。
-- `ActorStatusView` は `WorldHUDModuleScene` の Canvas 上に置く。`ActorView` の子 GameObject としては実装しない。
+- `WorldUIModuleScene` を M7 で新規作成する。World シーン専用の Module Scene とし、Screen Space Overlay Canvas を持つ。
+- `ActorStatusView` は `WorldUIModuleScene` の Canvas 上に置く。`ActorView` の子 GameObject としては実装しない。
 - HP バーは `ActorStatusView` が表示のみを担当し、HP 比率は Application の Actor view data / status DTO から受け取る。
 - Actor の画面位置は `Camera.WorldToScreenPoint` で変換し、`ActorStatusView` の RectTransform に毎フレーム適用して追従させる。
 - `ActorViewData` または専用 `ActorStatusViewData` に HP / MaxHP / ActorEffect summary を含めるかを設計する。
@@ -279,8 +282,8 @@ Actor の現在 HP と有効な ActorEffect / StatusEffect を、World 上でひ
 
 ### 完了条件
 
-- [ ] `WorldHUDModuleScene` が World シーンのアクティベート / デアクティベートに連動して動作する。
-- [ ] HP バーが `WorldHUDModuleScene` Canvas 上で Actor の画面位置に追従している。
+- [ ] `WorldUIModuleScene` が World シーンのアクティベート / デアクティベートに連動して動作する。
+- [ ] HP バーが `WorldUIModuleScene` Canvas 上で Actor の画面位置に追従している。
 - [ ] ActorEffect / StatusEffect が有効な Actor に `Dummy.png` placeholder アイコンが表示される。
 - [ ] ActorEffect が expired になったらアイコンが消える。
 - [ ] View が `ActiveStatusEffect` を直接変更していない。
@@ -573,7 +576,7 @@ Pool:
 
 ---
 
-### task_0006: WorldHUDModuleScene 作成と Actor 頭上ステータス表示
+### task_0006: WorldUIModuleScene 作成と Actor 頭上ステータス表示
 
 **利用する Lighthouse パターン:** [P2] ModuleScene 作成と登録、[P5] アセット非同期ロード（IAssetScope）
 
@@ -581,8 +584,8 @@ Pool:
 
 | クラス / アセット | 種別 | 内容 |
 |---|---|---|
-| `WorldHUDModuleScene` | 新規 ModuleScene | World 専用 HUD 表示用 Module Scene。Screen Space Overlay Canvas を持つ。World シーン以外では使わない |
-| `WorldHUDLifetimeScope` | 新規 LifetimeScope | `WorldHUDModuleScene` 専用の VContainer LifetimeScope |
+| `WorldUIModuleScene` | 新規 ModuleScene | World 専用 HUD 表示用 Module Scene。Screen Space Overlay Canvas を持つ。World シーン以外では使わない |
+| `WorldUILifetimeScope` | 新規 LifetimeScope | `WorldUIModuleScene` 専用の VContainer LifetimeScope |
 | `ActorStatusView` | UI MonoBehaviour（Canvas 上） | `SetHpRatio(float)` / `SetStatusIcons(IReadOnlyList<ActorEffectIconData>)` / `SetScreenPosition(Vector2)` を公開する。HP バーと状態アイコンスロットを持つ |
 | `ActorHUDViewPool` | Service | `ActorStatusView` の Pool を管理する（`WorldActorViewPool` と同様の `Queue<>` パターン） |
 | `ActorStatusViewData` | DTO | `ActorId` / `float HpRatio` / `IReadOnlyList<ActorEffectIconData> ActiveEffects` を持つ |
@@ -594,7 +597,7 @@ Pool:
 #### 設計メモ
 
 ModuleScene 作成:
-- `WorldHUDModuleScene` を新規 Unity Scene として作成し、Screen Space Overlay Canvas を配置する。
+- `WorldUIModuleScene` を新規 Unity Scene として作成し、Screen Space Overlay Canvas を配置する。
 - Lighthouse の ModuleScene パターン（P2）に従い、World シーン起動時にアクティベート、World シーン終了時にデアクティベートする。
 
 `ActorStatusView` の位置追従:
@@ -607,7 +610,7 @@ ModuleScene 作成:
 - HP / Effect 更新は `ActorViewDataStore` の変化通知を利用し、変化した Actor のみに絞る。
 
 `WorldLifetimeScope` 登録グループ: View: アクター描画（`WorldActorStatusPresenter`、`ActorHUDViewPool`）
-`WorldHUDLifetimeScope` 登録グループ: HUD シーン固有の初期化処理
+`WorldUILifetimeScope` 登録グループ: HUD シーン固有の初期化処理
 
 ---
 
@@ -639,18 +642,18 @@ ModuleScene 作成:
 
 ---
 
-### task_0008: Actor 詳細 Popup
+### task_0008: Actor 詳細 HUD パネル
 
-**利用する Lighthouse パターン:** [P3] ScreenStack Popup
+**利用する Lighthouse パターン:** [P5] アセット非同期ロード（AssetScope）
 
 #### 作るもの
 
 | クラス / アセット | 種別 | 内容 |
 |---|---|---|
-| `ActorDetailDto` | DTO | `ActorId` / `Name` / `Stats` / `CurrentHp` / `MaxHp` / `CurrentMp` / `MaxMp` / `FatigueLevel` / `EquipmentSummary` / `Gold` / `IReadOnlyList<ActorEffectIconData> ActiveEffects` を持つ |
+| `ActorDetailDto` | DTO | `ActorId` / `Position` / `Name` / `Stats` / `CurrentHp` / `MaxHp` / `CurrentMp` / `MaxMp` / `FatigueLevel` / `EquipmentSummary` / `Gold` / `IReadOnlyList<ActorEffectIconData> ActiveEffects` を持つ |
 | `GetActorDetailQuery` | Application Query | `ActorId` を受け取り `ActorDetailDto` を返す narrow query |
-| `ActorDetailPopupPresenter` | Presenter | `ActorSelectionService.SelectedActorId` を購読し、選択時に Popup push + 位置設定 + DTO 更新、非選択時に Popup pop を行う |
-| `ActorDetailPopup` | Lighthouse Popup Component | Stats / HP / MP / 疲労 / 装備 / 所持金 / ActorEffect を表示する。`LHButton` のみ使用する |
+| `ActorDetailPopupPresenter` | Presenter | `ActorSelectionService.SelectedActorId` を購読し、選択時に HUD パネル表示 + 位置設定 + DTO 更新、非選択時に非表示を行う |
+| `ActorDetailPopup` | HUD Panel MonoBehaviour | Stats / HP / MP / 疲労 / 装備 / 所持金 / ActorEffect を表示する。Presenter 以外から直接操作しない |
 
 #### 設計メモ
 
@@ -658,10 +661,11 @@ Popup の位置追従:
 - `ActorDetailPopupPresenter` が毎フレーム `Camera.WorldToScreenPoint(actor.WorldPosition)` を取得し、Popup の RectTransform 位置を Actor 画面座標の横に設定する。
 - `Camera.main` は禁止。`WorldCameraController` 経由でカメラ参照を取得する。
 
-ScreenStack Popup の開閉:
-- `ActorSelectionService.SelectedActorId` が non-null に変化 → Popup push。
-- `ActorSelectionService.SelectedActorId` が null に変化 → Popup pop。
-- Popup 側のユーザー操作（閉じる操作）も `ActorSelectionService.Deselect()` を呼んで選択解除する。
+HUD Panel の開閉:
+- `ActorSelectionService.SelectedActorId` が non-null に変化 → HUD パネル表示。
+- `ActorSelectionService.SelectedActorId` が null に変化 → HUD パネル非表示。
+- Prefab は Addressable から取得し、`WorldLifetimeScope` / `WorldUILifetimeScope` の `SerializedField` では保持しない。
+- `ActorDetailPopup` の生成責務は `WorldAddressableViewFactory` に閉じ、`ActorDetailPopupPresenter` は `ActorSelectionService` と `GetActorDetailQuery` を使った表示制御だけを行う。
 
 M7 の Popup コンテンツは表示・確認のみ。編集・指示操作は M8 以降。
 
@@ -727,7 +731,7 @@ M7 の Popup コンテンツは表示・確認のみ。編集・指示操作は 
 
 ---
 
-### WorldLifetimeScope / WorldHUDLifetimeScope M7 追加登録まとめ
+### WorldLifetimeScope / WorldUILifetimeScope M7 追加登録まとめ
 
 M7 で追加する DI 登録のグループ別まとめ。
 
@@ -747,8 +751,8 @@ M7 で追加する DI 登録のグループ別まとめ。
 - `ActorDetailPopupPresenter`（task_0008）
 - `PlayerGameEventLogPresenter`（task_0009）
 
-**WorldHUDLifetimeScope（新規 Module Scene 専用）**
-- `WorldHUDModuleScene` 固有の初期化処理（task_0006）
+**WorldUILifetimeScope（新規 Module Scene 専用）**
+- `WorldUIModuleScene` 固有の初期化処理（task_0006）
 
 **Application: イベント / アクター状態（WorldLifetimeScope）**
 - `PlayerEventLogStore`（task_0009）
@@ -757,3 +761,4 @@ M7 で追加する DI 登録のグループ別まとめ。
 - `GetActorDetailQuery`（task_0008）
 
 `ProjectileViewVisualConfig` / `AreaEffectViewVisualConfig` は ScriptableObject として `VisualConfigSettings` 経由でロードするか `WorldLifetimeScope` の Inspector にアサインするかを Phase 0 の方針確定後に決定する。
+

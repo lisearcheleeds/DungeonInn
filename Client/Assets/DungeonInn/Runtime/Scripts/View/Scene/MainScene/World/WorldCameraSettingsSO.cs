@@ -15,17 +15,26 @@ namespace DungeonInn.View.Scene.MainScene.World
         const float DefaultMinOrthographicSize = 12f;
         const float DefaultMaxOrthographicSize = 120f;
         const float DefaultActorViewportMargin = 0.08f;
+        const float DefaultActorSelectionZoomRatio = 0.2f;
 
+        [Header("Initial Transform")]
         [SerializeField] Vector3 initialPosition = DefaultInitialPosition;
         [SerializeField] float initialPitchDegrees = DefaultInitialPitchDegrees;
         [SerializeField] float initialYawDegrees = DefaultInitialYawDegrees;
         [SerializeField] float initialOrthographicSize = DefaultInitialOrthographicSize;
+
+        [Header("Controls")]
         [SerializeField] float moveSpeed = DefaultMoveSpeed;
         [SerializeField] float rotationSensitivity = DefaultRotationSensitivity;
         [SerializeField] float zoomSensitivity = DefaultZoomSensitivity;
+
+        [Header("Zoom Limits")]
         [SerializeField] float minOrthographicSize = DefaultMinOrthographicSize;
         [SerializeField] float maxOrthographicSize = DefaultMaxOrthographicSize;
+
+        [Header("Actor Focus")]
         [SerializeField] float actorViewportMargin = DefaultActorViewportMargin;
+        [SerializeField] float actorSelectionZoomRatio = DefaultActorSelectionZoomRatio;
 
         public WorldCameraSettings ToSettings()
         {
@@ -39,7 +48,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 zoomSensitivity,
                 minOrthographicSize,
                 maxOrthographicSize,
-                actorViewportMargin);
+                actorViewportMargin,
+                actorSelectionZoomRatio);
         }
 
         internal static WorldCameraSettings CreateFallbackSettings()
@@ -54,7 +64,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 DefaultZoomSensitivity,
                 DefaultMinOrthographicSize,
                 DefaultMaxOrthographicSize,
-                DefaultActorViewportMargin);
+                DefaultActorViewportMargin,
+                DefaultActorSelectionZoomRatio);
         }
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 
@@ -27,18 +26,42 @@ namespace DungeonInn.Domain.Combat
             var resolvedAttackIntervalSeconds = weaponTypeCombatMaster.BaseAttackIntervalSeconds
                 + (weaponMaster == null ? 0f : weaponMaster.AttackIntervalModifierSeconds);
             var attackPower = source.WeaponAttack;
-            var attackSpec = CreateAttackSpec(weaponTypeCombatMaster.WeaponType, attackPower, resolvedRangeMeters);
+            var attackSpec = CreateAttackSpec(
+                weaponTypeCombatMaster.WeaponType,
+                attackPower,
+                resolvedRangeMeters,
+                weaponTypeCombatMaster.ProjectilePrefabAddress,
+                weaponTypeCombatMaster.ProjectileSpeedMetersPerSecond,
+                weaponTypeCombatMaster.AreaEffectPrefabAddress,
+                weaponTypeCombatMaster.AreaEffectRadiusMeters,
+                weaponTypeCombatMaster.AreaEffectDurationTicks);
             return new WeaponCombatParams(attackPower, resolvedRangeMeters, resolvedAttackIntervalSeconds, attackSpec);
         }
 
-        static WeaponAttackSpec CreateAttackSpec(WeaponType weaponType, int attackPower, float resolvedRangeMeters)
+        static WeaponAttackSpec CreateAttackSpec(
+            WeaponType weaponType,
+            int attackPower,
+            float resolvedRangeMeters,
+            string projectilePrefabAddress,
+            float projectileSpeedMetersPerSecond,
+            string areaEffectPrefabAddress,
+            float areaEffectRadiusMeters,
+            int areaEffectDurationTicks)
         {
             switch (weaponType)
             {
                 case WeaponType.Bow:
-                    return CreateProjectileAttackSpec(attackPower, resolvedRangeMeters);
+                    return CreateProjectileAttackSpec(
+                        attackPower,
+                        resolvedRangeMeters,
+                        projectilePrefabAddress,
+                        projectileSpeedMetersPerSecond);
                 case WeaponType.Scythe:
-                    return CreateAreaAttackSpec(attackPower);
+                    return CreateAreaAttackSpec(
+                        attackPower,
+                        areaEffectPrefabAddress,
+                        areaEffectRadiusMeters,
+                        areaEffectDurationTicks);
                 default:
                     return CreateDirectAttackSpec(attackPower);
             }
@@ -61,7 +84,11 @@ namespace DungeonInn.Domain.Combat
                 1);
         }
 
-        static WeaponAttackSpec CreateProjectileAttackSpec(int attackPower, float maxDistanceMeters)
+        static WeaponAttackSpec CreateProjectileAttackSpec(
+            int attackPower,
+            float maxDistanceMeters,
+            string projectilePrefabAddress,
+            float projectileSpeedMetersPerSecond)
         {
             var projectileNode = new CombatEffectNodeSpec(
                 1,
@@ -71,9 +98,10 @@ namespace DungeonInn.Domain.Combat
                 new ProjectileSpec(
                     ProjectileMovementType.TargetPoint,
                     ProjectileHitBehavior.DisappearOnHit,
-                    GameConstants.ProjectileDefaultSpeedMetersPerSecond,
+                    projectileSpeedMetersPerSecond,
                     maxDistanceMeters,
-                    null),
+                    null,
+                    projectilePrefabAddress),
                 new[]
                 {
                     new CombatEffectLinkSpec(CombatEffectTriggerType.OnHit, 2)
@@ -93,7 +121,11 @@ namespace DungeonInn.Domain.Combat
                 2);
         }
 
-        static WeaponAttackSpec CreateAreaAttackSpec(int attackPower)
+        static WeaponAttackSpec CreateAreaAttackSpec(
+            int attackPower,
+            string areaEffectPrefabAddress,
+            float areaEffectRadiusMeters,
+            int areaEffectDurationTicks)
         {
             var areaNode = new CombatEffectNodeSpec(
                 1,
@@ -105,9 +137,10 @@ namespace DungeonInn.Domain.Combat
                     AttackHitIntervalType.OncePerTarget,
                     0f,
                     0f,
-                    GameConstants.AreaEffectDefaultRadiusMeters,
+                    areaEffectRadiusMeters,
                     0f,
-                    GameConstants.AreaEffectDefaultDurationTicks),
+                    areaEffectDurationTicks,
+                    areaEffectPrefabAddress),
                 null,
                 new[]
                 {

@@ -76,6 +76,18 @@ namespace DungeonInn.View.Scene.MainScene.World
             SelectRelativeLayer(-1);
         }
 
+        public void SelectLayer(MapLayerId layerId)
+        {
+            if (!layerRoots.ContainsKey(layerId.Value) ||
+                activeLayerId.HasValue && activeLayerId.Value == layerId.Value)
+            {
+                return;
+            }
+
+            activeLayerId = layerId.Value;
+            ApplyLayerVisibility();
+        }
+
         public void Dispose()
         {
             layerRoots.Clear();

@@ -1,6 +1,7 @@
 using System.IO;
 using DungeonInn.Domain.Actor;
 using DungeonInn.View.Scene.MainScene.World;
+using DungeonInn.View.Scene.ModuleScene.WorldUI;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -18,7 +19,17 @@ namespace DungeonInn.Editor
         const string ActorSpriteSoPath = SoDirectory + "/ActorSpriteVisualConfig.asset";
         const string LayerPositionViewSettingsPath = SoDirectory + "/LayerPositionViewSettings.asset";
         const string WorldCameraSettingsPath = SoDirectory + "/WorldCameraSettings.asset";
+        const string WorldGameSettingsPath = SoDirectory + "/WorldGameSettings.asset";
         const string ActorPrefabPath = SoDirectory + "/ActorView.prefab";
+        const string WorldPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/World";
+        const string StairUpPropPrefabPath = WorldPrefabDirectory + "/StairUpPropView.prefab";
+        const string StairDownPropPrefabPath = WorldPrefabDirectory + "/StairDownPropView.prefab";
+        const string ArrowProjectilePrefabPath = WorldPrefabDirectory + "/ArrowProjectileView.prefab";
+        const string ScytheAreaEffectPrefabPath = WorldPrefabDirectory + "/ScytheAreaEffectView.prefab";
+        const string ActorStatusViewPrefabPath = WorldPrefabDirectory + "/ActorStatusView.prefab";
+        const string ActorDetailPopupPrefabPath = WorldPrefabDirectory + "/ActorDetailPopup.prefab";
+        const string PlayerEventLogViewPrefabPath = WorldPrefabDirectory + "/PlayerEventLogView.prefab";
+        const string EffectDummySpritePath = "Assets/DungeonInn/Runtime/Art/Sprites/Effect/Dummy.png";
         const string ActorIdleAnimationPath = SoDirectory + "/ActorIdleAnimation.asset";
         const string ActorWalkAnimationPath = SoDirectory + "/ActorWalkAnimation.asset";
         const string AddressablesGroupName = "DungeonInn Visual";
@@ -27,18 +38,42 @@ namespace DungeonInn.Editor
         [InitializeOnLoadMethod]
         static void AutoSetup()
         {
+            ValidateSetup();
+        }
+
+        public static bool ValidateSetup()
+        {
             var assetsExist = AssetDatabase.AssetPathExists(MapMaterialSoPath) &&
                 AssetDatabase.AssetPathExists(ActorSpriteSoPath) &&
                 AssetDatabase.AssetPathExists(LayerPositionViewSettingsPath) &&
                 AssetDatabase.AssetPathExists(WorldCameraSettingsPath) &&
+                AssetDatabase.AssetPathExists(WorldGameSettingsPath) &&
                 AssetDatabase.AssetPathExists(ActorPrefabPath) &&
+                AssetDatabase.AssetPathExists(StairUpPropPrefabPath) &&
+                AssetDatabase.AssetPathExists(StairDownPropPrefabPath) &&
+                AssetDatabase.AssetPathExists(ArrowProjectilePrefabPath) &&
+                AssetDatabase.AssetPathExists(ScytheAreaEffectPrefabPath) &&
+                AssetDatabase.AssetPathExists(ActorStatusViewPrefabPath) &&
+                AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath) &&
+                AssetDatabase.AssetPathExists(PlayerEventLogViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(ActorIdleAnimationPath) &&
                 AssetDatabase.AssetPathExists(ActorWalkAnimationPath);
-
             if (!assetsExist)
             {
-                RunSetup();
+                Debug.LogWarning(
+                    "[DungeonInn] Visual assets are incomplete. Run DungeonInn/Setup Visual Assets to apply setup.");
             }
+
+            var settings = AddressableAssetSettingsDefaultObject.GetSettings(false);
+            var group = settings?.FindGroup(AddressablesGroupName);
+            if (settings == null || group == null || group.GetSchema<BundledAssetGroupSchema>() == null)
+            {
+                Debug.LogWarning(
+                    "[DungeonInn] DungeonInn Visual Addressables group is incomplete. Run DungeonInn/Setup Visual Addressables to apply setup.");
+                return false;
+            }
+
+            return assetsExist;
         }
 
         static void SetupAddressables()
@@ -59,6 +94,11 @@ namespace DungeonInn.Editor
         [MenuItem("DungeonInn/Setup Visual Assets")]
         public static void RunSetup()
         {
+            ApplySetup();
+        }
+
+        public static void ApplySetup()
+        {
             EnsureDirectory(SoDirectory);
 
             var idleClip = CreateOrLoadActorAnimationClip(ActorIdleAnimationPath, 1f, new[] { 0 });
@@ -67,10 +107,18 @@ namespace DungeonInn.Editor
             AssignAnimationClipsToPrefab(actorPrefab, idleClip, walkClip);
             var mapSo = CreateOrLoadMapMaterialSO();
             var actorSo = CreateOrLoadActorSpriteSO(actorPrefab);
+            CreateOrLoadPropViewPrefab(StairUpPropPrefabPath, "StairUpPropView");
+            CreateOrLoadPropViewPrefab(StairDownPropPrefabPath, "StairDownPropView");
+            CreateOrLoadProjectileViewPrefab();
+            CreateOrLoadAreaEffectViewPrefab();
+            CreateOrLoadActorStatusViewPrefab();
+            CreateOrLoadActorDetailPopupPrefab();
+            CreateOrLoadPlayerEventLogViewPrefab();
             var layerSettingsSo = CreateOrLoadLayerPositionViewSettingsSO();
             var cameraSettingsSo = CreateOrLoadWorldCameraSettingsSO();
+            var gameSettingsSo = CreateOrLoadWorldGameSettingsSO();
 
-            AssignToWorldLifetimeScope(mapSo, actorSo, layerSettingsSo, cameraSettingsSo);
+            AssignToWorldLifetimeScope(mapSo, actorSo, layerSettingsSo, cameraSettingsSo, gameSettingsSo);
             SetupAddressables();
 
             AssetDatabase.SaveAssets();
@@ -111,6 +159,19 @@ namespace DungeonInn.Editor
             return settings;
         }
 
+        static WorldGameSettingsSO CreateOrLoadWorldGameSettingsSO()
+        {
+            if (AssetDatabase.AssetPathExists(WorldGameSettingsPath))
+            {
+                return AssetDatabase.LoadAssetAtPath<WorldGameSettingsSO>(WorldGameSettingsPath);
+            }
+
+            var settings = ScriptableObject.CreateInstance<WorldGameSettingsSO>();
+            AssetDatabase.CreateAsset(settings, WorldGameSettingsPath);
+            Debug.Log($"[DungeonInn] Created {WorldGameSettingsPath}");
+            return settings;
+        }
+
         static ActorView CreateOrLoadActorViewPrefab()
         {
             if (AssetDatabase.AssetPathExists(ActorPrefabPath))
@@ -128,6 +189,132 @@ namespace DungeonInn.Editor
 
             Debug.Log($"[DungeonInn] Created {ActorPrefabPath}");
             return prefab.GetComponent<ActorView>();
+        }
+
+        static GameObject CreateOrLoadPropViewPrefab(string prefabPath, string prefabName)
+        {
+            if (AssetDatabase.AssetPathExists(prefabPath))
+            {
+                return AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            }
+
+            EnsureDirectory(WorldPrefabDirectory);
+            var propObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            propObject.name = prefabName;
+            propObject.transform.localScale = Vector3.one * 0.5f;
+            var collider = propObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Object.DestroyImmediate(collider);
+            }
+
+            var prefab = PrefabUtility.SaveAsPrefabAsset(propObject, prefabPath);
+            Object.DestroyImmediate(propObject);
+
+            Debug.Log($"[DungeonInn] Created {prefabPath}");
+            return prefab;
+        }
+
+        static ProjectileView CreateOrLoadProjectileViewPrefab()
+        {
+            if (AssetDatabase.AssetPathExists(ArrowProjectilePrefabPath))
+            {
+                var projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ArrowProjectilePrefabPath);
+                return projectilePrefab != null ? projectilePrefab.GetComponent<ProjectileView>() : null;
+            }
+
+            EnsureDirectory(WorldPrefabDirectory);
+            var projectileObject = new GameObject("ProjectileView");
+            var spriteRenderer = projectileObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = LoadEffectDummySprite();
+            spriteRenderer.color = Color.yellow;
+            projectileObject.AddComponent<ProjectileView>();
+            var prefab = PrefabUtility.SaveAsPrefabAsset(projectileObject, ArrowProjectilePrefabPath);
+            Object.DestroyImmediate(projectileObject);
+
+            Debug.Log($"[DungeonInn] Created {ArrowProjectilePrefabPath}");
+            return prefab != null ? prefab.GetComponent<ProjectileView>() : null;
+        }
+
+        static AreaEffectView CreateOrLoadAreaEffectViewPrefab()
+        {
+            if (AssetDatabase.AssetPathExists(ScytheAreaEffectPrefabPath))
+            {
+                var areaEffectPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ScytheAreaEffectPrefabPath);
+                return areaEffectPrefab != null ? areaEffectPrefab.GetComponent<AreaEffectView>() : null;
+            }
+
+            EnsureDirectory(WorldPrefabDirectory);
+            var areaEffectObject = new GameObject("AreaEffectView");
+            var spriteRenderer = areaEffectObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = LoadEffectDummySprite();
+            spriteRenderer.color = Color.magenta;
+            areaEffectObject.AddComponent<AreaEffectView>();
+            var prefab = PrefabUtility.SaveAsPrefabAsset(areaEffectObject, ScytheAreaEffectPrefabPath);
+            Object.DestroyImmediate(areaEffectObject);
+
+            Debug.Log($"[DungeonInn] Created {ScytheAreaEffectPrefabPath}");
+            return prefab != null ? prefab.GetComponent<AreaEffectView>() : null;
+        }
+
+        static ActorStatusView CreateOrLoadActorStatusViewPrefab()
+        {
+            if (AssetDatabase.AssetPathExists(ActorStatusViewPrefabPath))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ActorStatusViewPrefabPath);
+                return prefab != null ? prefab.GetComponent<ActorStatusView>() : null;
+            }
+
+            EnsureDirectory(WorldPrefabDirectory);
+            var viewObject = new GameObject("ActorStatusView", typeof(RectTransform));
+            viewObject.AddComponent<ActorStatusView>();
+            var savedPrefab = PrefabUtility.SaveAsPrefabAsset(viewObject, ActorStatusViewPrefabPath);
+            Object.DestroyImmediate(viewObject);
+
+            Debug.Log($"[DungeonInn] Created {ActorStatusViewPrefabPath}");
+            return savedPrefab != null ? savedPrefab.GetComponent<ActorStatusView>() : null;
+        }
+
+        static ActorDetailPopup CreateOrLoadActorDetailPopupPrefab()
+        {
+            if (AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ActorDetailPopupPrefabPath);
+                return prefab != null ? prefab.GetComponent<ActorDetailPopup>() : null;
+            }
+
+            EnsureDirectory(WorldPrefabDirectory);
+            var popupObject = new GameObject("ActorDetailPopup", typeof(RectTransform));
+            popupObject.AddComponent<ActorDetailPopup>();
+            var savedPrefab = PrefabUtility.SaveAsPrefabAsset(popupObject, ActorDetailPopupPrefabPath);
+            Object.DestroyImmediate(popupObject);
+
+            Debug.Log($"[DungeonInn] Created {ActorDetailPopupPrefabPath}");
+            return savedPrefab != null ? savedPrefab.GetComponent<ActorDetailPopup>() : null;
+        }
+
+        static PlayerEventLogView CreateOrLoadPlayerEventLogViewPrefab()
+        {
+            if (AssetDatabase.AssetPathExists(PlayerEventLogViewPrefabPath))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerEventLogViewPrefabPath);
+                return prefab != null ? prefab.GetComponent<PlayerEventLogView>() : null;
+            }
+
+            EnsureDirectory(WorldPrefabDirectory);
+            var viewObject = new GameObject("PlayerEventLogView", typeof(RectTransform));
+            viewObject.AddComponent<PlayerEventLogView>();
+            var savedPrefab = PrefabUtility.SaveAsPrefabAsset(viewObject, PlayerEventLogViewPrefabPath);
+            Object.DestroyImmediate(viewObject);
+
+            Debug.Log($"[DungeonInn] Created {PlayerEventLogViewPrefabPath}");
+            return savedPrefab != null ? savedPrefab.GetComponent<PlayerEventLogView>() : null;
+        }
+
+        static Sprite LoadEffectDummySprite()
+        {
+            FixSpriteImportSettings(EffectDummySpritePath);
+            return AssetDatabase.LoadAssetAtPath<Sprite>(EffectDummySpritePath);
         }
 
         static ActorSpriteAnimationClip CreateOrLoadActorAnimationClip(
@@ -336,8 +523,20 @@ namespace DungeonInn.Editor
                 "Sprites/Goblin");
 
             RegisterMapMaterials(settings, group);
+            RegisterContentPrefabs(settings, group);
 
             EditorUtility.SetDirty(settings);
+        }
+
+        static void RegisterContentPrefabs(AddressableAssetSettings settings, AddressableAssetGroup group)
+        {
+            MarkAssetAddressable(settings, group, StairUpPropPrefabPath, "World/Prop/StairUp");
+            MarkAssetAddressable(settings, group, StairDownPropPrefabPath, "World/Prop/StairDown");
+            MarkAssetAddressable(settings, group, ArrowProjectilePrefabPath, "World/Projectile/Arrow");
+            MarkAssetAddressable(settings, group, ScytheAreaEffectPrefabPath, "World/AreaEffect/Scythe");
+            MarkAssetAddressable(settings, group, ActorStatusViewPrefabPath, "World/UI/ActorStatusView");
+            MarkAssetAddressable(settings, group, ActorDetailPopupPrefabPath, "World/UI/ActorDetailPopup");
+            MarkAssetAddressable(settings, group, PlayerEventLogViewPrefabPath, "World/UI/PlayerEventLogView");
         }
 
         static void EnsureGroupSchemas(AddressableAssetSettings settings, AddressableAssetGroup group)
@@ -396,7 +595,7 @@ namespace DungeonInn.Editor
                 var address = $"Materials/Map/{name}";
 
                 EnsureMapMaterial(texturePath, materialPath);
-                MarkMaterialAddressable(settings, group, materialPath, address);
+                MarkAssetAddressable(settings, group, materialPath, address);
 
                 var index = entriesProp.arraySize;
                 entriesProp.InsertArrayElementAtIndex(index);
@@ -448,7 +647,7 @@ namespace DungeonInn.Editor
             Debug.Log($"[DungeonInn] Created material: {materialPath}");
         }
 
-        static void MarkMaterialAddressable(
+        static void MarkAssetAddressable(
             AddressableAssetSettings settings,
             AddressableAssetGroup group,
             string assetPath,
@@ -534,7 +733,8 @@ namespace DungeonInn.Editor
             MapMaterialSetSO mapSo,
             ActorSpriteVisualConfigSO actorSo,
             LayerPositionViewSettingsSO layerSettingsSo,
-            WorldCameraSettingsSO cameraSettingsSo)
+            WorldCameraSettingsSO cameraSettingsSo,
+            WorldGameSettingsSO gameSettingsSo)
         {
             var allObjects = Resources.FindObjectsOfTypeAll<WorldLifetimeScope>();
             foreach (var scope in allObjects)
@@ -544,6 +744,7 @@ namespace DungeonInn.Editor
                 var actorProp = serialized.FindProperty("actorSpriteVisualConfigSO");
                 var layerSettingsProp = serialized.FindProperty("layerPositionViewSettingsSO");
                 var cameraSettingsProp = serialized.FindProperty("worldCameraSettingsSO");
+                var gameSettingsProp = serialized.FindProperty("worldGameSettingsSO");
 
                 var changed = false;
 
@@ -568,6 +769,12 @@ namespace DungeonInn.Editor
                 if (cameraSettingsProp != null && cameraSettingsProp.objectReferenceValue == null)
                 {
                     cameraSettingsProp.objectReferenceValue = cameraSettingsSo;
+                    changed = true;
+                }
+
+                if (gameSettingsProp != null && gameSettingsProp.objectReferenceValue == null)
+                {
+                    gameSettingsProp.objectReferenceValue = gameSettingsSo;
                     changed = true;
                 }
 

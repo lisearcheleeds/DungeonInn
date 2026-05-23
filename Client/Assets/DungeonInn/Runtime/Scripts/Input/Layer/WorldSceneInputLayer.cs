@@ -1,3 +1,4 @@
+using System;
 using DungeonInn.Application.Economy;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
@@ -22,13 +23,15 @@ namespace DungeonInn.Input.Layer
         readonly GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
         readonly WorldCameraController worldCameraController;
         readonly WorldLayerViewController worldLayerViewController;
+        readonly WorldActorSelectionInputHandler actorSelectionInputHandler;
 
         public WorldSceneInputLayer(
             InputActions inputActions,
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
             WorldCameraController worldCameraController,
-            WorldLayerViewController worldLayerViewController)
+            WorldLayerViewController worldLayerViewController,
+            WorldActorSelectionInputHandler actorSelectionInputHandler)
         {
             togglePauseAction = inputActions.Scene.Get().FindAction("TogglePause", true);
             showInnStatusAction = inputActions.Scene.Get().FindAction("ShowInnStatus", true);
@@ -42,6 +45,7 @@ namespace DungeonInn.Input.Layer
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
             this.worldCameraController = worldCameraController;
             this.worldLayerViewController = worldLayerViewController;
+            this.actorSelectionInputHandler = actorSelectionInputHandler ?? throw new ArgumentNullException(nameof(actorSelectionInputHandler));
         }
 
         public bool BlocksAllInput => false;
@@ -59,6 +63,11 @@ namespace DungeonInn.Input.Layer
 
         public bool OnActionPerformed(InputAction.CallbackContext callbackContext)
         {
+            if (actorSelectionInputHandler.HandleActionPerformed(callbackContext))
+            {
+                return true;
+            }
+
             if (callbackContext.action.id == worldCameraMoveAction.id)
             {
                 worldCameraController.SetMoveInput(callbackContext.ReadValue<Vector2>());

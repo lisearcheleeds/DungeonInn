@@ -27,16 +27,23 @@ namespace DungeonInn.Application.Actors.Spawn
         readonly SpawnAdventurerUseCase spawnAdventurerUseCase;
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
+        readonly GroundMapGenerationSettings groundMapGenerationSettings;
+        readonly SpawnBalanceSettings spawnBalanceSettings;
 
         [Inject]
         public SpawnScheduledAdventurerOrchestrator(
             SpawnAdventurerUseCase spawnAdventurerUseCase,
             IMasterRepository masterRepository,
-            IGameRandom gameRandom)
+            IGameRandom gameRandom,
+            GroundMapGenerationSettings groundMapGenerationSettings,
+            SpawnBalanceSettings spawnBalanceSettings)
         {
             this.spawnAdventurerUseCase = spawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
+            this.groundMapGenerationSettings = groundMapGenerationSettings
+                ?? throw new ArgumentNullException(nameof(groundMapGenerationSettings));
+            this.spawnBalanceSettings = spawnBalanceSettings ?? throw new ArgumentNullException(nameof(spawnBalanceSettings));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -46,7 +53,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 throw new ArgumentNullException(nameof(worldState));
             }
 
-            if (currentScheduleTick - worldState.SpawnSchedule.LastAdventurerSpawnTick < GameConstants.AdventurerSpawnIntervalTicks)
+            if (currentScheduleTick - worldState.SpawnSchedule.LastAdventurerSpawnTick < spawnBalanceSettings.AdventurerSpawnIntervalTicks)
             {
                 return null;
             }
@@ -63,7 +70,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 }
             }
 
-            if (adventurerCount >= GameConstants.InitialMaxAdventurerCount)
+            if (adventurerCount >= spawnBalanceSettings.MaxAdventurerCount)
             {
                 return null;
             }
@@ -154,10 +161,10 @@ namespace DungeonInn.Application.Actors.Spawn
         {
             return gameRandom.Next(4) switch
             {
-                0 => new GridPosition(gameRandom.Next(GameConstants.GroundMapWidth), 0),
-                1 => new GridPosition(gameRandom.Next(GameConstants.GroundMapWidth), GameConstants.GroundMapDepth - 1),
-                2 => new GridPosition(0, gameRandom.Next(GameConstants.GroundMapDepth)),
-                _ => new GridPosition(GameConstants.GroundMapWidth - 1, gameRandom.Next(GameConstants.GroundMapDepth)),
+                0 => new GridPosition(gameRandom.Next(groundMapGenerationSettings.Width), 0),
+                1 => new GridPosition(gameRandom.Next(groundMapGenerationSettings.Width), groundMapGenerationSettings.Depth - 1),
+                2 => new GridPosition(0, gameRandom.Next(groundMapGenerationSettings.Depth)),
+                _ => new GridPosition(groundMapGenerationSettings.Width - 1, gameRandom.Next(groundMapGenerationSettings.Depth)),
             };
         }
     }

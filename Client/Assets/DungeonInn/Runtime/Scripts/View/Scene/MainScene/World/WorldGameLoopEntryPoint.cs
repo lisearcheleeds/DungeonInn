@@ -13,9 +13,16 @@ namespace DungeonInn.View.Scene.MainScene.World
         IWorldSimulationOrchestrator worldSimulationOrchestrator;
         WorldMapView worldMapView;
         WorldActorPresenter worldActorPresenter;
+        WorldProjectilePresenter worldProjectilePresenter;
+        WorldAreaEffectPresenter worldAreaEffectPresenter;
+        WorldActorStatusPresenter worldActorStatusPresenter;
+        WorldActorCameraFollowController worldActorCameraFollowController;
+        ActorDetailPopupPresenter actorDetailPopupPresenter;
+        PlayerGameEventLogPresenter playerGameEventLogPresenter;
         WorldCameraController worldCameraController;
         MapLayerViewRegistry layerViewRegistry;
         VisualConfigLoader visualConfigLoader;
+        WorldAddressableViewFactory viewFactory;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
 
@@ -27,16 +34,33 @@ namespace DungeonInn.View.Scene.MainScene.World
             IWorldSimulationOrchestrator worldSimulationOrchestrator,
             WorldMapView worldMapView,
             WorldActorPresenter worldActorPresenter,
+            WorldProjectilePresenter worldProjectilePresenter,
+            WorldAreaEffectPresenter worldAreaEffectPresenter,
+            WorldActorStatusPresenter worldActorStatusPresenter,
+            WorldActorCameraFollowController worldActorCameraFollowController,
             WorldCameraController worldCameraController,
             MapLayerViewRegistry layerViewRegistry,
-            VisualConfigLoader visualConfigLoader)
+            VisualConfigLoader visualConfigLoader,
+            WorldAddressableViewFactory viewFactory,
+            IObjectResolver resolver)
         {
             this.worldSimulationOrchestrator = worldSimulationOrchestrator ?? throw new ArgumentNullException(nameof(worldSimulationOrchestrator));
             this.worldMapView = worldMapView ?? throw new ArgumentNullException(nameof(worldMapView));
             this.worldActorPresenter = worldActorPresenter ?? throw new ArgumentNullException(nameof(worldActorPresenter));
+            this.worldProjectilePresenter =
+                worldProjectilePresenter ?? throw new ArgumentNullException(nameof(worldProjectilePresenter));
+            this.worldAreaEffectPresenter =
+                worldAreaEffectPresenter ?? throw new ArgumentNullException(nameof(worldAreaEffectPresenter));
+            this.worldActorStatusPresenter =
+                worldActorStatusPresenter ?? throw new ArgumentNullException(nameof(worldActorStatusPresenter));
+            this.worldActorCameraFollowController =
+                worldActorCameraFollowController ?? throw new ArgumentNullException(nameof(worldActorCameraFollowController));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.visualConfigLoader = visualConfigLoader ?? throw new ArgumentNullException(nameof(visualConfigLoader));
+            this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
+            resolver.TryResolve<ActorDetailPopupPresenter>(out actorDetailPopupPresenter);
+            resolver.TryResolve<PlayerGameEventLogPresenter>(out playerGameEventLogPresenter);
         }
 
         void Start()
@@ -59,8 +83,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             worldCameraController.UpdateCamera(Time.unscaledDeltaTime);
+            worldActorCameraFollowController.UpdateFollowPosition();
+            actorDetailPopupPresenter?.UpdatePopupPosition();
+            actorDetailPopupPresenter?.UpdatePopupContent();
             worldMapView.UpdateVisuals();
             worldActorPresenter.UpdateVisuals();
+            worldProjectilePresenter.UpdatePositions();
+            worldAreaEffectPresenter.UpdatePositions();
+            worldActorStatusPresenter.UpdatePositions();
 
             if (isExecuting)
             {
@@ -75,6 +105,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             try
             {
                 await visualConfigLoader.LoadAsync(cancellationToken);
+                await viewFactory.LoadAsync(cancellationToken);
+                actorDetailPopupPresenter?.Initialize();
+                playerGameEventLogPresenter?.Initialize();
                 var result = await worldSimulationOrchestrator.InitializeAsync(cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 isInitialized = true;

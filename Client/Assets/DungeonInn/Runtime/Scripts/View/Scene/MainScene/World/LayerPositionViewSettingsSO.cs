@@ -8,7 +8,10 @@ namespace DungeonInn.View.Scene.MainScene.World
         const float DefaultLayerHeightOffset = -240f;
         const float DefaultActorHeightOffset = 0f;
 
+        [Header("Layer Offset")]
         [SerializeField] float layerHeightOffset = DefaultLayerHeightOffset;
+
+        [Header("Actor Offset")]
         [SerializeField] float actorHeightOffset = DefaultActorHeightOffset;
 
         public LayerPositionViewSettings ToSettings()

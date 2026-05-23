@@ -23,6 +23,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly IGameWorldStateReader worldState;
         readonly AdventurerBattleRecordService battleRecordService;
         readonly IActorProfileRegistry profileRegistry;
+        readonly InnBalanceSettings innBalanceSettings;
         DisposableBag bag;
 
         [Inject]
@@ -30,12 +31,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             IEventSubscriber eventSubscriber,
             IGameWorldStateReader worldState,
             AdventurerBattleRecordService battleRecordService,
-            IActorProfileRegistry profileRegistry)
+            IActorProfileRegistry profileRegistry,
+            InnBalanceSettings innBalanceSettings)
         {
             this.eventSubscriber = eventSubscriber ?? throw new ArgumentNullException(nameof(eventSubscriber));
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
             this.battleRecordService = battleRecordService ?? throw new ArgumentNullException(nameof(battleRecordService));
             this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
+            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
         }
 
         public void Initialize()
@@ -211,7 +214,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             var actor = worldState.FindActor(gameEvent.ActorId);
             var currentGold = actor == null ? 0 : actor.Inventory.Gold;
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn fee ({currentGold}/{Domain.Common.GameConstants.InnFeePerStay}G)");
+            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn fee ({currentGold}/{innBalanceSettings.FeePerStay}G)");
         }
 
         void OnActorReservedInn(ActorReservedInn gameEvent)

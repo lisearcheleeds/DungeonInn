@@ -6,7 +6,6 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Map;
 using VContainer;
@@ -19,6 +18,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IGameClock gameClock;
         readonly AdventurerRecoveryStateService recoveryStateService;
         readonly ActorProcessingCandidateService candidateService;
+        readonly InnBalanceSettings innBalanceSettings;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
@@ -26,12 +26,14 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IEventPublisher eventPublisher,
             IGameClock gameClock,
             AdventurerRecoveryStateService recoveryStateService,
-            ActorProcessingCandidateService candidateService)
+            ActorProcessingCandidateService candidateService,
+            InnBalanceSettings innBalanceSettings)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.recoveryStateService = recoveryStateService ?? throw new ArgumentNullException(nameof(recoveryStateService));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
+            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -84,7 +86,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
 
             var accumulated = recoveryStateService.GetAccumulatedHp(actor.Id);
-            accumulated += actor.Params.MaxHp * GameConstants.InnHpRecoveryPercentPerMinute / 60f * deltaGameSeconds;
+            accumulated += actor.Params.MaxHp * innBalanceSettings.HpRecoveryPercentPerMinute / 60f * deltaGameSeconds;
             var healAmount = (int)accumulated;
 
             if (healAmount > 0)

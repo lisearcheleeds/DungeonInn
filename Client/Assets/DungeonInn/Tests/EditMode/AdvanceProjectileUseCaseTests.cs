@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,7 +44,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitDealsDamagePublishesEventsAndRemovesProjectile()
         {
-            var worldState = CreateWorldState(new ActorSpatialIndexService());
+            var worldState = CreateWorldState(new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()));
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceProjectileUseCase(combatService, eventBus);
@@ -86,15 +86,15 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitCanCreateAreaThatDealsLinkedDirectDamage()
         {
-            var spatialIndex = new ActorSpatialIndexService();
+            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var worldState = CreateWorldState(spatialIndex);
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var executor = CreateCombatEffectExecutor(combatService, eventBus);
             var actorDefeatOrchestrator = CreateActorDefeatOrchestrator(combatService, eventBus);
-            var projectileUseCase = new AdvanceProjectileUseCase(executor, actorDefeatOrchestrator, eventBus);
+            var projectileUseCase = new AdvanceProjectileUseCase(executor, actorDefeatOrchestrator, eventBus, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var areaUseCase = new AdvanceAreaEffectUseCase(
-                new AttackAreaTargetResolver(spatialIndex),
+                new AttackAreaTargetResolver(spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 executor,
                 actorDefeatOrchestrator,
                 eventBus);
@@ -165,6 +165,7 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
             public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => throw new NotSupportedException();
             public ItemMaster GetItemMaster(int itemId) => throw new NotSupportedException();
             public EquipmentMaster GetEquipmentMaster(int itemId) => throw new NotSupportedException();
             public WeaponMaster GetWeaponMaster(int itemId) => throw new NotSupportedException();
@@ -176,6 +177,7 @@ namespace DungeonInn.Tests.EditMode
             public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
             public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
             public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex) => throw new NotSupportedException();
+            public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key) => throw new NotSupportedException();
             public int GetMaxStackCount(int itemId) => throw new NotSupportedException();
         }
 
@@ -220,16 +222,18 @@ namespace DungeonInn.Tests.EditMode
             return new AdvanceProjectileUseCase(
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
-                eventBus);
+                eventBus,
+                DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
         }
 
         static GameWorldState CreateWorldState(ActorSpatialIndexService actorSpatialIndexService)
         {
             return new GameWorldState(
                 actorSpatialIndexService,
-                new ItemSpatialIndexService(),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
         static WeaponAttackSpec CreateProjectileAreaDamageAttackSpec(int damage)

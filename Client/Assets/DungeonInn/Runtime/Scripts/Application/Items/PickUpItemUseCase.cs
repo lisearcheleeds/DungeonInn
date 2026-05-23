@@ -6,7 +6,6 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Item;
 using VContainer;
 
@@ -17,6 +16,8 @@ namespace DungeonInn.Application.Items
         readonly IEventPublisher eventBus;
         readonly ItemSpatialIndexService itemSpatialIndexService;
         readonly ActorProcessingCandidateService candidateService;
+        readonly ActorSimulationSettings actorSimulationSettings;
+        readonly CombatBalanceSettings combatBalanceSettings;
         readonly List<Guid> actorIdBuffer = new();
         readonly List<ItemInstance> itemBuffer = new();
 
@@ -24,12 +25,17 @@ namespace DungeonInn.Application.Items
         public PickUpItemUseCase(
             IEventPublisher eventBus,
             ItemSpatialIndexService itemSpatialIndexService,
-            ActorProcessingCandidateService candidateService)
+            ActorProcessingCandidateService candidateService,
+            ActorSimulationSettings actorSimulationSettings,
+            CombatBalanceSettings combatBalanceSettings)
         {
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.itemSpatialIndexService = itemSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(itemSpatialIndexService));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
+            this.actorSimulationSettings = actorSimulationSettings
+                ?? throw new ArgumentNullException(nameof(actorSimulationSettings));
+            this.combatBalanceSettings = combatBalanceSettings ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
         }
 
         public void Execute(IGameWorldState worldState)
@@ -67,11 +73,11 @@ namespace DungeonInn.Application.Items
 
         void PickUpNearbyItems(Actor actor, IGameWorldState worldState)
         {
-            var pickupRadius = GameConstants.AdventurerItemPickupRadiusMeters;
+            var pickupRadius = actorSimulationSettings.ItemPickupRadiusMeters;
             var pickupRadiusSq = pickupRadius * pickupRadius;
             var neighborCellRadius = Math.Max(
                 0,
-                (int)Math.Ceiling(pickupRadius / GameConstants.ActorSpatialIndexCellSizeMeters));
+                (int)Math.Ceiling(pickupRadius / combatBalanceSettings.SpatialIndexCellSizeMeters));
 
             itemBuffer.Clear();
             itemSpatialIndexService.CollectNearbyItems(actor.Position, neighborCellRadius, itemBuffer);

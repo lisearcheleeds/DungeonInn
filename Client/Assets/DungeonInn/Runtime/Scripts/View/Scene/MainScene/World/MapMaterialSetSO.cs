@@ -7,6 +7,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     [CreateAssetMenu(menuName = "DungeonInn/Visual/MapMaterialSet")]
     public sealed class MapMaterialSetSO : ScriptableObject
     {
+        [Header("Material Entries")]
         [SerializeField] List<Entry> entries = new();
 
         public IReadOnlyList<Entry> Entries => entries;

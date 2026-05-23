@@ -8,7 +8,10 @@ namespace DungeonInn.View.Scene.MainScene.World
     [CreateAssetMenu(menuName = "DungeonInn/Visual/ActorSpriteVisualConfig")]
     public sealed class ActorSpriteVisualConfigSO : ScriptableObject
     {
+        [Header("Fallback Prefab")]
         [SerializeField] ActorView actorPrefab;
+
+        [Header("Visual Entries")]
         [SerializeField] List<Entry> entries = new();
 
         public ActorView ActorPrefab => actorPrefab;

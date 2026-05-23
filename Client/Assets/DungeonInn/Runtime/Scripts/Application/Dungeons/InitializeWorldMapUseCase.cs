@@ -1,6 +1,8 @@
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
+using VContainer;
 
 namespace DungeonInn.Application.Dungeons
 {
@@ -9,6 +11,14 @@ namespace DungeonInn.Application.Dungeons
     /// </summary>
     public sealed class InitializeWorldMapUseCase
     {
+        readonly GroundMapGenerationSettings settings;
+
+        [Inject]
+        public InitializeWorldMapUseCase(GroundMapGenerationSettings settings)
+        {
+            this.settings = settings ?? throw new System.ArgumentNullException(nameof(settings));
+        }
+
         /// <summary>
         /// 定数で定義された地上マップを作成し、中央のダンジョン入口と周辺施設の占有セルを設定する。
         /// </summary>
@@ -16,17 +26,17 @@ namespace DungeonInn.Application.Dungeons
         {
             var layer = new MapLayer(
                 MapLayerId.Ground,
-                GameConstants.GroundMapWidth,
-                GameConstants.GroundMapDepth,
+                settings.Width,
+                settings.Depth,
                 GameConstants.MapCellWidthMeters);
             var cells = CreateOpenCells(layer);
             var dungeonEntrance = new GridPosition(
-                GameConstants.GroundMapWidth / 2,
-                GameConstants.GroundMapDepth / 2);
-            var innerOrigin = GameConstants.GroundMapWidth / 2
-                - GameConstants.GroundFacilityBuildingInnerOffsetCells;
-            var outerOrigin = GameConstants.GroundMapWidth / 2
-                + GameConstants.GroundFacilityBuildingOuterOffsetCells;
+                settings.Width / 2,
+                settings.Depth / 2);
+            var innerOrigin = settings.Width / 2
+                - settings.FacilityBuildingInnerOffsetCells;
+            var outerOrigin = settings.Width / 2
+                + settings.FacilityBuildingOuterOffsetCells;
 
             SetCell(cells, layer, dungeonEntrance, GroundCellType.DungeonEntrance, MapCellBlockType.Walkable);
             FillRectangle(
@@ -34,8 +44,8 @@ namespace DungeonInn.Application.Dungeons
                 layer,
                 innerOrigin,
                 innerOrigin,
-                GameConstants.GroundFacilityBuildingSizeCells,
-                GameConstants.GroundFacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
                 GroundCellType.Building,
                 MapCellBlockType.Blocked);
             FillRectangle(
@@ -43,8 +53,8 @@ namespace DungeonInn.Application.Dungeons
                 layer,
                 outerOrigin,
                 innerOrigin,
-                GameConstants.GroundFacilityBuildingSizeCells,
-                GameConstants.GroundFacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
                 GroundCellType.Building,
                 MapCellBlockType.Blocked);
             FillRectangle(
@@ -52,8 +62,8 @@ namespace DungeonInn.Application.Dungeons
                 layer,
                 innerOrigin,
                 outerOrigin,
-                GameConstants.GroundFacilityBuildingSizeCells,
-                GameConstants.GroundFacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
                 GroundCellType.Building,
                 MapCellBlockType.Blocked);
             FillRectangle(
@@ -61,8 +71,8 @@ namespace DungeonInn.Application.Dungeons
                 layer,
                 outerOrigin,
                 outerOrigin,
-                GameConstants.GroundFacilityBuildingSizeCells,
-                GameConstants.GroundFacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
+                settings.FacilityBuildingSizeCells,
                 GroundCellType.Building,
                 MapCellBlockType.Blocked);
 

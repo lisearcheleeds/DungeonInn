@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Combat;
 using VContainer;
 
@@ -12,12 +12,17 @@ namespace DungeonInn.Application.Combat
         readonly ActorSpatialIndexService actorSpatialIndexService;
         readonly List<Actor> candidates = new();
         readonly List<Actor> targets = new();
+        readonly CombatBalanceSettings combatBalanceSettings;
 
         [Inject]
-        public AttackAreaTargetResolver(ActorSpatialIndexService actorSpatialIndexService)
+        public AttackAreaTargetResolver(
+            ActorSpatialIndexService actorSpatialIndexService,
+            CombatBalanceSettings combatBalanceSettings)
         {
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
+            this.combatBalanceSettings = combatBalanceSettings
+                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
         }
 
         public IReadOnlyList<Actor> ResolveTargets(AreaEffectInstance areaEffect)
@@ -52,13 +57,13 @@ namespace DungeonInn.Application.Combat
             return targets;
         }
 
-        static int CalculateNeighborCellRadius(AreaEffectInstance areaEffect)
+        int CalculateNeighborCellRadius(AreaEffectInstance areaEffect)
         {
             return Math.Max(
                 1,
                 (int)Math.Ceiling(
                     CalculateBoundingRadius(areaEffect.AreaSpec) /
-                    GameConstants.ActorSpatialIndexCellSizeMeters));
+                    combatBalanceSettings.SpatialIndexCellSizeMeters));
         }
 
         static float CalculateBoundingRadius(AttackAreaSpec areaSpec)

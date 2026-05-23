@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 319d92294d1ea3949af9bb6b4ae19983, type: 3}
+  m_Name: WorldGameSettings
+  m_EditorClassIdentifier: DungeonInn.Runtime::DungeonInn.View.Scene.MainScene.World.WorldGameSettingsSO
+  groundMapWidth: 30
+  groundMapDepth: 30
+  groundFacilityBuildingSizeCells: 5
+  groundFacilityBuildingInnerOffsetCells: 7
+  groundFacilityBuildingOuterOffsetCells: 2
+  mapChunkTileSize: 16
+  mapChunkBuildsPerFrame: 1
+  mapTileHeightMeters: 2
+  dungeonFloorWidth: 50
+  dungeonFloorDepth: 50
+  dungeonThemeFloorsPerTheme: 10
+  dungeonSectionSizeCells: 25
+  dungeonSectionMarginCells: 2
+  dungeonPathDistortBaseStrength: 8
+  dungeonExtraReferencePointMaxCount: 4
+  dungeonRoomMinSizeCells: 3
+  dungeonRoomMaxSizeCells: 5
+  initialDungeonSeed: 12345
+  initialGameRandomSeed: 42195
+  initialGuildGold: 10000
+  initialGeneralStoreGold: 1000
+  initialEquipmentShopGold: 1000
+  initialInnReputation: 10
+  initialGuildInventorySlotCapacity: 100
+  initialInnBasePrice: 10
+  initialInnCapacity: 8
+  initialGeneralStoreBasePrice: 10
+  initialEquipmentShopBasePrice: 10
+  initialShopCapacity: 1
+  initialRookieSwordItemId: 3001
+  initialRookieSwordCount: 20
+  initialRookieArmorItemId: 3003
+  initialRookieArmorCount: 20
+  innHpRecoveryPercentPerMinute: 1
+  innFeePerStay: 10
+  adventurerInnWaitDepartureDays: 3
+  innStayedSatisfactionDelta: 2
+  innWaitingSatisfactionDelta: -2
+  innCannotPaySatisfactionDelta: -1
+  actorMoveSpeedMetersPerSecond: 5
+  actorMoveArrivalDistanceMeters: 2.5
+  adventurerItemPickupRadiusMeters: 1.5
+  adventurerExplorationRoomArrivalTarget: 8
+  adventurerSpawnIntervalTicks: 5
+  monsterSpawnIntervalTicks: 10
+  initialMaxAdventurerCount: 8
+  initialMaxMonsterCount: 20
+  adventurerReturnDecisionThresholdScore: 100
+  adventurerReturnGoalCompletedScore: 100
+  adventurerReturnCriticalHpScore: 100
+  adventurerReturnLowHpWithoutRecoveryItemScore: 100
+  adventurerReturnLowHpRatio: 0.6
+  adventurerReturnCriticalHpRatio: 0.3
+  projectileHitRadiusMeters: 0.5
+  combatEncounterRangeMeters: 20
+  actorSpatialIndexCellSizeMeters: 20

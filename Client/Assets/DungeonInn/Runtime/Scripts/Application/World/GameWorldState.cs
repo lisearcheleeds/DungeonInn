@@ -32,12 +32,13 @@ namespace DungeonInn.Application.World
         readonly ItemSpatialIndexService itemSpatialIndexService;
         readonly ActorProcessingCandidateService actorProcessingCandidateService;
         readonly ActorViewDataStore actorViewDataStore;
+        readonly InnEconomyState innEconomy;
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
         public GroundMap GroundMap { get; private set; }
         public Dungeon Dungeon { get; private set; }
-        public InnEconomyState InnEconomy { get; } = new();
+        public InnEconomyState InnEconomy => innEconomy;
         public IReadOnlyList<Actor> Actors => actors;
         public IReadOnlyList<ItemInstance> Items => items;
         public IReadOnlyList<ProjectileInstance> Projectiles => projectiles;
@@ -49,7 +50,8 @@ namespace DungeonInn.Application.World
             ActorSpatialIndexService actorSpatialIndexService,
             ItemSpatialIndexService itemSpatialIndexService,
             ActorProcessingCandidateService actorProcessingCandidateService,
-            ActorViewDataStore actorViewDataStore)
+            ActorViewDataStore actorViewDataStore,
+            InitialWorldSettings initialWorldSettings)
         {
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
@@ -59,6 +61,12 @@ namespace DungeonInn.Application.World
                 ?? throw new ArgumentNullException(nameof(actorProcessingCandidateService));
             this.actorViewDataStore = actorViewDataStore
                 ?? throw new ArgumentNullException(nameof(actorViewDataStore));
+            if (initialWorldSettings == null)
+            {
+                throw new ArgumentNullException(nameof(initialWorldSettings));
+            }
+
+            innEconomy = new InnEconomyState(initialWorldSettings.InnReputation);
         }
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)

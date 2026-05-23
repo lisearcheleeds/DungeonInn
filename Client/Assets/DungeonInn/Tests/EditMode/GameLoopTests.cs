@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -44,6 +44,9 @@ namespace DungeonInn.Tests.EditMode
 {
     public sealed class GameLoopTests
     {
+        static readonly InitialWorldSettings InitialWorld = InitialWorldSettings.CreateDefault();
+        static readonly ActorSimulationSettings ActorSimulation = ActorSimulationSettings.CreateDefault();
+
         [Test]
         public void GameClockReportsCompletedDayWhenDayBoundaryIsCrossed()
         {
@@ -195,14 +198,15 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new NoOpGameEventBus();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase()),
+                new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
                 new HardcodedMasterRepository(),
-                eventBus);
+                eventBus,
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
 
             var result = useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
-                        GameConstants.InitialDungeonSeed,
+                        InitialWorld.DungeonSeed,
                         System.Array.Empty<DungeonDepthBandConfig>()))
                 .GetAwaiter()
                 .GetResult();
@@ -216,9 +220,9 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.Inn), Is.True);
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.GeneralStore), Is.True);
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.EquipmentShop), Is.True);
-            Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, GameConstants.InitialGuildReserveGold) }), Is.True);
-            Assert.That(result.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore).Inventory.Gold, Is.EqualTo(GameConstants.InitialGeneralStoreGold));
-            Assert.That(result.Guild.Facilities.First(x => x.Type == FacilityType.EquipmentShop).Inventory.Gold, Is.EqualTo(GameConstants.InitialEquipmentShopGold));
+            Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, InitialWorld.GuildReserveGold) }), Is.True);
+            Assert.That(result.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore).Inventory.Gold, Is.EqualTo(InitialWorld.GeneralStoreGold));
+            Assert.That(result.Guild.Facilities.First(x => x.Type == FacilityType.EquipmentShop).Inventory.Gold, Is.EqualTo(InitialWorld.EquipmentShopGold));
         }
 
         [Test]
@@ -232,13 +236,14 @@ namespace DungeonInn.Tests.EditMode
             var navigationService = new ActorNavigationService(
                 new NoOpGameEventBus(),
                 new NoOpNavigationPathProvider());
-            var spatialIndex = new ActorSpatialIndexService();
+            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var actorViewDataStore = new ActorViewDataStore();
             var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
-                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
+                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
+                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
                 new UseDungeonStairOrchestrator(
-                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(), new NoOpEventPublisher())),
+                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
@@ -248,7 +253,8 @@ namespace DungeonInn.Tests.EditMode
                 new AdventurerExplorationStateService(new NoOpGameEventBus()),
                 spatialIndex,
                 actorViewDataStore,
-                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                DungeonInn.Application.World.ActorSimulationSettings.CreateDefault());
             var before = actor.Position;
 
             for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
@@ -266,7 +272,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateInitializedWorldState();
             var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(
-                new GenerateDungeonFloorUseCase(),
+                new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()),
                 new NoOpEventPublisher());
             var firstFloor = worldState.Dungeon.GetFloor(1);
             var secondFloor = floorGenerator.ExecuteAsync(
@@ -309,13 +315,14 @@ namespace DungeonInn.Tests.EditMode
             var navigationService = new ActorNavigationService(
                 new NoOpGameEventBus(),
                 new NoOpNavigationPathProvider());
-            var spatialIndex = new ActorSpatialIndexService();
+            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var actorViewDataStore = new ActorViewDataStore();
             var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
-                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
+                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
+                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
                 new UseDungeonStairOrchestrator(
-                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(), new NoOpEventPublisher())),
+                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
@@ -325,7 +332,8 @@ namespace DungeonInn.Tests.EditMode
                 new AdventurerExplorationStateService(new NoOpGameEventBus()),
                 spatialIndex,
                 actorViewDataStore,
-                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                DungeonInn.Application.World.ActorSimulationSettings.CreateDefault());
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
 
             for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
@@ -333,7 +341,7 @@ namespace DungeonInn.Tests.EditMode
                 useCase.ExecuteAsync(worldState, 10f).GetAwaiter().GetResult();
             }
 
-            Assert.That(behavior.ExplorationRoomArrivalCount, Is.EqualTo(GameConstants.AdventurerExplorationRoomArrivalTarget));
+            Assert.That(behavior.ExplorationRoomArrivalCount, Is.EqualTo(ActorSimulation.ExplorationRoomArrivalTarget));
             Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
         }
 
@@ -357,10 +365,27 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void GoingToDungeonAdventurerSnapsToEntranceBeforeUsingStair()
+        {
+            var worldState = CreateInitializedWorldState();
+            var entrance = worldState.GroundMap.Layer.GetCellCenter(worldState.GroundMap.DungeonEntrancePosition);
+            var actor = CreateAdventurer(
+                new LayerPosition(MapLayerId.Ground, entrance.X - 2.6f, entrance.Z),
+                AdventurerLifecycleState.GoingToDungeon);
+            worldState.RegisterActor(actor);
+
+            var useCase = CreateLifecycleUseCase();
+
+            useCase.ExecuteAsync(worldState, 0.1f).GetAwaiter().GetResult();
+
+            Assert.That(actor.Position.LayerId, Is.EqualTo(MapLayerId.DungeonFloor(1)));
+        }
+
+        [Test]
         public void ReturningAdventurerAscendsToPreviousFloorBeforeGround()
         {
             var worldState = CreateInitializedWorldState();
-            var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(), new NoOpEventPublisher());
+            var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()), new NoOpEventPublisher());
             var secondFloor = floorGenerator.ExecuteAsync(
                     worldState.Dungeon,
                     2,
@@ -410,7 +435,7 @@ namespace DungeonInn.Tests.EditMode
             var dungeon = new Dungeon(123);
             var eventPublisher = new CapturingEventPublisher();
             var orchestrator = new EnsureDungeonFloorGeneratedOrchestrator(
-                new GenerateDungeonFloorUseCase(),
+                new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()),
                 eventPublisher);
 
             orchestrator.ExecuteAsync(
@@ -482,6 +507,57 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void ActorNavigationServiceFallsBackWhenProviderPathCrossesBlockedGridCells()
+        {
+            var service = new ActorNavigationService(
+                new NoOpGameEventBus(),
+                new StaticNavigationPathProvider(new[] { new GridPosition(4, 1) }));
+            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 5, 3, 1f);
+            var actorId = Guid.NewGuid();
+            var walkability = new BlockedGridWalkability(new GridPosition(2, 1));
+
+            var state = service.GetOrComputePathState(
+                actorId,
+                layer,
+                walkability,
+                new GridPosition(0, 1),
+                new GridPosition(4, 1));
+
+            Assert.That(state.HasFailed, Is.False);
+            Assert.That(state.TryGetCurrentWaypoint(out var waypoint), Is.True);
+            Assert.That(waypoint, Is.EqualTo(new GridPosition(1, 1)));
+        }
+
+        [Test]
+        public void ActorNavigationServiceFallsBackWhenProviderPathContainsBlockedCell()
+        {
+            var providerPath = new[]
+            {
+                new GridPosition(1, 1),
+                new GridPosition(2, 1),
+                new GridPosition(3, 1),
+                new GridPosition(4, 1)
+            };
+            var service = new ActorNavigationService(
+                new NoOpGameEventBus(),
+                new StaticNavigationPathProvider(providerPath));
+            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 5, 3, 1f);
+            var actorId = Guid.NewGuid();
+            var walkability = new BlockedGridWalkability(new GridPosition(1, 1));
+
+            var state = service.GetOrComputePathState(
+                actorId,
+                layer,
+                walkability,
+                new GridPosition(0, 1),
+                new GridPosition(4, 1));
+
+            Assert.That(state.HasFailed, Is.False);
+            Assert.That(state.TryGetCurrentWaypoint(out var waypoint), Is.True);
+            Assert.That(waypoint, Is.EqualTo(new GridPosition(0, 0)));
+        }
+
+        [Test]
         public void ActorNavigationServiceRetriesFailedPathAfterRecheckInterval()
         {
             var service = new ActorNavigationService(
@@ -520,14 +596,15 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase()),
+                new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
                 new HardcodedMasterRepository(),
-                new NoOpGameEventBus());
+                new NoOpGameEventBus(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
-                        GameConstants.InitialDungeonSeed,
+                        InitialWorld.DungeonSeed,
                         Array.Empty<DungeonDepthBandConfig>()))
                 .GetAwaiter()
                 .GetResult();
@@ -538,10 +615,11 @@ namespace DungeonInn.Tests.EditMode
         static GameWorldState CreateWorldState()
         {
             return new GameWorldState(
-                new ActorSpatialIndexService(),
-                new ItemSpatialIndexService(),
+                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore());
+                new ActorViewDataStore(),
+                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
         static Actor CreateExploringAdventurer(LayerPosition position)
@@ -601,13 +679,14 @@ namespace DungeonInn.Tests.EditMode
             var navigationService = new ActorNavigationService(
                 new NoOpGameEventBus(),
                 new NoOpNavigationPathProvider());
-            var spatialIndex = new ActorSpatialIndexService();
+            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var actorViewDataStore = new ActorViewDataStore();
             return new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
-                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
+                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
+                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
                 new UseDungeonStairOrchestrator(
-                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(), new NoOpEventPublisher())),
+                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
@@ -617,7 +696,8 @@ namespace DungeonInn.Tests.EditMode
                 new AdventurerExplorationStateService(new NoOpGameEventBus()),
                 spatialIndex,
                 actorViewDataStore,
-                TestRuntimeServiceFactory.CreateActorProcessingCandidateService());
+                TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
+                DungeonInn.Application.World.ActorSimulationSettings.CreateDefault());
         }
 
         static SelectDungeonTargetFloorUseCase CreateSelectDungeonTargetFloorUseCase()
@@ -660,6 +740,39 @@ namespace DungeonInn.Tests.EditMode
             public bool IsWalkable(GridPosition position)
             {
                 return true;
+            }
+        }
+
+        sealed class BlockedGridWalkability : IGridWalkability
+        {
+            readonly GridPosition blockedPosition;
+
+            public BlockedGridWalkability(GridPosition blockedPosition)
+            {
+                this.blockedPosition = blockedPosition;
+            }
+
+            public bool IsWalkable(GridPosition position)
+            {
+                return !position.Equals(blockedPosition);
+            }
+        }
+
+        sealed class StaticNavigationPathProvider : INavigationPathProvider
+        {
+            readonly IReadOnlyList<GridPosition> path;
+
+            public StaticNavigationPathProvider(IReadOnlyList<GridPosition> path)
+            {
+                this.path = path;
+            }
+
+            public IReadOnlyList<GridPosition> TryFindPath(
+                MapLayerId layerId,
+                GridPosition start,
+                GridPosition goal)
+            {
+                return path;
             }
         }
 

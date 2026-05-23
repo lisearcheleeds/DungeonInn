@@ -127,6 +127,72 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(changes.RemovedActorIds[0], Is.EqualTo(actor.Id));
         }
 
+        [Test]
+        public void ActorViewDataStoreConsumesStatusRemoval()
+        {
+            var store = new ActorViewDataStore();
+            var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f));
+
+            store.SyncActor(actor);
+            store.ConsumeRemovedActorIds();
+            store.RemoveActor(actor.Id);
+            var removedIds = store.ConsumeRemovedActorIds();
+
+            Assert.That(removedIds.Count, Is.EqualTo(1));
+            Assert.That(removedIds[0], Is.EqualTo(actor.Id));
+            Assert.That(store.ConsumeRemovedActorIds(), Is.Empty);
+        }
+
+        [Test]
+        public void GetActorStatusSummaryQueryReturnsClampedHpAndActiveEffectsOnly()
+        {
+            var repository = new HardcodedMasterRepository();
+            var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f));
+            actor.ReceiveDamage(999);
+            actor.AddActorEffect(repository.GetActorEffectMaster(1));
+            actor.ActorEffects[0].Advance(999f);
+            actor.ActorEffects[0].StatusEffects[0].Advance(999f);
+            var worldState = new ActorStatusWorldState(actor);
+            var query = new GetActorStatusSummaryQuery(worldState, repository);
+
+            var statusData = query.Query(actor.Id);
+
+            Assert.That(statusData.HasValue, Is.True);
+            Assert.That(statusData.Value.ActorId, Is.EqualTo(actor.Id));
+            Assert.That(statusData.Value.HpRatio, Is.EqualTo(0f));
+            Assert.That(statusData.Value.ActiveEffects, Is.Empty);
+        }
+
+        [Test]
+        public void GetActorStatusSummaryQueryReturnsNullForMissingActor()
+        {
+            var query = new GetActorStatusSummaryQuery(
+                new ActorStatusWorldState(null),
+                new HardcodedMasterRepository());
+
+            Assert.That(query.Query(Guid.NewGuid()).HasValue, Is.False);
+        }
+
+        [Test]
+        public void GetActorStatusSummaryQueryRefreshesCachedEffectRemainingSeconds()
+        {
+            var repository = new HardcodedMasterRepository();
+            var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f));
+            actor.AddActorEffect(repository.GetActorEffectMaster(1));
+            var worldState = new ActorStatusWorldState(actor);
+            var query = new GetActorStatusSummaryQuery(worldState, repository);
+
+            var first = query.Query(actor.Id);
+            actor.ActorEffects[0].Advance(2.1f);
+            var second = query.Query(actor.Id);
+
+            Assert.That(first.HasValue, Is.True);
+            Assert.That(second.HasValue, Is.True);
+            Assert.That(
+                first.Value.ActiveEffects[0].RemainingSeconds,
+                Is.GreaterThan(second.Value.ActiveEffects[0].RemainingSeconds));
+        }
+
         [TestCaseSource(nameof(ActorBehaviorTypeCases))]
         public void ActorViewDataStoreMapsBehaviorToViewBehaviorType(
             IActorBehavior behavior,
@@ -199,9 +265,14 @@ namespace DungeonInn.Tests.EditMode
             var prefabSource = new ActorPrefabSource(null);
             var pool = new WorldActorViewPool(prefabSource);
             var registry = new WorldActorViewRegistry(pool, layerRegistry);
+            var cameraObject = new GameObject("WorldActorPresenterBillboardCamera");
+            var camera = cameraObject.AddComponent<Camera>();
+            var cameraController = new WorldCameraController(CreateWorldCameraSettingsForPresenterTest());
+            cameraController.BindCamera(camera);
+            cameraController.UpdateCamera(0f);
             var loader = new VisualConfigLoader(
                 new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null, null));
+                new VisualConfigSettings(null, null));
             var actorSpriteVisualConfig = new ActorSpriteVisualConfig(loader);
             var presenter = new WorldActorPresenter(
                 new FixedActorViewDataProvider(
@@ -209,7 +280,8 @@ namespace DungeonInn.Tests.EditMode
                 new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
                 registry,
                 actorSpriteVisualConfig,
-                new WorldCameraController(CreateWorldCameraSettings()));
+                cameraController,
+                new ActorCombatAnimationPresenter(TestEventSubscriber.Instance));
 
             try
             {
@@ -224,9 +296,13 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(actorView.transform.localPosition.x, Is.EqualTo(2f).Within(0.0001f));
                 Assert.That(actorView.transform.localPosition.y, Is.EqualTo(0.75f).Within(0.0001f));
                 Assert.That(actorView.transform.localPosition.z, Is.EqualTo(3f).Within(0.0001f));
+                Assert.That(
+                    Quaternion.Angle(actorView.transform.rotation, Quaternion.Euler(45f, 45f, 0f)),
+                    Is.LessThan(0.0001f));
             }
             finally
             {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
                 registry.Dispose();
                 pool.Dispose();
                 prefabSource.Dispose();
@@ -245,15 +321,18 @@ namespace DungeonInn.Tests.EditMode
             var layerRegistry = new MapLayerViewRegistry(viewRoot);
             var loader = new VisualConfigLoader(
                 new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null, null));
+                new VisualConfigSettings(null, null));
             var materialSet = new MapMaterialSet(loader);
             var tileConfig = new MapTileVisualConfig(materialSet);
             var mapView = new WorldMapView(
                 provider,
                 layerRegistry,
-                new MapMeshBuildService(tileConfig, materialSet),
+                new MapMeshBuildService(tileConfig, materialSet, DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault()),
                 new NavMeshBuildService(layerRegistry),
-                new EnvironmentObjectPlacer(new VisualConfigSettings(null, null, null)));
+                new EnvironmentObjectPlacer(
+                    new WorldAddressableViewFactory(new ThrowingAssetManager(), new HardcodedMasterRepository()),
+                    new HardcodedMasterRepository()),
+                DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault());
 
             try
             {
@@ -286,7 +365,13 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void EnvironmentObjectPlacerInvalidatesPropsByLayer()
         {
-            var placer = new EnvironmentObjectPlacer(new VisualConfigSettings(null, null, null));
+            var loader = new VisualConfigLoader(
+                new ThrowingAssetManager(),
+                new VisualConfigSettings(null, null));
+            var masterRepository = new HardcodedMasterRepository();
+            var placer = new EnvironmentObjectPlacer(
+                new WorldAddressableViewFactory(new ThrowingAssetManager(), masterRepository),
+                masterRepository);
             var groundRoot = new GameObject("GroundPropRoot");
             var dungeonRoot = new GameObject("DungeonPropRoot");
 
@@ -316,8 +401,103 @@ namespace DungeonInn.Tests.EditMode
             finally
             {
                 placer.Dispose();
+                loader.Dispose();
                 UnityEngine.Object.DestroyImmediate(groundRoot);
                 UnityEngine.Object.DestroyImmediate(dungeonRoot);
+            }
+        }
+
+        [Test]
+        public void ActorStatusPresenterShowsHudOnlyForActiveLayerActors()
+        {
+            var groundActor = CreateActor(new LayerPosition(MapLayerId.Ground, 1f, 1f));
+            var dungeonActor = CreateActor(new LayerPosition(MapLayerId.DungeonFloor(1), 1f, 1f));
+            var store = new ActorViewDataStore();
+            store.SyncActor(groundActor);
+            store.SyncActor(dungeonActor);
+            var worldState = new ActorStatusWorldState(groundActor, dungeonActor);
+            var viewRoot = new WorldViewRoot();
+            var layerRegistry = new MapLayerViewRegistry(viewRoot);
+            var canvasProvider = new WorldHudCanvasProvider();
+            var viewFactory = new WorldAddressableViewFactory(
+                new ThrowingAssetManager(),
+                new HardcodedMasterRepository());
+            var pool = new ActorHUDViewPool(viewFactory, canvasProvider);
+            var presenter = new WorldActorStatusPresenter(
+                store,
+                new GetActorStatusSummaryQuery(worldState, new HardcodedMasterRepository()),
+                pool,
+                new WorldCameraController(CreateWorldCameraSettings()),
+                new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
+                layerRegistry);
+
+            try
+            {
+                LogAssert.Expect(
+                    LogType.Warning,
+                    "[World] WorldUIModuleScene.HUDCanvas was not found. Using a fallback HUD canvas for development/test execution.");
+                canvasProvider.Initialize();
+                layerRegistry.GetOrCreateActorRoot(MapLayerId.Ground);
+                layerRegistry.GetOrCreateActorRoot(MapLayerId.DungeonFloor(1));
+
+                presenter.UpdatePositions();
+
+                Assert.That(pool.TryGetActive(groundActor.Id, out _), Is.True);
+                Assert.That(pool.TryGetActive(dungeonActor.Id, out _), Is.False);
+
+                layerRegistry.SelectNextLayer();
+                presenter.UpdatePositions();
+
+                Assert.That(pool.TryGetActive(groundActor.Id, out _), Is.False);
+                Assert.That(pool.TryGetActive(dungeonActor.Id, out _), Is.True);
+            }
+            finally
+            {
+                pool.Dispose();
+                canvasProvider.Dispose();
+                layerRegistry.Dispose();
+                viewRoot.Dispose();
+            }
+        }
+
+        [Test]
+        public void ActorCameraFollowControllerSelectsLayerWhenSelectedActorChangesFloor()
+        {
+            var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 1f, 1f));
+            var worldState = new ActorStatusWorldState(actor);
+            var selectionService = new ActorSelectionService(worldState);
+            var viewRoot = new WorldViewRoot();
+            var layerRegistry = new MapLayerViewRegistry(viewRoot);
+            var cameraController = new WorldCameraController(CreateWorldCameraSettings());
+            var followController = new WorldActorCameraFollowController(
+                selectionService,
+                cameraController,
+                CreateWorldCameraSettings(),
+                worldState,
+                new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
+                layerRegistry);
+
+            try
+            {
+                layerRegistry.GetOrCreateActorRoot(MapLayerId.Ground);
+                layerRegistry.GetOrCreateActorRoot(MapLayerId.DungeonFloor(1));
+                followController.Initialize();
+
+                selectionService.Select(actor.Id);
+                followController.UpdateFollowPosition();
+
+                Assert.That(layerRegistry.ActiveLayerId, Is.EqualTo(MapLayerId.Ground));
+
+                actor.MoveTo(new LayerPosition(MapLayerId.DungeonFloor(1), 2f, 2f));
+                followController.UpdateFollowPosition();
+
+                Assert.That(layerRegistry.ActiveLayerId, Is.EqualTo(MapLayerId.DungeonFloor(1)));
+            }
+            finally
+            {
+                followController.Dispose();
+                layerRegistry.Dispose();
+                viewRoot.Dispose();
             }
         }
 
@@ -442,7 +622,24 @@ namespace DungeonInn.Tests.EditMode
                 zoomSensitivity: 0.02f,
                 minOrthographicSize: 12f,
                 maxOrthographicSize: 120f,
-                actorViewportMargin: 0.08f);
+                actorViewportMargin: 0.08f,
+                actorSelectionZoomRatio: 0.2f);
+        }
+
+        static WorldCameraSettings CreateWorldCameraSettingsForPresenterTest()
+        {
+            return new WorldCameraSettings(
+                new Vector3(-10f, 10f, -10f),
+                initialPitchDegrees: 45f,
+                initialYawDegrees: 45f,
+                initialOrthographicSize: 48f,
+                moveSpeed: 32f,
+                rotationSensitivity: 0.2f,
+                zoomSensitivity: 0.02f,
+                minOrthographicSize: 12f,
+                maxOrthographicSize: 120f,
+                actorViewportMargin: 0.08f,
+                actorSelectionZoomRatio: 0.2f);
         }
 
         sealed class TestWorldState : IGameWorldStateReader
@@ -467,6 +664,39 @@ namespace DungeonInn.Tests.EditMode
             public Actor FindActor(Guid actorId)
             {
                 return null;
+            }
+        }
+
+        sealed class ActorStatusWorldState : IGameWorldStateReader
+        {
+            readonly IReadOnlyList<Actor> actors;
+            readonly Dictionary<Guid, Actor> actorsById = new();
+
+            public ActorStatusWorldState(params Actor[] actors)
+            {
+                this.actors = actors == null
+                    ? Array.Empty<Actor>()
+                    : actors.Where(actor => actor != null).ToArray();
+                foreach (var actor in this.actors)
+                {
+                    actorsById.Add(actor.Id, actor);
+                }
+            }
+
+            public bool IsInitialized => true;
+            public AdventurerGuild Guild => null;
+            public GroundMap GroundMap => null;
+            public Dungeon Dungeon => null;
+            public InnEconomyState InnEconomy { get; } = new();
+            public IReadOnlyList<Actor> Actors => actors;
+            public IReadOnlyList<ItemInstance> Items => Array.Empty<ItemInstance>();
+            public IReadOnlyList<ProjectileInstance> Projectiles => Array.Empty<ProjectileInstance>();
+            public IReadOnlyList<AreaEffectInstance> AreaEffects => Array.Empty<AreaEffectInstance>();
+            public SpawnScheduleState SpawnSchedule { get; } = new();
+
+            public Actor FindActor(Guid actorId)
+            {
+                return actorsById.TryGetValue(actorId, out var actor) ? actor : null;
             }
         }
 

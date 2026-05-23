@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using DungeonInn.Domain.Common;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Map;
+using VContainer;
 
 namespace DungeonInn.Application.Combat
 {
@@ -11,9 +12,17 @@ namespace DungeonInn.Application.Combat
         readonly Dictionary<SpatialCellKey, List<Actor>> actorsByCell = new();
         readonly Dictionary<Guid, SpatialCellKey> cellByActorId = new();
         readonly HashSet<Guid> dirtyActorIds = new();
+        readonly CombatBalanceSettings combatBalanceSettings;
 
         public int DirtyActorCount => dirtyActorIds.Count;
         public int Revision { get; private set; }
+
+        [Inject]
+        public ActorSpatialIndexService(CombatBalanceSettings combatBalanceSettings)
+        {
+            this.combatBalanceSettings = combatBalanceSettings
+                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
+        }
 
         public void SyncActor(Actor actor)
         {
@@ -31,7 +40,7 @@ namespace DungeonInn.Application.Combat
                 return;
             }
 
-            var nextCell = SpatialCellKey.From(actor.Position);
+            var nextCell = SpatialCellKey.From(actor.Position, combatBalanceSettings.SpatialIndexCellSizeMeters);
             if (cellByActorId.TryGetValue(actor.Id, out var currentCell) && currentCell.Equals(nextCell))
             {
                 return;
@@ -71,7 +80,7 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentOutOfRangeException(nameof(neighborCellRadius));
             }
 
-            var centerCell = SpatialCellKey.From(position);
+            var centerCell = SpatialCellKey.From(position, combatBalanceSettings.SpatialIndexCellSizeMeters);
             for (var z = centerCell.Z - neighborCellRadius; z <= centerCell.Z + neighborCellRadius; z++)
             {
                 for (var x = centerCell.X - neighborCellRadius; x <= centerCell.X + neighborCellRadius; x++)
@@ -148,12 +157,12 @@ namespace DungeonInn.Application.Combat
                 Z = z;
             }
 
-            public static SpatialCellKey From(LayerPosition position)
+            public static SpatialCellKey From(LayerPosition position, float cellSizeMeters)
             {
                 return new SpatialCellKey(
                     position.LayerId.Value,
-                    (int)Math.Floor(position.X / GameConstants.ActorSpatialIndexCellSizeMeters),
-                    (int)Math.Floor(position.Z / GameConstants.ActorSpatialIndexCellSizeMeters));
+                    (int)Math.Floor(position.X / cellSizeMeters),
+                    (int)Math.Floor(position.Z / cellSizeMeters));
             }
 
             public bool Equals(SpatialCellKey other)

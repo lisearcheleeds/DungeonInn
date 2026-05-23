@@ -15,6 +15,7 @@ namespace DungeonInn.Domain.Combat
         public CombatEffectExecutionId ExecutionId { get; }
         public int Damage { get; }
         public float SpeedMetersPerSecond { get; }
+        public string PrefabAddress { get; }
         public float RemainingDistanceMeters { get; private set; }
 
         public ProjectileInstance(
@@ -25,7 +26,8 @@ namespace DungeonInn.Domain.Combat
             LayerPosition targetPosition,
             int damage,
             float speedMetersPerSecond,
-            float maxDistanceMeters)
+            float maxDistanceMeters,
+            string prefabAddress = "")
             : this(
                 id,
                 attackerActorId,
@@ -37,7 +39,8 @@ namespace DungeonInn.Domain.Combat
                 CombatEffectExecutionId.New(),
                 damage,
                 speedMetersPerSecond,
-                maxDistanceMeters)
+                maxDistanceMeters,
+                prefabAddress)
         {
         }
 
@@ -52,7 +55,8 @@ namespace DungeonInn.Domain.Combat
             CombatEffectExecutionId executionId,
             int damage,
             float speedMetersPerSecond,
-            float maxDistanceMeters)
+            float maxDistanceMeters,
+            string prefabAddress = "")
         {
             if (!position.LayerId.Equals(targetPosition.LayerId))
             {
@@ -69,6 +73,7 @@ namespace DungeonInn.Domain.Combat
             ExecutionId = executionId;
             Damage = Math.Max(0, damage);
             SpeedMetersPerSecond = Math.Max(0, speedMetersPerSecond);
+            PrefabAddress = prefabAddress ?? string.Empty;
             RemainingDistanceMeters = Math.Max(0, maxDistanceMeters);
         }
 

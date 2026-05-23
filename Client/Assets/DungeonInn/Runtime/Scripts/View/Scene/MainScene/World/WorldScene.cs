@@ -27,6 +27,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         WorldCameraController worldCameraController;
         WorldCameraSettings worldCameraSettings;
         WorldLayerViewController worldLayerViewController;
+        WorldActorSelectionInputHandler worldActorSelectionInputHandler;
         WorldSceneCamera worldSceneCamera;
 
         public override MainSceneId MainSceneId => DungeonInnMainSceneId.World;
@@ -46,7 +47,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
             WorldCameraController worldCameraController,
             WorldCameraSettings worldCameraSettings,
-            WorldLayerViewController worldLayerViewController)
+            WorldLayerViewController worldLayerViewController,
+            WorldActorSelectionInputHandler worldActorSelectionInputHandler)
         {
             ConstructInputLayer(sceneManager, inputLayerController, inputActions);
             this.worldPresenter = worldPresenter;
@@ -55,6 +57,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.worldCameraController = worldCameraController;
             this.worldCameraSettings = worldCameraSettings;
             this.worldLayerViewController = worldLayerViewController;
+            this.worldActorSelectionInputHandler = worldActorSelectionInputHandler;
         }
 
         public override ISceneCamera[] GetSceneCameraList()
@@ -70,7 +73,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                 toggleGamePauseUseCase,
                 getInnEconomyStatusUseCase,
                 worldCameraController,
-                worldLayerViewController);
+                worldLayerViewController,
+                worldActorSelectionInputHandler);
         }
 
         protected override InputActionMap GetInputLayerActionMap(InputActions inputActions)

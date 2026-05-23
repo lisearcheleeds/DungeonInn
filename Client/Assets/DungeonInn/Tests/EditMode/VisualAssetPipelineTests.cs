@@ -22,6 +22,7 @@ namespace DungeonInn.Tests.EditMode
         const string ActorSpriteVisualConfigPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorSpriteVisualConfig.asset";
         const string LayerPositionViewSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/LayerPositionViewSettings.asset";
         const string WorldCameraSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/WorldCameraSettings.asset";
+        const string WorldGameSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/WorldGameSettings.asset";
         const string AddressablesGroupName = "DungeonInn Visual";
 
         [Test]
@@ -80,25 +81,46 @@ namespace DungeonInn.Tests.EditMode
         {
             var layerSettingsSo = AssetDatabase.LoadAssetAtPath<LayerPositionViewSettingsSO>(LayerPositionViewSettingsPath);
             var cameraSettingsSo = AssetDatabase.LoadAssetAtPath<WorldCameraSettingsSO>(WorldCameraSettingsPath);
+            var gameSettingsSo = AssetDatabase.LoadAssetAtPath<WorldGameSettingsSO>(WorldGameSettingsPath);
 
             Assert.That(layerSettingsSo, Is.Not.Null);
             Assert.That(cameraSettingsSo, Is.Not.Null);
+            Assert.That(gameSettingsSo, Is.Not.Null);
 
             var layerSettings = layerSettingsSo.ToSettings();
             var cameraSettings = cameraSettingsSo.ToSettings();
+            var groundMapSettings = gameSettingsSo.ToGroundMapGenerationSettings();
+            var dungeonMapSettings = gameSettingsSo.ToDungeonMapGenerationSettings();
+            var initialWorldSettings = gameSettingsSo.ToInitialWorldSettings();
+            var innBalanceSettings = gameSettingsSo.ToInnBalanceSettings();
+            var actorSimulationSettings = gameSettingsSo.ToActorSimulationSettings();
+            var spawnBalanceSettings = gameSettingsSo.ToSpawnBalanceSettings();
+            var returnPolicySettings = gameSettingsSo.ToAdventurerReturnPolicySettings();
+            var combatBalanceSettings = gameSettingsSo.ToCombatBalanceSettings();
+            var worldMapViewSettings = gameSettingsSo.ToWorldMapViewSettings();
 
             Assert.That(layerSettings.LayerHeightOffset, Is.EqualTo(-240f));
             Assert.That(layerSettings.ActorHeightOffset, Is.EqualTo(0f));
             Assert.That(cameraSettings.InitialPosition, Is.EqualTo(new Vector3(64f, 80f, -64f)));
             Assert.That(cameraSettings.InitialPitchDegrees, Is.EqualTo(45f));
             Assert.That(cameraSettings.InitialYawDegrees, Is.EqualTo(45f));
-            Assert.That(cameraSettings.InitialOrthographicSize, Is.EqualTo(48f));
+            Assert.That(cameraSettings.InitialOrthographicSize, Is.EqualTo(24f));
             Assert.That(cameraSettings.MoveSpeed, Is.EqualTo(32f));
             Assert.That(cameraSettings.RotationSensitivity, Is.EqualTo(0.2f));
             Assert.That(cameraSettings.ZoomSensitivity, Is.EqualTo(0.02f));
             Assert.That(cameraSettings.MinOrthographicSize, Is.EqualTo(12f));
             Assert.That(cameraSettings.MaxOrthographicSize, Is.EqualTo(120f));
             Assert.That(cameraSettings.ActorViewportMargin, Is.EqualTo(0.08f));
+            Assert.That(cameraSettings.ActorSelectionZoomRatio, Is.EqualTo(0.2f));
+            Assert.That(groundMapSettings.Width, Is.EqualTo(30));
+            Assert.That(dungeonMapSettings.FloorWidth, Is.EqualTo(50));
+            Assert.That(initialWorldSettings.DungeonSeed, Is.EqualTo(12345));
+            Assert.That(innBalanceSettings.FeePerStay, Is.EqualTo(10));
+            Assert.That(actorSimulationSettings.MoveSpeedMetersPerSecond, Is.EqualTo(5f));
+            Assert.That(spawnBalanceSettings.MaxAdventurerCount, Is.EqualTo(8));
+            Assert.That(returnPolicySettings.GoalCompletedScore, Is.EqualTo(100));
+            Assert.That(combatBalanceSettings.ProjectileHitRadiusMeters, Is.EqualTo(0.5f));
+            Assert.That(worldMapViewSettings.ChunkTileSize, Is.EqualTo(16));
         }
 
         [Test]
@@ -116,7 +138,8 @@ namespace DungeonInn.Tests.EditMode
                 zoomSensitivity: 1f,
                 minOrthographicSize: 5f,
                 maxOrthographicSize: 40f,
-                actorViewportMargin: 0.25f);
+                actorViewportMargin: 0.25f,
+                actorSelectionZoomRatio: 0.2f);
             var controller = new WorldCameraController(settings);
 
             try
@@ -135,6 +158,9 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(camera.transform.eulerAngles.z, Is.EqualTo(0f).Within(0.0001f));
                 Assert.That(camera.orthographicSize, Is.EqualTo(22f));
                 Assert.That(controller.CurrentYawDegrees, Is.EqualTo(77f));
+                Assert.That(
+                    Quaternion.Angle(controller.CurrentCameraRotation, Quaternion.Euler(33f, 77f, 0f)),
+                    Is.LessThan(0.0001f));
                 Assert.That(controller.ActorViewportMargin, Is.EqualTo(0.25f));
             }
             finally
@@ -158,7 +184,8 @@ namespace DungeonInn.Tests.EditMode
                 zoomSensitivity: 1f,
                 minOrthographicSize: 1f,
                 maxOrthographicSize: 10f,
-                actorViewportMargin: 0.1f);
+                actorViewportMargin: 0.1f,
+                actorSelectionZoomRatio: 0.2f);
             var controller = new WorldCameraController(settings);
 
             try
@@ -170,6 +197,85 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(controller.IsWorldPositionVisible(new Vector3(0f, 0f, 5f), 0f), Is.True);
                 Assert.That(controller.IsWorldPositionVisible(new Vector3(100f, 0f, 5f), 0f), Is.False);
                 Assert.That(controller.IsWorldPositionVisible(new Vector3(0f, 0f, -5f), 0f), Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+            }
+        }
+
+        [Test]
+        public void WorldCameraControllerKeepsGroundFocusWhenRotating()
+        {
+            var cameraObject = new GameObject("WorldCameraControllerKeepsGroundFocusWhenRotating");
+            var camera = cameraObject.AddComponent<Camera>();
+            var settings = new WorldCameraSettings(
+                new Vector3(0f, 10f, -10f),
+                initialPitchDegrees: 45f,
+                initialYawDegrees: 0f,
+                initialOrthographicSize: 10f,
+                moveSpeed: 1f,
+                rotationSensitivity: 1f,
+                zoomSensitivity: 1f,
+                minOrthographicSize: 1f,
+                maxOrthographicSize: 20f,
+                actorViewportMargin: 0.1f,
+                actorSelectionZoomRatio: 0.2f);
+            var controller = new WorldCameraController(settings);
+
+            try
+            {
+                controller.BindCamera(camera);
+                controller.UpdateCamera(0f);
+                var beforeFocus = ResolveGroundCenterFocus(camera);
+
+                controller.SetRotating(true);
+                controller.AddLookDelta(new Vector2(90f, 0f));
+                controller.UpdateCamera(1f / 60f);
+
+                var afterFocus = ResolveGroundCenterFocus(camera);
+                Assert.That(afterFocus.x, Is.EqualTo(beforeFocus.x).Within(0.0001f));
+                Assert.That(afterFocus.z, Is.EqualTo(beforeFocus.z).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+            }
+        }
+
+        [Test]
+        public void WorldCameraControllerFollowsActorByMovingGroundFocus()
+        {
+            var cameraObject = new GameObject("WorldCameraControllerFollowsActorByMovingGroundFocus");
+            var camera = cameraObject.AddComponent<Camera>();
+            var settings = new WorldCameraSettings(
+                new Vector3(0f, 10f, -10f),
+                initialPitchDegrees: 45f,
+                initialYawDegrees: 0f,
+                initialOrthographicSize: 10f,
+                moveSpeed: 1f,
+                rotationSensitivity: 1f,
+                zoomSensitivity: 1f,
+                minOrthographicSize: 1f,
+                maxOrthographicSize: 20f,
+                actorViewportMargin: 0.1f,
+                actorSelectionZoomRatio: 0.2f);
+            var controller = new WorldCameraController(settings);
+
+            try
+            {
+                var actorPosition = new Vector3(5f, 0f, 5f);
+
+                controller.BindCamera(camera);
+                controller.UpdateCamera(0f);
+                controller.BeginFollow(0.5f);
+                controller.UpdateFollowPosition(actorPosition);
+                controller.UpdateCamera(1f);
+
+                var focus = ResolveGroundCenterFocus(camera);
+                Assert.That(focus.x, Is.EqualTo(actorPosition.x).Within(0.0001f));
+                Assert.That(focus.z, Is.EqualTo(actorPosition.z).Within(0.0001f));
+                Assert.That(Vector3.Distance(camera.transform.position, actorPosition), Is.GreaterThan(5f));
             }
             finally
             {
@@ -263,6 +369,25 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void ActorViewAppliesFullBillboardRotation()
+        {
+            var gameObject = new GameObject("ActorViewBillboardRotationTest");
+            var actorView = gameObject.AddComponent<ActorView>();
+            var rotation = Quaternion.Euler(45f, 77f, 0f);
+
+            try
+            {
+                actorView.SetBillboardRotation(rotation);
+
+                Assert.That(Quaternion.Angle(actorView.transform.rotation, rotation), Is.LessThan(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
         public void ActorViewKeepsScaleStableWhenSameVisualValuesAreAppliedRepeatedly()
         {
             var gameObject = new GameObject("ActorViewRepeatedVisualUpdateTest");
@@ -298,7 +423,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var loader = new VisualConfigLoader(
                 new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null, null));
+                new VisualConfigSettings(null, null));
             var config = new ActorSpriteVisualConfig(loader);
 
             try
@@ -327,7 +452,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var loader = new VisualConfigLoader(
                 new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null, null));
+                new VisualConfigSettings(null, null));
             var materialSet = new MapMaterialSet(loader);
 
             try
@@ -357,10 +482,10 @@ namespace DungeonInn.Tests.EditMode
         {
             var loader = new VisualConfigLoader(
                 new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null, null));
+                new VisualConfigSettings(null, null));
             var materialSet = new MapMaterialSet(loader);
             var tileConfig = new MapTileVisualConfig(materialSet);
-            var service = new MapMeshBuildService(tileConfig, materialSet);
+            var service = new MapMeshBuildService(tileConfig, materialSet, DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault());
 
             LogAssert.Expect(
                 LogType.Warning,
@@ -393,10 +518,10 @@ namespace DungeonInn.Tests.EditMode
         {
             var loader = new VisualConfigLoader(
                 new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null, null));
+                new VisualConfigSettings(null, null));
             var materialSet = new MapMaterialSet(loader);
             var tileConfig = new MapTileVisualConfig(materialSet);
-            var service = new MapMeshBuildService(tileConfig, materialSet);
+            var service = new MapMeshBuildService(tileConfig, materialSet, DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault());
 
             LogAssert.Expect(
                 LogType.Warning,
@@ -413,7 +538,7 @@ namespace DungeonInn.Tests.EditMode
             try
             {
                 Assert.That(chunkMesh.Mesh.bounds.size.x, Is.EqualTo(GameConstants.MapCellWidthMeters).Within(0.0001f));
-                Assert.That(chunkMesh.Mesh.bounds.size.y, Is.EqualTo(GameConstants.MapTileHeightMeters).Within(0.0001f));
+                Assert.That(chunkMesh.Mesh.bounds.size.y, Is.EqualTo(WorldMapViewSettings.CreateDefault().TileHeightMeters).Within(0.0001f));
                 Assert.That(chunkMesh.Mesh.bounds.size.z, Is.EqualTo(GameConstants.MapCellWidthMeters).Within(0.0001f));
             }
             finally
@@ -422,6 +547,13 @@ namespace DungeonInn.Tests.EditMode
                 materialSet.Dispose();
                 loader.Dispose();
             }
+        }
+
+        static Vector3 ResolveGroundCenterFocus(Camera camera)
+        {
+            var ray = new Ray(camera.transform.position, camera.transform.forward);
+            var distance = -ray.origin.y / ray.direction.y;
+            return ray.origin + ray.direction * distance;
         }
 
         sealed class ThrowingAssetManager : IAssetManager

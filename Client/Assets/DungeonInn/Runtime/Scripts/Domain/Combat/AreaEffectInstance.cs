@@ -20,6 +20,7 @@ namespace DungeonInn.Domain.Combat
         public AttackAreaSpec AreaSpec { get; }
         public double HalfAngleCos { get; }
         public int Damage { get; }
+        public string PrefabAddress { get; }
         public float RemainingDurationSeconds { get; private set; }
         public IReadOnlyCollection<Guid> HitActorIds => hitActorIds;
 
@@ -29,7 +30,8 @@ namespace DungeonInn.Domain.Combat
             int sourceFactionId,
             LayerPosition centerPosition,
             AttackAreaSpec areaSpec,
-            int damage)
+            int damage,
+            string prefabAddress = "")
             : this(
                 id,
                 attackerActorId,
@@ -39,7 +41,8 @@ namespace DungeonInn.Domain.Combat
                 0,
                 CombatEffectExecutionId.New(),
                 areaSpec,
-                damage)
+                damage,
+                prefabAddress)
         {
         }
 
@@ -52,7 +55,8 @@ namespace DungeonInn.Domain.Combat
             int sourceNodeId,
             CombatEffectExecutionId executionId,
             AttackAreaSpec areaSpec,
-            int damage)
+            int damage,
+            string prefabAddress = "")
         {
             Id = id;
             AttackerActorId = attackerActorId;
@@ -64,6 +68,9 @@ namespace DungeonInn.Domain.Combat
             AreaSpec = areaSpec ?? throw new ArgumentNullException(nameof(areaSpec));
             HalfAngleCos = CalculateHalfAngleCos(areaSpec);
             Damage = Math.Max(0, damage);
+            PrefabAddress = string.IsNullOrWhiteSpace(prefabAddress)
+                ? areaSpec.PrefabAddress
+                : prefabAddress;
             RemainingDurationSeconds = areaSpec.DurationType == AttackAreaDurationType.Duration
                 ? Math.Max(0, areaSpec.DurationTicks)
                 : 0f;

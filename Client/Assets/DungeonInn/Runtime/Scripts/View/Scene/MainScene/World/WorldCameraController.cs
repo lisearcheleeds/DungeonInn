@@ -6,6 +6,12 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldCameraController
     {
+        const float FollowPositionLerpSpeed = 8f;
+        const float ZoomLerpSpeed = 5f;
+        const float FocusPlaneY = 0f;
+        const float MinimumFocusDistance = 0.01f;
+        const float FocusPlaneDirectionEpsilon = 0.0001f;
+
         readonly WorldCameraSettings settings;
 
         Camera camera;
@@ -16,8 +22,15 @@ namespace DungeonInn.View.Scene.MainScene.World
         Vector2 zoomDelta;
         float yawDegrees;
         float pitchDegrees;
+        bool isFollowing;
+        Vector3 followTargetPosition;
+        bool hasTargetOrthographicSize;
+        float targetOrthographicSize;
+        Vector3 focusPoint;
+        float focusDistance;
 
         public float CurrentYawDegrees => yawDegrees;
+        public Quaternion CurrentCameraRotation => camera != null ? camera.transform.rotation : Quaternion.identity;
         public float ActorViewportMargin => settings.ActorViewportMargin;
 
         [Inject]
@@ -52,6 +65,25 @@ namespace DungeonInn.View.Scene.MainScene.World
             zoomDelta += value;
         }
 
+        public void BeginFollow(float zoomRatio)
+        {
+            isFollowing = true;
+            hasTargetOrthographicSize = true;
+            targetOrthographicSize = settings.InitialOrthographicSize * zoomRatio;
+        }
+
+        public void UpdateFollowPosition(Vector3 worldPosition)
+        {
+            followTargetPosition = worldPosition;
+        }
+
+        public void EndFollow()
+        {
+            isFollowing = false;
+            hasTargetOrthographicSize = true;
+            targetOrthographicSize = settings.InitialOrthographicSize;
+        }
+
         public void ResetInputState()
         {
             moveInput = Vector2.zero;
@@ -72,10 +104,15 @@ namespace DungeonInn.View.Scene.MainScene.World
                 InitializeCamera(camera);
             }
 
-            UpdateRotation();
-            UpdatePosition(camera, deltaSeconds);
-            UpdateZoom(camera);
+            var rotationChanged = UpdateRotation();
             ApplyRotation(camera);
+            var focusChanged = UpdateFocusPoint(deltaSeconds);
+            if (rotationChanged || focusChanged)
+            {
+                ApplyCameraPosition(camera);
+            }
+
+            UpdateZoom(camera, deltaSeconds);
         }
 
         public bool IsWorldPositionVisible(Vector3 worldPosition, float viewportMargin)
@@ -93,6 +130,16 @@ namespace DungeonInn.View.Scene.MainScene.World
                 viewportPosition.y <= 1f + viewportMargin;
         }
 
+        public Vector3 WorldToScreenPoint(Vector3 worldPosition)
+        {
+            if (camera == null)
+            {
+                return Vector3.zero;
+            }
+
+            return camera.WorldToScreenPoint(worldPosition);
+        }
+
         void InitializeCamera(Camera camera)
         {
             yawDegrees = settings.InitialYawDegrees;
@@ -100,37 +147,78 @@ namespace DungeonInn.View.Scene.MainScene.World
             camera.transform.position = settings.InitialPosition;
             camera.orthographicSize = settings.InitialOrthographicSize;
             ApplyRotation(camera);
+            focusPoint = ResolveCenterFocusPoint(camera);
+            focusDistance = Mathf.Max(
+                MinimumFocusDistance,
+                Vector3.Dot(focusPoint - camera.transform.position, camera.transform.forward));
             initialized = true;
         }
 
-        void UpdateRotation()
+        bool UpdateRotation()
         {
             if (!isRotating)
             {
                 lookDelta = Vector2.zero;
-                return;
+                return false;
             }
 
-            yawDegrees += lookDelta.x * settings.RotationSensitivity;
+            var yawDelta = lookDelta.x * settings.RotationSensitivity;
+            yawDegrees += yawDelta;
             lookDelta = Vector2.zero;
+            return Mathf.Abs(yawDelta) > 0f;
         }
 
-        void UpdatePosition(Camera camera, float deltaSeconds)
+        bool UpdateFocusPoint(float deltaSeconds)
         {
+            if (isFollowing)
+            {
+                if (deltaSeconds <= 0f)
+                {
+                    return false;
+                }
+
+                focusPoint = Vector3.Lerp(
+                    focusPoint,
+                    ToFocusPlanePoint(followTargetPosition),
+                    FollowPositionLerpSpeed * deltaSeconds);
+                return true;
+            }
+
             if (moveInput.sqrMagnitude <= 0f)
             {
-                return;
+                return false;
             }
 
             var yawRotation = Quaternion.Euler(0f, yawDegrees, 0f);
             var forward = yawRotation * Vector3.forward;
             var right = yawRotation * Vector3.right;
             var moveDirection = right * moveInput.x + forward * moveInput.y;
-            camera.transform.position += moveDirection * settings.MoveSpeed * deltaSeconds;
+            focusPoint += moveDirection * settings.MoveSpeed * deltaSeconds;
+            return true;
         }
 
-        void UpdateZoom(Camera camera)
+        void UpdateZoom(Camera camera, float deltaSeconds)
         {
+            if (hasTargetOrthographicSize)
+            {
+                camera.orthographicSize = Mathf.Lerp(
+                    camera.orthographicSize,
+                    targetOrthographicSize,
+                    ZoomLerpSpeed * deltaSeconds);
+
+                if (Mathf.Abs(camera.orthographicSize - targetOrthographicSize) < 0.01f)
+                {
+                    camera.orthographicSize = targetOrthographicSize;
+                    if (!isFollowing)
+                    {
+                        hasTargetOrthographicSize = false;
+                    }
+                }
+
+                zoomDelta = Vector2.zero;
+                return;
+            }
+
             if (zoomDelta.sqrMagnitude <= 0f)
             {
                 return;
@@ -146,6 +234,33 @@ namespace DungeonInn.View.Scene.MainScene.World
         void ApplyRotation(Camera camera)
         {
             camera.transform.rotation = Quaternion.Euler(pitchDegrees, yawDegrees, 0f);
+        }
+
+        void ApplyCameraPosition(Camera camera)
+        {
+            camera.transform.position = focusPoint - camera.transform.forward * focusDistance;
+        }
+
+        Vector3 ResolveCenterFocusPoint(Camera camera)
+        {
+            var direction = camera.transform.forward;
+            if (Mathf.Abs(direction.y) < FocusPlaneDirectionEpsilon)
+            {
+                return ToFocusPlanePoint(camera.transform.position + direction * settings.InitialOrthographicSize);
+            }
+
+            var distance = (FocusPlaneY - camera.transform.position.y) / direction.y;
+            if (distance <= 0f)
+            {
+                return ToFocusPlanePoint(camera.transform.position + direction * settings.InitialOrthographicSize);
+            }
+
+            return camera.transform.position + direction * distance;
+        }
+
+        static Vector3 ToFocusPlanePoint(Vector3 worldPosition)
+        {
+            return new Vector3(worldPosition.x, FocusPlaneY, worldPosition.z);
         }
     }
 }

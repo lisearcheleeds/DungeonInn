@@ -15,9 +15,11 @@ MonoBehaviour:
   initialPosition: {x: 64, y: 80, z: -64}
   initialPitchDegrees: 45
   initialYawDegrees: 45
-  initialOrthographicSize: 48
+  initialOrthographicSize: 24
   moveSpeed: 32
   rotationSensitivity: 0.2
   zoomSensitivity: 0.02
   minOrthographicSize: 12
   maxOrthographicSize: 120
+  actorViewportMargin: 0.08
+  actorSelectionZoomRatio: 0.2

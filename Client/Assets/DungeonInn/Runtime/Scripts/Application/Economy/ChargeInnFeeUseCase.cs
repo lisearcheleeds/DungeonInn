@@ -3,8 +3,8 @@ using DungeonInn.Application.Combat;
 using System;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 using VContainer;
@@ -14,11 +14,15 @@ namespace DungeonInn.Application.Economy
     public sealed class ChargeInnFeeUseCase
     {
         readonly IEventPublisher eventPublisher;
+        readonly InnBalanceSettings innBalanceSettings;
 
         [Inject]
-        public ChargeInnFeeUseCase(IEventPublisher eventPublisher)
+        public ChargeInnFeeUseCase(
+            IEventPublisher eventPublisher,
+            InnBalanceSettings innBalanceSettings)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
+            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
         }
 
         public bool Execute(Actor actor, AdventurerGuild guild)
@@ -58,13 +62,13 @@ namespace DungeonInn.Application.Economy
                 throw new InvalidOperationException("Facility is not inn.");
             }
 
-            var fee = GameConstants.InnFeePerStay;
+            var fee = innBalanceSettings.FeePerStay;
 
             if (!actor.TrySpendGold(fee))
             {
                 eventPublisher.Publish(new InnSatisfactionChanged(
                     actor.Id,
-                    GameConstants.InnCannotPaySatisfactionDelta,
+                    innBalanceSettings.CannotPaySatisfactionDelta,
                     InnSatisfactionChangeReason.CannotPayInnFee));
                 return false;
             }
@@ -73,7 +77,7 @@ namespace DungeonInn.Application.Economy
             eventPublisher.Publish(new InnFeeCharged(actor.Id, fee, actor.Inventory.Gold, facility.Inventory.Gold));
             eventPublisher.Publish(new InnSatisfactionChanged(
                 actor.Id,
-                GameConstants.InnStayedSatisfactionDelta,
+                innBalanceSettings.StayedSatisfactionDelta,
                 InnSatisfactionChangeReason.StayedAtInn));
             return true;
         }

@@ -3,30 +3,37 @@ using UnityEngine;
 
 namespace DungeonInn.View.Scene.MainScene.World
 {
+    [RequireComponent(typeof(SpriteRenderer))]
     public sealed class ActorView : MonoBehaviour
     {
         [SerializeField] SpriteRenderer spriteRenderer;
         [SerializeField] ActorSpriteAnimationClip idleAnimationClip;
         [SerializeField] ActorSpriteAnimationClip walkAnimationClip;
+        [SerializeField] ActorSpriteAnimationClip combatAnimationClip;
+        [SerializeField] ActorSpriteAnimationClip hitAnimationClip;
+        [SerializeField] ActorSpriteAnimationClip deadAnimationClip;
 
         ActorSpriteAnimator animator;
         float targetCanvasHeightMeters;
         Sprite currentSprite;
         float currentVisualScale = 1f;
-        bool hasRotationY;
+        Quaternion currentBillboardRotation;
+        bool hasBillboardRotation;
         bool visible = true;
         bool currentFlipX;
-        float currentRotationY;
 
         public Vector2 Facing { get; private set; }
         public LayerPosition LastPosition { get; private set; }
         public bool HasLastPosition { get; private set; }
         public int CurrentFrameIndex => animator != null ? animator.CurrentFrameIndex : 0;
+        public bool IsHitOneShotComplete => animator?.IsHitOneShotComplete ?? false;
 
         void Awake()
         {
+            EnsureSpriteRenderer();
             animator = new ActorSpriteAnimator();
             animator.Setup(idleAnimationClip, walkAnimationClip);
+            animator.SetupCombatClips(combatAnimationClip, hitAnimationClip, deadAnimationClip);
             Facing = Vector2.down;
         }
 
@@ -36,7 +43,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             SetFlip(false);
             SetVisualCanvasHeight(0f);
             SetVisible(true);
-            hasRotationY = false;
+            hasBillboardRotation = false;
             Facing = Vector2.down;
             LastPosition = default;
             HasLastPosition = false;
@@ -47,6 +54,15 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             EnsureAnimator();
             animator.Setup(idle, walk);
+        }
+
+        public void SetupCombatAnimation(
+            ActorSpriteAnimationClip combat,
+            ActorSpriteAnimationClip hit,
+            ActorSpriteAnimationClip dead)
+        {
+            EnsureAnimator();
+            animator.SetupCombatClips(combat, hit, dead);
         }
 
         public void SetAnimationState(ActorAnimationState state)
@@ -63,6 +79,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void SetSprite(Sprite sprite)
         {
+            EnsureSpriteRenderer();
             if (currentSprite == sprite)
             {
                 return;
@@ -86,6 +103,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void SetFlip(bool flipX)
         {
+            EnsureSpriteRenderer();
             if (currentFlipX == flipX)
             {
                 return;
@@ -97,6 +115,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public void SetVisible(bool value)
         {
+            EnsureSpriteRenderer();
             if (visible == value && spriteRenderer.enabled == value)
             {
                 return;
@@ -106,16 +125,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             spriteRenderer.enabled = value;
         }
 
-        public void SetRotationY(float degrees)
+        public void SetBillboardRotation(Quaternion rotation)
         {
-            if (hasRotationY && Mathf.Approximately(currentRotationY, degrees))
+            if (hasBillboardRotation && currentBillboardRotation == rotation)
             {
                 return;
             }
 
-            currentRotationY = degrees;
-            hasRotationY = true;
-            transform.rotation = Quaternion.Euler(0f, degrees, 0f);
+            currentBillboardRotation = rotation;
+            hasBillboardRotation = true;
+            transform.rotation = rotation;
         }
 
         public void SetLocalPosition(Vector3 position)
@@ -151,10 +170,25 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             animator = new ActorSpriteAnimator();
             animator.Setup(idleAnimationClip, walkAnimationClip);
+            animator.SetupCombatClips(combatAnimationClip, hitAnimationClip, deadAnimationClip);
+        }
+
+        void EnsureSpriteRenderer()
+        {
+            if (spriteRenderer != null)
+            {
+                return;
+            }
+
+            if (!TryGetComponent(out spriteRenderer))
+            {
+                spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+            }
         }
 
         void ApplyVisualScale()
         {
+            EnsureSpriteRenderer();
             var sprite = spriteRenderer.sprite;
             if (targetCanvasHeightMeters <= 0f || sprite == null || sprite.bounds.size.y <= 0f)
             {

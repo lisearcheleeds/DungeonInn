@@ -13,6 +13,7 @@ using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
+using DungeonInn.Input.Layer;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -26,7 +27,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         [SerializeField] ActorSpriteVisualConfigSO actorSpriteVisualConfigSO;
         [SerializeField] LayerPositionViewSettingsSO layerPositionViewSettingsSO;
         [SerializeField] WorldCameraSettingsSO worldCameraSettingsSO;
-        [SerializeField] GameObject propPrefab;
+        [SerializeField] WorldGameSettingsSO worldGameSettingsSO;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -38,7 +39,19 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             // === View: マップ描画 ===
             builder.RegisterInstance(ResolveLayerPositionViewSettings()).AsSelf();
-            builder.RegisterInstance(new VisualConfigSettings(mapMaterialSetSO, actorSpriteVisualConfigSO, propPrefab));
+            var worldGameSettings = ResolveWorldGameSettings();
+            builder.RegisterInstance(worldGameSettings.GroundMapGenerationSettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.DungeonMapGenerationSettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.InitialWorldSettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.InnBalanceSettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.ActorSimulationSettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.SpawnBalanceSettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.AdventurerReturnPolicySettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.CombatBalanceSettings).AsSelf();
+            builder.RegisterInstance(worldGameSettings.WorldMapViewSettings).AsSelf();
+            builder.RegisterInstance(new VisualConfigSettings(
+                mapMaterialSetSO,
+                actorSpriteVisualConfigSO));
             builder.Register<VisualConfigLoader>(Lifetime.Scoped);
             builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
             builder.Register<MapLayerViewRegistry>(Lifetime.Scoped);
@@ -46,6 +59,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<MapTileVisualConfig>(Lifetime.Scoped);
             builder.Register<MapMeshBuildService>(Lifetime.Scoped);
             builder.Register<NavMeshBuildService>(Lifetime.Scoped);
+            builder.Register<UnityNavMeshPathProvider>(Lifetime.Scoped).As<INavigationPathProvider>();
             builder.Register<EnvironmentObjectPlacer>(Lifetime.Scoped);
 
             // === View: アクター描画 ===
@@ -56,11 +70,34 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldActorViewPool>(Lifetime.Scoped);
             builder.Register<WorldActorViewRegistry>(Lifetime.Scoped);
             builder.Register<WorldActorPresenter>(Lifetime.Scoped);
+            builder.Register<ProjectilePrefabSource>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<WorldProjectileViewPool>(Lifetime.Scoped);
+            builder.Register<WorldProjectilePresenter>(Lifetime.Scoped);
+            builder.Register<AreaEffectPrefabSource>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<WorldAreaEffectViewPool>(Lifetime.Scoped);
+            builder.Register<WorldAreaEffectPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<ActorCombatAnimationPresenter>(Lifetime.Scoped).AsSelf().AsImplementedInterfaces();
+            builder.Register<WorldAddressableViewFactory>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<WorldHudCanvasProvider>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<ActorHUDViewPool>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<WorldActorStatusPresenter>(Lifetime.Scoped).AsSelf();
             builder.Register<WorldCameraController>(Lifetime.Scoped);
             builder.Register<WorldLayerViewController>(Lifetime.Scoped);
+            builder.Register<ActorSelectionService>(Lifetime.Scoped);
+            builder.Register<WorldActorSelectionInputHandler>(Lifetime.Scoped);
+            builder.Register<WorldActorCameraFollowController>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<ActorDetailPopupPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<PlayerGameEventLogPresenter>(Lifetime.Scoped).AsSelf();
 #if DEBUG
             builder.RegisterEntryPoint<WorldDebugGameLogPresenter>(Lifetime.Scoped);
 #endif
+
+            // === Application: アクター詳細 ===
+            builder.Register<GetActorDetailQuery>(Lifetime.Scoped);
+
+            // === Application: プレイヤーログ ===
+            builder.Register<PlayerEventLogFormatter>(Lifetime.Scoped);
+            builder.Register<PlayerEventLogStore>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
 
             // === Application: イベント / アクター状態 ===
             builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();
@@ -81,8 +118,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<AdventurerExplorationStateService>(Lifetime.Scoped);
 
             // === Application: ナビゲーション / 空間 ===
-            builder.RegisterInstance(new GameRandom(GameConstants.InitialGameRandomSeed)).As<IGameRandom>();
-            builder.Register<UnityNavMeshPathProvider>(Lifetime.Scoped).As<INavigationPathProvider>();
+            builder.RegisterInstance(new GameRandom(worldGameSettings.InitialWorldSettings.GameRandomSeed)).As<IGameRandom>();
             builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
             builder.Register<ActorCombatService>(Lifetime.Scoped).As<IActorCombatService>();
             builder.Register<ActorSpatialIndexService>(Lifetime.Scoped);
@@ -97,7 +133,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldMapViewDataProvider>(Lifetime.Scoped).As<IWorldMapViewDataProvider>();
             builder.Register<ActorViewDataStore>(Lifetime.Scoped)
                 .As<IActorViewDataProvider>()
+                .As<IActorStatusViewDataProvider>()
                 .AsSelf();
+            builder.Register<GetActorStatusSummaryQuery>(Lifetime.Scoped);
             builder.Register<GameWorldFrameBuffer>(Lifetime.Scoped);
             builder.Register<InitializeWorldMapUseCase>(Lifetime.Scoped);
             builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Scoped);
@@ -201,6 +239,70 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             Debug.LogWarning("[World] WorldCameraSettingsSO is not assigned. Using fallback camera settings.");
             return WorldCameraSettingsSO.CreateFallbackSettings();
+        }
+
+        ResolvedWorldGameSettings ResolveWorldGameSettings()
+        {
+            if (worldGameSettingsSO != null)
+            {
+                return new ResolvedWorldGameSettings(
+                    worldGameSettingsSO.ToGroundMapGenerationSettings(),
+                    worldGameSettingsSO.ToDungeonMapGenerationSettings(),
+                    worldGameSettingsSO.ToInitialWorldSettings(),
+                    worldGameSettingsSO.ToInnBalanceSettings(),
+                    worldGameSettingsSO.ToActorSimulationSettings(),
+                    worldGameSettingsSO.ToSpawnBalanceSettings(),
+                    worldGameSettingsSO.ToAdventurerReturnPolicySettings(),
+                    worldGameSettingsSO.ToCombatBalanceSettings(),
+                    worldGameSettingsSO.ToWorldMapViewSettings());
+            }
+
+            Debug.LogWarning("[World] WorldGameSettingsSO is not assigned. Using fallback game settings.");
+            return new ResolvedWorldGameSettings(
+                GroundMapGenerationSettings.CreateDefault(),
+                DungeonMapGenerationSettings.CreateDefault(),
+                InitialWorldSettings.CreateDefault(),
+                InnBalanceSettings.CreateDefault(),
+                ActorSimulationSettings.CreateDefault(),
+                SpawnBalanceSettings.CreateDefault(),
+                AdventurerReturnPolicySettings.CreateDefault(),
+                CombatBalanceSettings.CreateDefault(),
+                WorldMapViewSettings.CreateDefault());
+        }
+
+        readonly struct ResolvedWorldGameSettings
+        {
+            public GroundMapGenerationSettings GroundMapGenerationSettings { get; }
+            public DungeonMapGenerationSettings DungeonMapGenerationSettings { get; }
+            public InitialWorldSettings InitialWorldSettings { get; }
+            public InnBalanceSettings InnBalanceSettings { get; }
+            public ActorSimulationSettings ActorSimulationSettings { get; }
+            public SpawnBalanceSettings SpawnBalanceSettings { get; }
+            public AdventurerReturnPolicySettings AdventurerReturnPolicySettings { get; }
+            public CombatBalanceSettings CombatBalanceSettings { get; }
+            public WorldMapViewSettings WorldMapViewSettings { get; }
+
+            public ResolvedWorldGameSettings(
+                GroundMapGenerationSettings groundMapGenerationSettings,
+                DungeonMapGenerationSettings dungeonMapGenerationSettings,
+                InitialWorldSettings initialWorldSettings,
+                InnBalanceSettings innBalanceSettings,
+                ActorSimulationSettings actorSimulationSettings,
+                SpawnBalanceSettings spawnBalanceSettings,
+                AdventurerReturnPolicySettings adventurerReturnPolicySettings,
+                CombatBalanceSettings combatBalanceSettings,
+                WorldMapViewSettings worldMapViewSettings)
+            {
+                GroundMapGenerationSettings = groundMapGenerationSettings;
+                DungeonMapGenerationSettings = dungeonMapGenerationSettings;
+                InitialWorldSettings = initialWorldSettings;
+                InnBalanceSettings = innBalanceSettings;
+                ActorSimulationSettings = actorSimulationSettings;
+                SpawnBalanceSettings = spawnBalanceSettings;
+                AdventurerReturnPolicySettings = adventurerReturnPolicySettings;
+                CombatBalanceSettings = combatBalanceSettings;
+                WorldMapViewSettings = worldMapViewSettings;
+            }
         }
     }
 }
