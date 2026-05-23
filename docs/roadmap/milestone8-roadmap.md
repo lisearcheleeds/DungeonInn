@@ -33,6 +33,18 @@
 - Application 層のクエリ UseCase（`GetGameTimeStateUseCase` など）を UI が利用する経路の確立
 - View が `IGameWorldStateReader` を直接読んで集計しない方針の徹底
 
+### Prefab / Scene アセット生成運用の整理
+
+Prefab / Scene / ScriptableObject などの Unity アセットは、手作業で調整されたアセットファイルを原本とする。
+AI が Prefab や Scene を構築・配線する場合は、永続セットアップコードに生成処理を残さず、一時的な Editor automation で作成する運用にする。
+
+- Prefab を作る時は、生成用の一時 Editor コードまたは `uloop.cmd execute-dynamic-code` で `GameObject` / `Component` 追加と `SerializedObject` による参照配線を行う
+- 生成結果に問題がなければ、生成用コードを削除して完了する
+- `VisualAssetSetup` や validation 経路から、既存 Prefab / Scene の子要素を全削除して再生成する処理は呼ばない
+- 既存アセットがある場合は、アセット側を原本として扱い、必要な場合でも足りない参照の補完に留める
+- この作業を効率化する基盤を M8 で検討する
+- 基盤の方針、形式、置き場所、実行方法は、作業開始前にユーザーと相談して決める
+
 ### World シーングループ LifetimeScope 分離
 
 Milestone 7 で World の UI Canvas を `WorldUI` ModuleScene に分離した。
@@ -159,6 +171,29 @@ RootLifetimeScope
 
 完了条件:
 - [ ] `PlayerEventLogStore.Add()` が外部から直接呼べない設計になっている
+- [ ] `uloop.cmd compile --project-path Client` が成功している
+
+### VAS-1 — `VisualAssetSetup` の自動再生成・ロールバック経路整理
+
+由来: milestone7-roadmap.md Phase 0 / task_0001、および ActorDetailPopup Prefab 配線時の運用確認
+
+- `VisualAssetSetup` は visual asset の初期作成・Addressables 登録を担ってきたが、Prefab / Scene を人間が手調整する運用では、自動修復や再生成が手作業をロールバックするリスクになる
+- `ActorDetailPopup` のような UI Prefab は、生成後の `.prefab` を原本とし、永続 setup code で再構築し続けない
+- validation は副作用なしで不足・未配線を検出するだけにし、修正は明示 setup または一時生成コードで行う
+
+対応方針:
+
+1. `VisualAssetSetup` を副作用なし validation と、ユーザーが明示実行する setup に分ける。
+2. Prefab / Scene の再生成処理を `ValidateSetup()` や domain reload から呼ばない。
+3. 既存アセットを全削除・再作成する処理が必要な場合は、作業用の一時コードとして実行し、完了後に削除する。
+4. 一時生成作業を効率化する基盤を設計する場合は、実装前にユーザーと方針・形式を確認する。
+
+完了条件:
+
+- [ ] `VisualAssetSetup` の validation 経路が既存 Prefab / Scene / ScriptableObject を変更しない
+- [ ] `VisualAssetSetup` から手調整済み Prefab / Scene を自動再生成する経路が消えている
+- [ ] Prefab / Scene 生成用の一時コードは、生成完了後に削除する運用が docs または guideline に明記されている
+- [ ] 一時生成基盤を実装する場合、その方針・形式・置き場所・実行方法を事前にユーザー確認している
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 
 ---
