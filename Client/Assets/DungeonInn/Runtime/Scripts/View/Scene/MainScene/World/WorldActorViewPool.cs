@@ -42,6 +42,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
             actorView.gameObject.SetActive(true);
             actorView.Reset();
+            actorView.BindActor(actorId);
             return actorView;
         }
 

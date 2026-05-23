@@ -48,9 +48,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             return overrides.TryGetValue(actorId, out state);
         }
 
-        public void ClearHitOverride(Guid actorId)
+        public void ClearDamageOverride(Guid actorId)
         {
-            if (overrides.TryGetValue(actorId, out var state) && state == ActorAnimationState.Hit)
+            if (overrides.TryGetValue(actorId, out var state) && state == ActorAnimationState.Damage)
             {
                 overrides.Remove(actorId);
             }
@@ -68,18 +68,18 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void OnCombatAttackOccurred(CombatAttackOccurred gameEvent)
         {
-            SetOverrideUnlessDead(gameEvent.AttackerActorId, ActorAnimationState.Combat);
-            SetOverrideUnlessDead(gameEvent.TargetActorId, ActorAnimationState.Hit);
+            SetOverrideUnlessDead(gameEvent.AttackerActorId, ActorAnimationState.Attack);
+            SetOverrideUnlessDead(gameEvent.TargetActorId, ActorAnimationState.Damage);
         }
 
         void OnProjectileHit(ProjectileHit gameEvent)
         {
-            SetOverrideUnlessDead(gameEvent.TargetActorId, ActorAnimationState.Hit);
+            SetOverrideUnlessDead(gameEvent.TargetActorId, ActorAnimationState.Damage);
         }
 
         void OnAreaEffectHit(AreaEffectHit gameEvent)
         {
-            SetOverrideUnlessDead(gameEvent.TargetActorId, ActorAnimationState.Hit);
+            SetOverrideUnlessDead(gameEvent.TargetActorId, ActorAnimationState.Damage);
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)

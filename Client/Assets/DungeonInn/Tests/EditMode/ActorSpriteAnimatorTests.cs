@@ -1,12 +1,11 @@
 using System;
+using System.Collections.Generic;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.View.Scene.MainScene.World;
 using NUnit.Framework;
 using R3;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.TestTools;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -15,55 +14,84 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void WalkAnimationUsesClipFrameIndicesAndFps()
         {
-            var walkClip = CreateClip(2f, true, 0, 1);
+            var firstSprite = CreateSprite();
+            var secondSprite = CreateSprite();
+            var definition = CreateDefinition(
+                ActorAnimationKey.Walk,
+                ActorAnimationDirection.SE,
+                new ActorVisualAnimationClip(2f, true, new[] { firstSprite, secondSprite }));
             var animator = new ActorSpriteAnimator();
-            animator.Setup(null, walkClip);
+            animator.ApplyVisual(definition);
             animator.SetState(ActorAnimationState.Walk);
 
-            animator.Tick(0.5f);
-            Assert.That(animator.CurrentFrameIndex, Is.EqualTo(1));
+            animator.Tick(0.5f, ActorAnimationDirection.SE);
+            Assert.That(animator.GetCurrentSprite(ActorAnimationDirection.SE), Is.EqualTo(secondSprite));
 
-            animator.Tick(0.5f);
-            Assert.That(animator.CurrentFrameIndex, Is.EqualTo(0));
+            animator.Tick(0.5f, ActorAnimationDirection.SE);
+            Assert.That(animator.GetCurrentSprite(ActorAnimationDirection.SE), Is.EqualTo(firstSprite));
 
-            UnityEngine.Object.DestroyImmediate(walkClip);
+            UnityEngine.Object.DestroyImmediate(firstSprite.texture);
+            UnityEngine.Object.DestroyImmediate(firstSprite);
+            UnityEngine.Object.DestroyImmediate(secondSprite.texture);
+            UnityEngine.Object.DestroyImmediate(secondSprite);
         }
 
         [Test]
-        public void HitOneShotReportsCompleteAtFinalFrame()
+        public void DamageOneShotReportsCompleteAtFinalFrame()
         {
-            var hitClip = CreateClip(2f, false, 3, 4);
+            var firstSprite = CreateSprite();
+            var secondSprite = CreateSprite();
+            var definition = CreateDefinition(
+                ActorAnimationKey.Damage,
+                ActorAnimationDirection.SE,
+                new ActorVisualAnimationClip(2f, false, new[] { firstSprite, secondSprite }));
             var animator = new ActorSpriteAnimator();
-            animator.Setup(null, null);
-            animator.SetupCombatClips(null, hitClip, null);
-            animator.SetState(ActorAnimationState.Hit);
+            animator.ApplyVisual(definition);
+            animator.SetState(ActorAnimationState.Damage);
 
-            Assert.That(animator.IsHitOneShotComplete, Is.False);
+            Assert.That(animator.IsDamageOneShotComplete(ActorAnimationDirection.SE), Is.False);
 
-            animator.Tick(0.5f);
-            Assert.That(animator.CurrentFrameIndex, Is.EqualTo(4));
-            Assert.That(animator.IsHitOneShotComplete, Is.True);
+            animator.Tick(0.5f, ActorAnimationDirection.SE);
+            Assert.That(animator.GetCurrentSprite(ActorAnimationDirection.SE), Is.EqualTo(secondSprite));
+            Assert.That(animator.IsDamageOneShotComplete(ActorAnimationDirection.SE), Is.True);
 
-            UnityEngine.Object.DestroyImmediate(hitClip);
+            UnityEngine.Object.DestroyImmediate(firstSprite.texture);
+            UnityEngine.Object.DestroyImmediate(firstSprite);
+            UnityEngine.Object.DestroyImmediate(secondSprite.texture);
+            UnityEngine.Object.DestroyImmediate(secondSprite);
         }
 
         [Test]
-        public void MissingCombatClipFallsBackToIdleFrame()
+        public void DamageOneShotCompletionUsesRequestedDirectionClip()
         {
-            var idleClip = CreateClip(4f, true, 7);
+            var seSprite = CreateSprite();
+            var firstNwSprite = CreateSprite();
+            var secondNwSprite = CreateSprite();
+            var clips = new Dictionary<ActorVisualAnimationKey, ActorVisualAnimationClip>
+            {
+                {
+                    new ActorVisualAnimationKey(ActorAnimationKey.Damage, ActorAnimationDirection.SE),
+                    new ActorVisualAnimationClip(2f, false, new[] { seSprite })
+                },
+                {
+                    new ActorVisualAnimationKey(ActorAnimationKey.Damage, ActorAnimationDirection.NW),
+                    new ActorVisualAnimationClip(2f, false, new[] { firstNwSprite, secondNwSprite })
+                }
+            };
+            var definition = new ActorVisualDefinition("test_visual", ActorVisualSizeTier.AdventurerS, clips);
             var animator = new ActorSpriteAnimator();
-            animator.Setup(idleClip, null);
-            animator.SetupCombatClips(null, null, null);
-            animator.SetState(ActorAnimationState.Combat);
-            LogAssert.Expect(
-                LogType.Warning,
-                "[ActorSpriteAnimator] Combat animation clip is not assigned. Falling back to idle clip.");
+            animator.ApplyVisual(definition);
+            animator.SetState(ActorAnimationState.Damage);
 
-            animator.Tick(1f);
+            Assert.That(animator.IsDamageOneShotComplete(ActorAnimationDirection.SE), Is.True);
+            Assert.That(animator.IsDamageOneShotComplete(ActorAnimationDirection.NW), Is.False);
 
-            Assert.That(animator.CurrentFrameIndex, Is.EqualTo(7));
-
-            UnityEngine.Object.DestroyImmediate(idleClip);
+            UnityEngine.Object.DestroyImmediate(seSprite.texture);
+            UnityEngine.Object.DestroyImmediate(seSprite);
+            UnityEngine.Object.DestroyImmediate(firstNwSprite.texture);
+            UnityEngine.Object.DestroyImmediate(firstNwSprite);
+            UnityEngine.Object.DestroyImmediate(secondNwSprite.texture);
+            UnityEngine.Object.DestroyImmediate(secondNwSprite);
         }
 
         [Test]
@@ -80,7 +108,7 @@ namespace DungeonInn.Tests.EditMode
 
                 subscriber.Publish(new CombatAttackOccurred(attackerId, targetId, 1, 9));
                 Assert.That(presenter.TryGetOverride(attackerId, out var attackState), Is.True);
-                Assert.That(attackState, Is.EqualTo(ActorAnimationState.Combat));
+                Assert.That(attackState, Is.EqualTo(ActorAnimationState.Attack));
 
                 subscriber.Publish(new CombatEncounterEnded(attackerId));
 
@@ -117,22 +145,23 @@ namespace DungeonInn.Tests.EditMode
             }
         }
 
-        static ActorSpriteAnimationClip CreateClip(float fps, bool loop, params int[] frameIndices)
+        static ActorVisualDefinition CreateDefinition(
+            ActorAnimationKey animationKey,
+            ActorAnimationDirection direction,
+            ActorVisualAnimationClip clip)
         {
-            var clip = ScriptableObject.CreateInstance<ActorSpriteAnimationClip>();
-            using var serializedClip = new SerializedObject(clip);
-            serializedClip.FindProperty("fps").floatValue = fps;
-            serializedClip.FindProperty("loop").boolValue = loop;
-            var frameIndicesProp = serializedClip.FindProperty("frameIndices");
-            frameIndicesProp.ClearArray();
-            for (var index = 0; index < frameIndices.Length; index++)
+            var clips = new Dictionary<ActorVisualAnimationKey, ActorVisualAnimationClip>
             {
-                frameIndicesProp.InsertArrayElementAtIndex(index);
-                frameIndicesProp.GetArrayElementAtIndex(index).intValue = frameIndices[index];
-            }
+                { new ActorVisualAnimationKey(animationKey, direction), clip }
+            };
 
-            serializedClip.ApplyModifiedPropertiesWithoutUndo();
-            return clip;
+            return new ActorVisualDefinition("test_visual", ActorVisualSizeTier.AdventurerS, clips);
+        }
+
+        static Sprite CreateSprite()
+        {
+            var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+            return Sprite.Create(texture, new Rect(0f, 0f, 4f, 4f), new Vector2(0.5f, 0f), 16f);
         }
 
         sealed class ManualEventSubscriber : IEventSubscriber, IDisposable

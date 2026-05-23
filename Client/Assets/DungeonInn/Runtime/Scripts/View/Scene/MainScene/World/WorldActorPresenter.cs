@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using DungeonInn.Application.World;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
+using DungeonInn.Master;
 using UnityEngine;
 using VContainer;
 
@@ -13,11 +15,13 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly IActorViewDataProvider viewDataProvider;
         readonly LayerPositionViewMapper positionMapper;
         readonly WorldActorViewRegistry actorViewRegistry;
-        readonly ActorSpriteVisualConfig actorSpriteVisualConfig;
+        readonly ActorVisualDefinitionLoader visualDefinitionLoader;
         readonly WorldCameraController worldCameraController;
         readonly ActorCombatAnimationPresenter combatAnimationPresenter;
         readonly Action<Guid, ActorView> updateActorViewAction;
-        readonly Dictionary<Guid, ActorBehaviorType> actorBehaviorTypes = new();
+        readonly Dictionary<Guid, ActorViewData> actorViewDataById = new();
+        readonly Dictionary<Guid, string> appliedVisualIds = new();
+        readonly HashSet<ActorVisualRequestKey> requestedVisuals = new();
         readonly HashSet<Guid> walkingActorsThisFrame = new();
         float frameYawDegrees;
         float frameDeltaTime;
@@ -28,14 +32,15 @@ namespace DungeonInn.View.Scene.MainScene.World
             IActorViewDataProvider viewDataProvider,
             LayerPositionViewMapper positionMapper,
             WorldActorViewRegistry actorViewRegistry,
-            ActorSpriteVisualConfig actorSpriteVisualConfig,
+            ActorVisualDefinitionLoader visualDefinitionLoader,
             WorldCameraController worldCameraController,
             ActorCombatAnimationPresenter combatAnimationPresenter)
         {
             this.viewDataProvider = viewDataProvider ?? throw new ArgumentNullException(nameof(viewDataProvider));
             this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
             this.actorViewRegistry = actorViewRegistry ?? throw new ArgumentNullException(nameof(actorViewRegistry));
-            this.actorSpriteVisualConfig = actorSpriteVisualConfig ?? throw new ArgumentNullException(nameof(actorSpriteVisualConfig));
+            this.visualDefinitionLoader =
+                visualDefinitionLoader ?? throw new ArgumentNullException(nameof(visualDefinitionLoader));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
             this.combatAnimationPresenter =
                 combatAnimationPresenter ?? throw new ArgumentNullException(nameof(combatAnimationPresenter));
@@ -52,7 +57,8 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             foreach (var actorId in changes.RemovedActorIds)
             {
-                actorBehaviorTypes.Remove(actorId);
+                actorViewDataById.Remove(actorId);
+                appliedVisualIds.Remove(actorId);
                 combatAnimationPresenter.RemoveActor(actorId);
                 actorViewRegistry.RemoveActorObject(actorId);
             }
@@ -63,7 +69,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                     actor.ActorId,
                     actor.Position,
                     out var created);
-                actorBehaviorTypes[actor.ActorId] = actor.BehaviorType;
+                actorViewDataById[actor.ActorId] = actor;
+                RequestVisualIfNeeded(actor.VisualId);
 
                 var positionChanged = created ||
                     !actorView.HasLastPosition ||
@@ -96,36 +103,33 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            var animState = ResolveAnimationState(actorId, actorView, isWalking);
-            actorView.SetAnimationState(animState);
-            actorView.Tick(frameDeltaTime);
-
             var direction = ComputeDirection(actorView.Facing, frameYawDegrees);
-            var behaviorType = actorBehaviorTypes.TryGetValue(actorId, out var value)
-                ? value
-                : ActorBehaviorType.None;
-            var isCombatAnimState = animState == ActorAnimationState.Combat ||
-                animState == ActorAnimationState.Hit ||
-                animState == ActorAnimationState.Dead;
-            var sprite = actorSpriteVisualConfig.GetSprite(
-                behaviorType,
-                direction,
-                !isCombatAnimState && isWalking,
-                actorView.CurrentFrameIndex);
-            var sizeTier = actorSpriteVisualConfig.GetVisualSizeTier(behaviorType);
-            actorView.SetSprite(sprite);
-            actorView.SetVisualCanvasHeight(ActorVisualSizeTierCatalog.GetCanvasHeightMeters(sizeTier));
+            var animState = ResolveAnimationState(actorId, actorView, isWalking, direction);
+            actorView.SetAnimationState(animState);
+
+            if (actorViewDataById.TryGetValue(actorId, out var viewData) &&
+                TryApplyLoadedVisual(actorId, actorView, viewData))
+            {
+                actorView.SetLocalPosition(ResolveActorLocalPosition(viewData));
+            }
+
+            actorView.Tick(frameDeltaTime, direction);
             actorView.SetBillboardRotation(frameCameraRotation);
             actorView.SetFlip(false);
         }
 
-        ActorAnimationState ResolveAnimationState(Guid actorId, ActorView actorView, bool isWalking)
+        ActorAnimationState ResolveAnimationState(
+            Guid actorId,
+            ActorView actorView,
+            bool isWalking,
+            ActorAnimationDirection direction)
         {
             if (combatAnimationPresenter.TryGetOverride(actorId, out var overrideState))
             {
-                if (overrideState == ActorAnimationState.Hit && actorView.IsHitOneShotComplete)
+                if (overrideState == ActorAnimationState.Damage &&
+                    actorView.IsDamageOneShotComplete(direction))
                 {
-                    combatAnimationPresenter.ClearHitOverride(actorId);
+                    combatAnimationPresenter.ClearDamageOverride(actorId);
                     return isWalking ? ActorAnimationState.Walk : ActorAnimationState.Idle;
                 }
 
@@ -137,9 +141,53 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         Vector3 ResolveActorLocalPosition(ActorViewData actor)
         {
-            var sizeTier = actorSpriteVisualConfig.GetVisualSizeTier(actor.BehaviorType);
+            var sizeTier = ActorVisualSizeTier.AdventurerS;
+            if (visualDefinitionLoader.TryGetLoaded(
+                    actor.VisualId,
+                    GameConstants.DefaultActorSkinId,
+                    out var definition))
+            {
+                sizeTier = definition.VisualSizeTier;
+            }
+
             var groundAnchorOffset = ActorVisualSizeTierCatalog.GetGroundAnchorOffsetMeters(sizeTier);
             return positionMapper.ToActorLayerLocalPosition(actor.Position) + Vector3.up * groundAnchorOffset;
+        }
+
+        void RequestVisualIfNeeded(string visualId)
+        {
+            var key = new ActorVisualRequestKey(visualId, GameConstants.DefaultActorSkinId);
+            if (!requestedVisuals.Add(key))
+            {
+                return;
+            }
+
+            visualDefinitionLoader.RequestLoadAsync(
+                    visualId,
+                    GameConstants.DefaultActorSkinId,
+                    default)
+                .Forget();
+        }
+
+        bool TryApplyLoadedVisual(Guid actorId, ActorView actorView, ActorViewData viewData)
+        {
+            if (!visualDefinitionLoader.TryGetLoaded(
+                    viewData.VisualId,
+                    GameConstants.DefaultActorSkinId,
+                    out var definition))
+            {
+                return false;
+            }
+
+            if (appliedVisualIds.TryGetValue(actorId, out var appliedVisualId) &&
+                appliedVisualId == viewData.VisualId)
+            {
+                return true;
+            }
+
+            actorView.ApplyVisual(definition);
+            appliedVisualIds[actorId] = viewData.VisualId;
+            return true;
         }
 
         static bool IsSamePosition(DungeonInn.Domain.Map.LayerPosition first, DungeonInn.Domain.Map.LayerPosition second)

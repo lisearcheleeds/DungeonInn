@@ -19,10 +19,10 @@ namespace DungeonInn.Tests.EditMode
     public sealed class VisualAssetPipelineTests
     {
         const string MapMaterialSetPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/MapMaterialSet.asset";
-        const string ActorSpriteVisualConfigPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorSpriteVisualConfig.asset";
         const string LayerPositionViewSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/LayerPositionViewSettings.asset";
         const string WorldCameraSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/WorldCameraSettings.asset";
         const string WorldGameSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/WorldGameSettings.asset";
+        const string ActorViewPrefabPath = "Assets/DungeonInn/Runtime/Prefab/World/ActorView.prefab";
         const string AddressablesGroupName = "DungeonInn Visual";
 
         [Test]
@@ -73,6 +73,18 @@ namespace DungeonInn.Tests.EditMode
                     Assert.That(addresses, Contains.Item($"Sprites/{actor}/Walk{direction}1"));
                     Assert.That(addresses, Contains.Item($"Sprites/{actor}/Walk{direction}2"));
                 }
+            }
+
+            foreach (var actorVisual in new[]
+            {
+                "AdventurerNovice",
+                "MonsterGoblin",
+                "MonsterOrc",
+                "MonsterOgre",
+                "MonsterGoblinArcher"
+            })
+            {
+                Assert.That(addresses, Contains.Item($"World/ActorVisual/{actorVisual}"));
             }
         }
 
@@ -284,29 +296,6 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void ActorSpriteVisualConfigContainsVisualSizeTierForEveryEntry()
-        {
-            var config = AssetDatabase.LoadAssetAtPath<ActorSpriteVisualConfigSO>(ActorSpriteVisualConfigPath);
-            Assert.That(config, Is.Not.Null);
-
-            using var serialized = new SerializedObject(config);
-            var entries = serialized.FindProperty("entries");
-            Assert.That(entries.arraySize, Is.GreaterThan(0));
-
-            for (var index = 0; index < entries.arraySize; index++)
-            {
-                var entry = entries.GetArrayElementAtIndex(index);
-                var visualSizeTier = (ActorVisualSizeTier)entry
-                    .FindPropertyRelative("VisualSizeTier")
-                    .enumValueIndex;
-
-                Assert.That(
-                    ActorVisualSizeTierCatalog.GetCanvasHeightMeters(visualSizeTier),
-                    Is.GreaterThan(0f));
-            }
-        }
-
-        [Test]
         public void ActorViewScalesSpriteCanvasToVisualHeight()
         {
             var gameObject = new GameObject("ActorViewScaleTest");
@@ -340,6 +329,161 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(
                 ActorVisualSizeTierCatalog.GetGroundAnchorOffsetMeters(ActorVisualSizeTier.AdventurerS),
                 Is.EqualTo(0.75f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ActorVisualDefinitionConvertsEntriesToRuntimeClips()
+        {
+            var definitionSo = ScriptableObject.CreateInstance<ActorVisualDefinitionSO>();
+            var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+            var sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, 4f, 4f),
+                new Vector2(0.5f, 0f),
+                16f);
+
+            try
+            {
+                using var serialized = new SerializedObject(definitionSo);
+                serialized.FindProperty("visualId").stringValue = "test_visual";
+                serialized.FindProperty("visualSizeTier").enumValueIndex = (int)ActorVisualSizeTier.MonsterS;
+                foreach (ActorAnimationKey animationKey in Enum.GetValues(typeof(ActorAnimationKey)))
+                {
+                    var entries = serialized.FindProperty(GetActorVisualEntriesFieldName(animationKey));
+                    entries.arraySize = Enum.GetValues(typeof(ActorAnimationDirection)).Length;
+                    var entryIndex = 0;
+                    foreach (ActorAnimationDirection direction in Enum.GetValues(typeof(ActorAnimationDirection)))
+                    {
+                        var entry = entries.GetArrayElementAtIndex(entryIndex);
+                        var isTarget = animationKey == ActorAnimationKey.Attack &&
+                            direction == ActorAnimationDirection.NW;
+                        entry.FindPropertyRelative("direction").enumValueIndex = (int)direction;
+                        entry.FindPropertyRelative("fps").floatValue = isTarget ? 12f : 1f;
+                        entry.FindPropertyRelative("loop").boolValue = !isTarget;
+                        var sprites = entry.FindPropertyRelative("sprites");
+                        sprites.arraySize = 1;
+                        sprites.GetArrayElementAtIndex(0).objectReferenceValue = sprite;
+                        entryIndex++;
+                    }
+                }
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+
+                var runtimeDefinition = definitionSo.ToRuntimeDefinition();
+                var found = runtimeDefinition.TryGetClip(
+                    ActorAnimationKey.Attack,
+                    ActorAnimationDirection.NW,
+                    out var clip);
+
+                Assert.That(runtimeDefinition.VisualId, Is.EqualTo("test_visual"));
+                Assert.That(runtimeDefinition.VisualSizeTier, Is.EqualTo(ActorVisualSizeTier.MonsterS));
+                Assert.That(found, Is.True);
+                Assert.That(clip.Fps, Is.EqualTo(12f));
+                Assert.That(clip.Loop, Is.False);
+                Assert.That(clip.GetSprite(0), Is.EqualTo(sprite));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sprite);
+                UnityEngine.Object.DestroyImmediate(texture);
+                UnityEngine.Object.DestroyImmediate(definitionSo);
+            }
+        }
+
+        [Test]
+        public void ActorVisualDefinitionRejectsDuplicateAnimationEntries()
+        {
+            var definitionSo = ScriptableObject.CreateInstance<ActorVisualDefinitionSO>();
+
+            try
+            {
+                using var serialized = new SerializedObject(definitionSo);
+                serialized.FindProperty("visualId").stringValue = "duplicate_visual";
+                var entries = serialized.FindProperty("idleEntries");
+                entries.arraySize = 2;
+                for (var index = 0; index < entries.arraySize; index++)
+                {
+                    var entry = entries.GetArrayElementAtIndex(index);
+                    entry.FindPropertyRelative("direction").enumValueIndex = (int)ActorAnimationDirection.SE;
+                }
+
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+
+                Assert.Throws<InvalidOperationException>(() => definitionSo.ToRuntimeDefinition());
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(definitionSo);
+            }
+        }
+
+        static string GetActorVisualEntriesFieldName(ActorAnimationKey animationKey)
+        {
+            switch (animationKey)
+            {
+                case ActorAnimationKey.Idle:
+                    return "idleEntries";
+                case ActorAnimationKey.Walk:
+                    return "walkEntries";
+                case ActorAnimationKey.Work:
+                    return "workEntries";
+                case ActorAnimationKey.Attack:
+                    return "attackEntries";
+                case ActorAnimationKey.Damage:
+                    return "damageEntries";
+                case ActorAnimationKey.Dead:
+                    return "deadEntries";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(animationKey), animationKey, null);
+            }
+        }
+
+        [Test]
+        public void ActorVisualDefinitionsContainEveryAnimationKeyAndDirection()
+        {
+            foreach (var path in new[]
+            {
+                "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorVisualDefinitions/AdventurerNovice.asset",
+                "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorVisualDefinitions/MonsterGoblin.asset",
+                "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorVisualDefinitions/MonsterOrc.asset",
+                "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorVisualDefinitions/MonsterOgre.asset",
+                "Assets/DungeonInn/Runtime/StaticResources/Visual/ActorVisualDefinitions/MonsterGoblinArcher.asset"
+            })
+            {
+                var definition = AssetDatabase.LoadAssetAtPath<ActorVisualDefinitionSO>(path);
+                Assert.That(definition, Is.Not.Null, path);
+                Assert.That(definition.VisualId, Is.Not.Empty, path);
+                Assert.That(
+                    ActorVisualSizeTierCatalog.GetCanvasHeightMeters(definition.VisualSizeTier),
+                    Is.GreaterThan(0f),
+                    path);
+
+                var runtimeDefinition = definition.ToRuntimeDefinition();
+                foreach (ActorAnimationKey animationKey in Enum.GetValues(typeof(ActorAnimationKey)))
+                {
+                    foreach (ActorAnimationDirection direction in Enum.GetValues(typeof(ActorAnimationDirection)))
+                    {
+                        Assert.That(
+                            runtimeDefinition.TryGetClip(animationKey, direction, out var clip),
+                            Is.True,
+                            $"{path} {animationKey} {direction}");
+                        Assert.That(clip.FrameCount, Is.GreaterThan(0), $"{path} {animationKey} {direction}");
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void ActorViewPrefabDoesNotReferenceActorSpriteAnimationClips()
+        {
+            var actorView = AssetDatabase.LoadAssetAtPath<ActorView>(ActorViewPrefabPath);
+            Assert.That(actorView, Is.Not.Null);
+
+            using var serialized = new SerializedObject(actorView);
+            Assert.That(serialized.FindProperty("idleAnimationClip"), Is.Null);
+            Assert.That(serialized.FindProperty("walkAnimationClip"), Is.Null);
+            Assert.That(serialized.FindProperty("combatAnimationClip"), Is.Null);
+            Assert.That(serialized.FindProperty("hitAnimationClip"), Is.Null);
+            Assert.That(serialized.FindProperty("deadAnimationClip"), Is.Null);
         }
 
         [Test]
@@ -415,35 +559,6 @@ namespace DungeonInn.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(sprite);
                 UnityEngine.Object.DestroyImmediate(texture);
                 UnityEngine.Object.DestroyImmediate(gameObject);
-            }
-        }
-
-        [Test]
-        public void ActorSpriteVisualConfigLogsWarningWhenPlaceholderIsUsed()
-        {
-            var loader = new VisualConfigLoader(
-                new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null));
-            var config = new ActorSpriteVisualConfig(loader);
-
-            try
-            {
-                LogAssert.Expect(
-                    LogType.Warning,
-                    "[ActorSpriteVisualConfig] Using placeholder actor sprite. BehaviorType=GuildStaff");
-
-                var sprite = config.GetSprite(
-                    ActorBehaviorType.GuildStaff,
-                    ActorAnimationDirection.NE,
-                    isWalking: false,
-                    walkFrameIndex: 0);
-
-                Assert.That(sprite, Is.Not.Null);
-            }
-            finally
-            {
-                config.Dispose();
-                loader.Dispose();
             }
         }
 

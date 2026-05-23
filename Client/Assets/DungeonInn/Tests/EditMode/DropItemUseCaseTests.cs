@@ -139,7 +139,7 @@ namespace DungeonInn.Tests.EditMode
                 new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore(),
+                ActorViewDataStoreTestFactory.Create(),
                 DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
             return (useCase, worldState, eventBus, random);
         }

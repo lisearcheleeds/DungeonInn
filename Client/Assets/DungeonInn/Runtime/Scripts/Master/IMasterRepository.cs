@@ -14,6 +14,7 @@ namespace DungeonInn.Master
         IReadOnlyDictionary<int, LevelTable> LevelTables { get; }
         IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters { get; }
         IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters { get; }
+        IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters { get; }
 
         WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType);
         ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId);
@@ -24,5 +25,6 @@ namespace DungeonInn.Master
         LevelTable GetLevelTable(int levelTableId);
         DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex);
         EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key);
+        ActorVisualMaster GetActorVisualMaster(string visualId, int skinId);
     }
 }

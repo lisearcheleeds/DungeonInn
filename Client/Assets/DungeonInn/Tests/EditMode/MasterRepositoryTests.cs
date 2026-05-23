@@ -1,4 +1,5 @@
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 using NUnit.Framework;
@@ -21,6 +22,7 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(repository.ActorEffectMasters, Is.Not.Empty);
             Assert.That(repository.SpeciesMasters, Is.Not.Empty);
             Assert.That(repository.SpawnTableMasters, Is.Not.Empty);
+            Assert.That(repository.ActorVisualMasters, Is.Not.Empty);
         }
 
         [Test]
@@ -92,6 +94,19 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(speciesMaster.Name, Is.EqualTo("Goblin"));
             Assert.That(speciesMaster.SpeciesDrops, Is.Not.Empty);
+        }
+
+        [Test]
+        public void ActorArchetypeReferencesDefaultActorVisualMaster()
+        {
+            var repository = new HardcodedMasterRepository();
+            var archetypeMaster = repository.GetActorArchetypeMaster(1);
+            var visualMaster = repository.GetActorVisualMaster(
+                archetypeMaster.VisualId,
+                GameConstants.DefaultActorSkinId);
+
+            Assert.That(archetypeMaster.VisualId, Is.EqualTo("adventurer_novice"));
+            Assert.That(visualMaster.VisualDefinitionAddress, Is.Not.Empty);
         }
 
         [Test]

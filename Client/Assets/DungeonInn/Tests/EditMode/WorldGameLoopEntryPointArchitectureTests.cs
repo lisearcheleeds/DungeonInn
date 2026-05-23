@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -100,7 +100,7 @@ namespace DungeonInn.Tests.EditMode
             var gameClock = new StubGameClock();
             var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
-            var actorViewDataStore = new ActorViewDataStore();
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var worldState = CreateWorldState(
                 actorSpatialIndexService,
                 candidateService,
@@ -140,7 +140,7 @@ namespace DungeonInn.Tests.EditMode
             var gameClock = new StubGameClock();
             var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
-            var actorViewDataStore = new ActorViewDataStore();
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var worldState = CreateWorldState(
                 actorSpatialIndexService,
                 candidateService,
@@ -188,7 +188,7 @@ namespace DungeonInn.Tests.EditMode
             var gameClock = new StubGameClock();
             var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
-            var actorViewDataStore = new ActorViewDataStore();
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var worldState = CreateWorldState(
                 actorSpatialIndexService,
                 candidateService,

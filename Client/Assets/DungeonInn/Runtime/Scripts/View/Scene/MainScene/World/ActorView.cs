@@ -1,4 +1,6 @@
 using DungeonInn.Domain.Map;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DungeonInn.View.Scene.MainScene.World
@@ -7,13 +9,11 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class ActorView : MonoBehaviour
     {
         [SerializeField] SpriteRenderer spriteRenderer;
-        [SerializeField] ActorSpriteAnimationClip idleAnimationClip;
-        [SerializeField] ActorSpriteAnimationClip walkAnimationClip;
-        [SerializeField] ActorSpriteAnimationClip combatAnimationClip;
-        [SerializeField] ActorSpriteAnimationClip hitAnimationClip;
-        [SerializeField] ActorSpriteAnimationClip deadAnimationClip;
 
         ActorSpriteAnimator animator;
+        readonly HashSet<MissingSpriteWarningKey> missingSpriteWarnings = new();
+        Guid actorId;
+        ActorVisualDefinition visualDefinition;
         float targetCanvasHeightMeters;
         Sprite currentSprite;
         float currentVisualScale = 1f;
@@ -25,20 +25,26 @@ namespace DungeonInn.View.Scene.MainScene.World
         public Vector2 Facing { get; private set; }
         public LayerPosition LastPosition { get; private set; }
         public bool HasLastPosition { get; private set; }
-        public int CurrentFrameIndex => animator != null ? animator.CurrentFrameIndex : 0;
-        public bool IsHitOneShotComplete => animator?.IsHitOneShotComplete ?? false;
+        public bool IsDamageOneShotComplete(ActorAnimationDirection direction)
+        {
+            return animator?.IsDamageOneShotComplete(direction) ?? false;
+        }
 
         void Awake()
         {
             EnsureSpriteRenderer();
             animator = new ActorSpriteAnimator();
-            animator.Setup(idleAnimationClip, walkAnimationClip);
-            animator.SetupCombatClips(combatAnimationClip, hitAnimationClip, deadAnimationClip);
             Facing = Vector2.down;
+        }
+
+        public void BindActor(Guid value)
+        {
+            actorId = value;
         }
 
         public void Reset()
         {
+            ClearVisual();
             SetSprite(null);
             SetFlip(false);
             SetVisualCanvasHeight(0f);
@@ -50,19 +56,32 @@ namespace DungeonInn.View.Scene.MainScene.World
             animator?.Reset();
         }
 
-        public void SetupAnimation(ActorSpriteAnimationClip idle, ActorSpriteAnimationClip walk)
+        public void ApplyVisual(ActorVisualDefinition definition)
         {
+            if (definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
+            if (visualDefinition == definition)
+            {
+                return;
+            }
+
+            visualDefinition = definition;
             EnsureAnimator();
-            animator.Setup(idle, walk);
+            animator.ApplyVisual(definition);
+            missingSpriteWarnings.Clear();
+            SetVisualCanvasHeight(ActorVisualSizeTierCatalog.GetCanvasHeightMeters(definition.VisualSizeTier));
         }
 
-        public void SetupCombatAnimation(
-            ActorSpriteAnimationClip combat,
-            ActorSpriteAnimationClip hit,
-            ActorSpriteAnimationClip dead)
+        public void ClearVisual()
         {
+            visualDefinition = null;
             EnsureAnimator();
-            animator.SetupCombatClips(combat, hit, dead);
+            animator.Reset();
+            missingSpriteWarnings.Clear();
+            SetSprite(null);
         }
 
         public void SetAnimationState(ActorAnimationState state)
@@ -71,10 +90,11 @@ namespace DungeonInn.View.Scene.MainScene.World
             animator.SetState(state);
         }
 
-        public void Tick(float deltaTime)
+        public void Tick(float deltaTime, ActorAnimationDirection direction)
         {
             EnsureAnimator();
-            animator.Tick(deltaTime);
+            animator.Tick(deltaTime, direction);
+            ApplyCurrentAnimationSprite(direction);
         }
 
         public void SetSprite(Sprite sprite)
@@ -169,8 +189,6 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             animator = new ActorSpriteAnimator();
-            animator.Setup(idleAnimationClip, walkAnimationClip);
-            animator.SetupCombatClips(combatAnimationClip, hitAnimationClip, deadAnimationClip);
         }
 
         void EnsureSpriteRenderer()
@@ -209,6 +227,81 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             currentVisualScale = scale;
             transform.localScale = new Vector3(scale, scale, scale);
+        }
+
+        void ApplyCurrentAnimationSprite(ActorAnimationDirection direction)
+        {
+            if (visualDefinition == null)
+            {
+                SetSprite(null);
+                return;
+            }
+
+            var sprite = animator.GetCurrentSprite(direction);
+            if (sprite == null)
+            {
+                WarnMissingSprite(direction);
+            }
+
+            SetSprite(sprite);
+        }
+
+        void WarnMissingSprite(ActorAnimationDirection direction)
+        {
+            var key = new MissingSpriteWarningKey(
+                visualDefinition.VisualId,
+                animator.CurrentState,
+                direction,
+                animator.ClipFrameIndex);
+            if (!missingSpriteWarnings.Add(key))
+            {
+                return;
+            }
+
+            Debug.LogWarning(
+                $"[ActorView] Actor visual sprite is null. ActorId={actorId} VisualId={visualDefinition.VisualId} State={animator.CurrentState} Direction={direction} Frame={animator.ClipFrameIndex}");
+        }
+
+        readonly struct MissingSpriteWarningKey : IEquatable<MissingSpriteWarningKey>
+        {
+            readonly string visualId;
+            readonly ActorAnimationState state;
+            readonly ActorAnimationDirection direction;
+            readonly int frameIndex;
+
+            public MissingSpriteWarningKey(
+                string visualId,
+                ActorAnimationState state,
+                ActorAnimationDirection direction,
+                int frameIndex)
+            {
+                this.visualId = visualId;
+                this.state = state;
+                this.direction = direction;
+                this.frameIndex = frameIndex;
+            }
+
+            public bool Equals(MissingSpriteWarningKey other)
+            {
+                return visualId == other.visualId &&
+                    state == other.state &&
+                    direction == other.direction &&
+                    frameIndex == other.frameIndex;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is MissingSpriteWarningKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                var hash = visualId != null ? visualId.GetHashCode() : 0;
+                hash = (hash * 397) ^ (int)state;
+                hash = (hash * 397) ^ (int)direction;
+                hash = (hash * 397) ^ frameIndex;
+                return hash;
+            }
         }
     }
 }

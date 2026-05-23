@@ -1,0 +1,150 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 578c5ba05612edc4e963a48bf20e7c48, type: 3}
+  m_Name: AdventurerNovice
+  m_EditorClassIdentifier: DungeonInn.Runtime::DungeonInn.View.Scene.MainScene.World.ActorVisualDefinitionSO
+  visualId: adventurer_novice
+  visualSizeTier: 0
+  idleEntries:
+  - direction: 0
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: e20405b2a02f82b4ba0faacc2d696521, type: 3}
+  - direction: 1
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: 856d812941d23e6479d3de51cb4f651b, type: 3}
+  - direction: 2
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: f97f5c85d5bd5c940a9c9b7d0f4ec593, type: 3}
+  - direction: 3
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: db62ce86e6b06db4c92c97418459feb9, type: 3}
+  walkEntries:
+  - direction: 0
+    fps: 4
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: 70152b12e5413114a8522ec09983ba50, type: 3}
+    - {fileID: 21300000, guid: 938608f797168504592e837d1a59031f, type: 3}
+  - direction: 1
+    fps: 4
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: 76a0e8e3c53fad04db73c271746f28a3, type: 3}
+    - {fileID: 21300000, guid: c0cf2d6de81e0c4499246cbde92bb33f, type: 3}
+  - direction: 2
+    fps: 4
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: 1752c85273b48c045b589ae2cd17f5a7, type: 3}
+    - {fileID: 21300000, guid: d5075afa2c0e5e946ab28a1a0c200dcc, type: 3}
+  - direction: 3
+    fps: 4
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: 43ccfd040e85bc340bec205dd7c8f8e9, type: 3}
+    - {fileID: 21300000, guid: 7dfdbb64646ce814fa6827db8c67e1ca, type: 3}
+  workEntries:
+  - direction: 0
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: e20405b2a02f82b4ba0faacc2d696521, type: 3}
+  - direction: 1
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: 856d812941d23e6479d3de51cb4f651b, type: 3}
+  - direction: 2
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: f97f5c85d5bd5c940a9c9b7d0f4ec593, type: 3}
+  - direction: 3
+    fps: 1
+    loop: 1
+    sprites:
+    - {fileID: 21300000, guid: db62ce86e6b06db4c92c97418459feb9, type: 3}
+  attackEntries:
+  - direction: 0
+    fps: 8
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: 70152b12e5413114a8522ec09983ba50, type: 3}
+    - {fileID: 21300000, guid: 938608f797168504592e837d1a59031f, type: 3}
+  - direction: 1
+    fps: 8
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: 76a0e8e3c53fad04db73c271746f28a3, type: 3}
+    - {fileID: 21300000, guid: c0cf2d6de81e0c4499246cbde92bb33f, type: 3}
+  - direction: 2
+    fps: 8
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: 1752c85273b48c045b589ae2cd17f5a7, type: 3}
+    - {fileID: 21300000, guid: d5075afa2c0e5e946ab28a1a0c200dcc, type: 3}
+  - direction: 3
+    fps: 8
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: 43ccfd040e85bc340bec205dd7c8f8e9, type: 3}
+    - {fileID: 21300000, guid: 7dfdbb64646ce814fa6827db8c67e1ca, type: 3}
+  damageEntries:
+  - direction: 0
+    fps: 4
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: e20405b2a02f82b4ba0faacc2d696521, type: 3}
+  - direction: 1
+    fps: 4
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: 856d812941d23e6479d3de51cb4f651b, type: 3}
+  - direction: 2
+    fps: 4
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: f97f5c85d5bd5c940a9c9b7d0f4ec593, type: 3}
+  - direction: 3
+    fps: 4
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: db62ce86e6b06db4c92c97418459feb9, type: 3}
+  deadEntries:
+  - direction: 0
+    fps: 1
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: e20405b2a02f82b4ba0faacc2d696521, type: 3}
+  - direction: 1
+    fps: 1
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: 856d812941d23e6479d3de51cb4f651b, type: 3}
+  - direction: 2
+    fps: 1
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: f97f5c85d5bd5c940a9c9b7d0f4ec593, type: 3}
+  - direction: 3
+    fps: 1
+    loop: 0
+    sprites:
+    - {fileID: 21300000, guid: db62ce86e6b06db4c92c97418459feb9, type: 3}

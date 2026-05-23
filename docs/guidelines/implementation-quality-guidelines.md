@@ -931,3 +931,165 @@ var sprite = ActorSpritePlaceholderFactory.Create(color, out var texture);
 
 - [ ] 一般パターンに反する意図的設計の根拠が設計ドキュメントに記録されているか
 - [ ] 「意図的な設計」の記録が、そこから派生する別の問題への認識も含んでいるか
+---
+
+## Visual Definition 分離の原則
+
+### 経緯
+
+DungeonInn の Milestone 7.5 では、`Actor` と `Actor` の見た目を分離した。
+それ以前は `ActorView.prefab` や Actor 表示処理が、Actor 種別ごとの Sprite / AnimationClip / 表示サイズを直接知る形になりやすかった。
+この構造では、冒険者・モンスター・職員・ペットなどの種類が増えるたびに View / Prefab / Presenter の分岐が増え、ゲーム上の存在と表示資産の責務が混ざる。
+
+Milestone 7.5 では、Actor のゲーム上の定義、見た目の解決表、実際の表示資産定義を分けた。
+
+- `Actor` / `ActorArchetypeMaster`: ゲーム上の存在、種別、能力、初期装備、行動種別を扱う
+- `ActorVisualMaster`: `visualId + skinId` から Visual Definition の Addressable address を解決する
+- `ActorVisualDefinitionSO`: Sprite、FPS、loop、方向差分、表示サイズなど Unity 表示資産を扱う
+- `ActorSpriteAnimator`: Actor ごとの現在 state、方向、frame、経過時間など再生状態を扱う
+
+この分離により、「Goblin という敵」と「Goblin をどう描画するか」を別々に変更できる。
+
+### 基本方針
+
+Domain / Application / Master は Unity asset を直接参照しない。
+Prefab、Sprite、Material、AnimationClip、Animator Controller、Addressables API などをゲーム概念に混ぜない。
+ゲーム概念側が表示差分を必要とする場合は、`visualId` や `visualMasterId` のような論理 ID のみを持たせ、実体のロード・参照・差し替えは View / Infrastructure 側に閉じる。
+
+Visual Definition は共有可能な不変データとして扱う。
+一方で、現在 frame、再生中の animation state、経過時間、one-shot 完了状態、missing warning の出力済み状態などは View インスタンス側に持つ。
+「定義」と「再生状態」を同じオブジェクトに混ぜない。
+
+### 適用する場面
+
+以下のような、ゲーム上の意味と表示資産が一対一に見えやすい箇所ほど、この分離を検討する。
+
+- Actor / Character / Enemy / NPC の見た目
+- Item / Equipment の icon や world object 表示
+- Projectile / AreaEffect / SkillEffect の prefab
+- Facility / Prop / Tile の見た目
+- UI View prefab の選択
+
+ただし、Domain に Unity asset を持ち込むための抜け道として `Definition` を作ってはならない。
+Visual Definition は View / Infrastructure 側の表示定義であり、Domain の仕様値やゲームルールそのものではない。
+
+### ルール
+
+#### 1. ゲーム概念と表示概念を同じデータに混ぜない
+
+Actor、Item、Facility などのゲーム概念は、Prefab、Sprite、Animation、Material を直接持たない。
+必要なら `visualId` のような論理 ID だけを持つ。
+
+```csharp
+// OK: ゲームデータは論理 ID だけを持つ
+public sealed class ActorArchetypeMaster
+{
+    public string VisualId { get; }
+}
+
+// NG: ゲームデータが Unity asset を直接持つ
+public sealed class ActorArchetypeMaster
+{
+    public Sprite IdleSprite { get; }
+    public GameObject ActorPrefab { get; }
+}
+```
+
+#### 2. 見た目差分は Visual Definition に閉じ込める
+
+Actor 種別ごとに prefab や View クラスを増やすのではなく、共通 View に Visual Definition を差し替える。
+これにより、見た目の種類が増えても View の構造や Presenter の分岐を増やさずに済む。
+
+```csharp
+// OK: View は共通。見た目は Definition で差し替える
+actorView.ApplyVisual(actorVisualDefinition);
+```
+
+#### 3. Addressable address をゲーム本体に漏らさない
+
+`ActorArchetypeMaster` などのゲームデータが Addressable address を直接持つと、ゲームデータが Unity の asset 配置に依存する。
+`visualId -> address` の解決表を挟み、asset 配置変更や skin 差し替えを局所化する。
+
+```csharp
+// OK: archetype は visualId のみを持つ
+new ActorArchetypeMaster(id, name, visualId, ...);
+
+// OK: visual master が address 解決を担当する
+new ActorVisualMaster(visualId, skinId, "World/ActorVisual/AdventurerNovice");
+
+// NG: archetype が直接 Addressable address を持つ
+new ActorArchetypeMaster(id, name, "World/ActorVisual/AdventurerNovice", ...);
+```
+
+#### 4. Enum 追加時に明示的に壊れる構造を選ぶ
+
+`Idle / Walk / Attack / Damage` のように固定カテゴリとして扱う値は、過度に汎用的なフラット配列にしない。
+Enum 追加時に Factory、Editor 生成、テストが明示的に更新対象になる構造の方が安全な場合がある。
+
+Milestone 7.5 では、`ActorVisualAnimationEntry` が `ActorAnimationKey` を持つフラット配列ではなく、`ActorVisualDefinitionSO` が animation key ごとの配列を持つ形にした。
+
+```csharp
+public sealed class ActorVisualDefinitionSO : ScriptableObject
+{
+    [SerializeField] ActorVisualAnimationEntry[] idleEntries;
+    [SerializeField] ActorVisualAnimationEntry[] walkEntries;
+    [SerializeField] ActorVisualAnimationEntry[] workEntries;
+    [SerializeField] ActorVisualAnimationEntry[] attackEntries;
+    [SerializeField] ActorVisualAnimationEntry[] damageEntries;
+    [SerializeField] ActorVisualAnimationEntry[] deadEntries;
+}
+
+public sealed class ActorVisualAnimationEntry
+{
+    [SerializeField] ActorAnimationDirection direction;
+    [SerializeField] float fps;
+    [SerializeField] bool loop;
+    [SerializeField] Sprite[] sprites;
+}
+```
+
+この形にすると、`Idle` の配列に `Attack` の key が混ざる不正状態を構造的に作れない。
+新しい `ActorAnimationKey` を追加した場合も、SO フィールド、Factory、EditorSetup、テストの不足が見つかりやすい。
+
+#### 5. Visual Definition は共有し、再生状態は View インスタンスに持つ
+
+Visual Definition は複数 Actor で共有してよい。
+ただし、現在 frame、state、elapsed time、one-shot 完了状態などは Actor ごとに異なるため、Definition に入れてはならない。
+
+```csharp
+// OK: 共有可能な不変データ
+public sealed class ActorVisualDefinition
+{
+    public bool TryGetClip(ActorAnimationKey key, ActorAnimationDirection direction, out ActorVisualAnimationClip clip);
+}
+
+// OK: ActorView / Animator インスタンスごとの再生状態
+public sealed class ActorSpriteAnimator
+{
+    ActorAnimationState currentState;
+    float elapsed;
+    int clipFrameIndex;
+}
+```
+
+### DungeonInn Milestone 7.5 Example
+
+Milestone 7.5 の Actor visual 分離は、このパターンの具体例である。
+
+- `ActorArchetypeMaster.VisualId` は「この Actor 種別のデフォルト見た目」を表す論理 ID
+- `ActorVisualMaster` は `visualId + skinId` を Addressable address に解決する Master
+- `ActorVisualDefinitionSO` は Unity asset と表示パラメータを持つ View 側定義
+- `ActorVisualDefinitionFactory` は SO を runtime 用の不変定義に変換し、必須 animation key / direction の欠落を検証する
+- `WorldActorPresenter` は `ActorViewData.VisualId` を受け取り、未ロードなら `ActorVisualDefinitionLoader` に要求する
+- `ActorView` は Addressable を知らず、ロード済み `ActorVisualDefinition` を適用するだけにする
+- `ActorSpriteAnimator` は共有 definition を参照しつつ、現在 state / frame / elapsed を Actor ごとに保持する
+
+### レビュー観点
+
+- [ ] Domain / Application / Master が `Sprite` / `Material` / `GameObject` / `ScriptableObject` / Addressables API を直接参照していない
+- [ ] ゲーム概念側が持つ表示情報は `visualId` などの論理 ID に留まっている
+- [ ] Addressable address は発生源 Master / Spec / Visual Master / Definition 側に閉じている
+- [ ] View / Presenter / Loader の責務が、ID 解決、asset load、View 適用に分離されている
+- [ ] Visual Definition に現在 frame / elapsed / dirty flag / warning state などの per-instance 状態が入っていない
+- [ ] enum や固定カテゴリを追加した時に、Factory / Editor 生成 / asset validation / test の不足が検出できる
+- [ ] null asset や missing sprite の警告には、visualId / animation key / direction / frame など追跡に必要な情報が含まれている

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Master
@@ -20,6 +21,7 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, LevelTable> levelTables;
         readonly IReadOnlyDictionary<int, DungeonFloorExplorationMaster> dungeonFloorExplorationMasters;
         readonly IReadOnlyDictionary<string, EnvironmentPropVisualMaster> environmentPropVisualMasters;
+        readonly IReadOnlyDictionary<string, ActorVisualMaster> actorVisualMasters;
 
         public IReadOnlyDictionary<int, ItemMaster> ItemMasters => itemMasters;
         public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => equipmentMasters;
@@ -33,6 +35,7 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, LevelTable> LevelTables => levelTables;
         public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => dungeonFloorExplorationMasters;
         public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => environmentPropVisualMasters;
+        public IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters => actorVisualMasters;
 
         public HardcodedMasterRepository()
         {
@@ -44,6 +47,7 @@ namespace DungeonInn.Master
             levelTables = CreateLevelTables();
             dungeonFloorExplorationMasters = CreateDungeonFloorExplorationMasters();
             environmentPropVisualMasters = CreateEnvironmentPropVisualMasters();
+            actorVisualMasters = CreateActorVisualMasters();
             speciesMasters = CreateSpeciesMasters();
             actorArchetypeMasters = CreateActorArchetypeMasters();
             adventurerSpawnMasters = CreateAdventurerSpawnMasters();
@@ -116,6 +120,11 @@ namespace DungeonInn.Master
             return GetRequired(environmentPropVisualMasters, key, nameof(EnvironmentPropVisualMaster));
         }
 
+        public ActorVisualMaster GetActorVisualMaster(string visualId, int skinId)
+        {
+            return GetRequired(actorVisualMasters, CreateActorVisualKey(visualId, skinId), nameof(ActorVisualMaster));
+        }
+
         static IReadOnlyDictionary<string, EnvironmentPropVisualMaster> CreateEnvironmentPropVisualMasters()
         {
             return new[]
@@ -123,6 +132,21 @@ namespace DungeonInn.Master
                 new EnvironmentPropVisualMaster("StairUp", "World/Prop/StairUp"),
                 new EnvironmentPropVisualMaster("StairDown", "World/Prop/StairDown")
             }.ToDictionary(x => x.Key);
+        }
+
+        static IReadOnlyDictionary<string, ActorVisualMaster> CreateActorVisualMasters()
+        {
+            return new[]
+            {
+                new ActorVisualMaster("adventurer_novice", GameConstants.DefaultActorSkinId, "World/ActorVisual/AdventurerNovice"),
+                new ActorVisualMaster("monster_goblin", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterGoblin"),
+                new ActorVisualMaster("monster_orc", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterOrc"),
+                new ActorVisualMaster("monster_ogre", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterOgre"),
+                new ActorVisualMaster(
+                    "monster_goblin_archer",
+                    GameConstants.DefaultActorSkinId,
+                    "World/ActorVisual/MonsterGoblinArcher")
+            }.ToDictionary(x => CreateActorVisualKey(x.VisualId, x.SkinId));
         }
 
         static IReadOnlyDictionary<int, ItemMaster> CreateItemMasters()
@@ -267,6 +291,7 @@ namespace DungeonInn.Master
                 new ActorArchetypeMaster(
                     1,
                     "Novice Adventurer",
+                    "adventurer_novice",
                     ActorBehaviorType.Adventurer,
                     10,
                     WeaponType.Fist,
@@ -278,6 +303,7 @@ namespace DungeonInn.Master
                 new ActorArchetypeMaster(
                     2,
                     "Goblin",
+                    "monster_goblin",
                     ActorBehaviorType.Monster,
                     1,
                     WeaponType.Claws,
@@ -289,6 +315,7 @@ namespace DungeonInn.Master
                 new ActorArchetypeMaster(
                     3,
                     "Orc",
+                    "monster_orc",
                     ActorBehaviorType.Monster,
                     2,
                     WeaponType.Scythe,
@@ -300,6 +327,7 @@ namespace DungeonInn.Master
                 new ActorArchetypeMaster(
                     4,
                     "Ogre",
+                    "monster_ogre",
                     ActorBehaviorType.Monster,
                     3,
                     WeaponType.Fist,
@@ -311,6 +339,7 @@ namespace DungeonInn.Master
                 new ActorArchetypeMaster(
                     5,
                     "Goblin Archer",
+                    "monster_goblin_archer",
                     ActorBehaviorType.Monster,
                     1,
                     WeaponType.Bow,
@@ -404,6 +433,7 @@ namespace DungeonInn.Master
                 GetSpeciesMaster(archetypeMaster.SpeciesId);
                 GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType);
                 GetLevelTable(archetypeMaster.LevelTableId);
+                GetActorVisualMaster(archetypeMaster.VisualId, GameConstants.DefaultActorSkinId);
                 ValidateItemIds(archetypeMaster.InitialEquipmentItemIds);
                 ValidateItemStacks(archetypeMaster.InitialInventoryItemIds);
             }
@@ -503,6 +533,11 @@ namespace DungeonInn.Master
             }
 
             throw new KeyNotFoundException($"{masterName} does not exist. Id: {id}");
+        }
+
+        static string CreateActorVisualKey(string visualId, int skinId)
+        {
+            return $"{visualId}:{skinId}";
         }
     }
 }

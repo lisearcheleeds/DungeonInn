@@ -25,6 +25,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1606e5ac30ec5174faa2b75c653c25db
+    m_Address: World/ActorVisual/MonsterGoblin
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1752c85273b48c045b589ae2cd17f5a7
     m_Address: Sprites/Adventurer/WalkSE1
     m_ReadOnly: 0
@@ -120,6 +125,21 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9a6f8ad1f6d6eca41857f78ce3f73857
+    m_Address: World/ActorVisual/MonsterGoblinArcher
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9d4b0f29d7b56fd4583b4329d19db67e
+    m_Address: World/ActorVisual/MonsterOrc
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a987892bd7861b14b8fd553dfbab4c3b
+    m_Address: World/ActorVisual/AdventurerNovice
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b4e0ab4ef6f078f488e546b7d1aaa2e6
     m_Address: Sprites/Goblin/WalkSW2
     m_ReadOnly: 0
@@ -177,6 +197,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e20405b2a02f82b4ba0faacc2d696521
     m_Address: Sprites/Adventurer/IdleNE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e88b66f5d258e934193c73d599092c0b
+    m_Address: World/ActorVisual/MonsterOgre
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

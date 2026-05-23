@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -237,7 +237,7 @@ namespace DungeonInn.Tests.EditMode
                 new NoOpGameEventBus(),
                 new NoOpNavigationPathProvider());
             var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
-            var actorViewDataStore = new ActorViewDataStore();
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
                     new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
@@ -316,7 +316,7 @@ namespace DungeonInn.Tests.EditMode
                 new NoOpGameEventBus(),
                 new NoOpNavigationPathProvider());
             var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
-            var actorViewDataStore = new ActorViewDataStore();
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
                     new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
@@ -618,7 +618,7 @@ namespace DungeonInn.Tests.EditMode
                 new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore(),
+                ActorViewDataStoreTestFactory.Create(),
                 DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
@@ -680,7 +680,7 @@ namespace DungeonInn.Tests.EditMode
                 new NoOpGameEventBus(),
                 new NoOpNavigationPathProvider());
             var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
-            var actorViewDataStore = new ActorViewDataStore();
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             return new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
                     new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.World
@@ -82,16 +83,27 @@ namespace DungeonInn.Application.World
 
     public readonly struct ActorViewData
     {
-        public ActorViewData(Guid actorId, LayerPosition position, ActorBehaviorType behaviorType)
+        public ActorViewData(
+            Guid actorId,
+            LayerPosition position,
+            ActorBehaviorType behaviorType,
+            string visualId)
         {
+            if (string.IsNullOrWhiteSpace(visualId))
+            {
+                throw new ArgumentException("Actor view visual id is required.", nameof(visualId));
+            }
+
             ActorId = actorId;
             Position = position;
             BehaviorType = behaviorType;
+            VisualId = visualId;
         }
 
         public Guid ActorId { get; }
         public LayerPosition Position { get; }
         public ActorBehaviorType BehaviorType { get; }
+        public string VisualId { get; }
     }
 
     public readonly struct ActorViewDataChangeBuffer
@@ -233,6 +245,7 @@ namespace DungeonInn.Application.World
 
     public sealed class ActorViewDataStore : IActorViewDataProvider, IActorStatusViewDataProvider
     {
+        readonly IMasterRepository masterRepository;
         readonly Dictionary<Guid, ActorViewData> actorViewDataById = new();
         readonly HashSet<Guid> dirtyActorIds = new();
         readonly HashSet<Guid> removedActorIdSet = new();
@@ -241,6 +254,12 @@ namespace DungeonInn.Application.World
         readonly HashSet<Guid> statusRemovedActorIdSet = new();
         readonly List<Guid> statusRemovedActors = new();
 
+        [Inject]
+        public ActorViewDataStore(IMasterRepository masterRepository)
+        {
+            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+        }
+
         public void SyncActor(Actor actor)
         {
             if (actor == null)
@@ -248,7 +267,12 @@ namespace DungeonInn.Application.World
                 throw new ArgumentNullException(nameof(actor));
             }
 
-            var viewData = new ActorViewData(actor.Id, actor.Position, ResolveBehaviorType(actor));
+            var archetypeMaster = masterRepository.GetActorArchetypeMaster(actor.ArchetypeId);
+            var viewData = new ActorViewData(
+                actor.Id,
+                actor.Position,
+                ResolveBehaviorType(actor),
+                archetypeMaster.VisualId);
             if (actorViewDataById.TryGetValue(actor.Id, out var current) && IsSame(current, viewData))
             {
                 return;
@@ -325,7 +349,8 @@ namespace DungeonInn.Application.World
                 first.Position.LayerId.Equals(second.Position.LayerId) &&
                 first.Position.X.Equals(second.Position.X) &&
                 first.Position.Z.Equals(second.Position.Z) &&
-                first.BehaviorType == second.BehaviorType;
+                first.BehaviorType == second.BehaviorType &&
+                first.VisualId == second.VisualId;
         }
 
         static ActorBehaviorType ResolveBehaviorType(Actor actor)

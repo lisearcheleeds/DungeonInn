@@ -10,6 +10,7 @@ namespace DungeonInn.Master
     {
         public int Id { get; }
         public string Name { get; }
+        public string VisualId { get; }
         public ActorBehaviorType BehaviorType { get; }
         public int SpeciesId { get; }
         public WeaponType DefaultWeaponType { get; }
@@ -22,6 +23,7 @@ namespace DungeonInn.Master
         public ActorArchetypeMaster(
             int id,
             string name,
+            string visualId,
             ActorBehaviorType behaviorType,
             int speciesId,
             WeaponType defaultWeaponType,
@@ -41,6 +43,11 @@ namespace DungeonInn.Master
                 throw new ArgumentException("Actor archetype name is required.", nameof(name));
             }
 
+            if (string.IsNullOrWhiteSpace(visualId))
+            {
+                throw new ArgumentException("Actor archetype visual id is required.", nameof(visualId));
+            }
+
             if (initialLevel < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(initialLevel));
@@ -58,6 +65,7 @@ namespace DungeonInn.Master
 
             Id = id;
             Name = name;
+            VisualId = visualId;
             BehaviorType = behaviorType;
             SpeciesId = speciesId;
             DefaultWeaponType = defaultWeaponType == WeaponType.None ? WeaponType.Fist : defaultWeaponType;

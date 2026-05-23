@@ -63,7 +63,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<EnvironmentObjectPlacer>(Lifetime.Scoped);
 
             // === View: アクター描画 ===
-            builder.Register<ActorSpriteVisualConfig>(Lifetime.Scoped);
+            builder.Register<ActorVisualDefinitionLoader>(Lifetime.Scoped);
             builder.Register<ActorPrefabSource>(Lifetime.Scoped);
             builder.RegisterInstance(ResolveWorldCameraSettings()).AsSelf();
             builder.Register<WorldMapView>(Lifetime.Scoped);

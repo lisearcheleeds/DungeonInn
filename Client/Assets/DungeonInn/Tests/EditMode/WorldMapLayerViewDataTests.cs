@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -92,7 +92,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ActorViewDataStoreConsumesOnlyChangedActors()
         {
-            var store = new ActorViewDataStore();
+            var store = ActorViewDataStoreTestFactory.Create();
             var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f));
 
             store.SyncActor(actor);
@@ -115,7 +115,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ActorViewDataStoreReportsRemovedActors()
         {
-            var store = new ActorViewDataStore();
+            var store = ActorViewDataStoreTestFactory.Create();
             var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f));
 
             store.SyncActor(actor);
@@ -130,7 +130,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ActorViewDataStoreConsumesStatusRemoval()
         {
-            var store = new ActorViewDataStore();
+            var store = ActorViewDataStoreTestFactory.Create();
             var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f));
 
             store.SyncActor(actor);
@@ -198,7 +198,7 @@ namespace DungeonInn.Tests.EditMode
             IActorBehavior behavior,
             ActorBehaviorType expectedType)
         {
-            var store = new ActorViewDataStore();
+            var store = ActorViewDataStoreTestFactory.Create();
             var actor = CreateActor(new LayerPosition(MapLayerId.Ground, 5f, 5f), behavior);
 
             store.SyncActor(actor);
@@ -270,16 +270,19 @@ namespace DungeonInn.Tests.EditMode
             var cameraController = new WorldCameraController(CreateWorldCameraSettingsForPresenterTest());
             cameraController.BindCamera(camera);
             cameraController.UpdateCamera(0f);
-            var loader = new VisualConfigLoader(
+            var visualDefinitionLoader = new ActorVisualDefinitionLoader(
                 new ThrowingAssetManager(),
-                new VisualConfigSettings(null, null));
-            var actorSpriteVisualConfig = new ActorSpriteVisualConfig(loader);
+                new HardcodedMasterRepository());
             var presenter = new WorldActorPresenter(
                 new FixedActorViewDataProvider(
-                    new ActorViewData(actorId, actorPosition, ActorBehaviorType.Adventurer)),
+                    new ActorViewData(
+                        actorId,
+                        actorPosition,
+                        ActorBehaviorType.Adventurer,
+                        "adventurer_novice")),
                 new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
                 registry,
-                actorSpriteVisualConfig,
+                visualDefinitionLoader,
                 cameraController,
                 new ActorCombatAnimationPresenter(TestEventSubscriber.Instance));
 
@@ -287,7 +290,7 @@ namespace DungeonInn.Tests.EditMode
             {
                 LogAssert.Expect(
                     LogType.Warning,
-                    "[ActorSpriteVisualConfig] Using placeholder actor sprite. BehaviorType=Adventurer");
+                    "[ActorVisualDefinitionLoader] Failed to load actor visual definition. VisualId=adventurer_novice SkinId=0 Error=Specified method is not supported.");
 
                 presenter.UpdateVisuals();
                 var actorView = registry.GetOrCreateActorView(actorId, actorPosition, out var created);
@@ -306,8 +309,7 @@ namespace DungeonInn.Tests.EditMode
                 registry.Dispose();
                 pool.Dispose();
                 prefabSource.Dispose();
-                actorSpriteVisualConfig.Dispose();
-                loader.Dispose();
+                visualDefinitionLoader.Dispose();
                 layerRegistry.Dispose();
                 viewRoot.Dispose();
             }
@@ -412,7 +414,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var groundActor = CreateActor(new LayerPosition(MapLayerId.Ground, 1f, 1f));
             var dungeonActor = CreateActor(new LayerPosition(MapLayerId.DungeonFloor(1), 1f, 1f));
-            var store = new ActorViewDataStore();
+            var store = ActorViewDataStoreTestFactory.Create();
             store.SyncActor(groundActor);
             store.SyncActor(dungeonActor);
             var worldState = new ActorStatusWorldState(groundActor, dungeonActor);

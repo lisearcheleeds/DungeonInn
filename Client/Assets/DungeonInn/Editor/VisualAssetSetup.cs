@@ -15,6 +15,7 @@ namespace DungeonInn.Editor
     public static class VisualAssetSetup
     {
         const string SoDirectory = "Assets/DungeonInn/Runtime/StaticResources/Visual";
+        const string ActorVisualDefinitionDirectory = SoDirectory + "/ActorVisualDefinitions";
         const string MapMaterialDirectory = "Assets/DungeonInn/Runtime/Art/Materials/Map";
         const string MapTextureDirectory = "Assets/DungeonInn/Runtime/Art/Textures/Map";
         const string MapMaterialSoPath = SoDirectory + "/MapMaterialSet.asset";
@@ -22,6 +23,11 @@ namespace DungeonInn.Editor
         const string LayerPositionViewSettingsPath = SoDirectory + "/LayerPositionViewSettings.asset";
         const string WorldCameraSettingsPath = SoDirectory + "/WorldCameraSettings.asset";
         const string WorldGameSettingsPath = SoDirectory + "/WorldGameSettings.asset";
+        const string AdventurerNoviceVisualDefinitionPath = ActorVisualDefinitionDirectory + "/AdventurerNovice.asset";
+        const string MonsterGoblinVisualDefinitionPath = ActorVisualDefinitionDirectory + "/MonsterGoblin.asset";
+        const string MonsterOrcVisualDefinitionPath = ActorVisualDefinitionDirectory + "/MonsterOrc.asset";
+        const string MonsterOgreVisualDefinitionPath = ActorVisualDefinitionDirectory + "/MonsterOgre.asset";
+        const string MonsterGoblinArcherVisualDefinitionPath = ActorVisualDefinitionDirectory + "/MonsterGoblinArcher.asset";
         const string WorldPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/World";
         const string ActorPrefabPath = WorldPrefabDirectory + "/ActorView.prefab";
         const string StairUpPropPrefabPath = WorldPrefabDirectory + "/StairUpPropView.prefab";
@@ -32,8 +38,6 @@ namespace DungeonInn.Editor
         const string ActorDetailPopupPrefabPath = WorldPrefabDirectory + "/ActorDetailPopup.prefab";
         const string PlayerEventLogViewPrefabPath = WorldPrefabDirectory + "/PlayerEventLogView.prefab";
         const string EffectDummySpritePath = "Assets/DungeonInn/Runtime/Art/Sprites/Effect/Dummy.png";
-        const string ActorIdleAnimationPath = SoDirectory + "/ActorIdleAnimation.asset";
-        const string ActorWalkAnimationPath = SoDirectory + "/ActorWalkAnimation.asset";
         const string AddressablesGroupName = "DungeonInn Visual";
         const string MapMaterialShaderName = "Universal Render Pipeline/Lit";
 
@@ -58,8 +62,11 @@ namespace DungeonInn.Editor
                 AssetDatabase.AssetPathExists(ActorStatusViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath) &&
                 AssetDatabase.AssetPathExists(PlayerEventLogViewPrefabPath) &&
-                AssetDatabase.AssetPathExists(ActorIdleAnimationPath) &&
-                AssetDatabase.AssetPathExists(ActorWalkAnimationPath);
+                AssetDatabase.AssetPathExists(AdventurerNoviceVisualDefinitionPath) &&
+                AssetDatabase.AssetPathExists(MonsterGoblinVisualDefinitionPath) &&
+                AssetDatabase.AssetPathExists(MonsterOrcVisualDefinitionPath) &&
+                AssetDatabase.AssetPathExists(MonsterOgreVisualDefinitionPath) &&
+                AssetDatabase.AssetPathExists(MonsterGoblinArcherVisualDefinitionPath);
             if (!AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath) ||
                 !IsActorDetailPopupPrefabWired())
             {
@@ -129,10 +136,7 @@ namespace DungeonInn.Editor
         {
             EnsureDirectory(SoDirectory);
 
-            var idleClip = CreateOrLoadActorAnimationClip(ActorIdleAnimationPath, 1f, new[] { 0 });
-            var walkClip = CreateOrLoadActorAnimationClip(ActorWalkAnimationPath, 4f, new[] { 0, 1 });
             var actorPrefab = CreateOrLoadActorViewPrefab();
-            AssignAnimationClipsToPrefab(actorPrefab, idleClip, walkClip);
             var mapSo = CreateOrLoadMapMaterialSO();
             var actorSo = CreateOrLoadActorSpriteSO(actorPrefab);
             CreateOrLoadPropViewPrefab(StairUpPropPrefabPath, "StairUpPropView");
@@ -142,6 +146,7 @@ namespace DungeonInn.Editor
             CreateOrLoadActorStatusViewPrefab();
             CreateOrLoadActorDetailPopupPrefab();
             CreateOrLoadPlayerEventLogViewPrefab();
+            CreateOrUpdateActorVisualDefinitions();
             var layerSettingsSo = CreateOrLoadLayerPositionViewSettingsSO();
             var cameraSettingsSo = CreateOrLoadWorldCameraSettingsSO();
             var gameSettingsSo = CreateOrLoadWorldGameSettingsSO();
@@ -585,73 +590,6 @@ namespace DungeonInn.Editor
             return AssetDatabase.LoadAssetAtPath<Sprite>(EffectDummySpritePath);
         }
 
-        static ActorSpriteAnimationClip CreateOrLoadActorAnimationClip(
-            string assetPath,
-            float fps,
-            int[] frameIndices)
-        {
-            if (AssetDatabase.AssetPathExists(assetPath))
-            {
-                return AssetDatabase.LoadAssetAtPath<ActorSpriteAnimationClip>(assetPath);
-            }
-
-            var clip = ScriptableObject.CreateInstance<ActorSpriteAnimationClip>();
-            using (var serializedClip = new SerializedObject(clip))
-            {
-                serializedClip.FindProperty("fps").floatValue = fps;
-                serializedClip.FindProperty("loop").boolValue = true;
-                var frameIndicesProp = serializedClip.FindProperty("frameIndices");
-                frameIndicesProp.ClearArray();
-                for (var index = 0; index < frameIndices.Length; index++)
-                {
-                    frameIndicesProp.InsertArrayElementAtIndex(index);
-                    frameIndicesProp.GetArrayElementAtIndex(index).intValue = frameIndices[index];
-                }
-
-                serializedClip.ApplyModifiedPropertiesWithoutUndo();
-            }
-
-            AssetDatabase.CreateAsset(clip, assetPath);
-            Debug.Log($"[DungeonInn] Created {assetPath}");
-            return clip;
-        }
-
-        static void AssignAnimationClipsToPrefab(
-            ActorView actorPrefab,
-            ActorSpriteAnimationClip idleClip,
-            ActorSpriteAnimationClip walkClip)
-        {
-            if (actorPrefab == null)
-            {
-                return;
-            }
-
-            using var serializedPrefab = new SerializedObject(actorPrefab);
-            var idleClipProp = serializedPrefab.FindProperty("idleAnimationClip");
-            var walkClipProp = serializedPrefab.FindProperty("walkAnimationClip");
-            var changed = false;
-
-            if (idleClipProp != null && idleClipProp.objectReferenceValue == null)
-            {
-                idleClipProp.objectReferenceValue = idleClip;
-                changed = true;
-            }
-
-            if (walkClipProp != null && walkClipProp.objectReferenceValue == null)
-            {
-                walkClipProp.objectReferenceValue = walkClip;
-                changed = true;
-            }
-
-            if (!changed)
-            {
-                return;
-            }
-
-            serializedPrefab.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(actorPrefab);
-        }
-
         static MapMaterialSetSO CreateOrLoadMapMaterialSO()
         {
             if (AssetDatabase.AssetPathExists(MapMaterialSoPath))
@@ -792,6 +730,7 @@ namespace DungeonInn.Editor
 
             RegisterMapMaterials(settings, group);
             RegisterContentPrefabs(settings, group);
+            RegisterActorVisualDefinitions(settings, group);
 
             EditorUtility.SetDirty(settings);
         }
@@ -805,6 +744,168 @@ namespace DungeonInn.Editor
             MarkAssetAddressable(settings, group, ActorStatusViewPrefabPath, "World/UI/ActorStatusView");
             MarkAssetAddressable(settings, group, ActorDetailPopupPrefabPath, "World/UI/ActorDetailPopup");
             MarkAssetAddressable(settings, group, PlayerEventLogViewPrefabPath, "World/UI/PlayerEventLogView");
+        }
+
+        static void RegisterActorVisualDefinitions(AddressableAssetSettings settings, AddressableAssetGroup group)
+        {
+            MarkAssetAddressable(settings, group, AdventurerNoviceVisualDefinitionPath, "World/ActorVisual/AdventurerNovice");
+            MarkAssetAddressable(settings, group, MonsterGoblinVisualDefinitionPath, "World/ActorVisual/MonsterGoblin");
+            MarkAssetAddressable(settings, group, MonsterOrcVisualDefinitionPath, "World/ActorVisual/MonsterOrc");
+            MarkAssetAddressable(settings, group, MonsterOgreVisualDefinitionPath, "World/ActorVisual/MonsterOgre");
+            MarkAssetAddressable(settings, group, MonsterGoblinArcherVisualDefinitionPath, "World/ActorVisual/MonsterGoblinArcher");
+        }
+
+        static void CreateOrUpdateActorVisualDefinitions()
+        {
+            EnsureDirectory(ActorVisualDefinitionDirectory);
+
+            CreateOrUpdateActorVisualDefinition(
+                AdventurerNoviceVisualDefinitionPath,
+                "adventurer_novice",
+                ActorVisualSizeTier.AdventurerS,
+                "Assets/DungeonInn/Runtime/Art/Sprites/Adventurer",
+                "Adventurer");
+
+            CreateOrUpdateActorVisualDefinition(
+                MonsterGoblinVisualDefinitionPath,
+                "monster_goblin",
+                ActorVisualSizeTier.MonsterS,
+                "Assets/DungeonInn/Runtime/Art/Sprites/Goblin",
+                "Goblin");
+
+            CreateOrUpdateActorVisualDefinition(
+                MonsterOrcVisualDefinitionPath,
+                "monster_orc",
+                ActorVisualSizeTier.MonsterS,
+                "Assets/DungeonInn/Runtime/Art/Sprites/Goblin",
+                "Goblin");
+
+            CreateOrUpdateActorVisualDefinition(
+                MonsterOgreVisualDefinitionPath,
+                "monster_ogre",
+                ActorVisualSizeTier.MonsterL,
+                "Assets/DungeonInn/Runtime/Art/Sprites/Goblin",
+                "Goblin");
+
+            CreateOrUpdateActorVisualDefinition(
+                MonsterGoblinArcherVisualDefinitionPath,
+                "monster_goblin_archer",
+                ActorVisualSizeTier.MonsterS,
+                "Assets/DungeonInn/Runtime/Art/Sprites/Goblin",
+                "Goblin");
+        }
+
+        static void CreateOrUpdateActorVisualDefinition(
+            string assetPath,
+            string visualId,
+            ActorVisualSizeTier visualSizeTier,
+            string spriteFolder,
+            string spritePrefix)
+        {
+            var definition = AssetDatabase.AssetPathExists(assetPath)
+                ? AssetDatabase.LoadAssetAtPath<ActorVisualDefinitionSO>(assetPath)
+                : null;
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<ActorVisualDefinitionSO>();
+                AssetDatabase.CreateAsset(definition, assetPath);
+            }
+
+            using var serialized = new SerializedObject(definition);
+            serialized.FindProperty("visualId").stringValue = visualId;
+            serialized.FindProperty("visualSizeTier").enumValueIndex = (int)visualSizeTier;
+            var idleEntries = serialized.FindProperty("idleEntries");
+            var walkEntries = serialized.FindProperty("walkEntries");
+            var workEntries = serialized.FindProperty("workEntries");
+            var attackEntries = serialized.FindProperty("attackEntries");
+            var damageEntries = serialized.FindProperty("damageEntries");
+            var deadEntries = serialized.FindProperty("deadEntries");
+            idleEntries.ClearArray();
+            walkEntries.ClearArray();
+            workEntries.ClearArray();
+            attackEntries.ClearArray();
+            damageEntries.ClearArray();
+            deadEntries.ClearArray();
+
+            foreach (var direction in new[] { "NE", "NW", "SE", "SW" })
+            {
+                AddActorVisualEntry(
+                    idleEntries,
+                    direction,
+                    fps: 1f,
+                    loop: true,
+                    new[] { LoadActorSprite(spriteFolder, spritePrefix, $"Idle{direction}") });
+                AddActorVisualEntry(
+                    walkEntries,
+                    direction,
+                    fps: 4f,
+                    loop: true,
+                    new[]
+                    {
+                        LoadActorSprite(spriteFolder, spritePrefix, $"Walk{direction}1"),
+                        LoadActorSprite(spriteFolder, spritePrefix, $"Walk{direction}2")
+                    });
+                AddActorVisualEntry(
+                    workEntries,
+                    direction,
+                    fps: 1f,
+                    loop: true,
+                    new[] { LoadActorSprite(spriteFolder, spritePrefix, $"Idle{direction}") });
+                AddActorVisualEntry(
+                    attackEntries,
+                    direction,
+                    fps: 8f,
+                    loop: false,
+                    new[]
+                    {
+                        LoadActorSprite(spriteFolder, spritePrefix, $"Walk{direction}1"),
+                        LoadActorSprite(spriteFolder, spritePrefix, $"Walk{direction}2")
+                    });
+                AddActorVisualEntry(
+                    damageEntries,
+                    direction,
+                    fps: 4f,
+                    loop: false,
+                    new[] { LoadActorSprite(spriteFolder, spritePrefix, $"Idle{direction}") });
+                AddActorVisualEntry(
+                    deadEntries,
+                    direction,
+                    fps: 1f,
+                    loop: false,
+                    new[] { LoadActorSprite(spriteFolder, spritePrefix, $"Idle{direction}") });
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(definition);
+        }
+
+        static Sprite LoadActorSprite(string spriteFolder, string spritePrefix, string suffix)
+        {
+            var path = $"{spriteFolder}/{spritePrefix}{suffix}.png";
+            FixSpriteImportSettings(path);
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        static void AddActorVisualEntry(
+            SerializedProperty entries,
+            string directionName,
+            float fps,
+            bool loop,
+            Sprite[] sprites)
+        {
+            var index = entries.arraySize;
+            entries.InsertArrayElementAtIndex(index);
+            var entry = entries.GetArrayElementAtIndex(index);
+            entry.FindPropertyRelative("direction").enumValueIndex = (int)Enum.Parse(typeof(ActorAnimationDirection), directionName);
+            entry.FindPropertyRelative("fps").floatValue = fps;
+            entry.FindPropertyRelative("loop").boolValue = loop;
+            var spritesProperty = entry.FindPropertyRelative("sprites");
+            spritesProperty.ClearArray();
+            for (var spriteIndex = 0; spriteIndex < sprites.Length; spriteIndex++)
+            {
+                spritesProperty.InsertArrayElementAtIndex(spriteIndex);
+                spritesProperty.GetArrayElementAtIndex(spriteIndex).objectReferenceValue = sprites[spriteIndex];
+            }
         }
 
         static void EnsureGroupSchemas(AddressableAssetSettings settings, AddressableAssetGroup group)

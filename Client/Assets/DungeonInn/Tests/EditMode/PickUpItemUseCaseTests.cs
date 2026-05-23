@@ -266,7 +266,7 @@ namespace DungeonInn.Tests.EditMode
                     new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                     itemSpatialIndexService,
                     candidateService,
-                    new ActorViewDataStore(),
+                    ActorViewDataStoreTestFactory.Create(),
                     DungeonInn.Application.World.InitialWorldSettings.CreateDefault()),
                 eventBus);
         }

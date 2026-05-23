@@ -4,8 +4,9 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         Idle,
         Walk,
-        Combat,
-        Hit,
+        Work,
+        Attack,
+        Damage,
         Dead
     }
 }

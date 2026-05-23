@@ -163,6 +163,7 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
             public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters => throw new NotSupportedException();
             public ItemMaster GetItemMaster(int itemId) => throw new NotSupportedException();
             public EquipmentMaster GetEquipmentMaster(int itemId) => throw new NotSupportedException();
             public WeaponMaster GetWeaponMaster(int itemId) => throw new NotSupportedException();
@@ -175,6 +176,7 @@ namespace DungeonInn.Tests.EditMode
             public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
             public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex) => throw new NotSupportedException();
             public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key) => throw new NotSupportedException();
+            public ActorVisualMaster GetActorVisualMaster(string visualId, int skinId) => throw new NotSupportedException();
             public int GetMaxStackCount(int itemId) => throw new NotSupportedException();
         }
 
@@ -218,7 +220,7 @@ namespace DungeonInn.Tests.EditMode
                 actorSpatialIndexService,
                 new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new ActorViewDataStore(),
+                ActorViewDataStoreTestFactory.Create(),
                 DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
         }
 
