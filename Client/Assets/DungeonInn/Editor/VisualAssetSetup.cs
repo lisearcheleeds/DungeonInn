@@ -22,8 +22,8 @@ namespace DungeonInn.Editor
         const string LayerPositionViewSettingsPath = SoDirectory + "/LayerPositionViewSettings.asset";
         const string WorldCameraSettingsPath = SoDirectory + "/WorldCameraSettings.asset";
         const string WorldGameSettingsPath = SoDirectory + "/WorldGameSettings.asset";
-        const string ActorPrefabPath = SoDirectory + "/ActorView.prefab";
         const string WorldPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/World";
+        const string ActorPrefabPath = WorldPrefabDirectory + "/ActorView.prefab";
         const string StairUpPropPrefabPath = WorldPrefabDirectory + "/StairUpPropView.prefab";
         const string StairDownPropPrefabPath = WorldPrefabDirectory + "/StairDownPropView.prefab";
         const string ArrowProjectilePrefabPath = WorldPrefabDirectory + "/ArrowProjectileView.prefab";
