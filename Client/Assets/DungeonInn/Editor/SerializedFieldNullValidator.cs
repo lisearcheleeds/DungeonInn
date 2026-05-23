@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,16 +12,15 @@ namespace DungeonInn.Editor
     {
         const string MenuPath = "DungeonInn/Validate SerializedFields";
         const string NamespacePrefix = "DungeonInn";
-        const string PrefabSearchFolder = "Assets/DungeonInn";
+        internal const string PrefabSearchFolder = "Assets/DungeonInn";
 
         [MenuItem(MenuPath)]
         public static void Validate()
         {
-            var errorCount = 0;
-            errorCount += ValidateOpenScenes();
-            errorCount += ValidateProjectPrefabs();
+            var errors = new List<string>();
+            RunValidation(errors);
 
-            if (errorCount == 0)
+            if (errors.Count == 0)
             {
                 Debug.Log("[SerializedFieldValidator] OK: All SerializedFields are assigned.");
                 EditorUtility.DisplayDialog("Validate SerializedFields", "All SerializedFields are assigned.", "OK");
@@ -29,13 +29,20 @@ namespace DungeonInn.Editor
 
             EditorUtility.DisplayDialog(
                 "Validate SerializedFields",
-                $"{errorCount} unassigned SerializedField(s) found. See Console for details.",
+                $"{errors.Count} unassigned SerializedField(s) found. See Console for details.",
                 "OK");
         }
 
-        static int ValidateOpenScenes()
+        internal static void RunValidation(List<string> errors)
         {
-            var errorCount = 0;
+            ValidateAllScenes(errors);
+            ValidateProjectPrefabs(errors);
+        }
+
+        static void ValidateAllScenes(List<string> errors)
+        {
+            var openScenePaths = CollectOpenScenePaths();
+
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
@@ -46,16 +53,42 @@ namespace DungeonInn.Editor
 
                 foreach (var root in scene.GetRootGameObjects())
                 {
-                    errorCount += ValidateGameObject(root, $"Scene:{scene.name}");
+                    ValidateGameObject(root, $"Scene:{scene.name}", errors);
                 }
             }
 
-            return errorCount;
+            var guids = AssetDatabase.FindAssets("t:Scene", new[] { PrefabSearchFolder });
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (openScenePaths.Contains(path))
+                {
+                    continue;
+                }
+
+                var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    ValidateGameObject(root, $"Scene:{scene.name}", errors);
+                }
+
+                EditorSceneManager.CloseScene(scene, true);
+            }
         }
 
-        static int ValidateProjectPrefabs()
+        static HashSet<string> CollectOpenScenePaths()
         {
-            var errorCount = 0;
+            var paths = new HashSet<string>();
+            for (var i = 0; i < SceneManager.sceneCount; i++)
+            {
+                paths.Add(SceneManager.GetSceneAt(i).path);
+            }
+
+            return paths;
+        }
+
+        static void ValidateProjectPrefabs(List<string> errors)
+        {
             var guids = AssetDatabase.FindAssets("t:Prefab", new[] { PrefabSearchFolder });
             foreach (var guid in guids)
             {
@@ -66,15 +99,12 @@ namespace DungeonInn.Editor
                     continue;
                 }
 
-                errorCount += ValidateGameObject(prefab, $"Prefab:{path}");
+                ValidateGameObject(prefab, $"Prefab:{path}", errors);
             }
-
-            return errorCount;
         }
 
-        static int ValidateGameObject(GameObject go, string context)
+        static void ValidateGameObject(GameObject go, string context, List<string> errors)
         {
-            var errorCount = 0;
             foreach (var component in go.GetComponentsInChildren<MonoBehaviour>(true))
             {
                 if (component == null)
@@ -88,15 +118,12 @@ namespace DungeonInn.Editor
                     continue;
                 }
 
-                errorCount += ValidateComponent(component, type, context);
+                ValidateComponent(component, type, context, errors);
             }
-
-            return errorCount;
         }
 
-        static int ValidateComponent(MonoBehaviour component, Type type, string context)
+        static void ValidateComponent(MonoBehaviour component, Type type, string context, List<string> errors)
         {
-            var errorCount = 0;
             foreach (var field in CollectSerializedReferenceFields(type))
             {
                 var value = field.GetValue(component);
@@ -105,13 +132,11 @@ namespace DungeonInn.Editor
                     continue;
                 }
 
-                Debug.LogError(
-                    $"[SerializedFieldValidator] {context} / {component.gameObject.name} / {type.Name}.{field.Name} is not assigned",
-                    component);
-                errorCount++;
+                var message =
+                    $"[SerializedFieldValidator] {context} / {component.gameObject.name} / {type.Name}.{field.Name} is not assigned";
+                Debug.LogError(message, component);
+                errors.Add(message);
             }
-
-            return errorCount;
         }
 
         static IEnumerable<FieldInfo> CollectSerializedReferenceFields(Type type)

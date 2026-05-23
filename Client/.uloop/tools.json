@@ -1,8 +1,17 @@
 {
   "version": "2.1.0",
   "serverVersion": "2.1.0",
-  "updatedAt": "2026-05-18T00:30:45.852Z",
+  "updatedAt": "2026-05-23T03:29:41.482Z",
   "tools": [
+    {
+      "name": "validate-serialized-fields",
+      "description": "[BLOCKED] Validate that all [SerializeField] reference fields in DungeonInn MonoBehaviours are assigned. Scans all scenes and prefabs under Assets/DungeonInn. - Blocked by security settings",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
     {
       "name": "clear-console",
       "description": "Clear Unity console logs",
