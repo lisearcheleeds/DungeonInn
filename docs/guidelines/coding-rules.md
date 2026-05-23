@@ -33,6 +33,48 @@
 
 ---
 
+## コーディング規約スキャン
+
+Coding Rules のレビューは設計レビューと並行して行うと見落としが生じる。
+以下の grep スキャンを**設計レビューとは独立したフェーズとして先行させる**こと。
+
+コーディング規約違反の多くは実動作に影響しないため、設計問題を探す認知負荷の高いフェーズでは自然言語の読み取りでは検知しにくい。スキャンで候補を機械的に抽出してから人が判定する手順を取ること。
+
+スキャン対象: `Client/Assets/DungeonInn/Runtime/Scripts/` 配下の `.cs` ファイル
+
+```bash
+# Rule 2-2: ブロック形式なし（最頻出違反）
+# if/else/for/foreach/while の後に { がなく同一行にステートメントが続く
+grep -rn "if\s*(.*)\s[^{]" --include="*.cs" Client/Assets/DungeonInn/Runtime/Scripts/ | grep -v "//"
+
+# Rule 1-1: 明示的 private 修飾子
+grep -rn "\bprivate\b" --include="*.cs" Client/Assets/DungeonInn/Runtime/Scripts/ | grep -v "private set"
+
+# Rule 3-1: _ prefix フィールド
+grep -rn "readonly\s_\|static\s_\|^\s*_[a-z]" --include="*.cs" Client/Assets/DungeonInn/Runtime/Scripts/
+
+# Rule 5-1: ファイルスコープ namespace
+grep -rn "^namespace.*;" --include="*.cs" Client/Assets/DungeonInn/Runtime/Scripts/
+
+# Rule 8-2: 式形式メソッド（プロパティ以外の => ）
+grep -rn ")\s*=>" --include="*.cs" Client/Assets/DungeonInn/Runtime/Scripts/ | grep -v "=>\s*{"
+
+# Rule 11-1: > 比較演算子
+grep -rn "[^=!<>] > [^>=]" --include="*.cs" Client/Assets/DungeonInn/Runtime/Scripts/ | grep -v "//"
+
+# Rule 15-4: [Inject] 欠損確認
+# public コンストラクタ（クラス名と同名）の前行に [Inject] があるか目視確認する
+grep -rn "public [A-Z][a-zA-Z]*\s*(" --include="*.cs" Client/Assets/DungeonInn/Runtime/Scripts/
+```
+
+**スキャン後の判定手順:**
+
+1. 各パターンの出力を確認し、コメント行・文字列リテラル・誤検知を除外する
+2. 残った候補を本文の該当ルールに照らして違反か判定する
+3. 違反箇所をレビュー項目として記録する（通常の5項目フォーマット不要。ファイル名・行番号・違反ルール番号の一覧で足りる）
+
+---
+
 ## 1. アクセス修飾子
 
 ### 1-1. `private` は書かない

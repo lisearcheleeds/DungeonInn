@@ -3,6 +3,7 @@ using DungeonInn.Application.World;
 using DungeonInn.View.Scene.MainScene.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using VContainer;
 
 namespace DungeonInn.Input.Layer
 {
@@ -18,10 +19,12 @@ namespace DungeonInn.Input.Layer
         readonly WorldCameraController worldCameraController;
         readonly LayerPositionViewMapper positionMapper;
         readonly MapLayerViewRegistry layerViewRegistry;
+        // M8: IGameWorldStateReader 直接依存 + GetOrCreateActorRoot 副作用は設計違反（T-2）。Actor 選択用 narrow provider に置き換える
         readonly IGameWorldStateReader worldState;
 
         public bool HasSelectedActor => actorSelectionService.SelectedActorId.Value.HasValue;
 
+        [Inject]
         public WorldActorSelectionInputHandler(
             InputActions inputActions,
             ActorSelectionService actorSelectionService,

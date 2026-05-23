@@ -68,13 +68,12 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            var prefab = viewFactory.PlayerEventLogViewPrefab;
-            if (prefab == null || hudCanvasProvider.HUDCanvas == null)
+            if (hudCanvasProvider.HUDCanvas == null)
             {
                 return;
             }
 
-            logView = UnityEngine.Object.Instantiate(prefab, hudCanvasProvider.HUDCanvas.transform);
+            logView = viewFactory.CreatePlayerEventLogView(hudCanvasProvider.HUDCanvas.transform);
         }
     }
 }

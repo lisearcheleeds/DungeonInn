@@ -91,6 +91,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             return UnityEngine.Object.Instantiate(ActorDetailPopupPrefab, parent);
         }
 
+        public PlayerEventLogView CreatePlayerEventLogView(Transform parent)
+        {
+            if (PlayerEventLogViewPrefab == null || parent == null)
+            {
+                return null;
+            }
+
+            return UnityEngine.Object.Instantiate(PlayerEventLogViewPrefab, parent);
+        }
+
         public void Dispose()
         {
             assetScope?.Dispose();

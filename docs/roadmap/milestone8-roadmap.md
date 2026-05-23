@@ -83,6 +83,86 @@ RootLifetimeScope
 - [ ] `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功している
 - [ ] Play モードで World へ遷移し、`[World] GameWorldState initialized` が出力され、エラーログが存在しない
 
+## キャリーオーバー項目（前マイルストーンレビューからの持ち越し）
+
+### T-2 — Actor 選択ハンドラの `IGameWorldStateReader` 直接依存除去
+
+由来: milestone7-after-review-7-total-1.md T-2
+
+- `WorldActorSelectionInputHandler` が `IGameWorldStateReader.Actors` を全走査している
+- `WorldActorSelectionInputHandler.HandleClick` が `layerViewRegistry.GetOrCreateActorRoot(...)` を呼び出し View root 生成副作用を持つ
+- `ActorSelectionService` が `IGameWorldStateReader` を直接注入している
+
+対応方針: Actor 選択用 narrow provider を用意し、Input ハンドラは `ActorId` と screen/world position snapshot のみを受け取る形に変更する。`GetOrCreateActorRoot` は hit test 中には呼ばない。
+
+完了条件:
+- [ ] `WorldActorSelectionInputHandler.cs` から `IGameWorldStateReader` 依存が消えている
+- [ ] `WorldActorSelectionInputHandler.HandleClick` が `worldState.Actors` を直接走査していない
+- [ ] `WorldActorSelectionInputHandler` から `GetOrCreateActorRoot(...)` 呼び出しが消えている
+- [ ] `ActorSelectionService` が `IGameWorldStateReader` を直接注入していない
+- [ ] `uloop.cmd compile --project-path Client` が成功している
+
+### T-4 残 — `GetActorDetailQuery` の `ToArray()` フレームごと割り当て
+
+由来: milestone7-after-review-7-total-1.md T-4（クエリ呼び出し回数は統合済み、割り当て問題が残存）
+
+- `GetActorDetailQuery.Query()` が毎回 `equipmentNameBuffer.ToArray()` / `effectBuffer.ToArray()` を呼び出してヒープ割り当てを発生させている
+- `GetActorStatusSummaryQuery` に signature ベースキャッシュがあるのに対し非対称
+
+対応方針: `GetActorDetailQuery` に signature キャッシュを追加する、または戻り値型を `IReadOnlyList` に変更してコピーを避ける。
+
+完了条件:
+- [ ] `GetActorDetailQuery.Query()` がフレームごとの `ToArray()` 割り当てを発生させない
+- [ ] `uloop.cmd compile --project-path Client` が成功している
+
+### T-5 残 — `WorldAddressableViewFactory.PlayerEventLogViewPrefab` public プロパティ整理
+
+由来: milestone7-after-review-7-total-1.md T-5（Factory メソッド追加は済み、プロパティ公開が残存）
+
+- `PlayerEventLogViewPrefab` が public プロパティとして残っており、Factory を通さない Instantiate の再発経路になりうる
+- 他の Consumer が存在しないことを確認してから internal / private に下げる
+
+完了条件:
+- [ ] `WorldAddressableViewFactory.PlayerEventLogViewPrefab` の Consumer が Factory メソッド経由のみであることを確認した
+- [ ] public プロパティが不要であれば削除または internal 化されている
+
+### S5-1 — `WorldHudCanvasProvider` の `FindFirstObjectByType` 除去
+
+由来: milestone7-completion-review-6 S5-1
+
+- `WorldHudCanvasProvider.Initialize()` が `FindFirstObjectByType<WorldUIModuleScene>()` を使用している
+- Lighthouse ルールでは `FindFirstObjectByType` は禁止パターン
+
+対応方針: `WorldUI` ModuleScene のシーン分離が完了したら、依存注入または Scene 参照経由で `WorldUIModuleScene` を取得する。
+
+完了条件:
+- [ ] `WorldHudCanvasProvider` から `FindFirstObjectByType` が消えている
+- [ ] `uloop.cmd compile --project-path Client` が成功している
+
+### P3-1 — `WorldProjectileViewPool` / `WorldAreaEffectViewPool` の Stack → Queue
+
+由来: milestone7-completion-review-6 P3-1
+
+- 両 Pool が `Stack<T>` を使用しているが、ロードマップ設計指定は `Queue<T>`
+
+完了条件:
+- [ ] `WorldProjectileViewPool` / `WorldAreaEffectViewPool` が `Queue<T>` を使用している
+- [ ] `uloop.cmd compile --project-path Client` が成功している
+
+### P7-1 — `PlayerEventLogStore.Add()` の公開範囲
+
+由来: milestone7-completion-review-6 P7-1
+
+- `PlayerEventLogStore.Add()` が public 公開されており、Store を直接書き込める経路が広すぎる
+
+対応方針: 書き込み経路を UseCase / EventBus 経由に限定し、`Add()` を internal 化するか Store 自体をイベント購読型に変更する。
+
+完了条件:
+- [ ] `PlayerEventLogStore.Add()` が外部から直接呼べない設計になっている
+- [ ] `uloop.cmd compile --project-path Client` が成功している
+
+---
+
 ## Milestone 9 へ移動する項目
 
 - 施設アップグレード画面

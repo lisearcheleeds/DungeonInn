@@ -50,7 +50,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 .AddTo(ref bag);
         }
 
-        public void UpdatePopupPosition()
+        public void UpdatePopup()
         {
             var selectedId = actorSelectionService.SelectedActorId.Value;
             if (!selectedId.HasValue)
@@ -75,28 +75,6 @@ namespace DungeonInn.View.Scene.MainScene.World
             var worldPosition = actorRoot.TransformPoint(localPosition);
             var screenPosition = worldCameraController.WorldToScreenPoint(worldPosition);
             popup.SetPosition(new Vector2(screenPosition.x, screenPosition.y));
-        }
-
-        public void UpdatePopupContent()
-        {
-            var selectedId = actorSelectionService.SelectedActorId.Value;
-            if (!selectedId.HasValue)
-            {
-                return;
-            }
-
-            EnsurePopup();
-            if (popup == null)
-            {
-                return;
-            }
-
-            var dto = actorDetailQuery.Query(selectedId.Value);
-            if (!dto.HasValue)
-            {
-                return;
-            }
-
             popup.SetContent(dto.Value);
         }
 

@@ -72,7 +72,11 @@ namespace DungeonInn.Application.World
         public IReadOnlyList<PlayerEventLogEntry> GetRecentEntries(int count)
         {
             var start = entries.Count - count;
-            if (start < 0) start = 0;
+            if (start < 0)
+            {
+                start = 0;
+            }
+
             return entries.GetRange(start, entries.Count - start);
         }
 
@@ -85,7 +89,11 @@ namespace DungeonInn.Application.World
         void AddFromEvent(IGameEvent gameEvent, Guid relatedActorId)
         {
             var text = formatter.Format(gameEvent);
-            if (string.IsNullOrEmpty(text)) return;
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
             Add(new PlayerEventLogEntry(gameClock.ElapsedRealTimeSeconds, text, relatedActorId));
         }
     }

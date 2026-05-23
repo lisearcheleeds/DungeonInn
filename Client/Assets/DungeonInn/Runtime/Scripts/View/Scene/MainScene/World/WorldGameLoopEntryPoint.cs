@@ -42,7 +42,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             MapLayerViewRegistry layerViewRegistry,
             VisualConfigLoader visualConfigLoader,
             WorldAddressableViewFactory viewFactory,
-            IObjectResolver resolver)
+            ActorDetailPopupPresenter actorDetailPopupPresenter,
+            PlayerGameEventLogPresenter playerGameEventLogPresenter)
         {
             this.worldSimulationOrchestrator = worldSimulationOrchestrator ?? throw new ArgumentNullException(nameof(worldSimulationOrchestrator));
             this.worldMapView = worldMapView ?? throw new ArgumentNullException(nameof(worldMapView));
@@ -59,8 +60,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.visualConfigLoader = visualConfigLoader ?? throw new ArgumentNullException(nameof(visualConfigLoader));
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
-            resolver.TryResolve<ActorDetailPopupPresenter>(out actorDetailPopupPresenter);
-            resolver.TryResolve<PlayerGameEventLogPresenter>(out playerGameEventLogPresenter);
+            this.actorDetailPopupPresenter = actorDetailPopupPresenter ?? throw new ArgumentNullException(nameof(actorDetailPopupPresenter));
+            this.playerGameEventLogPresenter = playerGameEventLogPresenter ?? throw new ArgumentNullException(nameof(playerGameEventLogPresenter));
         }
 
         void Start()
@@ -84,8 +85,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             worldCameraController.UpdateCamera(Time.unscaledDeltaTime);
             worldActorCameraFollowController.UpdateFollowPosition();
-            actorDetailPopupPresenter?.UpdatePopupPosition();
-            actorDetailPopupPresenter?.UpdatePopupContent();
+            actorDetailPopupPresenter.UpdatePopup();
             worldMapView.UpdateVisuals();
             worldActorPresenter.UpdateVisuals();
             worldProjectilePresenter.UpdatePositions();

@@ -48,9 +48,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             var startLine = LineCount - entries.Count;
-            if (startLine < 0) startLine = 0;
+            if (startLine < 0)
+            {
+                startLine = 0;
+            }
+
             var entryStart = entries.Count - LineCount;
-            if (entryStart < 0) entryStart = 0;
+            if (entryStart < 0)
+            {
+                entryStart = 0;
+            }
 
             for (var i = startLine; i < LineCount; i++)
             {
@@ -88,7 +95,11 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void IScrollHandler.OnScroll(PointerEventData eventData)
         {
-            if (!isMouseOver) return;
+            if (!isMouseOver)
+            {
+                return;
+            }
+
             if (0f < eventData.scrollDelta.y)
             {
                 ScrollUp();

@@ -55,7 +55,7 @@
 `{milestone_name}` には `マイルストーン5` のような確認対象を入れる。
 `{output_file_name}` には `milestone5-completion-review-3-codex.md` のような出力ファイル名を入れる。
 ファイル名フォーマットは `milestone{マイルストーン番号}-{review-phase}-review-{increment-index}-{ai-type}.md` とする。
-`review-phase` は `before` / `after` / `completion` のいずれか、`ai-type` は `codex` / `claude` / `total` などレビュー主体を表す値を使う。
+`review-phase` は `before` / `after` のいずれか、`ai-type` は `codex` / `claude` / `total` などレビュー主体を表す値を使う。
 `increment-index` は同一 milestone / review-phase / ai-type のレビュー回数として 1 から増やす。
 
 ## レビュー前に必ず確認する資料
@@ -81,10 +81,13 @@
 マイルストーン完了レビューや全体レビューでは、レビュー前に必ず確認する guideline ごとに専任エージェントを立てる。
 専任エージェントは担当 guideline に強くバイアスを掛け、担当外の観点を主目的にしない。
 
+**Coding Rules 専任は他の専任エージェントと並行せず、先行フェーズとして独立させること。**
+理由: コーディング規約違反は実動作に影響しないため、設計問題を探す認知負荷の高いフェーズでは自然言語の読み取りで検知しにくい。`coding-rules.md` 記載の「コーディング規約スキャン」節の grep パターンを先に実行し、候補を機械的に抽出してから判定すること。
+
 専任レビューの推奨分担:
 
+- **[先行フェーズ] Coding Rules 専任**: `docs/guidelines/coding-rules.md` の「コーディング規約スキャン」節に記載の grep パターンを実行し、出力を根拠に命名、prefix / suffix、namespace、`[Inject]` 明示、C# スタイルの違反を判定する。自然言語での設計読み取りは補助的な役割とする。
 - Lighthouse 専任: `docs/guidelines/lighthouse-patterns.md` を根拠に、Lighthouse パターン、DI、LifetimeScope、Addressable、AssetScope、禁止 API を確認する。
-- Coding Rules 専任: `docs/guidelines/coding-rules.md` を根拠に、命名、prefix / suffix、namespace、`[Inject]` 明示、C# スタイルを確認する。
 - Domain Design 専任: `docs/guidelines/domain-design-guidelines.md` を根拠に、Domain / Entity / ValueObject / Calculator / DTO の責務と依存方向を確認する。
 - Application Boundary 専任: `docs/guidelines/application-boundary-guidelines.md` を根拠に、UseCase / Orchestrator / Service / Event / Aggregate / ゲームループ境界を確認する。
 - Implementation Quality 専任: `docs/guidelines/implementation-quality-guidelines.md` を根拠に、テスト都合 API、DI 手動生成、重複概念、定数 / ScriptableObject、TODO、cache、長期状態を確認する。
