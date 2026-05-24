@@ -14,15 +14,20 @@ namespace DungeonInn.Core
     public sealed class ProductSceneManager : IProductSceneManager
     {
         readonly ISceneManager sceneManager;
-        readonly ILauncher launcher;
+        readonly IRebootService rebootService;
+        readonly IGameSessionLifecycle gameSessionLifecycle;
 
         public bool IsTransition => sceneManager.IsTransition;
 
         [Inject]
-        public ProductSceneManager(ISceneManager sceneManager, ILauncher launcher)
+        public ProductSceneManager(
+            ISceneManager sceneManager,
+            IRebootService rebootService,
+            IGameSessionLifecycle gameSessionLifecycle)
         {
             this.sceneManager = sceneManager;
-            this.launcher = launcher;
+            this.rebootService = rebootService;
+            this.gameSessionLifecycle = gameSessionLifecycle;
         }
 
         async UniTask IProductSceneManager.TransitionScene(
@@ -33,6 +38,7 @@ namespace DungeonInn.Core
             try
             {
                 await sceneManager.TransitionScene(nextTransitionData, transitionType, backMainSceneId);
+                EndSessionIfSessionExit(nextTransitionData.MainSceneId);
             }
             catch (OperationCanceledException)
             {
@@ -40,8 +46,9 @@ namespace DungeonInn.Core
             }
             catch (Exception exception)
             {
+                gameSessionLifecycle.EndSession();
                 Debug.LogError($"[ProductSceneManager] Unhandled exception during transition. Rebooting.\n{exception}");
-                launcher.Reboot();
+                rebootService.Reboot();
             }
         }
 
@@ -57,11 +64,22 @@ namespace DungeonInn.Core
             }
             catch (Exception exception)
             {
+                gameSessionLifecycle.EndSession();
                 Debug.LogError($"[ProductSceneManager] Unhandled exception during back transition. Rebooting.\n{exception}");
-                launcher.Reboot();
+                rebootService.Reboot();
             }
         }
 
         UniTask IProductSceneManager.PreReboot() => sceneManager.PreReboot();
+
+        void EndSessionIfSessionExit(MainSceneId nextMainSceneId)
+        {
+            if (gameSessionLifecycle.IsSessionScene(nextMainSceneId))
+            {
+                return;
+            }
+
+            gameSessionLifecycle.EndSession();
+        }
     }
 }

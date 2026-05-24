@@ -1,19 +1,7 @@
-using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
-using DungeonInn.Application.Actors.Lifecycle;
-using DungeonInn.Application.Actors.Movement;
-using DungeonInn.Application.Actors.Profiles;
-using DungeonInn.Application.Actors.Spawn;
-using DungeonInn.Application.Combat;
-using DungeonInn.Application.Dungeons;
-using DungeonInn.Application.Economy;
-using DungeonInn.Application.Event;
-using DungeonInn.Application.Facilities;
-using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Items;
-using DungeonInn.Application.World;
-using DungeonInn.Domain.Common;
 using DungeonInn.Input.Layer;
+using DungeonInn.View.Scene;
+using DungeonInn.View.Scene.MainScene.World.Debug;
+using DungeonInn.View.Scene.MainScene.World.Settings;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -25,9 +13,6 @@ namespace DungeonInn.View.Scene.MainScene.World
         [SerializeField] WorldScene worldScene;
         [SerializeField] MapMaterialSetSO mapMaterialSetSO;
         [SerializeField] ActorSpriteVisualConfigSO actorSpriteVisualConfigSO;
-        [SerializeField] LayerPositionViewSettingsSO layerPositionViewSettingsSO;
-        [SerializeField] WorldCameraSettingsSO worldCameraSettingsSO;
-        [SerializeField] WorldGameSettingsSO worldGameSettingsSO;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -36,37 +21,29 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterComponentInHierarchy<WorldGameLoopEntryPoint>();
             builder.Register<WorldPresenter>(Lifetime.Scoped).AsImplementedInterfaces();
             builder.Register<WorldViewRoot>(Lifetime.Scoped);
+            builder.Register<WorldMapViewSettingsRepository>(Lifetime.Scoped).As<IWorldMapViewSettingsRepository>();
+            builder.Register<LayerPositionViewSettingsRepository>(Lifetime.Scoped).As<ILayerPositionViewSettingsRepository>();
+            builder.Register<WorldCameraSettingsRepository>(Lifetime.Scoped).As<IWorldCameraSettingsRepository>();
+            builder.Register<MapLayerViewRegistry>(Lifetime.Scoped);
+            builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
+            builder.Register<WorldCameraController>(Lifetime.Scoped);
+            builder.Register<WorldAddressableViewFactory>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<UnityNavMeshPathProvider>(Lifetime.Scoped).AsSelf();
+            builder.RegisterEntryPoint<WorldNavigationPathProviderEntryPoint>();
 
             // === View: マップ描画 ===
-            builder.RegisterInstance(ResolveLayerPositionViewSettings()).AsSelf();
-            var worldGameSettings = ResolveWorldGameSettings();
-            builder.RegisterInstance(worldGameSettings.GroundMapGenerationSettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.DungeonMapGenerationSettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.InitialWorldSettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.InnBalanceSettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.ActorSimulationSettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.SpawnBalanceSettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.AdventurerReturnPolicySettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.CombatBalanceSettings).AsSelf();
-            builder.RegisterInstance(worldGameSettings.WorldMapViewSettings).AsSelf();
-            builder.RegisterInstance(new VisualConfigSettings(
-                mapMaterialSetSO,
-                actorSpriteVisualConfigSO));
+            builder.RegisterInstance(new VisualConfigSettings(mapMaterialSetSO, actorSpriteVisualConfigSO));
             builder.Register<VisualConfigLoader>(Lifetime.Scoped);
-            builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
-            builder.Register<MapLayerViewRegistry>(Lifetime.Scoped);
             builder.Register<MapMaterialSet>(Lifetime.Scoped);
             builder.Register<MapTileVisualConfig>(Lifetime.Scoped);
             builder.Register<MapMeshBuildService>(Lifetime.Scoped);
             builder.Register<NavMeshBuildService>(Lifetime.Scoped);
-            builder.Register<UnityNavMeshPathProvider>(Lifetime.Scoped).As<INavigationPathProvider>();
             builder.Register<EnvironmentObjectPlacer>(Lifetime.Scoped);
+            builder.Register<WorldMapView>(Lifetime.Scoped);
 
             // === View: アクター描画 ===
             builder.Register<ActorVisualDefinitionLoader>(Lifetime.Scoped);
             builder.Register<ActorPrefabSource>(Lifetime.Scoped);
-            builder.RegisterInstance(ResolveWorldCameraSettings()).AsSelf();
-            builder.Register<WorldMapView>(Lifetime.Scoped);
             builder.Register<WorldActorViewPool>(Lifetime.Scoped);
             builder.Register<WorldActorViewRegistry>(Lifetime.Scoped);
             builder.Register<WorldActorPresenter>(Lifetime.Scoped);
@@ -77,232 +54,17 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldAreaEffectViewPool>(Lifetime.Scoped);
             builder.Register<WorldAreaEffectPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<ActorCombatAnimationPresenter>(Lifetime.Scoped).AsSelf().AsImplementedInterfaces();
-            builder.Register<WorldAddressableViewFactory>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
-            builder.Register<WorldHudCanvasProvider>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
-            builder.Register<ActorHUDViewPool>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
-            builder.Register<WorldActorStatusPresenter>(Lifetime.Scoped).AsSelf();
-            builder.Register<WorldCameraController>(Lifetime.Scoped);
             builder.Register<WorldLayerViewController>(Lifetime.Scoped);
-            builder.Register<ActorSelectionService>(Lifetime.Scoped);
             builder.Register<WorldActorSelectionInputHandler>(Lifetime.Scoped);
             builder.Register<WorldActorCameraFollowController>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
-            builder.Register<ActorDetailPopupPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
-            builder.Register<PlayerGameEventLogPresenter>(Lifetime.Scoped).AsSelf();
+
+            builder.Register<WorldActorScreenPositionProvider>(Lifetime.Scoped).AsSelf();
+            builder.RegisterEntryPoint<WorldActorScreenPositionProviderEntryPoint>();
+            builder.Register<WorldActiveLayerProvider>(Lifetime.Scoped).AsSelf();
+            builder.RegisterEntryPoint<WorldActiveLayerProviderEntryPoint>();
 #if DEBUG
             builder.RegisterEntryPoint<WorldDebugGameLogPresenter>(Lifetime.Scoped);
 #endif
-
-            // === Application: アクター詳細 ===
-            builder.Register<GetActorDetailQuery>(Lifetime.Scoped);
-
-            // === Application: プレイヤーログ ===
-            builder.Register<PlayerEventLogFormatter>(Lifetime.Scoped);
-            builder.Register<PlayerEventLogStore>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
-
-            // === Application: イベント / アクター状態 ===
-            builder.Register<ActorProfileRegistry>(Lifetime.Scoped).As<IActorProfileRegistry>();
-            builder.Register<GameEventHistoryService>(Lifetime.Scoped)
-                .As<IGameEventHistoryReader>()
-                .As<IGameEventHistoryRecorder>()
-                .AsSelf();
-            builder.Register<GameEventBus>(Lifetime.Scoped)
-                .As<IGameEventBus>()
-                .As<IEventPublisher>()
-                .As<IEventSubscriber>()
-                .AsSelf();
-            builder.Register<AdventurerBattleRecordService>(Lifetime.Scoped);
-            builder.Register<ActorExplorationAchievementRegistry>(Lifetime.Scoped);
-            builder.Register<AdventurerReturnTrackingService>(Lifetime.Scoped);
-            builder.Register<AdventurerRecoveryStateService>(Lifetime.Scoped);
-            builder.Register<ActorProcessingCandidateService>(Lifetime.Scoped);
-            builder.Register<AdventurerExplorationStateService>(Lifetime.Scoped);
-
-            // === Application: ナビゲーション / 空間 ===
-            builder.RegisterInstance(new GameRandom(worldGameSettings.InitialWorldSettings.GameRandomSeed)).As<IGameRandom>();
-            builder.Register<ActorNavigationService>(Lifetime.Scoped).As<IActorNavigationService>();
-            builder.Register<ActorCombatService>(Lifetime.Scoped).As<IActorCombatService>();
-            builder.Register<ActorSpatialIndexService>(Lifetime.Scoped);
-            builder.Register<ItemSpatialIndexService>(Lifetime.Scoped);
-
-            // === Application: ワールド状態 / ゲームループ ===
-            builder.Register<GameClock>(Lifetime.Scoped).As<IGameClock>();
-            builder.Register<GameWorldState>(Lifetime.Scoped)
-                .As<IGameWorldState>()
-                .As<IGameWorldStateReader>()
-                .As<IGameWorldStateWriter>();
-            builder.Register<WorldMapViewDataProvider>(Lifetime.Scoped).As<IWorldMapViewDataProvider>();
-            builder.Register<ActorViewDataStore>(Lifetime.Scoped)
-                .As<IActorViewDataProvider>()
-                .As<IActorStatusViewDataProvider>()
-                .AsSelf();
-            builder.Register<GetActorStatusSummaryQuery>(Lifetime.Scoped);
-            builder.Register<GameWorldFrameBuffer>(Lifetime.Scoped);
-            builder.Register<InitializeWorldMapUseCase>(Lifetime.Scoped);
-            builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Scoped);
-            builder.Register<EnsureDungeonFloorGeneratedOrchestrator>(Lifetime.Scoped);
-            builder.Register<InitializeDungeonOrchestrator>(Lifetime.Scoped);
-            builder.Register<InitializeGameWorldOrchestrator>(Lifetime.Scoped);
-            builder.Register<GameLoopUseCase>(Lifetime.Scoped).As<IGameLoopUseCase>();
-            builder.Register<WorldSimulationOrchestrator>(Lifetime.Scoped).As<IWorldSimulationOrchestrator>();
-            builder.Register<SetGameTimeScaleUseCase>(Lifetime.Scoped);
-            builder.Register<PauseGameTimeUseCase>(Lifetime.Scoped);
-            builder.Register<ResumeGameTimeUseCase>(Lifetime.Scoped);
-            builder.Register<ToggleGamePauseUseCase>(Lifetime.Scoped);
-            builder.Register<GetGameTimeStateUseCase>(Lifetime.Scoped);
-
-            // === Application: 経済 / 宿屋 ===
-            builder.Register<GetGameEventHistoryUseCase>(Lifetime.Scoped);
-            builder.Register<InnEconomyStatisticsService>(Lifetime.Scoped);
-            builder.Register<InnDailyReportStore>(Lifetime.Scoped);
-            builder.Register<InnEconomyStatusCalculator>(Lifetime.Scoped);
-            builder.Register<GetInnEconomyStatusUseCase>(Lifetime.Scoped);
-            builder.Register<GetInnEconomyReportUseCase>(Lifetime.Scoped);
-            builder.Register<AssignStaffUseCase>(Lifetime.Scoped);
-
-            // === Application: アクタースポーン ===
-            builder.Register<CalculateScoutCostUseCase>(Lifetime.Scoped);
-            builder.Register<CompleteActorSpawnUseCase>(Lifetime.Scoped);
-            builder.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
-            builder.Register<SpawnMonsterUseCase>(Lifetime.Scoped);
-            builder.Register<SpawnScheduledAdventurerOrchestrator>(Lifetime.Scoped);
-            builder.Register<SpawnScheduledMonsterOrchestrator>(Lifetime.Scoped);
-
-            // === Application: アクター移動 / 成長 ===
-            builder.Register<ActorMovementService>(Lifetime.Scoped);
-            builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Scoped);
-            builder.Register<ActorCombatPowerCalculator>(Lifetime.Scoped);
-            builder.Register<UseDungeonStairOrchestrator>(Lifetime.Scoped);
-            builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Scoped);
-            builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Scoped);
-            builder.Register<AdvanceActorLifecycleOrchestrator>(Lifetime.Scoped);
-
-            // === Application: 戦闘 ===
-            builder.Register<CombatEncounterTargetResolver>(Lifetime.Scoped);
-            builder.Register<DetectCombatEncounterUseCase>(Lifetime.Scoped);
-            builder.Register<GrantExperienceUseCase>(Lifetime.Scoped);
-            builder.Register<DropItemUseCase>(Lifetime.Scoped);
-            builder.Register<PickUpItemUseCase>(Lifetime.Scoped);
-            builder.Register<UpdateEquipmentUseCase>(Lifetime.Scoped);
-            builder.Register<SellItemsUseCase>(Lifetime.Scoped);
-            builder.Register<UseConsumableItemUseCase>(Lifetime.Scoped);
-            builder.Register<UseRecoveryItemOrchestrator>(Lifetime.Scoped);
-            builder.Register<AdvanceActorEffectsUseCase>(Lifetime.Scoped);
-            builder.Register<AdvanceCombatUseCase>(Lifetime.Scoped);
-            builder.Register<AttackAreaTargetResolver>(Lifetime.Scoped);
-            builder.Register<CombatDefeatResolver>(Lifetime.Scoped);
-            builder.Register<ActorDefeatOrchestrator>(Lifetime.Scoped);
-            builder.Register<CombatDamageResolver>(Lifetime.Scoped);
-            builder.Register<CombatEffectExecutor>(Lifetime.Scoped);
-            builder.Register<AdvanceProjectileUseCase>(Lifetime.Scoped);
-            builder.Register<AdvanceAreaEffectUseCase>(Lifetime.Scoped);
-
-            // === Application: アドベンチャラー帰還 / 宿屋処理 ===
-            builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Scoped);
-            builder.Register<ChargeInnFeeUseCase>(Lifetime.Scoped);
-            builder.Register<DespawnAdventurerUseCase>(Lifetime.Scoped);
-            builder.Register<RecoverAdventurerAtInnUseCase>(Lifetime.Scoped);
-            builder.Register<AdvanceInnRecoveryOrchestrator>(Lifetime.Scoped);
-            builder.Register<PublishInnDailyReportUseCase>(Lifetime.Scoped);
-            builder.Register<PayStaffSalaryUseCase>(Lifetime.Scoped);
-            builder.Register<ProcessAdventurerSaleUseCase>(Lifetime.Scoped);
-            builder.Register<ProcessExchangeOfferUseCase>(Lifetime.Scoped);
-            builder.Register<ProcessFacilityUsageUseCase>(Lifetime.Scoped);
-            builder.Register<RecruitStaffOrchestrator>(Lifetime.Scoped);
-
-            // === Application: AI ===
-            builder.Register<ActorDecisionScheduler>(Lifetime.Scoped);
-            builder.Register<ApplyActorAiDecisionUseCase>(Lifetime.Scoped);
-            builder.Register<AdvanceActorAiOrchestrator>(Lifetime.Scoped);
-            builder.Register<AdventurerAiPolicy>(Lifetime.Scoped);
-            builder.Register<MonsterAiPolicy>(Lifetime.Scoped);
-            builder.Register<PetAiPolicy>(Lifetime.Scoped);
-            builder.Register<GuildStaffAiPolicy>(Lifetime.Scoped);
-        }
-
-        LayerPositionViewSettings ResolveLayerPositionViewSettings()
-        {
-            if (layerPositionViewSettingsSO != null)
-            {
-                return layerPositionViewSettingsSO.ToSettings();
-            }
-
-            Debug.LogWarning("[World] LayerPositionViewSettingsSO is not assigned. Using fallback layer position settings.");
-            return LayerPositionViewSettingsSO.CreateFallbackSettings();
-        }
-
-        WorldCameraSettings ResolveWorldCameraSettings()
-        {
-            if (worldCameraSettingsSO != null)
-            {
-                return worldCameraSettingsSO.ToSettings();
-            }
-
-            Debug.LogWarning("[World] WorldCameraSettingsSO is not assigned. Using fallback camera settings.");
-            return WorldCameraSettingsSO.CreateFallbackSettings();
-        }
-
-        ResolvedWorldGameSettings ResolveWorldGameSettings()
-        {
-            if (worldGameSettingsSO != null)
-            {
-                return new ResolvedWorldGameSettings(
-                    worldGameSettingsSO.ToGroundMapGenerationSettings(),
-                    worldGameSettingsSO.ToDungeonMapGenerationSettings(),
-                    worldGameSettingsSO.ToInitialWorldSettings(),
-                    worldGameSettingsSO.ToInnBalanceSettings(),
-                    worldGameSettingsSO.ToActorSimulationSettings(),
-                    worldGameSettingsSO.ToSpawnBalanceSettings(),
-                    worldGameSettingsSO.ToAdventurerReturnPolicySettings(),
-                    worldGameSettingsSO.ToCombatBalanceSettings(),
-                    worldGameSettingsSO.ToWorldMapViewSettings());
-            }
-
-            Debug.LogWarning("[World] WorldGameSettingsSO is not assigned. Using fallback game settings.");
-            return new ResolvedWorldGameSettings(
-                GroundMapGenerationSettings.CreateDefault(),
-                DungeonMapGenerationSettings.CreateDefault(),
-                InitialWorldSettings.CreateDefault(),
-                InnBalanceSettings.CreateDefault(),
-                ActorSimulationSettings.CreateDefault(),
-                SpawnBalanceSettings.CreateDefault(),
-                AdventurerReturnPolicySettings.CreateDefault(),
-                CombatBalanceSettings.CreateDefault(),
-                WorldMapViewSettings.CreateDefault());
-        }
-
-        readonly struct ResolvedWorldGameSettings
-        {
-            public GroundMapGenerationSettings GroundMapGenerationSettings { get; }
-            public DungeonMapGenerationSettings DungeonMapGenerationSettings { get; }
-            public InitialWorldSettings InitialWorldSettings { get; }
-            public InnBalanceSettings InnBalanceSettings { get; }
-            public ActorSimulationSettings ActorSimulationSettings { get; }
-            public SpawnBalanceSettings SpawnBalanceSettings { get; }
-            public AdventurerReturnPolicySettings AdventurerReturnPolicySettings { get; }
-            public CombatBalanceSettings CombatBalanceSettings { get; }
-            public WorldMapViewSettings WorldMapViewSettings { get; }
-
-            public ResolvedWorldGameSettings(
-                GroundMapGenerationSettings groundMapGenerationSettings,
-                DungeonMapGenerationSettings dungeonMapGenerationSettings,
-                InitialWorldSettings initialWorldSettings,
-                InnBalanceSettings innBalanceSettings,
-                ActorSimulationSettings actorSimulationSettings,
-                SpawnBalanceSettings spawnBalanceSettings,
-                AdventurerReturnPolicySettings adventurerReturnPolicySettings,
-                CombatBalanceSettings combatBalanceSettings,
-                WorldMapViewSettings worldMapViewSettings)
-            {
-                GroundMapGenerationSettings = groundMapGenerationSettings;
-                DungeonMapGenerationSettings = dungeonMapGenerationSettings;
-                InitialWorldSettings = initialWorldSettings;
-                InnBalanceSettings = innBalanceSettings;
-                ActorSimulationSettings = actorSimulationSettings;
-                SpawnBalanceSettings = spawnBalanceSettings;
-                AdventurerReturnPolicySettings = adventurerReturnPolicySettings;
-                CombatBalanceSettings = combatBalanceSettings;
-                WorldMapViewSettings = worldMapViewSettings;
-            }
         }
     }
 }

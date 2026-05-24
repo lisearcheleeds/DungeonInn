@@ -44,8 +44,8 @@ namespace DungeonInn.Application.World
             Fatigue = fatigue;
             InjurySeverity = injurySeverity;
             Gold = gold;
-            EquipmentNames = equipmentNames ?? Array.Empty<string>();
-            ActiveEffects = activeEffects ?? Array.Empty<ActorEffectIconViewData>();
+            EquipmentNames = CopySnapshot(equipmentNames);
+            ActiveEffects = CopySnapshot(activeEffects);
         }
 
         public Guid ActorId { get; }
@@ -67,5 +67,21 @@ namespace DungeonInn.Application.World
         public int Gold { get; }
         public IReadOnlyList<string> EquipmentNames { get; }
         public IReadOnlyList<ActorEffectIconViewData> ActiveEffects { get; }
+
+        static T[] CopySnapshot<T>(IReadOnlyList<T> values)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            var snapshot = new T[values.Count];
+            for (var index = 0; index < values.Count; index++)
+            {
+                snapshot[index] = values[index];
+            }
+
+            return snapshot;
+        }
     }
 }

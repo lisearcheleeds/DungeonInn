@@ -22,3 +22,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

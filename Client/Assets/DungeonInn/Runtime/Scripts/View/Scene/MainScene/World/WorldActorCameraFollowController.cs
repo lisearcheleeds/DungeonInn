@@ -1,5 +1,6 @@
 using System;
 using DungeonInn.Application.World;
+using DungeonInn.View.Scene.Bridge;
 using R3;
 using VContainer;
 using VContainer.Unity;
@@ -10,7 +11,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly ActorSelectionService actorSelectionService;
         readonly WorldCameraController worldCameraController;
-        readonly WorldCameraSettings cameraSettings;
+        readonly IWorldCameraSettingsRepository cameraSettingsRepository;
         readonly IGameWorldStateReader worldState;
         readonly LayerPositionViewMapper positionMapper;
         readonly MapLayerViewRegistry layerViewRegistry;
@@ -20,14 +21,15 @@ namespace DungeonInn.View.Scene.MainScene.World
         public WorldActorCameraFollowController(
             ActorSelectionService actorSelectionService,
             WorldCameraController worldCameraController,
-            WorldCameraSettings cameraSettings,
+            IWorldCameraSettingsRepository cameraSettingsRepository,
             IGameWorldStateReader worldState,
             LayerPositionViewMapper positionMapper,
             MapLayerViewRegistry layerViewRegistry)
         {
             this.actorSelectionService = actorSelectionService ?? throw new ArgumentNullException(nameof(actorSelectionService));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
-            this.cameraSettings = cameraSettings ?? throw new ArgumentNullException(nameof(cameraSettings));
+            this.cameraSettingsRepository =
+                cameraSettingsRepository ?? throw new ArgumentNullException(nameof(cameraSettingsRepository));
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
             this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
@@ -71,7 +73,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             if (actorId.HasValue)
             {
-                worldCameraController.BeginFollow(cameraSettings.ActorSelectionZoomRatio);
+                worldCameraController.BeginFollow(cameraSettingsRepository.Get().ActorSelectionZoomRatio);
             }
             else
             {

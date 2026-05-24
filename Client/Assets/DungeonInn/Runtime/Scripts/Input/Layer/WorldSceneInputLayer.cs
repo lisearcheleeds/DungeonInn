@@ -1,6 +1,5 @@
 using System;
 using DungeonInn.Application.Economy;
-using Cysharp.Threading.Tasks;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.View.Scene.MainScene.World;
 using LighthouseExtends.InputLayer;
@@ -106,7 +105,7 @@ namespace DungeonInn.Input.Layer
 
             if (callbackContext.action.id == togglePauseAction.id)
             {
-                TogglePauseAsync().Forget();
+                TogglePause();
                 return true;
             }
 
@@ -117,7 +116,7 @@ namespace DungeonInn.Input.Layer
                     return true;
                 }
 
-                ShowInnStatusAsync().Forget();
+                ShowInnStatus();
                 return true;
             }
 
@@ -141,15 +140,15 @@ namespace DungeonInn.Input.Layer
             return false;
         }
 
-        async UniTask TogglePauseAsync()
+        void TogglePause()
         {
-            var timeState = await toggleGamePauseUseCase.ExecuteAsync();
+            var timeState = toggleGamePauseUseCase.Execute();
             Debug.Log(timeState.IsPaused ? "[Time] Paused" : "[Time] Resumed");
         }
 
-        async UniTask ShowInnStatusAsync()
+        void ShowInnStatus()
         {
-            var status = await getInnEconomyStatusUseCase.ExecuteAsync();
+            var status = getInnEconomyStatusUseCase.Execute();
             var current = status.Current;
             Debug.Log(
                 $"[InnStatus] Day={status.CurrentDay} Guests={current.Guests} " +

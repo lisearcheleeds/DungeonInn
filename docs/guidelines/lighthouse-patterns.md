@@ -18,11 +18,16 @@ Claude Code・Codex ともに実装前に本ドキュメントを確認するこ
 - [ ] ModuleScene の Activate / Deactivate を手動操作していない
 - [ ] ScreenStack / Modal を手動 `Instantiate` / `Destroy` で管理していない
 - [ ] 3D / World 系 MainScene に Screen Space Overlay の UI Canvas / HUD / Popup を直接配置していない
+- [ ] MainScene / ModuleScene / LifetimeScope の境界を跨いで、他シーンが所有する Canvas / View / Presenter / Pool / scene-owned component を直接参照・操作していない
 - [ ] LifetimeScope にゲームコンテンツ Prefab / UI View Prefab / Popup View の実体を `SerializedField` していない
 - [ ] Projectile / AreaEffect / Prop 等のコンテンツ Prefab アドレスを、World 横断の Prefab 一覧ではなく発生元 Master / Spec / Definition から解決している
 - [ ] `Camera.main` 依存や URP カメラスタックの手動構築を追加していない
 - [ ] Lighthouse / VContainer / 既存フレームワークコードを複製していない
 - [ ] LighthouseGenerated 以下の `.g.cs` を手動編集していない
+- [ ] Addressables から非同期ロードした設定値を `Configure()` 内で `RegisterInstance` していない（外部ロードが必要な設定は Repository パターンを使う → P6）
+- [ ] `FindFirstObjectByType` / `FindObjectOfType` / `FindObjectsOfType` を View 層コードで使用していない
+- [ ] スタンドアロンゲームの通常フローで到達しない状況に対してフォールバック動作（代替オブジェクトの生成など）を実装していない（到達しないなら例外またはアサートにする）
+- [ ] Launcher / bootstrap / Product 起動処理が、実ゲームセッションや特定コンテンツシーンを直接開始していない
 
 ## 完了前チェックリスト
 
@@ -32,10 +37,12 @@ Claude Code・Codex ともに実装前に本ドキュメントを確認するこ
 - [ ] 変更内容に該当する Lighthouse パターン（P1〜P10）を本文で確認した
 - [ ] シーン責務が MainScene / ModuleScene の判断基準に沿っている
 - [ ] 3D / World 系 MainScene の Canvas / HUD / Popup は Canvas ModuleScene に分離している
+- [ ] シーン間の連携は、所有者側の Presenter / EntryPoint / Factory / Pool、または親 scope に登録された抽象 interface 経由になっている
 - [ ] アセットロードは `IAssetManager` / `IAssetScope` の寿命ルールに沿っている
 - [ ] Prefab 生成は Addressable Factory / Pool 経由で行い、LifetimeScope に直接 Prefab 参照を置いていない
 - [ ] コンテンツ Prefab の選択責務が発生元 Master / Spec / Definition にある
 - [ ] シーン遷移は Lighthouse の `ISceneManager` 経由で行っている
+- [ ] Launcher / bootstrap は最初の入口 MainScene へ遷移するだけで、実ゲームセッション開始は Title / Menu / NewGame / Continue などの明示フローに置いている
 - [ ] 入力は `IInputLayer` と MainScene 登録経由で処理している
 - [ ] ScreenStack / Dialog は Lighthouse の ScreenStack 経由で開閉している
 - [ ] LifetimeScope / ProductLifetimeScope への登録漏れがない
@@ -69,12 +76,57 @@ Claude Code・Codex ともに実装前に本ドキュメントを確認するこ
 **3D / World 系 MainScene の追加ルール**:
 - World / Dungeon / Battle Field など、3D 表現やゲーム空間を主責務にする MainScene には Screen Space Overlay の UI Canvas を置かない。
 - HUD、ActorStatus、Popup、EventLog、Menu などは Canvas ModuleScene（例: `WorldUI`）へ分離する。
-- MainScene 側の Presenter が UI を操作する場合も、ModuleScene Provider / Addressable Factory / Pool を経由して View を取得する。
+- MainScene 側から Canvas ModuleScene の Canvas / View / Presenter / Pool を直接参照・操作してはならない。HUD / Popup の初期化・更新・入力処理は ModuleScene 側の EntryPoint / Presenter が所有する。
+- MainScene と ModuleScene の連携が必要な場合は、MainScene が抽象 interface を登録し、ModuleScene 側はその抽象だけを読む。逆に MainScene が ModuleScene の具象を inject して更新してはならない。
 - Canvas が見つからない場合の fallback 生成は開発時の保険に留め、正規経路は ModuleScene に置いた Canvas とする。
 
 **設計時に必ずユーザーへ相談すること**:
 - 各シーンの責務分担を決める前（何を MainScene / ModuleScene に置くか）
 - 迷いが 1 つでもある場合は実装を止めてユーザーに確認する
+
+---
+
+### Bootstrap / Launcher / ゲームセッション開始の分離
+
+Launcher / bootstrap / Product 起動処理は、アプリケーション基盤を立ち上げ、最初の入口 MainScene へ遷移するための System 層である。
+実ゲームセッションや特定コンテンツの開始処理をここに置いてはならない。
+
+**責務の分離**:
+
+| 層 | 責務 | 置いてはいけないもの |
+|---|---|---|
+| Bootstrap / Launcher / Product | Root / Product scope 起動、言語・入力・共通基盤の初期化、最初の入口 MainScene への遷移 | NewGame / Continue、World / Battle / Dungeon など実ゲームセッションの直接開始 |
+| Title / Menu / Session Start Flow | ユーザー操作を受け、NewGame / Continue / Load などの開始意思を確定する | Product 全体の初期化、Root / bootstrap の再構築 |
+| GameSession scope | 1 回のゲームセッションで共有する Application / Domain state を生成・保持する | Product 全体の常駐基盤、Title 以前から必要な global service |
+| Content MainScene | World / Battle / Dungeon / Inn など、開始済みセッションの表示・操作を担う | セッション生成そのもの、Product 起動処理 |
+
+**ルール**:
+
+- Launcher は `Title` / `MainMenu` / `BootComplete` など入口 MainScene へ遷移する。
+- Launcher から `World` / `Battle` / `Dungeon` のような実ゲームシーンへ直接遷移しない。
+- GameSession scope は Product 起動時ではなく、NewGame / Continue / Load などの明示フローで生成する。
+- ProductEntryPoint は Product 初期化を担い、ゲームセッション開始判断を持たない。
+- 一時的に Launcher から実ゲームシーンへ直遷移する場合は、削除条件、正式な移動先、撤去 milestone を TODO に明記する。ただし正式な入口シーンが既に存在するなら、一時遷移を延命しない。
+
+```csharp
+// NG: Launcher が実ゲームセッションを開始してコンテンツシーンへ直遷移する
+gameSessionController.CreateSession();
+await sceneManager.TransitionScene(new WorldScene.WorldTransitionData());
+```
+
+```csharp
+// OK: Launcher は入口 MainScene へ遷移するだけ
+await sceneManager.TransitionScene(new TitleScene.TitleTransitionData());
+```
+
+```csharp
+// OK: Title / Menu 側のユーザー操作でセッションを開始する
+newGameButton.onClick.AddListener(() =>
+{
+    gameSessionController.CreateSession();
+    sceneManager.TransitionScene(new WorldScene.WorldTransitionData()).Forget();
+});
+```
 
 ---
 
@@ -427,6 +479,15 @@ namespace DungeonInn.View.Scene.MainScene.Inn
 シーン内に別 GameObject として:
 - `InnLifetimeScope`（MonoBehaviour + LifetimeScope）
 
+Canvas MainScene の UI GameObject は、root / Canvas / child UI まで `UI` Layer に設定する。
+`SceneCanvasInitializer` や UI 用 camera の culling mask は UI Layer を前提にするため、Default Layer のままだと scene 自体は遷移していても UI が表示されないことがある。
+
+確認項目:
+- [ ] Canvas MainScene の root GameObject が `UI` Layer
+- [ ] Canvas GameObject が `UI` Layer
+- [ ] Button / Text / Image など child UI が `UI` Layer
+- [ ] Editor OneShot や scene setup script で UI を生成する場合、生成直後に layer を再帰設定している
+
 ### 注意
 
 - `MainSceneId` は `DungeonInnMainSceneId.g.cs`（自動生成）から取得する
@@ -464,6 +525,9 @@ namespace DungeonInn.View.Scene.ModuleScene.Audio
 
 シーン内に別 GameObject として:
 - `AudioLifetimeScope`（MonoBehaviour + LifetimeScope）
+
+Canvas ModuleScene の UI GameObject も、root / Canvas / child UI まで `UI` Layer に設定する。
+HUD / Popup / Dialog などが Default Layer のままだと、Canvas 初期化や overlay camera 設定が正しくても描画対象から外れることがある。
 
 ---
 
@@ -817,6 +881,232 @@ public class SomePresenter
     }
 }
 ```
+
+---
+
+## P11. LifetimeScope ツリー構造と責務ルール
+
+LifetimeScope は「どの型を登録するか」の置き場ではなく、**寿命・所有者・依存可視性を定義する composition root** である。
+
+ある型をどの LifetimeScope に登録するかは、フォルダ、機能名、実装都合ではなく、以下で決める。
+
+- そのインスタンスはいつ生成され、いつ破棄されるべきか
+- そのインスタンスを所有する画面・モジュール・セッションはどれか
+- どの子スコープから参照されてよく、どのスコープからは参照できてはいけないか
+- その型が Scene-owned component / View / Presenter / Application service / Infrastructure service のどれか
+
+### 基本ツリー
+
+具体的な名前はプロジェクトごとに異なるが、責務の層は以下のように分ける。
+
+```
+ProductLifetimeScope
+  └── Product 全体で共有する基盤
+      例: Lighthouse service, language, asset manager, input root, global UI infrastructure
+
+  └── GameSessionLifetimeScope / MainGameLifetimeScope
+      └── 1つのゲームセッションで共有する Application / Domain / game state
+          例: world state, game clock, usecase, state service, config repository
+
+      └── MainSceneLifetimeScope
+          └── その MainScene が所有する scene object / scene adapter / scene-specific presenter
+              例: 3D world root, camera controller, map layer registry, scene-specific input
+
+          └── ModuleSceneLifetimeScope
+              └── その ModuleScene が所有する UI / popup / HUD / auxiliary view
+                  例: HUD canvas, HUD presenter, popup presenter, view pool
+```
+
+親スコープの登録型は子スコープから参照できる。逆に、親スコープは子スコープの登録型に依存してはならない。
+
+この依存可視性が LifetimeScope ツリーの本質である。  
+「親から子を使いたい」「兄弟スコープ同士で直接 inject したい」という設計になった場合は、登録場所か抽象境界が間違っている。
+
+### 責務ルール
+
+**1. Scope の責務は寿命と所有者で説明する**
+
+LifetimeScope を新設・変更する前に、以下を1行で説明できること。
+
+```
+この scope は、{所有者} が所有し、{寿命} で破棄される {責務} を登録する。
+```
+
+言えない場合は、スコープが広すぎるか、責務が混在している。
+
+**2. 親 scope は共有基盤、子 scope は具体的な所有物を持つ**
+
+上位 scope ほど長寿命で、具体的な Scene / View / Prefab から遠い責務だけを持つ。
+
+- Product scope: アプリ全体の基盤
+- Game session scope: ゲームセッション状態と Application service
+- MainScene scope: MainScene が所有する scene object と scene adapter
+- ModuleScene scope: ModuleScene が所有する UI / auxiliary view
+
+長寿命 scope に短寿命 object を登録してはならない。  
+例: Product scope や Game session scope に Scene-owned `MonoBehaviour`、View、HUD Presenter、Popup Presenter を登録しない。
+
+**3. 関心が違うものを同じ scope に登録しない**
+
+LifetimeScope は「その画面で使うもの全部」を集める場所ではない。
+
+3D 描画、HUD 表示、Popup、ScreenStack、Audio、Input、Application state は、それぞれ寿命と所有者が違うなら scope を分ける。
+
+特に以下は混ぜない。
+
+- 3D / world representation と Screen Space UI
+- MainScene 固有の scene object と global module
+- Product/global infrastructure と game session state
+- Application service と View / Presenter / `MonoBehaviour`
+- System / bootstrap 処理と content / game session 処理
+
+**4. 親子 scope で共有する game session state は、親 scope 内で共有寿命にする**
+
+同じ game session state を MainScene と ModuleScene の両方から読む場合、その state / service は GameSession scope に登録し、子 scope 間で同じ instance を参照できる寿命にする。
+子 scope ごとに別 instance になる寿命を選ぶと、World と HUD、Battle と HUD などで状態が分裂する。
+
+```csharp
+// OK: GameSession scope 配下の MainScene / ModuleScene から同じ session state を読む
+builder.Register<GameWorldState>(Lifetime.Singleton).As<IGameWorldState>();
+```
+
+**5. 子 scope が必要とする依存は親 scope または自 scope に登録する**
+
+ModuleScene の Presenter が MainScene 固有の情報を必要とする場合、Presenter は MainScene の具象クラスではなく、MainScene が登録する抽象 interface に依存する。
+
+```csharp
+// OK: ModuleScene 側は抽象に依存する
+public sealed class ActorHudPresenter
+{
+    readonly IActorScreenPositionProvider screenPositionProvider;
+}
+
+// OK: MainScene scope が scene-specific 実装を登録する
+builder.Register<WorldActorScreenPositionProvider>(Lifetime.Scoped)
+    .As<IActorScreenPositionProvider>();
+```
+
+ModuleScene 側から `WorldCameraController` や `MapLayerViewRegistry` のような MainScene 具象型を直接 inject したくなった場合は、抽象境界を追加する。
+
+**6. シーン所有物を他シーンから直接参照・操作しない**
+
+Scene-owned component、Canvas、View、Presenter、Pool、Factory、EntryPoint は、その Scene / ModuleScene / LifetimeScope の所有物である。
+別の Scene がこれらの具象 instance を直接持つと、所有者、初期化順、破棄順、表示責務が壊れる。
+
+```csharp
+// NG: MainScene が ModuleScene の Canvas や View を直接保持して操作する
+public sealed class WorldPresenter
+{
+    readonly Canvas hudCanvas;
+    readonly ActorStatusViewPool actorStatusViewPool;
+}
+```
+
+```csharp
+// OK: ModuleScene 側が HUD の View / Pool / Presenter を所有する
+public sealed class HudEntryPoint
+{
+    readonly ActorHudPresenter actorHudPresenter;
+
+    void Update()
+    {
+        actorHudPresenter.UpdatePositions();
+    }
+}
+```
+
+```csharp
+// OK: MainScene 固有情報は抽象 interface として親または MainScene scope に登録する
+public interface IActorScreenPositionProvider
+{
+    bool TryGetScreenPosition(ActorId actorId, out Vector2 screenPosition);
+}
+```
+
+許可される連携:
+
+- 親 scope に登録された Application service / Store / Query を子 scope が読む
+- MainScene が登録した抽象 interface を ModuleScene が読む
+- ModuleScene 内の Presenter / Pool / Factory が同じ ModuleScene の View / Canvas を操作する
+- Framework が定義した SceneCamera / Canvas 初期化経路に従う
+
+禁止される連携:
+
+- MainScene が ModuleScene の Canvas / View / Presenter / Pool を inject または serialized field で保持する
+- ModuleScene が MainScene の具象 controller / registry / camera を直接 inject する
+- 親 scope が子 scope の scene-owned component を解決して更新する
+- `FindObjectOfType` / hierarchy 探索 / scene serialized reference で他 Scene の所有物を探して操作する
+
+**7. 親 scope が子 scope の型を inject しない**
+
+MainScene の EntryPoint が ModuleScene の Presenter を inject して更新する設計は、親が子の存在を知るため構造が逆転する。
+
+ModuleScene に Presenter を置くなら、その初期化・更新の起点も ModuleScene 側に置く。
+
+```csharp
+// NG: MainScene EntryPoint が ModuleScene Presenter を所有する
+public sealed class WorldEntryPoint : MonoBehaviour
+{
+    [Inject] HudPresenter hudPresenter;
+}
+
+// OK: ModuleScene EntryPoint が ModuleScene Presenter を所有する
+public sealed class HudEntryPoint : MonoBehaviour
+{
+    [Inject] HudPresenter hudPresenter;
+}
+```
+
+**8. 外部ロードが必要な設定値を `Configure()` に間に合わせない**
+
+Addressables から非同期ロードする設定は、`Configure()` の時点では存在しない。  
+これを解決するために、scope 作成前に非同期ロードを完了させる専用 manager を作ると、LifetimeScope ツリーが「設定ロード都合」に引きずられる。
+
+代わりに、Repository / Store / Provider を登録し、ロードは初期化フローで行う。
+
+```csharp
+// NG: Addressables ロード済みインスタンスを Configure() に間に合わせて RegisterInstance する
+builder.RegisterInstance(await LoadSettingsAsync());
+
+// OK: Repository を登録し、ロードは初期化フローで行う
+builder.Register<GameSettingsRepository>(Lifetime.Scoped);
+// InitializeAsync() などで: await gameSettingsRepository.LoadAsync(ct);
+```
+
+Repository / Store / Provider を使う場合は、asset scope の所有者、Dispose 責務、ロード完了前アクセスの扱いを定義する。
+
+**9. Framework 制約の回避策を scope 設計に混ぜない**
+
+「本当は module ごとに親 scope を変えたいが、framework が単一 callback しか持たない」などの制約がある場合、回避策を恒久設計にしない。
+
+短期対応として許容する場合も、以下を明記する。
+
+- 何の framework 制約を回避しているか
+- その回避策で依存可視性がどこまで広がるか
+- 将来 framework 側をどう直すべきか
+- 回避策を撤去する条件
+
+### DungeonInn での適用例
+
+以下は DungeonInn の一例であり、全プロジェクト共通の固定名ではない。
+
+```
+ProductLifetimeScope
+  └── MainGameLifetimeScope
+        ├── WorldLifetimeScope
+        │     └── GameHUDLifetimeScope
+        └── ScreenStackLifetimeScope
+```
+
+- `MainGameLifetimeScope`: ゲームセッション共有の Application / Domain / StateService / Repository
+- `WorldLifetimeScope`: World MainScene が所有する 3D 表現、camera、layer registry、scene adapter
+- `GameHUDLifetimeScope`: HUD Canvas、HUD Presenter、Popup Presenter、HUD ViewPool
+- `ScreenStackLifetimeScope`: global UI stack。World 固有 scope には依存させない
+
+`GameHUDLifetimeScope` が World 固有情報を必要とする場合、`WorldLifetimeScope` が `IActorScreenPositionProvider` などの抽象を登録し、HUD 側はその抽象だけに依存する。
+
+ただし、framework 制約により ModuleScene ごとの parent scope を分けられない場合は、`ScreenStack` が `MainGameLifetimeScope` 配下になる短期対応は許容できる。  
+一方で、global module である `ScreenStack` を `WorldLifetimeScope` の子にする設計は避ける。
 
 ---
 

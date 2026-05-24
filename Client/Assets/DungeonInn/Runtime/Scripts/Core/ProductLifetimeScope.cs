@@ -1,6 +1,7 @@
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
+using DungeonInn.GameSession;
 using DungeonInn.Infrastructure.TextTable;
 using DungeonInn.Input;
 using DungeonInn.Master;
@@ -76,6 +77,10 @@ namespace DungeonInn.Core
             {
                 // YourProduct
                 builder.Register<Launcher>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<EntrySceneTransitionService>(Lifetime.Singleton).As<IEntrySceneTransitionService>();
+                builder.Register<RebootService>(Lifetime.Singleton)
+                    .As<IRebootService>()
+                    .As<IRebootCleanupRegistry>();
 
                 {
                     // LightHouse Require
@@ -89,6 +94,9 @@ namespace DungeonInn.Core
                 }
 
                 builder.Register<AssetManager>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<GameSessionLifecycle>(Lifetime.Singleton)
+                    .As<IGameSessionLifecycle>()
+                    .AsSelf();
                 builder.Register<ProductTextTableLoader>(Lifetime.Singleton).As<ITextTableLoader>();
                 builder.Register<HardcodedMasterRepository>(Lifetime.Singleton)
                     .As<IMasterRepository>()

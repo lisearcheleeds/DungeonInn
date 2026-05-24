@@ -416,7 +416,7 @@ namespace DungeonInn.Tests.EditMode
             IGameClock clock,
             IGameEventBus eventBus)
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var navigationService = new ActorNavigationService(
                 new NoOpGameEventBus(),
@@ -432,17 +432,17 @@ namespace DungeonInn.Tests.EditMode
                     navigationService,
                     spatialIndex,
                     actorViewDataStore),
-                DungeonInn.Application.World.ActorSimulationSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         static GameWorldState CreateWorldState()
         {
             return new GameWorldState(
-                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         static AdventurerGuild CreateGuild()
@@ -491,6 +491,10 @@ namespace DungeonInn.Tests.EditMode
 
         sealed class ZeroGameRandom : IGameRandom
         {
+            public void Initialize(int seed)
+            {
+            }
+
             public int Next()
             {
                 return 0;
@@ -553,3 +557,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

@@ -15,13 +15,13 @@ namespace DungeonInn.Application.Dungeons
     public sealed class GenerateDungeonFloorUseCase
     {
         const int ReferencePointPlacementMaxAttempts = 32;
-        readonly DungeonMapGenerationSettings generationSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
-        public GenerateDungeonFloorUseCase(DungeonMapGenerationSettings generationSettings)
+        public GenerateDungeonFloorUseCase(IWorldGameSettingsRepository worldGameSettingsRepository)
         {
-            this.generationSettings = generationSettings
-                ?? throw new ArgumentNullException(nameof(generationSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         /// <summary>
@@ -36,6 +36,7 @@ namespace DungeonInn.Application.Dungeons
                 throw new InvalidOperationException("Dungeon floor already exists.");
             }
 
+            var generationSettings = worldGameSettingsRepository.GetDungeonMapGenerationSettings();
             var settings = ResolveSettings(floorIndex, depthBandConfigs, generationSettings);
             var layer = new MapLayer(
                 MapLayerId.DungeonFloor(floorIndex),
@@ -43,7 +44,7 @@ namespace DungeonInn.Application.Dungeons
                 generationSettings.FloorDepth,
                 GameConstants.MapCellWidthMeters);
             var random = new Random(dungeon.Seed + floorIndex * GameConstants.DungeonFloorSeedMultiplier);
-            var blueprint = CreateBlueprint(layer, settings, random);
+            var blueprint = CreateBlueprint(layer, settings, generationSettings, random);
             var cells = CreateCells(layer, blueprint);
             var upStair = new DungeonStair(DungeonStairType.Up, blueprint.UpStairPosition);
             var downStair = new DungeonStair(DungeonStairType.Down, blueprint.DownStairPosition);
@@ -83,6 +84,7 @@ namespace DungeonInn.Application.Dungeons
         DungeonFloorBlueprint CreateBlueprint(
             MapLayer layer,
             DungeonFloorGenerationSettings settings,
+            DungeonMapGenerationSettings generationSettings,
             Random random)
         {
             var sectionWidth = layer.Width / generationSettings.SectionSizeCells;
@@ -107,13 +109,14 @@ namespace DungeonInn.Application.Dungeons
             var referencePointsBySection = CreateReferencePointsBySection(
                 sectionPath,
                 sectionWidth,
+                generationSettings,
                 random);
             var carvedCells = new HashSet<GridPosition>();
             var roomCells = new HashSet<GridPosition>();
             var rooms = new List<DungeonRoom>();
 
             CarveMainRoute(referencePointsBySection, carvedCells, random);
-            CarveRooms(referencePointsBySection, carvedCells, roomCells, rooms, random);
+            CarveRooms(referencePointsBySection, carvedCells, roomCells, rooms, generationSettings, random);
 
             return new DungeonFloorBlueprint(
                 carvedCells,
@@ -314,6 +317,7 @@ namespace DungeonInn.Application.Dungeons
         List<List<GridPosition>> CreateReferencePointsBySection(
             List<int> sectionPath,
             int sectionWidth,
+            DungeonMapGenerationSettings generationSettings,
             Random random)
         {
             var result = new List<List<GridPosition>>();
@@ -324,10 +328,10 @@ namespace DungeonInn.Application.Dungeons
                 var points = new List<GridPosition>();
                 var sectionPosition = ToSectionPosition(sectionIndex, sectionWidth);
 
-                points.Add(CreateReferencePoint(sectionPosition, random));
+                points.Add(CreateReferencePoint(sectionPosition, generationSettings, random));
                 for (var i = 1; i < referencePointCount; i++)
                 {
-                    if (TryCreateAdditionalReferencePoint(sectionPosition, points, random, out var point))
+                    if (TryCreateAdditionalReferencePoint(sectionPosition, points, generationSettings, random, out var point))
                     {
                         points.Add(point);
                     }
@@ -339,7 +343,10 @@ namespace DungeonInn.Application.Dungeons
             return result;
         }
 
-        GridPosition CreateReferencePoint(GridPosition sectionPosition, Random random)
+        GridPosition CreateReferencePoint(
+            GridPosition sectionPosition,
+            DungeonMapGenerationSettings generationSettings,
+            Random random)
         {
             var min = generationSettings.SectionMarginCells;
             var max = generationSettings.SectionSizeCells - generationSettings.SectionMarginCells;
@@ -351,12 +358,13 @@ namespace DungeonInn.Application.Dungeons
         bool TryCreateAdditionalReferencePoint(
             GridPosition sectionPosition,
             IReadOnlyList<GridPosition> existingPoints,
+            DungeonMapGenerationSettings generationSettings,
             Random random,
             out GridPosition point)
         {
             for (var i = 0; i < ReferencePointPlacementMaxAttempts; i++)
             {
-                var candidate = CreateReferencePoint(sectionPosition, random);
+                var candidate = CreateReferencePoint(sectionPosition, generationSettings, random);
                 if (IsSeparatedFromAll(candidate, existingPoints))
                 {
                     point = candidate;
@@ -411,6 +419,7 @@ namespace DungeonInn.Application.Dungeons
             HashSet<GridPosition> carvedCells,
             HashSet<GridPosition> roomCells,
             List<DungeonRoom> rooms,
+            DungeonMapGenerationSettings generationSettings,
             Random random)
         {
             var referencePoints = referencePointsBySection

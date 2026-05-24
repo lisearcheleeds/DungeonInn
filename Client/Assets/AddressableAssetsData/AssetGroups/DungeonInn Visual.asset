@@ -56,7 +56,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4bab999258a6aa740940759f2ab6f71b
-    m_Address: World/UI/ActorDetailPopup
+    m_Address: GameHUD/UI/ActorDetailPopup
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -92,6 +92,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 856d812941d23e6479d3de51cb4f651b
     m_Address: Sprites/Adventurer/IdleNW
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 87cb9a720bf39a149956feea9d48bf14
+    m_Address: GameHUD/UI/WorldHudView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -140,6 +145,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: aff29ca1148a4794a922b7ca7886cb18
+    m_Address: GameHUD/UI/InnStatusPanelView
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b4e0ab4ef6f078f488e546b7d1aaa2e6
     m_Address: Sprites/Goblin/WalkSW2
     m_ReadOnly: 0
@@ -171,12 +181,17 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: cb61ee1e47df6674ca74c1e6ad7e4a0e
-    m_Address: World/UI/ActorStatusView
+    m_Address: GameHUD/UI/ActorStatusView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ce40b55a4e8415c4e8b566cae3624b7b
     m_Address: Sprites/Goblin/IdleSE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cf6d6d63cfe24a1aa8a5cb8dc8191ec5
+    m_Address: Config/WorldCameraSettings
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -190,6 +205,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d7e0bc3d739d11048891877d37011d13
+    m_Address: GameHUD/UI/MinimapView
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: db62ce86e6b06db4c92c97418459feb9
     m_Address: Sprites/Adventurer/IdleSW
     m_ReadOnly: 0
@@ -197,6 +217,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e20405b2a02f82b4ba0faacc2d696521
     m_Address: Sprites/Adventurer/IdleNE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e45e18cc8ed74d9385274e72aa984489
+    m_Address: Config/LayerPositionViewSettings
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -221,12 +246,17 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f6b2d15dcd9ccda499e9d2c833a1eb77
-    m_Address: World/UI/PlayerEventLogView
+    m_Address: GameHUD/UI/PlayerEventLogView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f97f5c85d5bd5c940a9c9b7d0f4ec593
     m_Address: Sprites/Adventurer/IdleSE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ffd3ea84a28e7a7489db5e1e1bedad4a
+    m_Address: Config/WorldGameSettings
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

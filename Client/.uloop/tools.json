@@ -1,11 +1,11 @@
 {
   "version": "2.1.0",
   "serverVersion": "2.1.0",
-  "updatedAt": "2026-05-23T03:29:41.482Z",
+  "updatedAt": "2026-05-24T11:23:41.319Z",
   "tools": [
     {
       "name": "validate-serialized-fields",
-      "description": "[BLOCKED] Validate that all [SerializeField] reference fields in DungeonInn MonoBehaviours are assigned. Scans all scenes and prefabs under Assets/DungeonInn. - Blocked by security settings",
+      "description": "Validate that all [SerializeField] reference fields in DungeonInn MonoBehaviours are assigned. Scans all scenes and prefabs under Assets/DungeonInn.",
       "inputSchema": {
         "type": "object",
         "properties": {},

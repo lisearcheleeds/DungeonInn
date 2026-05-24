@@ -114,7 +114,7 @@ namespace DungeonInn.Tests.EditMode
                 useConsumableItemUseCase,
                 eventBus,
                 candidateService,
-                DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
             var worldState = CreateWorldState(candidateService);
             var actor = CreateAdventurer(30);
             actor.GainItem(new ItemStack(2001, 1));
@@ -153,11 +153,11 @@ namespace DungeonInn.Tests.EditMode
         static GameWorldState CreateWorldState(ActorProcessingCandidateService candidateService)
         {
             return new GameWorldState(
-                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 candidateService,
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         sealed class CollectingEventBus : IGameEventBus
@@ -181,3 +181,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

@@ -40,7 +40,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             if (warnedFallbackKinds.Add(kind))
             {
-                Debug.LogWarning($"[MapMaterialSet] Using fallback map material. Kind={kind}");
+                UnityEngine.Debug.LogWarning($"[MapMaterialSet] Using fallback map material. Kind={kind}");
             }
 
             return material;

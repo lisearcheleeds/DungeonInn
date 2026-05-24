@@ -36,7 +36,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly ActorSpatialIndexService actorSpatialIndexService;
         readonly ActorViewDataStore actorViewDataStore;
         readonly ActorProcessingCandidateService candidateService;
-        readonly ActorSimulationSettings actorSimulationSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public AdvanceActorLifecycleOrchestrator(
@@ -52,7 +52,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             ActorSpatialIndexService actorSpatialIndexService,
             ActorViewDataStore actorViewDataStore,
             ActorProcessingCandidateService candidateService,
-            ActorSimulationSettings actorSimulationSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -78,8 +78,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 ?? throw new ArgumentNullException(nameof(actorViewDataStore));
             this.candidateService = candidateService
                 ?? throw new ArgumentNullException(nameof(candidateService));
-            this.actorSimulationSettings = actorSimulationSettings
-                ?? throw new ArgumentNullException(nameof(actorSimulationSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -154,7 +154,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 destination,
                 groundMap.Layer,
                 groundMap,
-                actorSimulationSettings.MoveSpeedMetersPerSecond,
+                worldGameSettingsRepository.GetActorSimulationSettings().MoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
             if (arrived)
@@ -247,7 +247,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 destination,
                 floor.Layer,
                 floor,
-                actorSimulationSettings.MoveSpeedMetersPerSecond,
+                worldGameSettingsRepository.GetActorSimulationSettings().MoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
             if (arrived)
@@ -256,7 +256,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 explorationStateService.RemoveDestination(actor.Id);
                 navigationService.InvalidatePath(actor.Id);
 
-                if (actorSimulationSettings.ExplorationRoomArrivalTarget <= behavior.ExplorationRoomArrivalCount)
+                if (worldGameSettingsRepository.GetActorSimulationSettings().ExplorationRoomArrivalTarget
+                    <= behavior.ExplorationRoomArrivalCount)
                 {
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Returning);
                     candidateService.MarkPostDungeonScheduleCandidates(actor.Id);
@@ -276,7 +277,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 downStairDestination,
                 floor.Layer,
                 floor,
-                actorSimulationSettings.MoveSpeedMetersPerSecond,
+                worldGameSettingsRepository.GetActorSimulationSettings().MoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
             if (!arrived)
@@ -319,7 +320,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 upStairDestination,
                 floor.Layer,
                 floor,
-                actorSimulationSettings.MoveSpeedMetersPerSecond,
+                worldGameSettingsRepository.GetActorSimulationSettings().MoveSpeedMetersPerSecond,
                 deltaGameSeconds);
 
             if (arrived)

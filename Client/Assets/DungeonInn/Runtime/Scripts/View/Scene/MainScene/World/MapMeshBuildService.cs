@@ -11,7 +11,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly MapTileVisualConfig tileVisualConfig;
         readonly MapMaterialSet mapMaterialSet;
-        readonly WorldMapViewSettings worldMapViewSettings;
+        readonly IWorldMapViewSettingsRepository worldMapViewSettingsRepository;
         readonly List<Vector3> vertices = new();
         readonly List<Vector2> uv = new();
         readonly Dictionary<TileVisualKind, List<int>> trianglesByKind = new();
@@ -22,11 +22,12 @@ namespace DungeonInn.View.Scene.MainScene.World
         public MapMeshBuildService(
             MapTileVisualConfig tileVisualConfig,
             MapMaterialSet mapMaterialSet,
-            WorldMapViewSettings worldMapViewSettings)
+            IWorldMapViewSettingsRepository worldMapViewSettingsRepository)
         {
             this.tileVisualConfig = tileVisualConfig ?? throw new ArgumentNullException(nameof(tileVisualConfig));
             this.mapMaterialSet = mapMaterialSet ?? throw new ArgumentNullException(nameof(mapMaterialSet));
-            this.worldMapViewSettings = worldMapViewSettings ?? throw new ArgumentNullException(nameof(worldMapViewSettings));
+            this.worldMapViewSettingsRepository =
+                worldMapViewSettingsRepository ?? throw new ArgumentNullException(nameof(worldMapViewSettingsRepository));
         }
 
         public MapChunkMesh BuildChunk(
@@ -159,7 +160,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellWidthMeters;
             var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellWidthMeters;
             var halfSize = GameConstants.MapCellWidthMeters * 0.5f;
-            var wallHeight = worldMapViewSettings.TileHeightMeters;
+            var wallHeight = worldMapViewSettingsRepository.GetWorldMapViewSettings().TileHeightMeters;
 
             AddQuad(
                 visualDefinition,
@@ -204,7 +205,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             var cellCenterX = (position.X + 0.5f) * GameConstants.MapCellWidthMeters;
             var cellCenterZ = (position.Z + 0.5f) * GameConstants.MapCellWidthMeters;
             var halfSize = GameConstants.MapCellWidthMeters * 0.5f;
-            var wallHeight = worldMapViewSettings.TileHeightMeters;
+            var wallHeight = worldMapViewSettingsRepository.GetWorldMapViewSettings().TileHeightMeters;
 
             AddQuad(
                 visualDefinition,

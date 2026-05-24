@@ -7,7 +7,7 @@ using VContainer;
 
 namespace DungeonInn.View.Scene.MainScene.Title
 {
-    public sealed class TitleScene : ProductMainSceneBase<TitleScene.TitleTransitionData>
+    public sealed class TitleScene : ProductCanvasMainSceneBase<TitleScene.TitleTransitionData>
     {
         ITitlePresenter titlePresenter;
 

@@ -18,7 +18,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IGameClock gameClock;
         readonly AdventurerRecoveryStateService recoveryStateService;
         readonly ActorProcessingCandidateService candidateService;
-        readonly InnBalanceSettings innBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
@@ -27,13 +27,14 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IGameClock gameClock,
             AdventurerRecoveryStateService recoveryStateService,
             ActorProcessingCandidateService candidateService,
-            InnBalanceSettings innBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.recoveryStateService = recoveryStateService ?? throw new ArgumentNullException(nameof(recoveryStateService));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
-            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -86,10 +87,11 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
 
             var accumulated = recoveryStateService.GetAccumulatedHp(actor.Id);
+            var innBalanceSettings = worldGameSettingsRepository.GetInnBalanceSettings();
             accumulated += actor.Params.MaxHp * innBalanceSettings.HpRecoveryPercentPerMinute / 60f * deltaGameSeconds;
             var healAmount = (int)accumulated;
 
-            if (healAmount > 0)
+            if (0 < healAmount)
             {
                 actor.Recover(healAmount, 0, 0, 0, 0);
                 accumulated -= healAmount;

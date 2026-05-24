@@ -22,7 +22,7 @@ namespace DungeonInn.Master
 
         public int GetExperienceForLevel(int level)
         {
-            if (level < 0 || level > MaxLevel)
+            if (level < 0 || MaxLevel < level)
             {
                 throw new ArgumentOutOfRangeException(nameof(level));
             }

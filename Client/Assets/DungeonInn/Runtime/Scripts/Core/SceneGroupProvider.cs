@@ -17,14 +17,12 @@ namespace DungeonInn.Core
         static readonly IReadOnlyDictionary<MainSceneId, ModuleSceneId[]> SceneModuleMap =
             new Dictionary<MainSceneId, ModuleSceneId[]>
             {
-                { DungeonInnMainSceneId.FirstScene, null },
                 { DungeonInnMainSceneId.Title, null },
-                { DungeonInnMainSceneId.World, new[] { DungeonInnModuleSceneId.WorldUI } },
+                { DungeonInnMainSceneId.World, new[] { DungeonInnModuleSceneId.GameHUD } },
             };
 
         static readonly MainSceneId[][] MainSceneGroupList =
         {
-            new[] { DungeonInnMainSceneId.FirstScene },
             new[] { DungeonInnMainSceneId.Title },
             new[] { DungeonInnMainSceneId.World },
         };

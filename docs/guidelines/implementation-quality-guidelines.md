@@ -27,7 +27,9 @@
 - [ ] DI constructor（非MonoBehaviour）内で UnityEngine.Object（Texture2D / Sprite / Material / Mesh / GameObject 等）を生成していない
 - [ ] LifetimeScope / Installer にゲームコンテンツ Prefab、UI View Prefab、Popup View 実体を `SerializedField` していない
 - [ ] View 実体を直接 DI 登録せず、Presenter / Pool / Factory の責務境界を通して操作している
+- [ ] 別 Scene / 別 LifetimeScope が所有する Canvas / View / Presenter / Pool / scene-owned component を直接参照・操作していない
 - [ ] 既存 guideline 上で適切な命名・責務・設定配置が判断できるのに、「最小差分」を理由に曖昧な旧名・不適切な責務・互換用 API を残していない
+- [ ] System / bootstrap 層のクラスに、Content / GameSession 固有の開始処理・状態生成・コンテンツ遷移を混ぜていない
 
 ## 完了前チェックリスト
 
@@ -50,7 +52,9 @@
 - [ ] Fallback / Placeholder アセット生成の定数・ロジックが複数クラスに重複していないか確認した
 - [ ] LifetimeScope がコンテンツ catalog 化していないか確認した
 - [ ] Popup / HUD / View の操作入口が Presenter / Pool / Factory に限定されているか確認した
+- [ ] Scene / LifetimeScope 境界を跨ぐ参照が、具象 View ではなく抽象 interface / Application service / 所有者側 Presenter 経由になっている
 - [ ] 最小差分を理由に、本文ルールに沿ったリネーム・責務移動・不要 API 削除を省略していない
+- [ ] System と Content の境界が名前・namespace・配置・依存方向から読み取れる
 
 ---
 
@@ -407,7 +411,71 @@ return candidates[Random.Range(0, candidates.Count)];
 
 ---
 
-## 10. 内部バッファを返す API はコントラクトを明示する
+## 10. System 層と Content / GameSession 層を混ぜない
+
+System 層は、アプリケーションを起動・維持するための基盤である。
+Content / GameSession 層は、ユーザーが開始した 1 回のゲームセッションや、その中で表示・操作されるコンテンツを扱う。
+両者を混ぜると、仮遷移や暫定初期化が恒久設計に見え、責務と依存方向が歪む。
+
+### 判断基準
+
+| 分類 | 置いてよいもの | 置いてはいけないもの |
+|---|---|---|
+| System / Bootstrap | Root / Product 起動、共通 service 登録、言語・入力・Asset 管理、最初の入口画面への遷移 | 実ゲームセッション生成、World / Battle / Dungeon などコンテンツ固有の開始判断 |
+| GameSession | NewGame / Continue / Load で生成される状態、Application service、ゲーム進行 state | Root / Product 起動、アプリ全体の常駐 service |
+| Content / MainScene | 開始済みセッションを表示・操作する scene object / presenter / input | セッション生成そのもの、Product 初期化 |
+| Module / UI | HUD / Popup / ScreenStack / 補助 UI の表示と入力 | MainScene 具象型の直接操作、System 起動処理 |
+
+### ルール
+
+- `Launcher` / `Bootstrap` / `ProductEntryPoint` という名前のクラスは、特定ゲームコンテンツを直接開始しない。
+- `World` / `Battle` / `Dungeon` / `Inn` などのコンテンツ名を持つ型は、System 層へ置かない。
+- `MainGame` / `GameSession` などのセッション名を持つ scope や controller は、Product 起動処理ではなくセッション開始フローから呼ぶ。
+- 一時的に System 層から Content を呼ぶ場合は、TODO に「なぜ一時的か」「正式フローでどこへ移すか」「いつ削除するか」を書く。
+- 入口画面やメニューが既に存在するなら、System から Content へ直行する仮実装を残さず、先に正式フローへ寄せる。
+
+### Controller / Manager の配置
+
+`Controller` / `Manager` は名前だけでは責務が分からないため、配置と依存方向で所有者を明確にする。
+
+- Product / System に置く controller は、Product 全体の起動・終了・再起動だけを扱う。
+- GameSession に置く controller は、セッションの生成・破棄・保存・復元だけを扱う。
+- MainScene / ModuleScene に置く controller は、その scene / module が所有する View・Input・Presenter だけを扱う。
+
+次のようなクラスは配置を見直す。
+
+```csharp
+// NG: System 層の controller が game session scope の生成と content scene 遷移を両方扱う
+public sealed class MainGameLifetimeScopeController
+{
+    public void CreateGameScope() { ... }
+    public UniTask TransitionToWorld() { ... }
+}
+```
+
+```csharp
+// OK: 入口画面のユーザー操作が session 開始を明示し、その後 content scene へ遷移する
+public sealed class TitlePresenter
+{
+    public void StartNewGame()
+    {
+        gameSessionController.CreateSession();
+        sceneManager.TransitionScene(new WorldTransitionData()).Forget();
+    }
+}
+```
+
+### レビュー観点
+
+- System 層のクラスが Content 固有 namespace を参照していないか
+- Product 起動時に GameSession scope / state が作られていないか
+- ユーザー操作なしに NewGame / Continue 相当の処理が走っていないか
+- 一時実装 TODO が正式フロー実装後も残っていないか
+- クラス名、namespace、登録 scope が同じ所有者を指しているか
+
+---
+
+## 11. 内部バッファを返す API はコントラクトを明示する
 
 メソッドが内部バッファへの参照を返す場合（例: `List<T>` の実体を返す）、「呼び出し後に内部状態が変化する」「呼び出し側はコピーを保持してはならない」などのコントラクトをメソッド名またはコメントで明示する。
 
@@ -445,7 +513,7 @@ public ActorViewData[] ConsumeChangesAndClear()
 
 ---
 
-## 11. テスト用コンストラクタを Runtime コードに含めない
+## 12. テスト用コンストラクタを Runtime コードに含めない
 
 DI コンテナによって解決されるクラスに、テスト・互換目的で「DI 管理対象の依存を手動 `new` する互換コンストラクタ」を追加してはならない。
 テストでは DI コンテナ上でテスト用バインディングを行う、またはテスト専用のファクトリ / fixture を用意する。
@@ -492,7 +560,7 @@ container.Register<SpawnAdventurerUseCase>(Lifetime.Scoped);
 
 ---
 
-## 12. IDisposable 実装は空にしない
+## 13. IDisposable 実装は空にしない
 
 `IDisposable.Dispose()` を空実装（`{ }`）で放置しない。
 購読解除・バッファクリア・ネイティブリソース解放など、実際のクリーンアップが不要であることを確認した上で、その理由をコメントで明示するか、インターフェースの実装そのものを外す。
@@ -530,7 +598,7 @@ public sealed class WorldActorPresenter  // IDisposable を実装しない
 
 ---
 
-## 13. 一般パターンに反する設計は設計ドキュメントに根拠を記録する
+## 14. 一般パターンに反する設計は設計ドキュメントに根拠を記録する
 
 「一般的なパターンに反するが意図的にそう設計した」箇所（例: 意図的に空のマーカーインターフェース）は、その設計意図と根拠を設計ドキュメントに記録する。
 
@@ -547,7 +615,7 @@ public sealed class WorldActorPresenter  // IDisposable を実装しない
 
 ---
 
-## 14. DI 依存は使う責務だけを注入する
+## 15. DI 依存は使う責務だけを注入する
 
 コンストラクタで注入した依存がクラス内で使われていない場合、そのクラスの責務か依存関係のどちらかが古くなっている。
 未使用依存は compile には影響しないが、LifetimeScope 登録、テストダブル、レビュー観点を広げ、実際の責務を読みにくくする。
@@ -592,7 +660,7 @@ public sealed class ActorCombatPowerCalculator
 
 ---
 
-## 15. Property に allocation を隠さない
+## 16. Property に allocation を隠さない
 
 `IReadOnlyList<T>` や `IReadOnlyDictionary<TKey, TValue>` を返す property は、呼び出し側から見ると軽量な参照取得に見える。
 その裏で `ToArray()`、`ToList()`、`new List<T>()`、LINQ chain を実行すると、呼び出し頻度の高い経路で allocation が見えにくくなる。
@@ -641,7 +709,7 @@ public void CopyAllStatBonusesTo(List<StatBonus> results)
 
 ---
 
-## 16. DI コンストラクタで UnityEngine.Object を生成しない
+## 17. DI コンストラクタで UnityEngine.Object を生成しない
 
 `[Inject]` コンストラクタ（非MonoBehaviour）内で `new Texture2D()`・`Sprite.Create()`・`new Material()`・`new Mesh()`・`GameObject.CreatePrimitive()` などを呼び出さない。
 
@@ -697,7 +765,7 @@ public sealed class ActorSpriteVisualConfig
 
 ---
 
-## 17. LifetimeScope をコンテンツ Catalog にしない
+## 18. LifetimeScope をコンテンツ Catalog にしない
 
 `LifetimeScope` / Installer は DI の composition root であり、ゲームコンテンツや UI View の一覧を保持する場所ではない。
 コンテンツ種別が増えるたびに `SerializedField` が増える `LifetimeScope` は、責務が膨らみ、Prefab 選択の発生元が読めなくなる。
@@ -744,7 +812,71 @@ public sealed class WorldLifetimeScope : LifetimeScope
 
 ---
 
-## 18. UnityEngine.Object を保持するクラスは invalidation 単位と Dispose 単位を揃える
+## 19. Scene / LifetimeScope 所有物を他 Scene から直接操作しない
+
+Scene-owned component、Canvas、View、Presenter、Pool、Factory、EntryPoint は、その Scene / ModuleScene / LifetimeScope が所有する。
+別 Scene がそれらを直接参照して操作すると、所有者、初期化順、破棄順、描画責務、テスト境界が同時に壊れる。
+
+### 禁止
+
+```csharp
+// NG: MainScene が ModuleScene の Canvas / View / Pool を保持して操作する
+public sealed class WorldHudController
+{
+    readonly Canvas hudCanvas;
+    readonly ActorStatusViewPool actorStatusViewPool;
+
+    public void UpdateHud()
+    {
+        actorStatusViewPool.UpdateAll(hudCanvas);
+    }
+}
+```
+
+```csharp
+// NG: hierarchy 探索や serialized reference で別 Scene の所有物を掴む
+var hudCanvas = Object.FindFirstObjectByType<Canvas>();
+```
+
+### 推奨
+
+- HUD / Popup / EventLog / Minimap などの UI は UI ModuleScene が所有し、ModuleScene 側の Presenter / EntryPoint が初期化・更新する。
+- MainScene 固有情報が必要な場合、MainScene は抽象 interface を登録し、ModuleScene はその interface だけを読む。
+- 共有ゲーム状態は GameSession / Application scope に置き、MainScene と ModuleScene は同じ state / query / store を読む。
+- View 実体の生成と破棄は、所有する ModuleScene の Factory / Pool / Presenter に閉じる。
+
+```csharp
+// OK: ModuleScene 側が HUD 更新を所有する
+public sealed class HudEntryPoint
+{
+    readonly ActorHudPresenter actorHudPresenter;
+
+    void Update()
+    {
+        actorHudPresenter.UpdatePositions();
+    }
+}
+```
+
+```csharp
+// OK: MainScene 固有情報は抽象 interface として渡す
+public sealed class ActorHudPresenter
+{
+    readonly IActorScreenPositionProvider screenPositionProvider;
+}
+```
+
+### レビュー観点
+
+- `Canvas` / `RectTransform` / `View` / `Presenter` / `Pool` が、所有 Scene 以外の namespace から参照されていないか
+- MainScene が ModuleScene の型を inject していないか
+- ModuleScene が MainScene の具象 controller / registry / camera を inject していないか
+- `FindObjectOfType` / hierarchy 探索 / scene serialized reference で他 Scene の所有物を取得していないか
+- 更新ループが所有者側にあるか。HUD の更新なら HUD ModuleScene 側、World 3D 表示なら World MainScene 側にあるか
+
+---
+
+## 20. UnityEngine.Object を保持するクラスは invalidation 単位と Dispose 単位を揃える
 
 スコープ（Layer・Floor・Actor等）をキーとした UnityEngine.Object のコレクションを持つクラスは、そのスコープが無効化された際に対応するリソースをクリーンアップするメソッドを別途実装すること。`Dispose` のみに依存しない。
 
@@ -818,7 +950,7 @@ public sealed class EnvironmentObjectPlacer : IDisposable
 
 ---
 
-## 18. Fallback / Placeholder アセット生成ロジックを複数クラスに持たない
+## 21. Fallback / Placeholder アセット生成ロジックを複数クラスに持たない
 
 UnityEngine.Object の Fallback（色・サイズ・PPU・ピボット・フィルターモード等）を生成するコードは単一の Factory クラスに集約し、複数クラスに同一ロジックを置かない。
 
@@ -1093,3 +1225,10 @@ Milestone 7.5 の Actor visual 分離は、このパターンの具体例であ�
 - [ ] Visual Definition に現在 frame / elapsed / dirty flag / warning state などの per-instance 状態が入っていない
 - [ ] enum や固定カテゴリを追加した時に、Factory / Editor 生成 / asset validation / test の不足が検出できる
 - [ ] null asset や missing sprite の警告には、visualId / animation key / direction / frame など追跡に必要な情報が含まれている
+
+## Editor/OneShot Pattern
+
+- Temporary Unity asset generation or wiring editor code belongs under `Editor/OneShot/`.
+- Invoke OneShot methods directly with `uloop execute-dynamic-code`.
+- OneShot code may remain in the repository for later reference or repair, and may also be deleted when no longer needed.
+- Do not call OneShot methods from validation, `[InitializeOnLoadMethod]`, `AutoSetup`, or any other automatic execution path.

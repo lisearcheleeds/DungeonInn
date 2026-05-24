@@ -12,17 +12,17 @@ namespace DungeonInn.Application.Combat
         readonly ActorSpatialIndexService actorSpatialIndexService;
         readonly List<Actor> candidates = new();
         readonly List<Actor> targets = new();
-        readonly CombatBalanceSettings combatBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public AttackAreaTargetResolver(
             ActorSpatialIndexService actorSpatialIndexService,
-            CombatBalanceSettings combatBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
-            this.combatBalanceSettings = combatBalanceSettings
-                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public IReadOnlyList<Actor> ResolveTargets(AreaEffectInstance areaEffect)
@@ -59,6 +59,7 @@ namespace DungeonInn.Application.Combat
 
         int CalculateNeighborCellRadius(AreaEffectInstance areaEffect)
         {
+            var combatBalanceSettings = worldGameSettingsRepository.GetCombatBalanceSettings();
             return Math.Max(
                 1,
                 (int)Math.Ceiling(

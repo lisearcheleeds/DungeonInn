@@ -74,7 +74,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogWarning(
+                    UnityEngine.Debug.LogWarning(
                         $"[VisualConfigLoader] Failed to load material. Address={entry.MaterialAddress} Error={exception.Message}");
                 }
             }

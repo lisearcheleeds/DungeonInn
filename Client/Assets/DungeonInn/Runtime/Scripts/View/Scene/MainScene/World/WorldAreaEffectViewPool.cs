@@ -8,7 +8,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldAreaEffectViewPool : IDisposable
     {
-        readonly Stack<AreaEffectView> inactiveViews = new();
+        readonly Queue<AreaEffectView> inactiveViews = new();
         readonly Dictionary<Guid, AreaEffectView> activeViews = new();
         readonly List<AreaEffectView> createdViews = new();
         readonly AreaEffectPrefabSource prefabSource;
@@ -38,7 +38,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             var areaEffectView = inactiveViews.Count == 0
                 ? InstantiateView(prefabAddress)
-                : inactiveViews.Pop();
+                : inactiveViews.Dequeue();
 #if DEBUG
             areaEffectView.gameObject.name = $"AreaEffect_{areaEffectId}";
 #else
@@ -75,7 +75,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            inactiveViews.Push(areaEffectView);
+            inactiveViews.Enqueue(areaEffectView);
         }
 
         public void ForEach(Action<Guid, AreaEffectView> action)

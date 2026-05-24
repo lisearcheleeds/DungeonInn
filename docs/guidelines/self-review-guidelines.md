@@ -15,6 +15,7 @@
 - [ ] Runtime public / internal API、constructor、interface、DTO、Request、Event の追加・変更を、production 契約変更として分類せず許可していない
 - [ ] テスト都合だけの Runtime surface 追加を許可していない
 - [ ] DI 管理対象を Composition Root / Installer / LifetimeScope 以外で `new` する差分を許可していない
+- [ ] Scene / LifetimeScope 境界を跨いで他 Scene 所有の Canvas / View / Presenter / Pool / scene-owned component を直接参照・操作する差分を許可していない
 - [ ] 新規概念追加ゲートの記録なしに、新しい DTO / Result / Request / Store / Service / Calculator / Factory / Event / State を許可していない
 - [ ] レビュー項目の必須5項目（問題・原因・解決案・根拠となるファイルリスト・完了条件）が欠けたままレビュー文書を完了していない
 - [ ] 完了条件を満たしていない項目を「対応済み」として扱っていない
@@ -122,6 +123,7 @@
 - Runtime 側の `public` / `internal` API、constructor、interface、DTO、Request、Event を追加・変更している
 - DI 解決対象クラスの constructor、LifetimeScope 登録、注入型を追加・変更している
 - Runtime 側で `new XxxService()`、`new XxxUseCase()`、`new XxxRepository()`、static / singleton / 手動検索による依存解決を追加している
+- Scene / LifetimeScope 境界を跨いで、他 Scene が所有する Canvas / View / Presenter / Pool / scene-owned component への直接参照を追加している
 - テストを通す、既存テスト修正量を減らす、互換を保つ、という理由で Runtime API や constructor を追加している
 - adjustable value、cache、dirty flag、index、registry、Actor-keyed state などの長期状態を追加している
 
@@ -133,6 +135,7 @@
 - 該当ガイドライン上で許可される所有者、境界、寿命、依存方向に置かれている
 - テスト都合だけで Runtime surface を増やしていない
 - DI 管理対象を Composition Root / Installer / LifetimeScope 以外で `new` していない
+- Scene / LifetimeScope 境界を跨ぐ連携は、所有者側 Presenter / EntryPoint、親 scope の Application service、または抽象 interface 経由になっている
 - テスト補助は Runtime ではなく Tests 側の helper / fixture / test double に閉じている
 - docs にない設計判断が必要な場合は、実装やレビュー完了判定を止めてユーザーに確認している
 
@@ -248,6 +251,7 @@ guideline ごとの専任レビューを一次レビューとして完了した�
 - View 層がゲーム進行、Domain 判定、Application orchestration を握っていないか
 - DI で解決すべき依存を `new` / static / singleton / 手動検索で生成していないか
 - Lighthouse のパターンに反していないか
+- Scene / LifetimeScope の所有物を別 Scene から直接参照・操作していないか
 
 ### 整合性
 

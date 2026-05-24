@@ -1,6 +1,6 @@
-using DungeonInn.Application.Economy;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Economy;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Core;
 using DungeonInn.Input;
@@ -25,7 +25,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         ToggleGamePauseUseCase toggleGamePauseUseCase;
         GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
         WorldCameraController worldCameraController;
-        WorldCameraSettings worldCameraSettings;
+        IWorldCameraSettingsRepository worldCameraSettingsRepository;
         WorldLayerViewController worldLayerViewController;
         WorldActorSelectionInputHandler worldActorSelectionInputHandler;
         WorldSceneCamera worldSceneCamera;
@@ -46,7 +46,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             ToggleGamePauseUseCase toggleGamePauseUseCase,
             GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
             WorldCameraController worldCameraController,
-            WorldCameraSettings worldCameraSettings,
+            IWorldCameraSettingsRepository worldCameraSettingsRepository,
             WorldLayerViewController worldLayerViewController,
             WorldActorSelectionInputHandler worldActorSelectionInputHandler)
         {
@@ -55,7 +55,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.toggleGamePauseUseCase = toggleGamePauseUseCase;
             this.getInnEconomyStatusUseCase = getInnEconomyStatusUseCase;
             this.worldCameraController = worldCameraController;
-            this.worldCameraSettings = worldCameraSettings;
+            this.worldCameraSettingsRepository = worldCameraSettingsRepository;
             this.worldLayerViewController = worldLayerViewController;
             this.worldActorSelectionInputHandler = worldActorSelectionInputHandler;
         }
@@ -116,20 +116,13 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            Debug.LogWarning("[World] WorldScene camera is not assigned. Creating fallback camera.");
+            UnityEngine.Debug.LogWarning("[World] WorldScene camera is not assigned. Creating fallback camera.");
             var cameraObject = new GameObject("WorldCamera");
             cameraObject.layer = WorldRenderingLayer.Layer;
             cameraObject.transform.SetParent(transform, false);
             worldCamera = cameraObject.AddComponent<Camera>();
             worldCamera.orthographic = true;
-            worldCamera.orthographicSize = worldCameraSettings.InitialOrthographicSize;
             worldCamera.cullingMask = WorldRenderingLayer.Mask;
-            worldCamera.transform.SetPositionAndRotation(
-                worldCameraSettings.InitialPosition,
-                Quaternion.Euler(
-                    worldCameraSettings.InitialPitchDegrees,
-                    worldCameraSettings.InitialYawDegrees,
-                    0f));
             EnsureUniversalCameraData(cameraObject);
             worldSceneCamera = new WorldSceneCamera(worldCamera);
         }

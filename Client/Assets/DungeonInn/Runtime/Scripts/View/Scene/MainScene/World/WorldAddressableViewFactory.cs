@@ -4,7 +4,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.World;
 using DungeonInn.Master;
-using DungeonInn.View.Scene.ModuleScene.WorldUI;
 using LighthouseExtends.Addressable;
 using UnityEngine;
 using VContainer;
@@ -13,10 +12,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldAddressableViewFactory : IDisposable
     {
-        const string ActorStatusViewAddress = "World/UI/ActorStatusView";
-        const string ActorDetailPopupAddress = "World/UI/ActorDetailPopup";
-        const string PlayerEventLogViewAddress = "World/UI/PlayerEventLogView";
-
         readonly IAssetManager assetManager;
         readonly IMasterRepository masterRepository;
         readonly Dictionary<string, GameObject> propPrefabs = new();
@@ -34,16 +29,9 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
         }
 
-        public ActorStatusView ActorStatusViewPrefab { get; private set; }
-        public ActorDetailPopup ActorDetailPopupPrefab { get; private set; }
-        public PlayerEventLogView PlayerEventLogViewPrefab { get; private set; }
-
         public async UniTask LoadAsync(CancellationToken ct)
         {
             assetScope = assetManager.CreateScope();
-            ActorStatusViewPrefab = await LoadComponentPrefabAsync<ActorStatusView>(ActorStatusViewAddress, ct);
-            ActorDetailPopupPrefab = await LoadComponentPrefabAsync<ActorDetailPopup>(ActorDetailPopupAddress, ct);
-            PlayerEventLogViewPrefab = await LoadComponentPrefabAsync<PlayerEventLogView>(PlayerEventLogViewAddress, ct);
             await LoadCombatPrefabsAsync(ct);
             await LoadPropPrefabsAsync(ct);
         }
@@ -79,26 +67,6 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             areaEffectPrefabs.TryGetValue(address, out var prefab);
             return prefab;
-        }
-
-        public ActorDetailPopup CreateActorDetailPopup(Transform parent)
-        {
-            if (ActorDetailPopupPrefab == null || parent == null)
-            {
-                return null;
-            }
-
-            return UnityEngine.Object.Instantiate(ActorDetailPopupPrefab, parent);
-        }
-
-        public PlayerEventLogView CreatePlayerEventLogView(Transform parent)
-        {
-            if (PlayerEventLogViewPrefab == null || parent == null)
-            {
-                return null;
-            }
-
-            return UnityEngine.Object.Instantiate(PlayerEventLogViewPrefab, parent);
         }
 
         public void Dispose()
@@ -153,7 +121,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
             catch (Exception exception)
             {
-                Debug.LogWarning(
+                UnityEngine.Debug.LogWarning(
                     $"[WorldAddressableViewFactory] Failed to load prefab. Address={address} Error={exception.Message}");
                 return null;
             }
@@ -173,7 +141,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return view;
             }
 
-            Debug.LogWarning(
+            UnityEngine.Debug.LogWarning(
                 $"[WorldAddressableViewFactory] Loaded prefab does not have {typeof(TView).Name}. Address={address}");
             return null;
         }

@@ -15,14 +15,14 @@ namespace DungeonInn.View.Scene.MainScene.World
         WorldActorPresenter worldActorPresenter;
         WorldProjectilePresenter worldProjectilePresenter;
         WorldAreaEffectPresenter worldAreaEffectPresenter;
-        WorldActorStatusPresenter worldActorStatusPresenter;
         WorldActorCameraFollowController worldActorCameraFollowController;
-        ActorDetailPopupPresenter actorDetailPopupPresenter;
-        PlayerGameEventLogPresenter playerGameEventLogPresenter;
         WorldCameraController worldCameraController;
         MapLayerViewRegistry layerViewRegistry;
         VisualConfigLoader visualConfigLoader;
         WorldAddressableViewFactory viewFactory;
+        IWorldMapViewSettingsRepository worldMapViewSettingsRepository;
+        ILayerPositionViewSettingsRepository layerPositionViewSettingsRepository;
+        IWorldCameraSettingsRepository worldCameraSettingsRepository;
 
         readonly CancellationTokenSource destroyCancellationTokenSource = new();
 
@@ -36,14 +36,14 @@ namespace DungeonInn.View.Scene.MainScene.World
             WorldActorPresenter worldActorPresenter,
             WorldProjectilePresenter worldProjectilePresenter,
             WorldAreaEffectPresenter worldAreaEffectPresenter,
-            WorldActorStatusPresenter worldActorStatusPresenter,
             WorldActorCameraFollowController worldActorCameraFollowController,
             WorldCameraController worldCameraController,
             MapLayerViewRegistry layerViewRegistry,
             VisualConfigLoader visualConfigLoader,
             WorldAddressableViewFactory viewFactory,
-            ActorDetailPopupPresenter actorDetailPopupPresenter,
-            PlayerGameEventLogPresenter playerGameEventLogPresenter)
+            IWorldMapViewSettingsRepository worldMapViewSettingsRepository,
+            ILayerPositionViewSettingsRepository layerPositionViewSettingsRepository,
+            IWorldCameraSettingsRepository worldCameraSettingsRepository)
         {
             this.worldSimulationOrchestrator = worldSimulationOrchestrator ?? throw new ArgumentNullException(nameof(worldSimulationOrchestrator));
             this.worldMapView = worldMapView ?? throw new ArgumentNullException(nameof(worldMapView));
@@ -52,21 +52,23 @@ namespace DungeonInn.View.Scene.MainScene.World
                 worldProjectilePresenter ?? throw new ArgumentNullException(nameof(worldProjectilePresenter));
             this.worldAreaEffectPresenter =
                 worldAreaEffectPresenter ?? throw new ArgumentNullException(nameof(worldAreaEffectPresenter));
-            this.worldActorStatusPresenter =
-                worldActorStatusPresenter ?? throw new ArgumentNullException(nameof(worldActorStatusPresenter));
             this.worldActorCameraFollowController =
                 worldActorCameraFollowController ?? throw new ArgumentNullException(nameof(worldActorCameraFollowController));
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
             this.visualConfigLoader = visualConfigLoader ?? throw new ArgumentNullException(nameof(visualConfigLoader));
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
-            this.actorDetailPopupPresenter = actorDetailPopupPresenter ?? throw new ArgumentNullException(nameof(actorDetailPopupPresenter));
-            this.playerGameEventLogPresenter = playerGameEventLogPresenter ?? throw new ArgumentNullException(nameof(playerGameEventLogPresenter));
+            this.worldMapViewSettingsRepository =
+                worldMapViewSettingsRepository ?? throw new ArgumentNullException(nameof(worldMapViewSettingsRepository));
+            this.layerPositionViewSettingsRepository =
+                layerPositionViewSettingsRepository ?? throw new ArgumentNullException(nameof(layerPositionViewSettingsRepository));
+            this.worldCameraSettingsRepository =
+                worldCameraSettingsRepository ?? throw new ArgumentNullException(nameof(worldCameraSettingsRepository));
         }
 
         void Start()
         {
-            Debug.Log("[WorldGameLoop] EntryPoint started.");
+            UnityEngine.Debug.Log("[WorldGameLoop] EntryPoint started.");
             InitializeAsync(destroyCancellationTokenSource.Token).Forget();
         }
 
@@ -85,12 +87,10 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             worldCameraController.UpdateCamera(Time.unscaledDeltaTime);
             worldActorCameraFollowController.UpdateFollowPosition();
-            actorDetailPopupPresenter.UpdatePopup();
             worldMapView.UpdateVisuals();
             worldActorPresenter.UpdateVisuals();
             worldProjectilePresenter.UpdatePositions();
             worldAreaEffectPresenter.UpdatePositions();
-            worldActorStatusPresenter.UpdatePositions();
 
             if (isExecuting)
             {
@@ -104,14 +104,15 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             try
             {
+                await worldMapViewSettingsRepository.LoadAsync(cancellationToken);
+                await layerPositionViewSettingsRepository.LoadAsync(cancellationToken);
+                await worldCameraSettingsRepository.LoadAsync(cancellationToken);
                 await visualConfigLoader.LoadAsync(cancellationToken);
                 await viewFactory.LoadAsync(cancellationToken);
-                actorDetailPopupPresenter?.Initialize();
-                playerGameEventLogPresenter?.Initialize();
                 var result = await worldSimulationOrchestrator.InitializeAsync(cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 isInitialized = true;
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[World] GameWorldState initialized. " +
                     $"Facilities={result.FacilityCount} " +
                     $"DungeonFloors={result.DungeonFloorCount} " +

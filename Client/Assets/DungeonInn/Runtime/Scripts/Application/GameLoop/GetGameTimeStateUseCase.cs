@@ -1,6 +1,4 @@
-using DungeonInn.Application.GameLoop;
 using System;
-using Cysharp.Threading.Tasks;
 using VContainer;
 
 namespace DungeonInn.Application.GameLoop
@@ -15,14 +13,14 @@ namespace DungeonInn.Application.GameLoop
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
         }
 
-        public UniTask<GameTimeState> ExecuteAsync()
+        public GameTimeState Execute()
         {
-            return UniTask.FromResult(new GameTimeState(
+            return new GameTimeState(
                 gameClock.TotalScheduleTick,
                 gameClock.ElapsedRealTimeSeconds,
                 gameClock.ElapsedGameTimeSeconds,
                 gameClock.TimeScale,
-                gameClock.IsPaused));
+                gameClock.IsPaused);
         }
     }
 }

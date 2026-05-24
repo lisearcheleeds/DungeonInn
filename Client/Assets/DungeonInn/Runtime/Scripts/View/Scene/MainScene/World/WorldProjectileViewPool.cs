@@ -8,7 +8,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class WorldProjectileViewPool : IDisposable
     {
-        readonly Stack<ProjectileView> inactiveViews = new();
+        readonly Queue<ProjectileView> inactiveViews = new();
         readonly Dictionary<Guid, ProjectileView> activeViews = new();
         readonly List<ProjectileView> createdViews = new();
         readonly ProjectilePrefabSource prefabSource;
@@ -38,7 +38,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             var projectileView = inactiveViews.Count == 0
                 ? InstantiateView(prefabAddress)
-                : inactiveViews.Pop();
+                : inactiveViews.Dequeue();
 #if DEBUG
             projectileView.gameObject.name = $"Projectile_{projectileId}";
 #else
@@ -75,7 +75,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            inactiveViews.Push(projectileView);
+            inactiveViews.Enqueue(projectileView);
         }
 
         public void ForEach(Action<Guid, ProjectileView> action)

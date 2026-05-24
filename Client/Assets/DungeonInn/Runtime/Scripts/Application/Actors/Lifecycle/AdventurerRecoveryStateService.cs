@@ -35,6 +35,32 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 : 0f;
         }
 
+        public float GetRemainingSeconds(
+            Guid actorId,
+            int currentHp,
+            int maxHp,
+            float hpRecoveryPercentPerMinute)
+        {
+            if (maxHp <= 0 || currentHp >= maxHp || hpRecoveryPercentPerMinute <= 0f)
+            {
+                return 0f;
+            }
+
+            var hpPerSecond = maxHp * hpRecoveryPercentPerMinute / 60f;
+            if (hpPerSecond <= 0f)
+            {
+                return 0f;
+            }
+
+            var remainingHp = maxHp - currentHp - GetAccumulatedHp(actorId);
+            if (remainingHp <= 0f)
+            {
+                return 0f;
+            }
+
+            return remainingHp / hpPerSecond;
+        }
+
         public void SetAccumulatedHp(Guid actorId, float accumulated)
         {
             accumulatedHp[actorId] = accumulated;

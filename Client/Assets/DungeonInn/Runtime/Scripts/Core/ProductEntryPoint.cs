@@ -17,6 +17,7 @@ namespace DungeonInn.Core
         readonly IModuleSceneManager moduleSceneManager;
         readonly ILanguageService languageService;
         readonly ISupportedLanguageService supportedLanguageService;
+        readonly IGameSessionLifecycle gameSessionLifecycle;
 
         [Inject]
         public ProductEntryPoint(
@@ -26,7 +27,8 @@ namespace DungeonInn.Core
             IMainSceneManager mainSceneManager,
             IModuleSceneManager moduleSceneManager,
             ILanguageService languageService,
-            ISupportedLanguageService supportedLanguageService)
+            ISupportedLanguageService supportedLanguageService,
+            IGameSessionLifecycle gameSessionLifecycle)
         {
             this.productLifetimeScope = productLifetimeScope;
             this.productLifetimeScopeSettings = productLifetimeScopeSettings;
@@ -35,12 +37,15 @@ namespace DungeonInn.Core
             this.moduleSceneManager = moduleSceneManager;
             this.languageService = languageService;
             this.supportedLanguageService = supportedLanguageService;
+            this.gameSessionLifecycle = gameSessionLifecycle;
         }
 
         public async UniTask StartAsync(CancellationToken cancellation)
         {
-            mainSceneManager.SetEnqueueParentLifetimeScope(() => LifetimeScope.EnqueueParent(productLifetimeScope));
-            moduleSceneManager.SetEnqueueParentLifetimeScope(() => LifetimeScope.EnqueueParent(productLifetimeScope));
+            mainSceneManager.SetEnqueueParentLifetimeScope(() =>
+                LifetimeScope.EnqueueParent(gameSessionLifecycle.ActiveScope ?? productLifetimeScope));
+            moduleSceneManager.SetEnqueueParentLifetimeScope(() =>
+                LifetimeScope.EnqueueParent(gameSessionLifecycle.ActiveScope ?? productLifetimeScope));
 
             await languageService.SetLanguage(ResolveInitialLanguage(UnityEngine.Application.systemLanguage), cancellation);
             await launcher.Launch();
@@ -60,7 +65,10 @@ namespace DungeonInn.Core
             var supported = supportedLanguageService.SupportedLanguages;
             for (var i = 0; i < supported.Count; i++)
             {
-                if (supported[i] == code) { return code; }
+                if (supported[i] == code)
+                {
+                    return code;
+                }
             }
 
             return supportedLanguageService.DefaultLanguage;

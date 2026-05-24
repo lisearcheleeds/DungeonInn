@@ -25,20 +25,21 @@ namespace DungeonInn.Application.Combat
         readonly CombatEffectExecutor combatEffectExecutor;
         readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
         readonly IEventPublisher eventPublisher;
-        readonly CombatBalanceSettings combatBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public AdvanceProjectileUseCase(
             CombatEffectExecutor combatEffectExecutor,
             ActorDefeatOrchestrator actorDefeatOrchestrator,
             IEventPublisher eventPublisher,
-            CombatBalanceSettings combatBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.combatEffectExecutor = combatEffectExecutor ?? throw new ArgumentNullException(nameof(combatEffectExecutor));
             this.actorDefeatOrchestrator = actorDefeatOrchestrator
                 ?? throw new ArgumentNullException(nameof(actorDefeatOrchestrator));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
-            this.combatBalanceSettings = combatBalanceSettings ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -74,6 +75,7 @@ namespace DungeonInn.Application.Combat
                 return false;
             }
 
+            var combatBalanceSettings = worldGameSettingsRepository.GetCombatBalanceSettings();
             projectile.Advance(deltaGameSeconds);
             if (combatBalanceSettings.ProjectileHitRadiusMeters * combatBalanceSettings.ProjectileHitRadiusMeters
                 < projectile.Position.DistanceSquaredTo(target.Position))

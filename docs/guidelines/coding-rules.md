@@ -623,5 +623,15 @@ public readonly struct ActorEffectIconData { }
 - `Dto`: 外部通信、永続化、レイヤー間転送など、用途が View 表示に限定されないデータ。
 - `Data`: Unity / Lighthouse などのフレームワーク契約、画面遷移データ、または既存の抽象名として `ViewData` では意味が狭すぎるデータ。
 
+Application 層の業務結果 DTO（UseCase / Query が返す型）は `Summary` / `Status` suffix を使ってよい。
+これらは Presenter が内部で変換して表示に用いるものであり、画面表示へ「直接適用」する型ではないため `ViewData` を強制しない。
+
+例:
+- `InnGuestSummary` — GetInnGuestListUseCase が返す Application 層 DTO（Summary 可）
+- `InnEconomyStatus` — GetInnEconomyStatusUseCase が返す Application 層 DTO（Status 可）
+- `ActorStatusViewData` — Presenter が View に直接渡す型（ViewData 必須）
+
+判断基準: Presenter が何も変換せず View.SetXxx() に渡すなら `ViewData`。Presenter が加工してから渡すなら `Summary` / `Status` を許容する。
+
 ハードゲート:
 - View / Presenter が画面表示へ直接適用する class / struct に `Dto` / 汎用 `Data` suffix を使わず、`ViewData` に統一していること。

@@ -199,31 +199,31 @@ namespace DungeonInn.Tests.EditMode
                     gameClock,
                     new AdventurerRecoveryStateService(eventBus),
                     currentCandidateService,
-                    DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
-                new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
+                new ChargeInnFeeUseCase(eventBus, new FixedWorldGameSettingsRepository()),
                 new DespawnAdventurerUseCase(eventBus),
                 eventBus,
                 gameClock,
                 currentCandidateService,
-                DungeonInn.Application.World.InnBalanceSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         static GameWorldState CreateInitializedWorldState()
         {
             currentCandidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var worldState = new GameWorldState(
-                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 currentCandidateService,
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
+                new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
                 new HardcodedMasterRepository(),
                 new CollectingEventBus(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
@@ -336,3 +336,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

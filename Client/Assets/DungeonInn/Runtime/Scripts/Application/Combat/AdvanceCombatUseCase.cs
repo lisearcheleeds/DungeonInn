@@ -28,7 +28,7 @@ namespace DungeonInn.Application.Combat
         readonly ActorDefeatOrchestrator actorDefeatOrchestrator;
         readonly IEventPublisher eventPublisher;
         readonly ActorMovementService actorMovementService;
-        readonly ActorSimulationSettings actorSimulationSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public AdvanceCombatUseCase(
@@ -39,7 +39,7 @@ namespace DungeonInn.Application.Combat
             ActorDefeatOrchestrator actorDefeatOrchestrator,
             IEventPublisher eventPublisher,
             ActorMovementService actorMovementService,
-            ActorSimulationSettings actorSimulationSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -54,8 +54,8 @@ namespace DungeonInn.Application.Combat
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.actorMovementService = actorMovementService
                 ?? throw new ArgumentNullException(nameof(actorMovementService));
-            this.actorSimulationSettings = actorSimulationSettings
-                ?? throw new ArgumentNullException(nameof(actorSimulationSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -138,7 +138,7 @@ namespace DungeonInn.Application.Combat
                 target.Position,
                 floor.Layer,
                 floor,
-                actorSimulationSettings.MoveSpeedMetersPerSecond,
+                worldGameSettingsRepository.GetActorSimulationSettings().MoveSpeedMetersPerSecond,
                 deltaGameSeconds,
                 actor.WeaponCombatParams.RangeMeters,
                 snapToDestinationOnArrival: false);

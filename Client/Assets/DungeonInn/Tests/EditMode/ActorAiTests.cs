@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using DungeonInn.Application.Actors.Ai;
 
@@ -169,4 +169,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
 

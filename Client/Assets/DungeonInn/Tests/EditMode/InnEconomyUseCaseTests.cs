@@ -54,7 +54,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(InnBalance.FeePerStay);
             var eventBus = new CollectingEventBus();
-            var useCase = new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault());
+            var useCase = new ChargeInnFeeUseCase(eventBus, new FixedWorldGameSettingsRepository());
 
             var charged = useCase.Execute(actor, worldState.Guild);
 
@@ -71,7 +71,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(0);
             var eventBus = new CollectingEventBus();
-            var useCase = new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault());
+            var useCase = new ChargeInnFeeUseCase(eventBus, new FixedWorldGameSettingsRepository());
 
             var charged = useCase.Execute(actor, worldState.Guild);
 
@@ -211,13 +211,13 @@ namespace DungeonInn.Tests.EditMode
             var eventBus = new CollectingEventBus();
             var statisticsService = new InnEconomyStatisticsService(eventBus, clock);
             var reportStore = new InnDailyReportStore();
-            new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()).Execute(actor, worldState.Guild);
+            new ChargeInnFeeUseCase(eventBus, new FixedWorldGameSettingsRepository()).Execute(actor, worldState.Guild);
             var useCase = new PublishInnDailyReportUseCase(
                 worldState,
                 statisticsService,
                 reportStore,
                 eventBus,
-                new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault()));
+                new InnEconomyStatusCalculator(new FixedWorldGameSettingsRepository()));
 
             useCase.ExecuteAsync(0).GetAwaiter().GetResult();
 
@@ -245,7 +245,7 @@ namespace DungeonInn.Tests.EditMode
                 statisticsService,
                 new InnDailyReportStore(),
                 eventBus,
-                new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault()));
+                new InnEconomyStatusCalculator(new FixedWorldGameSettingsRepository()));
 
             useCase.ExecuteAsync(0).GetAwaiter().GetResult();
 
@@ -262,14 +262,14 @@ namespace DungeonInn.Tests.EditMode
             var clock = new StubGameClock { CurrentDayValue = 2 };
             var eventBus = new CollectingEventBus();
             var statisticsService = new InnEconomyStatisticsService(eventBus, clock);
-            new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()).Execute(actor, worldState.Guild);
+            new ChargeInnFeeUseCase(eventBus, new FixedWorldGameSettingsRepository()).Execute(actor, worldState.Guild);
             var useCase = new GetInnEconomyStatusUseCase(
                 worldState,
                 clock,
                 statisticsService,
-                new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault()));
+                new InnEconomyStatusCalculator(new FixedWorldGameSettingsRepository()));
 
-            var status = useCase.ExecuteAsync().GetAwaiter().GetResult();
+            var status = useCase.Execute();
 
             Assert.That(status.CurrentDay, Is.EqualTo(2));
             Assert.That(status.Current.Guests, Is.EqualTo(1));
@@ -284,7 +284,7 @@ namespace DungeonInn.Tests.EditMode
         public void InnEconomyStatusUsesDailyReportSummaryAsCanonicalSnapshot()
         {
             var worldState = CreateInitializedWorldState();
-            var calculator = new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+            var calculator = new InnEconomyStatusCalculator(new FixedWorldGameSettingsRepository());
             var statistics = new InnEconomyStatistics(2, 1, 30, -1);
 
             var report = calculator.CalculateDailyReport(worldState, 3, statistics);
@@ -327,18 +327,18 @@ namespace DungeonInn.Tests.EditMode
         {
             currentCandidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var worldState = new GameWorldState(
-                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 currentCandidateService,
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
+                new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
                 new HardcodedMasterRepository(),
                 new CollectingEventBus(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(
@@ -489,3 +489,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

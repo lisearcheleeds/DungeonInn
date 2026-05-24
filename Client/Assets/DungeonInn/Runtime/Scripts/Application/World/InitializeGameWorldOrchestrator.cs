@@ -21,7 +21,7 @@ namespace DungeonInn.Application.World
         readonly InitializeDungeonOrchestrator initializeDungeonUseCase;
         readonly IItemStackLimitResolver stackLimitResolver;
         readonly IEventPublisher eventPublisher;
-        readonly InitialWorldSettings initialWorldSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public InitializeGameWorldOrchestrator(
@@ -30,14 +30,15 @@ namespace DungeonInn.Application.World
             InitializeDungeonOrchestrator initializeDungeonUseCase,
             IItemStackLimitResolver stackLimitResolver,
             IEventPublisher eventPublisher,
-            InitialWorldSettings initialWorldSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.initializeWorldMapUseCase = initializeWorldMapUseCase ?? throw new ArgumentNullException(nameof(initializeWorldMapUseCase));
             this.initializeDungeonUseCase = initializeDungeonUseCase ?? throw new ArgumentNullException(nameof(initializeDungeonUseCase));
             this.stackLimitResolver = stackLimitResolver ?? throw new ArgumentNullException(nameof(stackLimitResolver));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
-            this.initialWorldSettings = initialWorldSettings ?? throw new ArgumentNullException(nameof(initialWorldSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public async UniTask<IGameWorldState> ExecuteAsync(InitializeGameWorldRequest request)
@@ -68,6 +69,7 @@ namespace DungeonInn.Application.World
 
         AdventurerGuild CreateInitialGuild()
         {
+            var initialWorldSettings = worldGameSettingsRepository.GetInitialWorldSettings();
             var inventory = new Inventory(
                 initialWorldSettings.GuildInventorySlotCapacity,
                 stackLimitResolver);
@@ -102,6 +104,7 @@ namespace DungeonInn.Application.World
 
         Inventory CreateInventory(params ItemStack[] items)
         {
+            var initialWorldSettings = worldGameSettingsRepository.GetInitialWorldSettings();
             var inventory = new Inventory(
                 initialWorldSettings.GuildInventorySlotCapacity,
                 stackLimitResolver);
@@ -111,7 +114,7 @@ namespace DungeonInn.Application.World
 
         IReadOnlyList<ItemStack> CreateInitialInventory()
         {
-            return initialWorldSettings.InitialGuildInventory;
+            return worldGameSettingsRepository.GetInitialWorldSettings().InitialGuildInventory;
         }
     }
 }

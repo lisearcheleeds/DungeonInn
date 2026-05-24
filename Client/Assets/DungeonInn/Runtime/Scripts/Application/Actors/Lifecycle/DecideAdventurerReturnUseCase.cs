@@ -24,7 +24,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly AdventurerReturnTrackingService returnTrackingService;
         readonly IItemMasterRepository itemMasterRepository;
         readonly ActorProcessingCandidateService candidateService;
-        readonly AdventurerReturnPolicySettings returnPolicySettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
@@ -34,15 +34,15 @@ namespace DungeonInn.Application.Actors.Lifecycle
             AdventurerReturnTrackingService returnTrackingService,
             IItemMasterRepository itemMasterRepository,
             ActorProcessingCandidateService candidateService,
-            AdventurerReturnPolicySettings returnPolicySettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.returnTrackingService = returnTrackingService ?? throw new ArgumentNullException(nameof(returnTrackingService));
             this.itemMasterRepository = itemMasterRepository ?? throw new ArgumentNullException(nameof(itemMasterRepository));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
-            this.returnPolicySettings = returnPolicySettings
-                ?? throw new ArgumentNullException(nameof(returnPolicySettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
@@ -88,7 +88,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 }
 
                 var returnDecision = CalculateReturnDecision(actor);
-                if (returnDecision.Score < returnPolicySettings.DecisionThresholdScore)
+                if (returnDecision.Score < worldGameSettingsRepository.GetAdventurerReturnPolicySettings().DecisionThresholdScore)
                 {
                     returnTrackingService.ClearDirty(actor.Id);
                     continue;
@@ -128,6 +128,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
         AdventurerReturnDecision CalculateReturnDecision(Actor actor)
         {
+            var returnPolicySettings = worldGameSettingsRepository.GetAdventurerReturnPolicySettings();
             var score = 0;
             var goalCompleted = TryCompleteGoal(actor);
             if (goalCompleted)

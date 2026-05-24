@@ -44,7 +44,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitDealsDamagePublishesEventsAndRemovesProjectile()
         {
-            var worldState = CreateWorldState(new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()));
+            var worldState = CreateWorldState(new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()));
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = CreateAdvanceProjectileUseCase(combatService, eventBus);
@@ -86,15 +86,15 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void ProjectileHitCanCreateAreaThatDealsLinkedDirectDamage()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var worldState = CreateWorldState(spatialIndex);
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var executor = CreateCombatEffectExecutor(combatService, eventBus);
             var actorDefeatOrchestrator = CreateActorDefeatOrchestrator(combatService, eventBus);
-            var projectileUseCase = new AdvanceProjectileUseCase(executor, actorDefeatOrchestrator, eventBus, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var projectileUseCase = new AdvanceProjectileUseCase(executor, actorDefeatOrchestrator, eventBus, new FixedWorldGameSettingsRepository());
             var areaUseCase = new AdvanceAreaEffectUseCase(
-                new AttackAreaTargetResolver(spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new AttackAreaTargetResolver(spatialIndex, new FixedWorldGameSettingsRepository()),
                 executor,
                 actorDefeatOrchestrator,
                 eventBus);
@@ -185,6 +185,7 @@ namespace DungeonInn.Tests.EditMode
 
         sealed class ZeroGameRandom : IGameRandom
         {
+            public void Initialize(int seed) { }
             public int Next() => 0;
             public int Next(int maxExclusive) => 0;
             public int Next(int minInclusive, int maxExclusive) => minInclusive;
@@ -225,17 +226,17 @@ namespace DungeonInn.Tests.EditMode
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
                 eventBus,
-                DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         static GameWorldState CreateWorldState(ActorSpatialIndexService actorSpatialIndexService)
         {
             return new GameWorldState(
                 actorSpatialIndexService,
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         static WeaponAttackSpec CreateProjectileAreaDamageAttackSpec(int damage)
@@ -302,3 +303,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

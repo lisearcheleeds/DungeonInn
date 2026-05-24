@@ -11,12 +11,13 @@ namespace DungeonInn.Application.Dungeons
     /// </summary>
     public sealed class InitializeWorldMapUseCase
     {
-        readonly GroundMapGenerationSettings settings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
-        public InitializeWorldMapUseCase(GroundMapGenerationSettings settings)
+        public InitializeWorldMapUseCase(IWorldGameSettingsRepository worldGameSettingsRepository)
         {
-            this.settings = settings ?? throw new System.ArgumentNullException(nameof(settings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new System.ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         /// <summary>
@@ -24,6 +25,7 @@ namespace DungeonInn.Application.Dungeons
         /// </summary>
         public UniTask<GroundMap> ExecuteAsync()
         {
+            var settings = worldGameSettingsRepository.GetGroundMapGenerationSettings();
             var layer = new MapLayer(
                 MapLayerId.Ground,
                 settings.Width,

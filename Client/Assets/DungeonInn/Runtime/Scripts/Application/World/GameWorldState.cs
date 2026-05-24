@@ -32,7 +32,8 @@ namespace DungeonInn.Application.World
         readonly ItemSpatialIndexService itemSpatialIndexService;
         readonly ActorProcessingCandidateService actorProcessingCandidateService;
         readonly ActorViewDataStore actorViewDataStore;
-        readonly InnEconomyState innEconomy;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        InnEconomyState innEconomy;
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
@@ -51,7 +52,7 @@ namespace DungeonInn.Application.World
             ItemSpatialIndexService itemSpatialIndexService,
             ActorProcessingCandidateService actorProcessingCandidateService,
             ActorViewDataStore actorViewDataStore,
-            InitialWorldSettings initialWorldSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
@@ -61,12 +62,8 @@ namespace DungeonInn.Application.World
                 ?? throw new ArgumentNullException(nameof(actorProcessingCandidateService));
             this.actorViewDataStore = actorViewDataStore
                 ?? throw new ArgumentNullException(nameof(actorViewDataStore));
-            if (initialWorldSettings == null)
-            {
-                throw new ArgumentNullException(nameof(initialWorldSettings));
-            }
-
-            innEconomy = new InnEconomyState(initialWorldSettings.InnReputation);
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon)
@@ -79,6 +76,7 @@ namespace DungeonInn.Application.World
             Guild = guild ?? throw new ArgumentNullException(nameof(guild));
             GroundMap = groundMap ?? throw new ArgumentNullException(nameof(groundMap));
             Dungeon = dungeon ?? throw new ArgumentNullException(nameof(dungeon));
+            innEconomy = new InnEconomyState(worldGameSettingsRepository.GetInitialWorldSettings().InnReputation);
             IsInitialized = true;
         }
 

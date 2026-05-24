@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -98,7 +98,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var gameClock = new StubGameClock();
-            var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var actorSpatialIndexService = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var worldState = CreateWorldState(
@@ -138,7 +138,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var gameClock = new StubGameClock();
-            var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var actorSpatialIndexService = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var worldState = CreateWorldState(
@@ -186,7 +186,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var gameClock = new StubGameClock();
-            var actorSpatialIndexService = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var actorSpatialIndexService = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var worldState = CreateWorldState(
@@ -276,7 +276,7 @@ namespace DungeonInn.Tests.EditMode
             INavigationPathProvider navigationPathProvider)
         {
             var masterRepository = new HardcodedMasterRepository();
-            var itemSpatialIndexService = new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var itemSpatialIndexService = new ItemSpatialIndexService(new FixedWorldGameSettingsRepository());
             var actorCombatService = new ActorCombatService();
             var navigationService = new ActorNavigationService(
                 eventBus,
@@ -289,37 +289,37 @@ namespace DungeonInn.Tests.EditMode
             var actorDefeatOrchestrator = new ActorDefeatOrchestrator(
                 combatDefeatResolver,
                 new GrantExperienceUseCase(masterRepository, eventBus),
-                new DropItemUseCase(new GameRandom(4), eventBus));
+                new DropItemUseCase(new GameRandom(), eventBus));
             var combatEffectExecutor = new CombatEffectExecutor(new CombatDamageResolver(actorCombatService));
             var recoveryStateService = new AdventurerRecoveryStateService(eventBus);
 
             return new WorldSimulationOrchestrator(
                 gameLoopUseCase,
+                new GameRandom(),
                 worldState,
                 new InitializeGameWorldOrchestrator(
                     worldState,
-                    new InitializeWorldMapUseCase(DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault()),
-                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault())),
+                    new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
                     masterRepository,
                     eventBus,
-                    DungeonInn.Application.World.InitialWorldSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 new SpawnScheduledAdventurerOrchestrator(
                     new SpawnAdventurerUseCase(
                         actorFactory,
                         masterRepository,
                         completeActorSpawnUseCase),
                     masterRepository,
-                    new GameRandom(1),
-                    DungeonInn.Application.World.GroundMapGenerationSettings.CreateDefault(),
-                    DungeonInn.Application.World.SpawnBalanceSettings.CreateDefault()),
+                    new GameRandom(),
+                    new FixedWorldGameSettingsRepository()),
                 new SpawnScheduledMonsterOrchestrator(
                     new SpawnMonsterUseCase(
                         actorFactory,
                         masterRepository,
                         completeActorSpawnUseCase),
                     masterRepository,
-                    new GameRandom(2),
-                    DungeonInn.Application.World.SpawnBalanceSettings.CreateDefault()),
+                    new GameRandom(),
+                    new FixedWorldGameSettingsRepository()),
                 new AdvanceActorAiOrchestrator(
                     TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
                     new IActorAiPolicy[] { new AdventurerAiPolicy() },
@@ -330,9 +330,9 @@ namespace DungeonInn.Tests.EditMode
                             navigationService,
                             actorSpatialIndexService,
                             actorViewDataStore),
-                        DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
+                        new FixedWorldGameSettingsRepository()),
                     new UseDungeonStairOrchestrator(
-                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault()), new NoOpEventPublisher())),
+                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
                     new SelectDungeonTargetFloorUseCase(
                         masterRepository,
                         new ActorCombatPowerCalculator(),
@@ -340,17 +340,17 @@ namespace DungeonInn.Tests.EditMode
                     new SelectDungeonExplorationGoalUseCase(1),
                     navigationService,
                     actorCombatService,
-                    new GameRandom(3),
+                    new GameRandom(),
                     eventBus,
                     new AdventurerExplorationStateService(eventBus),
                     actorSpatialIndexService,
                     actorViewDataStore,
                     TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 new DetectCombatEncounterUseCase(
                     actorCombatService,
                     actorSpatialIndexService,
-                    new CombatEncounterTargetResolver(gameClock, actorSpatialIndexService, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                    new CombatEncounterTargetResolver(gameClock, actorSpatialIndexService, new FixedWorldGameSettingsRepository()),
                     eventBus),
                 new AdvanceCombatUseCase(
                     actorCombatService,
@@ -363,10 +363,10 @@ namespace DungeonInn.Tests.EditMode
                         navigationService,
                         actorSpatialIndexService,
                         actorViewDataStore),
-                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault()),
-                new AdvanceProjectileUseCase(combatEffectExecutor, actorDefeatOrchestrator, eventBus, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
+                new AdvanceProjectileUseCase(combatEffectExecutor, actorDefeatOrchestrator, eventBus, new FixedWorldGameSettingsRepository()),
                 new AdvanceAreaEffectUseCase(
-                    new AttackAreaTargetResolver(actorSpatialIndexService, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                    new AttackAreaTargetResolver(actorSpatialIndexService, new FixedWorldGameSettingsRepository()),
                     combatEffectExecutor,
                     actorDefeatOrchestrator,
                     eventBus),
@@ -374,8 +374,7 @@ namespace DungeonInn.Tests.EditMode
                     eventBus,
                     itemSpatialIndexService,
                     candidateService,
-                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault(),
-                    DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 new UpdateEquipmentUseCase(masterRepository, eventBus, candidateService),
                 new SellItemsUseCase(masterRepository, eventBus, gameClock, candidateService),
                 new UseRecoveryItemOrchestrator(
@@ -383,7 +382,7 @@ namespace DungeonInn.Tests.EditMode
                     new UseConsumableItemUseCase(masterRepository, candidateService),
                     eventBus,
                     candidateService,
-                    DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 new AdvanceActorEffectsUseCase(candidateService),
                 new DecideAdventurerReturnUseCase(
                     actorCombatService,
@@ -391,27 +390,27 @@ namespace DungeonInn.Tests.EditMode
                     new AdventurerReturnTrackingService(eventBus, profileRegistry, achievementRegistry),
                     masterRepository,
                     candidateService,
-                    DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 new AdvanceInnRecoveryOrchestrator(
                     new RecoverAdventurerAtInnUseCase(
                         eventBus,
                         gameClock,
                         recoveryStateService,
                         candidateService,
-                        DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
-                    new ChargeInnFeeUseCase(eventBus, DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
+                        new FixedWorldGameSettingsRepository()),
+                    new ChargeInnFeeUseCase(eventBus, new FixedWorldGameSettingsRepository()),
                     new DespawnAdventurerUseCase(eventBus),
                     eventBus,
                     gameClock,
                     candidateService,
-                    DungeonInn.Application.World.InnBalanceSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 new PublishInnDailyReportUseCase(
                     worldState,
                     new InnEconomyStatisticsService(eventBus, gameClock),
                     new InnDailyReportStore(),
                     eventBus,
-                    new InnEconomyStatusCalculator(DungeonInn.Application.World.InitialWorldSettings.CreateDefault())),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                    new InnEconomyStatusCalculator(new FixedWorldGameSettingsRepository())),
+                new FixedWorldGameSettingsRepository());
         }
 
         static GameWorldState CreateWorldState(
@@ -421,10 +420,10 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = new GameWorldState(
                 actorSpatialIndexService,
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 candidateService,
                 actorViewDataStore,
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
             worldState.Initialize(CreateGuild(), CreateGroundMap(), CreateDungeon());
             return worldState;
         }
@@ -607,3 +606,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

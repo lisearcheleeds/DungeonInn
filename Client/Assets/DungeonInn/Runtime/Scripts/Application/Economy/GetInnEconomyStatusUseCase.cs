@@ -2,7 +2,6 @@ using DungeonInn.Application.Economy;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.World;
 using System;
-using Cysharp.Threading.Tasks;
 using VContainer;
 
 namespace DungeonInn.Application.Economy
@@ -29,12 +28,12 @@ namespace DungeonInn.Application.Economy
 
         public bool CanExecute => worldState.IsInitialized;
 
-        public UniTask<InnEconomyStatus> ExecuteAsync()
+        public InnEconomyStatus Execute()
         {
-            return UniTask.FromResult(calculator.Calculate(
+            return calculator.Calculate(
                 worldState,
                 gameClock.CurrentDay,
-                statisticsService.GetByDay(gameClock.CurrentDay)));
+                statisticsService.GetByDay(gameClock.CurrentDay));
         }
     }
 }

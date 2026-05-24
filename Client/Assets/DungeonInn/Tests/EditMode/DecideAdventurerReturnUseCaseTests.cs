@@ -311,7 +311,7 @@ namespace DungeonInn.Tests.EditMode
                 trackingService,
                 new HardcodedMasterRepository(),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                DungeonInn.Application.World.AdventurerReturnPolicySettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
             return new DecideAdventurerReturnUseCaseFixture(useCase, trackingService, achievementRegistry);
         }
 
@@ -323,11 +323,11 @@ namespace DungeonInn.Tests.EditMode
         static GameWorldState CreateWorldState()
         {
             return new GameWorldState(
-                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         sealed class CollectingGameEventBus : IGameEventBus, IDisposable
@@ -386,3 +386,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

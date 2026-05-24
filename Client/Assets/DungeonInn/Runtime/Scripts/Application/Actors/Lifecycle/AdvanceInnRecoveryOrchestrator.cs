@@ -23,7 +23,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IEventPublisher eventPublisher;
         readonly IGameClock gameClock;
         readonly ActorProcessingCandidateService candidateService;
-        readonly InnBalanceSettings innBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly List<Guid> reservationActorIdBuffer = new();
 
         [Inject]
@@ -34,7 +34,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IEventPublisher eventPublisher,
             IGameClock gameClock,
             ActorProcessingCandidateService candidateService,
-            InnBalanceSettings innBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase
                 ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
@@ -45,7 +45,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
-            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public UniTask EnsureReservationsAsync(IGameWorldState worldState, int currentTick)
@@ -153,6 +154,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             Facility facility)
         {
             var wasWaiting = behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn;
+            var innBalanceSettings = worldGameSettingsRepository.GetInnBalanceSettings();
             behavior.StartWaitingForInn(gameClock.CurrentDay);
 
             var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;

@@ -11,13 +11,13 @@ namespace DungeonInn.Application.Items
     {
         readonly Dictionary<SpatialCellKey, List<ItemInstance>> itemsByCell = new();
         readonly Dictionary<Guid, SpatialCellKey> cellByItemId = new();
-        readonly CombatBalanceSettings combatBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
-        public ItemSpatialIndexService(CombatBalanceSettings combatBalanceSettings)
+        public ItemSpatialIndexService(IWorldGameSettingsRepository worldGameSettingsRepository)
         {
-            this.combatBalanceSettings = combatBalanceSettings
-                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public void SyncItem(ItemInstance item)
@@ -27,7 +27,9 @@ namespace DungeonInn.Application.Items
                 throw new ArgumentNullException(nameof(item));
             }
 
-            var nextCell = SpatialCellKey.From(item.Position, combatBalanceSettings.SpatialIndexCellSizeMeters);
+            var nextCell = SpatialCellKey.From(
+                item.Position,
+                worldGameSettingsRepository.GetCombatBalanceSettings().SpatialIndexCellSizeMeters);
             if (cellByItemId.TryGetValue(item.InstanceId, out var currentCell) && currentCell.Equals(nextCell))
             {
                 return;
@@ -84,7 +86,9 @@ namespace DungeonInn.Application.Items
                 throw new ArgumentOutOfRangeException(nameof(neighborCellRadius));
             }
 
-            var centerCell = SpatialCellKey.From(position, combatBalanceSettings.SpatialIndexCellSizeMeters);
+            var centerCell = SpatialCellKey.From(
+                position,
+                worldGameSettingsRepository.GetCombatBalanceSettings().SpatialIndexCellSizeMeters);
             for (var z = centerCell.Z - neighborCellRadius; z <= centerCell.Z + neighborCellRadius; z++)
             {
                 for (var x = centerCell.X - neighborCellRadius; x <= centerCell.X + neighborCellRadius; x++)

@@ -51,19 +51,24 @@ Milestone 7 で World の UI Canvas を `WorldUI` ModuleScene に分離した。
 ただし、World のゲームロジックが `WorldLifetimeScope` に残ったままだと、`WorldLifetimeScope` の子ではない `WorldUILifetimeScope` が同じゲーム状態や UseCase を自然に受け取れない。
 Milestone 8 では、World の 3D 表現と Canvas UI を兄弟 Scene として扱い、その共通親にゲームロジック用 LifetimeScope を置く構成へ整理する。
 
+**スコープ名について**: 将来 Guildhouse 等の別ゲームシーンが追加された場合にも同じ親スコープを共有できるよう、`WorldGameLifetimeScope` ではなく `MainGameLifetimeScope` と命名する。
+
 想定構造:
 
 ```text
 RootLifetimeScope
   ProductLifetimeScope
-    WorldGameLifetimeScope
-      WorldLifetimeScope
-      WorldUILifetimeScope
+    MainGameLifetimeScope   ← ゲームセッション全体の共有依存
+      WorldLifetimeScope    ← World 3D 表現固有
+      WorldUILifetimeScope  ← World Canvas/HUD/Popup 固有
+      （将来）GuildhouseLifetimeScope
+      （将来）GuildhouseUILifetimeScope
 ```
 
-- `WorldGameLifetimeScope`
-  - World シーングループの親 LifetimeScope として追加する
-  - World のゲーム状態、ゲームループ、Application UseCase、EventBus、World 全体で共有する Service を登録する
+- `MainGameLifetimeScope`
+  - ゲームセッション中に有効な共通 LifetimeScope として追加する
+  - ゲーム状態、ゲームループ、Application UseCase、EventBus、ゲーム全体で共有する Service を登録する
+  - 設定 ScriptableObject は Addressables から非同期ロードして値型に変換し、`ProductLifetimeScope.CreateChild<MainGameLifetimeScope>` のインストーラーで `RegisterInstance` する
   - 3D View / Canvas View / UI View Prefab の実体は保持しない
 - `WorldLifetimeScope`
   - World MainScene 固有の 3D 表現に責務を限定する
@@ -71,25 +76,25 @@ RootLifetimeScope
   - Canvas / HUD / Popup / UI View の登録や直接参照を持たない
 - `WorldUILifetimeScope`
   - `WorldUI` ModuleScene 固有の Canvas / HUD / Popup / UI Presenter / UI Factory を登録する
-  - ゲーム状態は親の `WorldGameLifetimeScope` から、Application Query / 表示専用 DTO / Event 購読経由で受け取る
+  - ゲーム状態は親の `MainGameLifetimeScope` から、Application Query / 表示専用 DTO / Event 購読経由で受け取る
   - `IGameWorldStateReader` のような広い Reader を UI Presenter が直接読んで集計しない
 
 実装方針:
 
 1. `ProductEntryPoint.StartAsync` で行っている `mainSceneManager.SetEnqueueParentLifetimeScope` / `moduleSceneManager.SetEnqueueParentLifetimeScope` は、デフォルト親を `ProductLifetimeScope` にする初期設定として維持する。
-2. `ProductSceneManager` から利用する小さな協調クラス（例: `SceneGroupLifetimeScopeManager`）を追加し、遷移先 `MainSceneId` に応じて SceneGroup 用親 LifetimeScope を生成・保持・破棄する。
-3. World へ遷移する前に `WorldGameLifetimeScope` を `ProductLifetimeScope` の子として生成し、MainScene / ModuleScene の enqueue parent を `WorldGameLifetimeScope` に差し替える。
-4. Lighthouse の `LoadSceneGroupStep` は MainScene → ModuleScene の順で `Load` するため、World MainScene と `WorldUI` ModuleScene の両方が同じ `WorldGameLifetimeScope` を親にできる。
-5. World 以外へ遷移する場合は enqueue parent を `ProductLifetimeScope` に戻し、World シーングループの unload 完了後に `WorldGameLifetimeScope` を破棄する。
-6. Reboot / BackScene / 例外復旧時に `WorldGameLifetimeScope` が残留しないよう、`PreReboot` と遷移完了時の cleanup 経路を定義する。
+2. `ProductSceneManager` から利用する `SceneGroupLifetimeScopeManager` を追加し、遷移先 `MainSceneId` に応じて SceneGroup 用親 LifetimeScope を生成・保持・破棄する。
+3. ゲームシーン（World 等）へ遷移する前に、設定 SO を Addressables から非同期ロードし、値型に変換したうえで `productLifetimeScope.CreateChild<MainGameLifetimeScope>(installer)` で `MainGameLifetimeScope` を生成する。MainScene / ModuleScene の enqueue parent を `MainGameLifetimeScope` に差し替える。
+4. Lighthouse の `LoadSceneGroupStep` は MainScene → ModuleScene の順で `Load` するため、World MainScene と `WorldUI` ModuleScene の両方が同じ `MainGameLifetimeScope` を親にできる。
+5. 非ゲームシーン（Title 等）へ遷移する場合は enqueue parent を `ProductLifetimeScope` に戻し、World シーングループの unload 完了後に `MainGameLifetimeScope` を破棄する。
+6. Reboot / BackScene / 例外復旧時に `MainGameLifetimeScope` が残留しないよう、`PreReboot` と遷移完了時の cleanup 経路を定義する。
 
 完了条件:
 
-- [ ] `WorldGameLifetimeScope` が追加され、World のゲームロジック共有依存がそこに移動している
+- [ ] `MainGameLifetimeScope` が追加され、World のゲームロジック共有依存がそこに移動している
 - [ ] `WorldLifetimeScope` は 3D 表現固有の登録に限定され、Canvas / HUD / Popup の責務を持っていない
-- [ ] `WorldUILifetimeScope` は `WorldGameLifetimeScope` の子として生成され、HUD / Popup が親 scope の Query / Event / DTO 経由で World 状態を表示できる
-- [ ] `ProductSceneManager` またはその協調クラスが、World 遷移時だけ SceneGroup 用親 LifetimeScope を enqueue parent に設定している
-- [ ] World から別 MainScene へ離脱した後、`WorldGameLifetimeScope` とその scoped disposable が破棄される
+- [ ] `WorldUILifetimeScope` は `MainGameLifetimeScope` の子として生成され、HUD / Popup が親 scope の Query / Event / DTO 経由で World 状態を表示できる
+- [ ] `ProductSceneManager` またはその協調クラスが、ゲームシーン遷移時だけ SceneGroup 用親 LifetimeScope を enqueue parent に設定している
+- [ ] World から別 MainScene へ離脱した後、`MainGameLifetimeScope` とその scoped disposable が破棄される
 - [ ] `WorldLifetimeScope` / `WorldUILifetimeScope` にゲームコンテンツ Prefab / UI View Prefab / Popup View 実体の `SerializedField` がない
 - [ ] `uloop.cmd compile --project-path Client` が成功している
 - [ ] `uloop.cmd run-tests --project-path Client --test-mode EditMode` が成功している
@@ -195,6 +200,60 @@ RootLifetimeScope
 - [ ] Prefab / Scene 生成用の一時コードは、生成完了後に削除する運用が docs または guideline に明記されている
 - [ ] 一時生成基盤を実装する場合、その方針・形式・置き場所・実行方法を事前にユーザー確認している
 - [ ] `uloop.cmd compile --project-path Client` が成功している
+
+---
+
+## タスク分解と作業順序
+
+### Task 1 — 小修正まとめ（独立・依存なし）
+
+対象: P3-1 / T-4残 / T-5残 / P7-1
+
+| ID | ファイル | 修正内容 |
+|---|---|---|
+| P3-1 | `WorldProjectileViewPool.cs` / `WorldAreaEffectViewPool.cs` | `Stack<T>` → `Queue<T>` |
+| T-4残 | `GetActorDetailQuery.cs` | `ToArray()` フレームごと割り当て除去（`IReadOnlyList` 返却または signature キャッシュ） |
+| T-5残 | `WorldAddressableViewFactory.cs` | `PlayerEventLogViewPrefab` public プロパティを internal または削除 |
+| P7-1 | `PlayerEventLogStore.cs` | `Add()` の公開範囲を絞る（internal 化またはイベント購読型へ） |
+
+### Task 2 — WorldGameLifetimeScope 分離（アーキテクチャ基盤）
+
+後続タスク（T-2, S5-1, HUD UI 実装）すべての前提となる。
+
+- `WorldGameLifetimeScope` を新規追加し、`WorldLifetimeScope` からゲームロジック共有依存を移動する
+- `WorldLifetimeScope` は 3D 表現固有の登録に限定する
+- `WorldUILifetimeScope` を `WorldGameLifetimeScope` の子として構成する
+- `ProductSceneManager` またはその協調クラスが World 遷移時のみ enqueue parent を差し替える
+- 完了条件は本ドキュメント「World シーングループ LifetimeScope 分離」セクションの完了条件に準拠する
+
+### Task 3 — T-2 + S5-1（Task 2 完了後に着手）
+
+**T-2: Actor 選択の narrow provider 化**
+
+- `WorldActorSelectionInputHandler` / `ActorSelectionService` の `IGameWorldStateReader` 直接依存を除去する
+- `HandleClick` 内の `layerViewRegistry.GetOrCreateActorRoot(...)` 副作用を除去する
+- Actor 選択用 narrow provider（Actor スクリーン位置スナップショットを提供）を用意する
+
+**S5-1: WorldHudCanvasProvider の FindFirstObjectByType 除去**
+
+- Task 2 で LifetimeScope 分離が完了し、`WorldUIModuleScene` が DI 解決可能になった後に対処する
+- `FindFirstObjectByType<WorldUIModuleScene>()` を DI 注入または Scene 参照に置き換える
+
+### Task 4 — VAS-1（ユーザー確認後に着手）
+
+着手前に以下をユーザーと確認する:
+
+- 一時 Editor コードの置き場所（`Editor/` 以下の専用フォルダ等）
+- 実行方法（メニュー項目 / `uloop execute-dynamic-code` 等）
+- 完了後の削除タイミングと基準
+
+確認完了後、`VisualAssetSetup` の validation 経路から自動再生成・ロールバック処理を除去し、一時生成基盤方針を docs に明記する。
+
+### Task 5〜7 — UI 実装（Task 2〜4 完了後に着手）
+
+- Task 5: HUD UI（時刻・日付 / ギルド資金 / 速度コントロール / アラート）
+- Task 6: Inn ステータスパネル（冒険者リスト / 収支サマリ）
+- Task 7: ミニマップ / 俯瞰表示（簡易）
 
 ---
 

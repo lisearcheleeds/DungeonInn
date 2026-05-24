@@ -6,6 +6,7 @@
         "Unity.Addressables",
         "Unity.Addressables.Editor",
         "Unity.ResourceManager",
+        "Lighthouse.Runtime",
         "LighthouseExtends.Addressable.Runtime",
         "UniTask",
         "R3.Unity",

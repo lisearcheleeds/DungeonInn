@@ -25,6 +25,7 @@ namespace DungeonInn.Application.World
     public sealed class WorldSimulationOrchestrator : IWorldSimulationOrchestrator
     {
         readonly IGameLoopUseCase gameLoopUseCase;
+        readonly IGameRandom gameRandom;
         readonly IGameWorldState gameWorldState;
         readonly InitializeGameWorldOrchestrator initializeGameWorldUseCase;
         readonly SpawnScheduledAdventurerOrchestrator spawnScheduledAdventurerUseCase;
@@ -43,7 +44,7 @@ namespace DungeonInn.Application.World
         readonly DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
         readonly AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator;
         readonly PublishInnDailyReportUseCase publishInnDailyReportUseCase;
-        readonly InitialWorldSettings initialWorldSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly Dictionary<int, float> realtimeMovedSecondsByLayer = new();
         readonly HashSet<int> scheduledActorLayerIds = new();
 
@@ -52,6 +53,7 @@ namespace DungeonInn.Application.World
         [Inject]
         public WorldSimulationOrchestrator(
             IGameLoopUseCase gameLoopUseCase,
+            IGameRandom gameRandom,
             IGameWorldState gameWorldState,
             InitializeGameWorldOrchestrator initializeGameWorldUseCase,
             SpawnScheduledAdventurerOrchestrator spawnScheduledAdventurerUseCase,
@@ -70,9 +72,10 @@ namespace DungeonInn.Application.World
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator,
             PublishInnDailyReportUseCase publishInnDailyReportUseCase,
-            InitialWorldSettings initialWorldSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
+            this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
             this.gameWorldState = gameWorldState ?? throw new ArgumentNullException(nameof(gameWorldState));
             this.initializeGameWorldUseCase = initializeGameWorldUseCase ?? throw new ArgumentNullException(nameof(initializeGameWorldUseCase));
             this.spawnScheduledAdventurerUseCase = spawnScheduledAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnScheduledAdventurerUseCase));
@@ -91,11 +94,15 @@ namespace DungeonInn.Application.World
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
             this.advanceInnRecoveryOrchestrator = advanceInnRecoveryOrchestrator ?? throw new ArgumentNullException(nameof(advanceInnRecoveryOrchestrator));
             this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
-            this.initialWorldSettings = initialWorldSettings ?? throw new ArgumentNullException(nameof(initialWorldSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public async UniTask<WorldSimulationInitializeResult> InitializeAsync(CancellationToken cancellationToken)
         {
+            await worldGameSettingsRepository.LoadAsync(cancellationToken);
+            var initialWorldSettings = worldGameSettingsRepository.GetInitialWorldSettings();
+            gameRandom.Initialize(initialWorldSettings.GameRandomSeed);
             await initializeGameWorldUseCase.ExecuteAsync(
                 new InitializeGameWorldRequest(
                     initialWorldSettings.DungeonSeed,

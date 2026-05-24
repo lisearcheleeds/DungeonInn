@@ -12,7 +12,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         const float MinimumFocusDistance = 0.01f;
         const float FocusPlaneDirectionEpsilon = 0.0001f;
 
-        readonly WorldCameraSettings settings;
+        readonly IWorldCameraSettingsRepository settingsRepository;
 
         Camera camera;
         bool initialized;
@@ -31,12 +31,12 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public float CurrentYawDegrees => yawDegrees;
         public Quaternion CurrentCameraRotation => camera != null ? camera.transform.rotation : Quaternion.identity;
-        public float ActorViewportMargin => settings.ActorViewportMargin;
+        public float ActorViewportMargin => settingsRepository.Get().ActorViewportMargin;
 
         [Inject]
-        public WorldCameraController(WorldCameraSettings settings)
+        public WorldCameraController(IWorldCameraSettingsRepository settingsRepository)
         {
-            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            this.settingsRepository = settingsRepository ?? throw new ArgumentNullException(nameof(settingsRepository));
         }
 
         public void BindCamera(Camera camera)
@@ -69,6 +69,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         {
             isFollowing = true;
             hasTargetOrthographicSize = true;
+            var settings = settingsRepository.Get();
             targetOrthographicSize = settings.InitialOrthographicSize * zoomRatio;
         }
 
@@ -80,8 +81,14 @@ namespace DungeonInn.View.Scene.MainScene.World
         public void EndFollow()
         {
             isFollowing = false;
+            if (camera == null)
+            {
+                hasTargetOrthographicSize = false;
+                return;
+            }
+
             hasTargetOrthographicSize = true;
-            targetOrthographicSize = settings.InitialOrthographicSize;
+            targetOrthographicSize = settingsRepository.Get().InitialOrthographicSize;
         }
 
         public void ResetInputState()
@@ -142,6 +149,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void InitializeCamera(Camera camera)
         {
+            var settings = settingsRepository.Get();
             yawDegrees = settings.InitialYawDegrees;
             pitchDegrees = settings.InitialPitchDegrees;
             camera.transform.position = settings.InitialPosition;
@@ -156,6 +164,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         bool UpdateRotation()
         {
+            var settings = settingsRepository.Get();
             if (!isRotating)
             {
                 lookDelta = Vector2.zero;
@@ -165,11 +174,12 @@ namespace DungeonInn.View.Scene.MainScene.World
             var yawDelta = lookDelta.x * settings.RotationSensitivity;
             yawDegrees += yawDelta;
             lookDelta = Vector2.zero;
-            return Mathf.Abs(yawDelta) > 0f;
+            return 0f < Mathf.Abs(yawDelta);
         }
 
         bool UpdateFocusPoint(float deltaSeconds)
         {
+            var settings = settingsRepository.Get();
             if (isFollowing)
             {
                 if (deltaSeconds <= 0f)
@@ -199,6 +209,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void UpdateZoom(Camera camera, float deltaSeconds)
         {
+            var settings = settingsRepository.Get();
             if (hasTargetOrthographicSize)
             {
                 camera.orthographicSize = Mathf.Lerp(
@@ -243,6 +254,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         Vector3 ResolveCenterFocusPoint(Camera camera)
         {
+            var settings = settingsRepository.Get();
             var direction = camera.transform.forward;
             if (Mathf.Abs(direction.y) < FocusPlaneDirectionEpsilon)
             {

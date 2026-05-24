@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using DungeonInn.Application.World;
+using DungeonInn.View.Scene.Bridge;
 using DungeonInn.View.Scene.MainScene.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -19,8 +21,8 @@ namespace DungeonInn.Input.Layer
         readonly WorldCameraController worldCameraController;
         readonly LayerPositionViewMapper positionMapper;
         readonly MapLayerViewRegistry layerViewRegistry;
-        // M8: IGameWorldStateReader 直接依存 + GetOrCreateActorRoot 副作用は設計違反（T-2）。Actor 選択用 narrow provider に置き換える
-        readonly IGameWorldStateReader worldState;
+        readonly IActorSelectionCandidateProvider candidateProvider;
+        readonly List<ActorViewData> selectionCandidatesBuffer = new();
 
         public bool HasSelectedActor => actorSelectionService.SelectedActorId.Value.HasValue;
 
@@ -31,7 +33,7 @@ namespace DungeonInn.Input.Layer
             WorldCameraController worldCameraController,
             LayerPositionViewMapper positionMapper,
             MapLayerViewRegistry layerViewRegistry,
-            IGameWorldStateReader worldState)
+            IActorSelectionCandidateProvider candidateProvider)
         {
             worldActorClickAction = inputActions.Scene.Get().FindAction("WorldActorClick", true);
             worldActorSelectNextAction = inputActions.Scene.Get().FindAction("WorldActorSelectNext", true);
@@ -41,7 +43,7 @@ namespace DungeonInn.Input.Layer
             this.worldCameraController = worldCameraController ?? throw new ArgumentNullException(nameof(worldCameraController));
             this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
-            this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
+            this.candidateProvider = candidateProvider ?? throw new ArgumentNullException(nameof(candidateProvider));
         }
 
         public bool HandleActionPerformed(InputAction.CallbackContext callbackContext)
@@ -100,10 +102,15 @@ namespace DungeonInn.Input.Layer
             var closestActorId = Guid.Empty;
             var closestDistance = SelectionScreenRadius;
 
-            foreach (var actor in worldState.Actors)
+            candidateProvider.CopySelectionCandidatesTo(selectionCandidatesBuffer);
+            foreach (var candidate in selectionCandidatesBuffer)
             {
-                var localPosition = positionMapper.ToActorLayerLocalPosition(actor.Position);
-                var actorRoot = layerViewRegistry.GetOrCreateActorRoot(actor.Position.LayerId);
+                if (!layerViewRegistry.TryGetActorRoot(candidate.Position.LayerId, out var actorRoot))
+                {
+                    continue;
+                }
+
+                var localPosition = positionMapper.ToActorLayerLocalPosition(candidate.Position);
                 var worldPosition = actorRoot.TransformPoint(localPosition);
                 var screenPosition = worldCameraController.WorldToScreenPoint(worldPosition);
 
@@ -117,7 +124,7 @@ namespace DungeonInn.Input.Layer
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
-                    closestActorId = actor.Id;
+                    closestActorId = candidate.ActorId;
                 }
             }
 

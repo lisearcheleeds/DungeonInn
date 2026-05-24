@@ -150,3 +150,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

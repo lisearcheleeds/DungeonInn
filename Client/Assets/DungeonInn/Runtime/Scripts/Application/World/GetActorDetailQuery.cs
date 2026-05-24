@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Application.Actors.Profiles;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Item;
+using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using VContainer;
 
@@ -97,5 +99,6 @@ namespace DungeonInn.Application.World
                 equipmentNameBuffer.ToArray(),
                 effectBuffer.Count == 0 ? Array.Empty<ActorEffectIconViewData>() : effectBuffer.ToArray());
         }
+
     }
 }

@@ -43,7 +43,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             surface.BuildNavMesh();
 
             bakedLayerIds.Add(layerId.Value);
-            Debug.Log($"[DungeonInn] NavMesh baked for layer {layerId.Value}");
+            UnityEngine.Debug.Log($"[DungeonInn] NavMesh baked for layer {layerId.Value}");
         }
 
         public void InvalidateLayer(MapLayerId layerId)

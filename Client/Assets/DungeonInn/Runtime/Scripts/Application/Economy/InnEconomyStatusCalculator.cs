@@ -7,13 +7,13 @@ namespace DungeonInn.Application.Economy
 {
     public sealed class InnEconomyStatusCalculator
     {
-        readonly InitialWorldSettings initialWorldSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
-        public InnEconomyStatusCalculator(InitialWorldSettings initialWorldSettings)
+        public InnEconomyStatusCalculator(IWorldGameSettingsRepository worldGameSettingsRepository)
         {
-            this.initialWorldSettings = initialWorldSettings
-                ?? throw new System.ArgumentNullException(nameof(initialWorldSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new System.ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public InnEconomyStatus Calculate(
@@ -38,6 +38,7 @@ namespace DungeonInn.Application.Economy
             var roomCapacity = CountRoomCapacity(worldState);
             var occupiedRooms = CountOccupiedRooms(worldState);
             var occupancyPercent = roomCapacity <= 0 ? 0 : occupiedRooms * 100 / roomCapacity;
+            var initialWorldSettings = worldGameSettingsRepository.GetInitialWorldSettings();
 
             return new InnDailyReport(
                 day,

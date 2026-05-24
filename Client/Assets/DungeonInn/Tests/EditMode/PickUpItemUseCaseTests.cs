@@ -253,21 +253,20 @@ namespace DungeonInn.Tests.EditMode
         static (PickUpItemUseCase, GameWorldState, CollectingEventBus) CreateContext()
         {
             var eventBus = new CollectingEventBus();
-            var itemSpatialIndexService = new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var itemSpatialIndexService = new ItemSpatialIndexService(new FixedWorldGameSettingsRepository());
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             return (
                 new PickUpItemUseCase(
                     eventBus,
                     itemSpatialIndexService,
                     candidateService,
-                    DungeonInn.Application.World.ActorSimulationSettings.CreateDefault(),
-                    DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 new GameWorldState(
-                    new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                    new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
                     itemSpatialIndexService,
                     candidateService,
                     ActorViewDataStoreTestFactory.Create(),
-                    DungeonInn.Application.World.InitialWorldSettings.CreateDefault()),
+                    new FixedWorldGameSettingsRepository()),
                 eventBus);
         }
 
@@ -331,4 +330,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
 

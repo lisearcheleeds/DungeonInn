@@ -1,8 +1,9 @@
 using System;
 using System.IO;
 using DungeonInn.Domain.Actor;
+using DungeonInn.GameSession.Settings;
+using DungeonInn.View.Scene.ModuleScene.GameHUD;
 using DungeonInn.View.Scene.MainScene.World;
-using DungeonInn.View.Scene.ModuleScene.WorldUI;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -29,14 +30,18 @@ namespace DungeonInn.Editor
         const string MonsterOgreVisualDefinitionPath = ActorVisualDefinitionDirectory + "/MonsterOgre.asset";
         const string MonsterGoblinArcherVisualDefinitionPath = ActorVisualDefinitionDirectory + "/MonsterGoblinArcher.asset";
         const string WorldPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/World";
+        const string GameHUDPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameHUD";
         const string ActorPrefabPath = WorldPrefabDirectory + "/ActorView.prefab";
         const string StairUpPropPrefabPath = WorldPrefabDirectory + "/StairUpPropView.prefab";
         const string StairDownPropPrefabPath = WorldPrefabDirectory + "/StairDownPropView.prefab";
         const string ArrowProjectilePrefabPath = WorldPrefabDirectory + "/ArrowProjectileView.prefab";
         const string ScytheAreaEffectPrefabPath = WorldPrefabDirectory + "/ScytheAreaEffectView.prefab";
-        const string ActorStatusViewPrefabPath = WorldPrefabDirectory + "/ActorStatusView.prefab";
-        const string ActorDetailPopupPrefabPath = WorldPrefabDirectory + "/ActorDetailPopup.prefab";
-        const string PlayerEventLogViewPrefabPath = WorldPrefabDirectory + "/PlayerEventLogView.prefab";
+        const string ActorStatusViewPrefabPath = GameHUDPrefabDirectory + "/ActorStatusView.prefab";
+        const string ActorDetailPopupPrefabPath = GameHUDPrefabDirectory + "/ActorDetailPopup.prefab";
+        const string PlayerEventLogViewPrefabPath = GameHUDPrefabDirectory + "/PlayerEventLogView.prefab";
+        const string WorldHudViewPrefabPath = GameHUDPrefabDirectory + "/WorldHudView.prefab";
+        const string InnStatusPanelViewPrefabPath = GameHUDPrefabDirectory + "/InnStatusPanelView.prefab";
+        const string MinimapViewPrefabPath = GameHUDPrefabDirectory + "/MinimapView.prefab";
         const string EffectDummySpritePath = "Assets/DungeonInn/Runtime/Art/Sprites/Effect/Dummy.png";
         const string AddressablesGroupName = "DungeonInn Visual";
         const string MapMaterialShaderName = "Universal Render Pipeline/Lit";
@@ -62,6 +67,9 @@ namespace DungeonInn.Editor
                 AssetDatabase.AssetPathExists(ActorStatusViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath) &&
                 AssetDatabase.AssetPathExists(PlayerEventLogViewPrefabPath) &&
+                AssetDatabase.AssetPathExists(WorldHudViewPrefabPath) &&
+                AssetDatabase.AssetPathExists(InnStatusPanelViewPrefabPath) &&
+                AssetDatabase.AssetPathExists(MinimapViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(AdventurerNoviceVisualDefinitionPath) &&
                 AssetDatabase.AssetPathExists(MonsterGoblinVisualDefinitionPath) &&
                 AssetDatabase.AssetPathExists(MonsterOrcVisualDefinitionPath) &&
@@ -70,7 +78,8 @@ namespace DungeonInn.Editor
             if (!AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath) ||
                 !IsActorDetailPopupPrefabWired())
             {
-                CreateOrLoadActorDetailPopupPrefab();
+                Debug.LogWarning(
+                    "[DungeonInn] ActorDetailPopup prefab is missing or not wired. Run DungeonInn/Setup Visual Assets to apply setup.");
             }
 
             if (!assetsExist)
@@ -146,6 +155,7 @@ namespace DungeonInn.Editor
             CreateOrLoadActorStatusViewPrefab();
             CreateOrLoadActorDetailPopupPrefab();
             CreateOrLoadPlayerEventLogViewPrefab();
+            CreateOrLoadWorldHudViewPrefab();
             CreateOrUpdateActorVisualDefinitions();
             var layerSettingsSo = CreateOrLoadLayerPositionViewSettingsSO();
             var cameraSettingsSo = CreateOrLoadWorldCameraSettingsSO();
@@ -349,6 +359,24 @@ namespace DungeonInn.Editor
 
             Debug.Log($"[DungeonInn] Created {PlayerEventLogViewPrefabPath}");
             return savedPrefab != null ? savedPrefab.GetComponent<PlayerEventLogView>() : null;
+        }
+
+        static WorldHudView CreateOrLoadWorldHudViewPrefab()
+        {
+            if (AssetDatabase.AssetPathExists(WorldHudViewPrefabPath))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WorldHudViewPrefabPath);
+                return prefab != null ? prefab.GetComponent<WorldHudView>() : null;
+            }
+
+            EnsureDirectory(WorldPrefabDirectory);
+            var viewObject = new GameObject("WorldHudView", typeof(RectTransform));
+            viewObject.AddComponent<WorldHudView>();
+            var savedPrefab = PrefabUtility.SaveAsPrefabAsset(viewObject, WorldHudViewPrefabPath);
+            Object.DestroyImmediate(viewObject);
+
+            Debug.Log($"[DungeonInn] Created {WorldHudViewPrefabPath}");
+            return savedPrefab != null ? savedPrefab.GetComponent<WorldHudView>() : null;
         }
 
         static void ConfigureActorDetailPopupPrefab(GameObject popupObject)
@@ -731,6 +759,7 @@ namespace DungeonInn.Editor
             RegisterMapMaterials(settings, group);
             RegisterContentPrefabs(settings, group);
             RegisterActorVisualDefinitions(settings, group);
+            RegisterSettingsSOs(settings, group);
 
             EditorUtility.SetDirty(settings);
         }
@@ -741,9 +770,19 @@ namespace DungeonInn.Editor
             MarkAssetAddressable(settings, group, StairDownPropPrefabPath, "World/Prop/StairDown");
             MarkAssetAddressable(settings, group, ArrowProjectilePrefabPath, "World/Projectile/Arrow");
             MarkAssetAddressable(settings, group, ScytheAreaEffectPrefabPath, "World/AreaEffect/Scythe");
-            MarkAssetAddressable(settings, group, ActorStatusViewPrefabPath, "World/UI/ActorStatusView");
-            MarkAssetAddressable(settings, group, ActorDetailPopupPrefabPath, "World/UI/ActorDetailPopup");
-            MarkAssetAddressable(settings, group, PlayerEventLogViewPrefabPath, "World/UI/PlayerEventLogView");
+            MarkAssetAddressable(settings, group, ActorStatusViewPrefabPath, "GameHUD/UI/ActorStatusView");
+            MarkAssetAddressable(settings, group, ActorDetailPopupPrefabPath, "GameHUD/UI/ActorDetailPopup");
+            MarkAssetAddressable(settings, group, PlayerEventLogViewPrefabPath, "GameHUD/UI/PlayerEventLogView");
+            MarkAssetAddressable(settings, group, WorldHudViewPrefabPath, "GameHUD/UI/WorldHudView");
+            MarkAssetAddressable(settings, group, InnStatusPanelViewPrefabPath, "GameHUD/UI/InnStatusPanelView");
+            MarkAssetAddressable(settings, group, MinimapViewPrefabPath, "GameHUD/UI/MinimapView");
+        }
+
+        static void RegisterSettingsSOs(AddressableAssetSettings settings, AddressableAssetGroup group)
+        {
+            MarkAssetAddressable(settings, group, LayerPositionViewSettingsPath, "Config/LayerPositionViewSettings");
+            MarkAssetAddressable(settings, group, WorldCameraSettingsPath, "Config/WorldCameraSettings");
+            MarkAssetAddressable(settings, group, WorldGameSettingsPath, "Config/WorldGameSettings");
         }
 
         static void RegisterActorVisualDefinitions(AddressableAssetSettings settings, AddressableAssetGroup group)
@@ -1111,9 +1150,6 @@ namespace DungeonInn.Editor
                 using var serialized = new SerializedObject(scope);
                 var mapProp = serialized.FindProperty("mapMaterialSetSO");
                 var actorProp = serialized.FindProperty("actorSpriteVisualConfigSO");
-                var layerSettingsProp = serialized.FindProperty("layerPositionViewSettingsSO");
-                var cameraSettingsProp = serialized.FindProperty("worldCameraSettingsSO");
-                var gameSettingsProp = serialized.FindProperty("worldGameSettingsSO");
 
                 var changed = false;
 
@@ -1126,24 +1162,6 @@ namespace DungeonInn.Editor
                 if (actorProp != null && actorProp.objectReferenceValue == null)
                 {
                     actorProp.objectReferenceValue = actorSo;
-                    changed = true;
-                }
-
-                if (layerSettingsProp != null && layerSettingsProp.objectReferenceValue == null)
-                {
-                    layerSettingsProp.objectReferenceValue = layerSettingsSo;
-                    changed = true;
-                }
-
-                if (cameraSettingsProp != null && cameraSettingsProp.objectReferenceValue == null)
-                {
-                    cameraSettingsProp.objectReferenceValue = cameraSettingsSo;
-                    changed = true;
-                }
-
-                if (gameSettingsProp != null && gameSettingsProp.objectReferenceValue == null)
-                {
-                    gameSettingsProp.objectReferenceValue = gameSettingsSo;
                     changed = true;
                 }
 

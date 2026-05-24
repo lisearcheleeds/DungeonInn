@@ -71,7 +71,7 @@ namespace DungeonInn.Tests.EditMode
             var adventurerSpawnMaster = repository.GetAdventurerSpawnMaster(1);
             var archetypeMaster = repository.GetActorArchetypeMaster(adventurerSpawnMaster.ActorArchetypeId);
 
-            Assert.That(adventurerSpawnMaster.DisplayName, Is.EqualTo("ã‚¢ãƒªã‚¹"));
+            Assert.That(adventurerSpawnMaster.DisplayName, Is.EqualTo("ƒAƒŠƒX"));
             Assert.That(archetypeMaster.BehaviorType, Is.EqualTo(ActorBehaviorType.Adventurer));
         }
 
@@ -120,3 +120,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

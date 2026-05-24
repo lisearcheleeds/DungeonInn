@@ -54,7 +54,9 @@ namespace DungeonInn.Domain.Actor
                 throw new ArgumentNullException(nameof(spec));
             }
 
-            if (spec.Type != Type || spec.AggregationPolicy != AggregationPolicy || Math.Abs(spec.TickIntervalSeconds - TickIntervalSeconds) > float.Epsilon)
+            if (spec.Type != Type ||
+                spec.AggregationPolicy != AggregationPolicy ||
+                float.Epsilon < Math.Abs(spec.TickIntervalSeconds - TickIntervalSeconds))
             {
                 throw new InvalidOperationException("Status effect spec does not match.");
             }
@@ -70,7 +72,9 @@ namespace DungeonInn.Domain.Actor
                 throw new ArgumentNullException(nameof(spec));
             }
 
-            if (spec.Type != Type || spec.AggregationPolicy != AggregationPolicy || Math.Abs(spec.TickIntervalSeconds - TickIntervalSeconds) > float.Epsilon)
+            if (spec.Type != Type ||
+                spec.AggregationPolicy != AggregationPolicy ||
+                float.Epsilon < Math.Abs(spec.TickIntervalSeconds - TickIntervalSeconds))
             {
                 throw new InvalidOperationException("Status effect spec does not match.");
             }

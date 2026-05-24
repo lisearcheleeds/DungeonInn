@@ -27,19 +27,20 @@ namespace DungeonInn.Application.Actors.Spawn
         readonly SpawnMonsterUseCase spawnMonsterUseCase;
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
-        readonly SpawnBalanceSettings spawnBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public SpawnScheduledMonsterOrchestrator(
             SpawnMonsterUseCase spawnMonsterUseCase,
             IMasterRepository masterRepository,
             IGameRandom gameRandom,
-            SpawnBalanceSettings spawnBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.spawnMonsterUseCase = spawnMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnMonsterUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
-            this.spawnBalanceSettings = spawnBalanceSettings ?? throw new ArgumentNullException(nameof(spawnBalanceSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -50,6 +51,7 @@ namespace DungeonInn.Application.Actors.Spawn
             }
 
             // TODO: Spawn timing should come from SpawnTableMaster.
+            var spawnBalanceSettings = worldGameSettingsRepository.GetSpawnBalanceSettings();
             if (currentScheduleTick - worldState.SpawnSchedule.LastMonsterSpawnTick < spawnBalanceSettings.MonsterSpawnIntervalTicks)
             {
                 return null;

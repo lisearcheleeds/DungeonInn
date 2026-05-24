@@ -1,6 +1,4 @@
-using DungeonInn.Application.GameLoop;
 using System;
-using Cysharp.Threading.Tasks;
 using VContainer;
 
 namespace DungeonInn.Application.GameLoop
@@ -15,10 +13,9 @@ namespace DungeonInn.Application.GameLoop
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
         }
 
-        public UniTask ExecuteAsync(float timeScale)
+        public void Execute(float timeScale)
         {
             gameClock.SetTimeScale(timeScale);
-            return UniTask.CompletedTask;
         }
     }
 }

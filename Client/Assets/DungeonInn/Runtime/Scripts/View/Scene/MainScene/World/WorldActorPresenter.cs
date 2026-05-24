@@ -77,7 +77,8 @@ namespace DungeonInn.View.Scene.MainScene.World
                     !IsSamePosition(actorView.LastPosition, actor.Position);
                 if (positionChanged)
                 {
-                    if (!created && !actorView.LastPosition.LayerId.Equals(actor.Position.LayerId))
+                    var layerChanged = !created && !actorView.LastPosition.LayerId.Equals(actor.Position.LayerId);
+                    if (layerChanged)
                     {
                         actorViewRegistry.SetActorLayer(actorView, actor.Position);
                     }
@@ -94,6 +95,12 @@ namespace DungeonInn.View.Scene.MainScene.World
         void UpdateSingleActorView(Guid actorId, ActorView actorView)
         {
             var isWalking = walkingActorsThisFrame.Contains(actorId);
+            if (actorViewDataById.TryGetValue(actorId, out var viewData) &&
+                TryApplyLoadedVisual(actorId, actorView, viewData))
+            {
+                actorView.SetLocalPosition(ResolveActorLocalPosition(viewData));
+            }
+
             var isVisible = worldCameraController.IsWorldPositionVisible(
                 actorView.transform.position,
                 worldCameraController.ActorViewportMargin);
@@ -106,12 +113,6 @@ namespace DungeonInn.View.Scene.MainScene.World
             var direction = ComputeDirection(actorView.Facing, frameYawDegrees);
             var animState = ResolveAnimationState(actorId, actorView, isWalking, direction);
             actorView.SetAnimationState(animState);
-
-            if (actorViewDataById.TryGetValue(actorId, out var viewData) &&
-                TryApplyLoadedVisual(actorId, actorView, viewData))
-            {
-                actorView.SetLocalPosition(ResolveActorLocalPosition(viewData));
-            }
 
             actorView.Tick(frameDeltaTime, direction);
             actorView.SetBillboardRotation(frameCameraRotation);

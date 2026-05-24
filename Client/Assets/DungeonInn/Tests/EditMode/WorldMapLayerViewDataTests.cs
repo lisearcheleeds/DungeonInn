@@ -1,21 +1,26 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
+using DungeonInn.View.Scene;
+using DungeonInn.View.Scene.Bridge;
 using DungeonInn.View.Scene.MainScene.World;
+using DungeonInn.View.Scene.ModuleScene.GameHUD;
 using LighthouseExtends.Addressable;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -31,7 +36,7 @@ namespace DungeonInn.Tests.EditMode
                 WorldMapCellViewKind.StairUp,
                 WorldMapCellViewKind.StairDown
             };
-            var layerData = new WorldMapLayerViewData(MapLayerId.Ground, "Ground", 2, 2, cellKinds);
+            var layerData = new WorldMapLayerViewData(MapLayerId.Ground, "Ground", 2, 2, 1f, cellKinds);
 
             cellKinds[0] = WorldMapCellViewKind.DungeonBlocked;
 
@@ -193,6 +198,35 @@ namespace DungeonInn.Tests.EditMode
                 Is.GreaterThan(second.Value.ActiveEffects[0].RemainingSeconds));
         }
 
+        [Test]
+        public void ActorStatusViewAppliesHpRatioToHorizontalFillImage()
+        {
+            var viewObject = new GameObject("ActorStatusView", typeof(RectTransform));
+            var fillObject = new GameObject("HpFill", typeof(RectTransform), typeof(Image));
+            fillObject.transform.SetParent(viewObject.transform, false);
+            var view = viewObject.AddComponent<ActorStatusView>();
+            var fillImage = fillObject.GetComponent<Image>();
+            typeof(ActorStatusView)
+                .GetField("hpBarFillImage", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(view, fillImage);
+
+            try
+            {
+                fillImage.type = Image.Type.Simple;
+
+                view.SetHpRatio(0.25f);
+
+                Assert.That(fillImage.type, Is.EqualTo(Image.Type.Filled));
+                Assert.That(fillImage.fillMethod, Is.EqualTo(Image.FillMethod.Horizontal));
+                Assert.That(fillImage.fillOrigin, Is.EqualTo((int)Image.OriginHorizontal.Left));
+                Assert.That(fillImage.fillAmount, Is.EqualTo(0.25f).Within(0.001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(viewObject);
+            }
+        }
+
         [TestCaseSource(nameof(ActorBehaviorTypeCases))]
         public void ActorViewDataStoreMapsBehaviorToViewBehaviorType(
             IActorBehavior behavior,
@@ -267,7 +301,7 @@ namespace DungeonInn.Tests.EditMode
             var registry = new WorldActorViewRegistry(pool, layerRegistry);
             var cameraObject = new GameObject("WorldActorPresenterBillboardCamera");
             var camera = cameraObject.AddComponent<Camera>();
-            var cameraController = new WorldCameraController(CreateWorldCameraSettingsForPresenterTest());
+            var cameraController = new WorldCameraController(new FixedWorldCameraSettingsRepository(CreateWorldCameraSettingsForPresenterTest()));
             cameraController.BindCamera(camera);
             cameraController.UpdateCamera(0f);
             var visualDefinitionLoader = new ActorVisualDefinitionLoader(
@@ -280,7 +314,7 @@ namespace DungeonInn.Tests.EditMode
                         actorPosition,
                         ActorBehaviorType.Adventurer,
                         "adventurer_novice")),
-                new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
+                new LayerPositionViewMapper(new FixedLayerPositionViewSettingsRepository(new LayerPositionViewSettings(-240f, 0f))),
                 registry,
                 visualDefinitionLoader,
                 cameraController,
@@ -316,6 +350,45 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void WorldActorScreenPositionProviderConvertsLayerPositionToScreenPosition()
+        {
+            var layerPosition = new LayerPosition(MapLayerId.Ground, 7.5f, 10.5f);
+            var viewRoot = new WorldViewRoot();
+            var layerRegistry = new MapLayerViewRegistry(viewRoot);
+            var cameraObject = new GameObject("WorldActorScreenPositionProviderCamera");
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.pixelRect = new Rect(0f, 0f, 800f, 600f);
+            var cameraController = new WorldCameraController(new FixedWorldCameraSettingsRepository(CreateWorldCameraSettingsForPresenterTest()));
+            cameraController.BindCamera(camera);
+            cameraController.UpdateCamera(0f);
+            var positionMapper = new LayerPositionViewMapper(new FixedLayerPositionViewSettingsRepository(new LayerPositionViewSettings(-240f, 0f)));
+            var provider = new WorldActorScreenPositionProvider(
+                cameraController,
+                positionMapper,
+                layerRegistry);
+
+            try
+            {
+                var actorRoot = layerRegistry.GetOrCreateActorRoot(layerPosition.LayerId);
+                var expectedWorldPosition = actorRoot.TransformPoint(positionMapper.ToActorLayerLocalPosition(layerPosition));
+
+                var result = provider.TryGetScreenPosition(layerPosition, out var screenPosition);
+                var expected = camera.WorldToScreenPoint(expectedWorldPosition);
+
+                Assert.That(result, Is.True);
+                Assert.That(screenPosition.x, Is.EqualTo(expected.x).Within(0.0001f));
+                Assert.That(screenPosition.y, Is.EqualTo(expected.y).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                layerRegistry.Dispose();
+                viewRoot.Dispose();
+            }
+        }
+
+        [Test]
         public void WorldMapViewSkipsQueuedChunksFromInvalidatedLayerBuild()
         {
             var provider = new VersionedMapViewDataProvider();
@@ -329,12 +402,12 @@ namespace DungeonInn.Tests.EditMode
             var mapView = new WorldMapView(
                 provider,
                 layerRegistry,
-                new MapMeshBuildService(tileConfig, materialSet, DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault()),
+                new MapMeshBuildService(tileConfig, materialSet, new FixedWorldGameSettingsRepository()),
                 new NavMeshBuildService(layerRegistry),
                 new EnvironmentObjectPlacer(
                     new WorldAddressableViewFactory(new ThrowingAssetManager(), new HardcodedMasterRepository()),
                     new HardcodedMasterRepository()),
-                DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
 
             try
             {
@@ -418,36 +491,28 @@ namespace DungeonInn.Tests.EditMode
             store.SyncActor(groundActor);
             store.SyncActor(dungeonActor);
             var worldState = new ActorStatusWorldState(groundActor, dungeonActor);
-            var viewRoot = new WorldViewRoot();
-            var layerRegistry = new MapLayerViewRegistry(viewRoot);
-            var canvasProvider = new WorldHudCanvasProvider();
-            var viewFactory = new WorldAddressableViewFactory(
-                new ThrowingAssetManager(),
-                new HardcodedMasterRepository());
-            var pool = new ActorHUDViewPool(viewFactory, canvasProvider);
+            var hudObject = new GameObject("GameHUDTest");
+            var canvas = hudObject.AddComponent<Canvas>();
+            var gameHUDModuleScene = hudObject.AddComponent<GameHUDModuleScene>();
+            SetHudCanvas(gameHUDModuleScene, canvas);
+            var viewFactory = new GameHUDAddressableViewFactory(new ThrowingAssetManager());
+            var pool = new ActorHUDViewPool(viewFactory, gameHUDModuleScene);
+            var activeLayerProvider = new TestActiveLayerProvider(MapLayerId.Ground.Value);
             var presenter = new WorldActorStatusPresenter(
                 store,
                 new GetActorStatusSummaryQuery(worldState, new HardcodedMasterRepository()),
                 pool,
-                new WorldCameraController(CreateWorldCameraSettings()),
-                new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
-                layerRegistry);
+                new TestActorScreenPositionProvider(),
+                activeLayerProvider);
 
             try
             {
-                LogAssert.Expect(
-                    LogType.Warning,
-                    "[World] WorldUIModuleScene.HUDCanvas was not found. Using a fallback HUD canvas for development/test execution.");
-                canvasProvider.Initialize();
-                layerRegistry.GetOrCreateActorRoot(MapLayerId.Ground);
-                layerRegistry.GetOrCreateActorRoot(MapLayerId.DungeonFloor(1));
-
                 presenter.UpdatePositions();
 
                 Assert.That(pool.TryGetActive(groundActor.Id, out _), Is.True);
                 Assert.That(pool.TryGetActive(dungeonActor.Id, out _), Is.False);
 
-                layerRegistry.SelectNextLayer();
+                activeLayerProvider.ActiveLayerId = MapLayerId.DungeonFloor(1).Value;
                 presenter.UpdatePositions();
 
                 Assert.That(pool.TryGetActive(groundActor.Id, out _), Is.False);
@@ -456,9 +521,7 @@ namespace DungeonInn.Tests.EditMode
             finally
             {
                 pool.Dispose();
-                canvasProvider.Dispose();
-                layerRegistry.Dispose();
-                viewRoot.Dispose();
+                UnityEngine.Object.DestroyImmediate(hudObject);
             }
         }
 
@@ -470,13 +533,13 @@ namespace DungeonInn.Tests.EditMode
             var selectionService = new ActorSelectionService(worldState);
             var viewRoot = new WorldViewRoot();
             var layerRegistry = new MapLayerViewRegistry(viewRoot);
-            var cameraController = new WorldCameraController(CreateWorldCameraSettings());
+            var cameraController = new WorldCameraController(new FixedWorldCameraSettingsRepository(CreateWorldCameraSettings()));
             var followController = new WorldActorCameraFollowController(
                 selectionService,
                 cameraController,
-                CreateWorldCameraSettings(),
+                new FixedWorldCameraSettingsRepository(CreateWorldCameraSettings()),
                 worldState,
-                new LayerPositionViewMapper(new LayerPositionViewSettings(-240f, 0f)),
+                new LayerPositionViewMapper(new FixedLayerPositionViewSettingsRepository(new LayerPositionViewSettings(-240f, 0f))),
                 layerRegistry);
 
             try
@@ -600,6 +663,7 @@ namespace DungeonInn.Tests.EditMode
                 $"Layer{layerId.Value}",
                 2,
                 2,
+                1f,
                 cellKinds);
         }
 
@@ -644,6 +708,14 @@ namespace DungeonInn.Tests.EditMode
                 actorSelectionZoomRatio: 0.2f);
         }
 
+        static void SetHudCanvas(GameHUDModuleScene moduleScene, Canvas canvas)
+        {
+            var field = typeof(GameHUDModuleScene).GetField(
+                "hudCanvas",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            field.SetValue(moduleScene, canvas);
+        }
+
         sealed class TestWorldState : IGameWorldStateReader
         {
             public TestWorldState(GroundMap groundMap, Dungeon dungeon)
@@ -669,7 +741,7 @@ namespace DungeonInn.Tests.EditMode
             }
         }
 
-        sealed class ActorStatusWorldState : IGameWorldStateReader
+        sealed class ActorStatusWorldState : IGameWorldStateReader, IActorSelectionCandidateProvider
         {
             readonly IReadOnlyList<Actor> actors;
             readonly Dictionary<Guid, Actor> actorsById = new();
@@ -700,6 +772,24 @@ namespace DungeonInn.Tests.EditMode
             {
                 return actorsById.TryGetValue(actorId, out var actor) ? actor : null;
             }
+
+            public void CopySelectionCandidatesTo(List<ActorViewData> results)
+            {
+                results.Clear();
+                foreach (var actor in actors)
+                {
+                    results.Add(new ActorViewData(actor.Id, actor.Position, ActorBehaviorType.None, "dummy"));
+                }
+            }
+
+            public void CopyActorIdsTo(List<Guid> results)
+            {
+                results.Clear();
+                foreach (var id in actorsById.Keys)
+                {
+                    results.Add(id);
+                }
+            }
         }
 
         sealed class VersionedMapViewDataProvider : IWorldMapViewDataProvider
@@ -724,6 +814,7 @@ namespace DungeonInn.Tests.EditMode
                     $"GroundV{version}",
                     32,
                     16,
+                    1f,
                     cells);
             }
 
@@ -758,6 +849,25 @@ namespace DungeonInn.Tests.EditMode
             }
         }
 
+        sealed class TestActorScreenPositionProvider : IActorScreenPositionProvider
+        {
+            public bool TryGetScreenPosition(LayerPosition position, out Vector2 screenPosition)
+            {
+                screenPosition = new Vector2(position.X, position.Z);
+                return true;
+            }
+        }
+
+        sealed class TestActiveLayerProvider : IActiveLayerProvider
+        {
+            public TestActiveLayerProvider(int? activeLayerId)
+            {
+                ActiveLayerId = activeLayerId;
+            }
+
+            public int? ActiveLayerId { get; set; }
+        }
+
         sealed class ThrowingAssetManager : IAssetManager
         {
             public IAssetScope CreateScope()
@@ -771,3 +881,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

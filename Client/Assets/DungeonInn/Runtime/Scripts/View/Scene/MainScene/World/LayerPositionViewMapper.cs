@@ -8,12 +8,12 @@ namespace DungeonInn.View.Scene.MainScene.World
 {
     public sealed class LayerPositionViewMapper
     {
-        readonly LayerPositionViewSettings settings;
+        readonly ILayerPositionViewSettingsRepository settingsRepository;
 
         [Inject]
-        public LayerPositionViewMapper(LayerPositionViewSettings settings)
+        public LayerPositionViewMapper(ILayerPositionViewSettingsRepository settingsRepository)
         {
-            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            this.settingsRepository = settingsRepository ?? throw new ArgumentNullException(nameof(settingsRepository));
         }
 
         public Vector3 ToUnityPosition(LayerPosition position)
@@ -23,7 +23,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public Vector3 ToActorUnityPosition(LayerPosition position)
         {
-            return ToUnityPosition(position) + Vector3.up * settings.ActorHeightOffset;
+            return ToUnityPosition(position) + Vector3.up * settingsRepository.Get().ActorHeightOffset;
         }
 
         public Vector3 ToLayerLocalPosition(LayerPosition position)
@@ -33,12 +33,12 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         public Vector3 ToActorLayerLocalPosition(LayerPosition position)
         {
-            return ToLayerLocalPosition(position) + Vector3.up * settings.ActorHeightOffset;
+            return ToLayerLocalPosition(position) + Vector3.up * settingsRepository.Get().ActorHeightOffset;
         }
 
         public float ResolveLayerY(MapLayerId layerId)
         {
-            return layerId.Value * settings.LayerHeightOffset;
+            return layerId.Value * settingsRepository.Get().LayerHeightOffset;
         }
     }
 }

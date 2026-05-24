@@ -15,7 +15,7 @@ namespace DungeonInn.Application.Combat
         readonly ActorSpatialIndexService actorSpatialIndexService;
         readonly List<Actor> candidates = new();
         readonly Dictionary<ActorPairKey, int> successfulLineOfSightTicks = new();
-        readonly CombatBalanceSettings combatBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         int lineOfSightCacheTick = -1;
         int lineOfSightCacheSpatialIndexRevision = -1;
 
@@ -23,13 +23,13 @@ namespace DungeonInn.Application.Combat
         public CombatEncounterTargetResolver(
             IGameClock gameClock,
             ActorSpatialIndexService actorSpatialIndexService,
-            CombatBalanceSettings combatBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.actorSpatialIndexService = actorSpatialIndexService
                 ?? throw new ArgumentNullException(nameof(actorSpatialIndexService));
-            this.combatBalanceSettings = combatBalanceSettings
-                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public Actor FindNearestHostile(Dungeon dungeon, Actor actor)
@@ -45,6 +45,7 @@ namespace DungeonInn.Application.Combat
             }
 
             Actor nearest = null;
+            var combatBalanceSettings = worldGameSettingsRepository.GetCombatBalanceSettings();
             var nearestDistSq = combatBalanceSettings.EncounterRangeMeters *
                 combatBalanceSettings.EncounterRangeMeters;
             var neighborCellRadius = CalculateNeighborCellRadius();
@@ -92,6 +93,7 @@ namespace DungeonInn.Application.Combat
 
         int CalculateNeighborCellRadius()
         {
+            var combatBalanceSettings = worldGameSettingsRepository.GetCombatBalanceSettings();
             return Math.Max(
                 1,
                 (int)Math.Ceiling(

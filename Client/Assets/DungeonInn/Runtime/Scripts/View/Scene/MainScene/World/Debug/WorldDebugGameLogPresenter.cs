@@ -1,17 +1,15 @@
 #if DEBUG
-using DungeonInn.Application.World;
 using System;
+using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
-using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Actors.Profiles;
+using DungeonInn.Application.World;
 using R3;
-using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
-namespace DungeonInn.View.Scene.MainScene.World
+namespace DungeonInn.View.Scene.MainScene.World.Debug
 {
     /// <summary>
     /// Debug diagnostics only. Do not use for runtime UI.
@@ -23,7 +21,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly IGameWorldStateReader worldState;
         readonly AdventurerBattleRecordService battleRecordService;
         readonly IActorProfileRegistry profileRegistry;
-        readonly InnBalanceSettings innBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         DisposableBag bag;
 
         [Inject]
@@ -32,18 +30,19 @@ namespace DungeonInn.View.Scene.MainScene.World
             IGameWorldStateReader worldState,
             AdventurerBattleRecordService battleRecordService,
             IActorProfileRegistry profileRegistry,
-            InnBalanceSettings innBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.eventSubscriber = eventSubscriber ?? throw new ArgumentNullException(nameof(eventSubscriber));
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
             this.battleRecordService = battleRecordService ?? throw new ArgumentNullException(nameof(battleRecordService));
             this.profileRegistry = profileRegistry ?? throw new ArgumentNullException(nameof(profileRegistry));
-            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public void Initialize()
         {
-            if (!Debug.isDebugBuild)
+            if (!UnityEngine.Debug.isDebugBuild)
             {
                 return;
             }
@@ -172,27 +171,27 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void OnActorSpawned(ActorSpawned gameEvent)
         {
-            Debug.Log($"[Event] {GetName(gameEvent.ActorId)} が現れた");
+            UnityEngine.Debug.Log($"[Event] {GetName(gameEvent.ActorId)} が現れた");
         }
 
         void OnActorEnteredDungeon(ActorEnteredDungeon gameEvent)
         {
-            Debug.Log($"[Event] {GetName(gameEvent.ActorId)} がダンジョン {gameEvent.FloorIndex} 階に入った");
+            UnityEngine.Debug.Log($"[Event] {GetName(gameEvent.ActorId)} がダンジョン {gameEvent.FloorIndex} 階に入った");
         }
 
         void OnActorExitedDungeon(ActorExitedDungeon gameEvent)
         {
-            Debug.Log($"[Event] {GetName(gameEvent.ActorId)} がダンジョンから帰還した");
+            UnityEngine.Debug.Log($"[Event] {GetName(gameEvent.ActorId)} がダンジョンから帰還した");
         }
 
         void OnActorStartedReturning(ActorStartedReturning gameEvent)
         {
-            Debug.Log($"[Actor] {GetName(gameEvent.ActorId)} は帰還を始めた");
+            UnityEngine.Debug.Log($"[Actor] {GetName(gameEvent.ActorId)} は帰還を始めた");
         }
 
         void OnActorGoalCompleted(ActorGoalCompleted gameEvent)
         {
-            Debug.Log(
+            UnityEngine.Debug.Log(
                 $"[Goal] {GetName(gameEvent.ActorId)} は目標を達成した: " +
                 $"{gameEvent.GoalType} {gameEvent.ProgressCount}/{gameEvent.TargetCount}");
         }
@@ -208,64 +207,64 @@ namespace DungeonInn.View.Scene.MainScene.World
             var activeReservations = worldState.Guild.CountActiveInnReservations(gameEvent.InnFacilityId);
             if (facility.Capacity <= activeReservations)
             {
-                Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn vacancy (all {facility.Capacity} rooms occupied)");
+                UnityEngine.Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn vacancy (all {facility.Capacity} rooms occupied)");
                 return;
             }
 
             var actor = worldState.FindActor(gameEvent.ActorId);
             var currentGold = actor == null ? 0 : actor.Inventory.Gold;
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn fee ({currentGold}/{innBalanceSettings.FeePerStay}G)");
+            UnityEngine.Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} waiting for inn fee ({currentGold}/{worldGameSettingsRepository.GetInnBalanceSettings().FeePerStay}G)");
         }
 
         void OnActorReservedInn(ActorReservedInn gameEvent)
         {
             var facility = worldState.Guild.GetFacility(gameEvent.InnFacilityId);
             var activeReservations = worldState.Guild.CountActiveInnReservations(gameEvent.InnFacilityId);
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} reserved inn room ({activeReservations}/{facility.Capacity})");
+            UnityEngine.Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} reserved inn room ({activeReservations}/{facility.Capacity})");
         }
 
         void OnActorDeparted(ActorDeparted gameEvent)
         {
-            Debug.Log($"[Guild] {GetName(gameEvent.ActorId)} departed after waiting {gameEvent.WaitedDays} days for inn");
+            UnityEngine.Debug.Log($"[Guild] {GetName(gameEvent.ActorId)} departed after waiting {gameEvent.WaitedDays} days for inn");
         }
 
         void OnActorFullyRecovered(ActorFullyRecovered gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} は全回復した");
+            UnityEngine.Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} は全回復した");
         }
 
         void OnEncounterStarted(CombatEncounterStarted gameEvent)
         {
-            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} は {GetName(gameEvent.TargetActorId)} と遭遇した");
+            UnityEngine.Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} は {GetName(gameEvent.TargetActorId)} と遭遇した");
         }
 
         void OnAttackOccurred(CombatAttackOccurred gameEvent)
         {
-            Debug.Log(
+            UnityEngine.Debug.Log(
                 $"[Combat] {GetName(gameEvent.AttackerActorId)} は {GetName(gameEvent.TargetActorId)} に攻撃！ " +
                 $"ダメージ: {gameEvent.Damage} (HP {gameEvent.TargetRemainingHp})");
         }
 
         void OnProjectileFired(ProjectileFired gameEvent)
         {
-            Debug.Log($"[Combat] {GetName(gameEvent.AttackerActorId)} fired projectile at {GetName(gameEvent.TargetActorId)}");
+            UnityEngine.Debug.Log($"[Combat] {GetName(gameEvent.AttackerActorId)} fired projectile at {GetName(gameEvent.TargetActorId)}");
         }
 
         void OnProjectileHit(ProjectileHit gameEvent)
         {
-            Debug.Log($"[Combat] Projectile hit {GetName(gameEvent.TargetActorId)} for {gameEvent.Damage}");
+            UnityEngine.Debug.Log($"[Combat] Projectile hit {GetName(gameEvent.TargetActorId)} for {gameEvent.Damage}");
         }
 
         void OnAreaEffectCreated(AreaEffectCreated gameEvent)
         {
-            Debug.Log(
+            UnityEngine.Debug.Log(
                 $"[Combat] {GetName(gameEvent.AttackerActorId)} created area effect at " +
                 $"({gameEvent.CenterPosition.X:0.0}, {gameEvent.CenterPosition.Z:0.0}) radius {gameEvent.RadiusMeters:0.0}m");
         }
 
         void OnAreaEffectHit(AreaEffectHit gameEvent)
         {
-            Debug.Log($"[Combat] Area effect hit {GetName(gameEvent.TargetActorId)} for {gameEvent.Damage}");
+            UnityEngine.Debug.Log($"[Combat] Area effect hit {GetName(gameEvent.TargetActorId)} for {gameEvent.Damage}");
         }
 
         void OnActorDefeated(ActorDefeated gameEvent)
@@ -273,7 +272,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             var killerText = gameEvent.KillerActorId.HasValue
                 ? $" by {GetName(gameEvent.KillerActorId.Value)}"
                 : string.Empty;
-            Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} は {killerText} に倒された ({gameEvent.Cause})");
+            UnityEngine.Debug.Log($"[Combat] {GetName(gameEvent.ActorId)} は {killerText} に倒された ({gameEvent.Cause})");
         }
 
         void OnEncounterEnded(CombatEncounterEnded gameEvent)
@@ -283,7 +282,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            Debug.Log(
+            UnityEngine.Debug.Log(
                 $"[Record] {GetName(gameEvent.ActorId)}: は戦闘を終了した" +
                 $"{record.TotalCombats} combats, " +
                 $"{record.TotalDamageDealt} total damage dealt");
@@ -291,34 +290,34 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void OnExperienceGranted(ExperienceGranted gameEvent)
         {
-            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} は {gameEvent.GainedXp} EXP を得た (total: {gameEvent.TotalXp})");
+            UnityEngine.Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} は {gameEvent.GainedXp} EXP を得た (total: {gameEvent.TotalXp})");
         }
 
         void OnActorLeveledUp(ActorLeveledUp gameEvent)
         {
-            Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} LEVEL UP! Lv.{gameEvent.PreviousLevel} → Lv.{gameEvent.NewLevel}");
+            UnityEngine.Debug.Log($"[Growth] {GetName(gameEvent.ActorId)} LEVEL UP! Lv.{gameEvent.PreviousLevel} → Lv.{gameEvent.NewLevel}");
         }
 
         void OnEquipmentChanged(EquipmentChanged gameEvent)
         {
             if (gameEvent.PreviousItemId.HasValue)
             {
-                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} はアイテムを装備した item#{gameEvent.NewItemId} at {gameEvent.Slot} (入れ替え item#{gameEvent.PreviousItemId})");
+                UnityEngine.Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} はアイテムを装備した item#{gameEvent.NewItemId} at {gameEvent.Slot} (入れ替え item#{gameEvent.PreviousItemId})");
             }
             else
             {
-                Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} はアイテムを装備した item#{gameEvent.NewItemId} at {gameEvent.Slot}");
+                UnityEngine.Debug.Log($"[Equip] {GetName(gameEvent.ActorId)} はアイテムを装備した item#{gameEvent.NewItemId} at {gameEvent.Slot}");
             }
         }
 
         void OnItemSold(ItemSold gameEvent)
         {
-            Debug.Log($"[Shop] {GetName(gameEvent.ActorId)} はアイテムを売却した item#{gameEvent.Stack.ItemId} x{gameEvent.Stack.Count} for {gameEvent.TotalPrice}G (wallet: {gameEvent.ActorGold}G)");
+            UnityEngine.Debug.Log($"[Shop] {GetName(gameEvent.ActorId)} はアイテムを売却した item#{gameEvent.Stack.ItemId} x{gameEvent.Stack.Count} for {gameEvent.TotalPrice}G (wallet: {gameEvent.ActorGold}G)");
         }
 
         void OnItemDropped(ItemDropped gameEvent)
         {
-            Debug.Log($"[Drop] {GetName(gameEvent.ActorId)} はアイテムを落とした item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count}");
+            UnityEngine.Debug.Log($"[Drop] {GetName(gameEvent.ActorId)} はアイテムを落とした item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count}");
         }
 
         void OnItemPickedUp(ItemPickedUp gameEvent)
@@ -327,27 +326,27 @@ namespace DungeonInn.View.Scene.MainScene.World
             {
                 var actor = worldState.FindActor(gameEvent.ActorId);
                 var walletText = actor == null ? "unknown" : $"{actor.Inventory.Gold}G";
-                Debug.Log($"[Item] {GetName(gameEvent.ActorId)} は {gameEvent.ItemInstance.Stack.Count}G を拾った (wallet: {walletText})");
+                UnityEngine.Debug.Log($"[Item] {GetName(gameEvent.ActorId)} は {gameEvent.ItemInstance.Stack.Count}G を拾った (wallet: {walletText})");
                 return;
             }
 
-            Debug.Log($"[Item] {GetName(gameEvent.ActorId)} は item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count} を拾った");
+            UnityEngine.Debug.Log($"[Item] {GetName(gameEvent.ActorId)} は item#{gameEvent.ItemInstance.Stack.ItemId} x{gameEvent.ItemInstance.Stack.Count} を拾った");
         }
 
         void OnInnFeeCharged(InnFeeCharged gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} paid {gameEvent.FeeAmount}G for inn room (remaining: {gameEvent.ActorRemainingGold}G)");
-            Debug.Log($"[Guild] Treasury +{gameEvent.FeeAmount}G (total: {gameEvent.GuildGold}G)");
+            UnityEngine.Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} paid {gameEvent.FeeAmount}G for inn room (remaining: {gameEvent.ActorRemainingGold}G)");
+            UnityEngine.Debug.Log($"[Guild] Treasury +{gameEvent.FeeAmount}G (total: {gameEvent.GuildGold}G)");
         }
 
         void OnInnSatisfactionChanged(InnSatisfactionChanged gameEvent)
         {
-            Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} satisfaction changed {gameEvent.Delta:+#;-#;0} ({gameEvent.Reason})");
+            UnityEngine.Debug.Log($"[Inn] {GetName(gameEvent.ActorId)} satisfaction changed {gameEvent.Delta:+#;-#;0} ({gameEvent.Reason})");
         }
 
         void OnGuildSupplyReplenished(GuildSupplyReplenished gameEvent)
         {
-            Debug.Log(
+            UnityEngine.Debug.Log(
                 $"[Guild] Replenished item#{gameEvent.ItemId} x{gameEvent.Count} " +
                 $"for {gameEvent.Cost}G (treasury: {gameEvent.RemainingGold}G)");
         }
@@ -355,7 +354,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         void OnDailyInnReportGenerated(DailyInnReportGenerated gameEvent)
         {
             var report = gameEvent.Report;
-            Debug.Log(
+            UnityEngine.Debug.Log(
                 $"[Daily] Day={report.Day} Guests={report.Guests} " +
                 $"Demand={report.Demand} Rejected={report.RejectedGuests} " +
                 $"Occupancy={report.OccupiedRooms}/{report.RoomCapacity} ({report.OccupancyPercent}%) " +
@@ -366,7 +365,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         void OnActorAiDecisionRecorded(ActorAiDecisionRecorded gameEvent)
         {
-            Debug.Log($"[AI] {GetName(gameEvent.ActorId)} selected {gameEvent.DecisionType}: {FormatAiReason(gameEvent)}");
+            UnityEngine.Debug.Log($"[AI] {GetName(gameEvent.ActorId)} selected {gameEvent.DecisionType}: {FormatAiReason(gameEvent)}");
         }
 
         static string FormatAiReason(ActorAiDecisionRecorded gameEvent)

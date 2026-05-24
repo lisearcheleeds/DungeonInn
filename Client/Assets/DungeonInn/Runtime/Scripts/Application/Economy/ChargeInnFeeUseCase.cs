@@ -14,15 +14,16 @@ namespace DungeonInn.Application.Economy
     public sealed class ChargeInnFeeUseCase
     {
         readonly IEventPublisher eventPublisher;
-        readonly InnBalanceSettings innBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public ChargeInnFeeUseCase(
             IEventPublisher eventPublisher,
-            InnBalanceSettings innBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
-            this.innBalanceSettings = innBalanceSettings ?? throw new ArgumentNullException(nameof(innBalanceSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public bool Execute(Actor actor, AdventurerGuild guild)
@@ -62,6 +63,7 @@ namespace DungeonInn.Application.Economy
                 throw new InvalidOperationException("Facility is not inn.");
             }
 
+            var innBalanceSettings = worldGameSettingsRepository.GetInnBalanceSettings();
             var fee = innBalanceSettings.FeePerStay;
 
             if (!actor.TrySpendGold(fee))

@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
+using DungeonInn.GameSession.Settings;
 using DungeonInn.View.Scene.MainScene.World;
 using LighthouseExtends.Addressable;
 using NUnit.Framework;
@@ -109,7 +110,10 @@ namespace DungeonInn.Tests.EditMode
             var spawnBalanceSettings = gameSettingsSo.ToSpawnBalanceSettings();
             var returnPolicySettings = gameSettingsSo.ToAdventurerReturnPolicySettings();
             var combatBalanceSettings = gameSettingsSo.ToCombatBalanceSettings();
-            var worldMapViewSettings = gameSettingsSo.ToWorldMapViewSettings();
+            var worldMapViewSettings = new WorldMapViewSettings(
+                gameSettingsSo.MapChunkTileSize,
+                gameSettingsSo.MapChunkBuildsPerFrame,
+                gameSettingsSo.MapTileHeightMeters);
 
             Assert.That(layerSettings.LayerHeightOffset, Is.EqualTo(-240f));
             Assert.That(layerSettings.ActorHeightOffset, Is.EqualTo(0f));
@@ -152,7 +156,7 @@ namespace DungeonInn.Tests.EditMode
                 maxOrthographicSize: 40f,
                 actorViewportMargin: 0.25f,
                 actorSelectionZoomRatio: 0.2f);
-            var controller = new WorldCameraController(settings);
+            var controller = new WorldCameraController(new FixedWorldCameraSettingsRepository(settings));
 
             try
             {
@@ -198,7 +202,7 @@ namespace DungeonInn.Tests.EditMode
                 maxOrthographicSize: 10f,
                 actorViewportMargin: 0.1f,
                 actorSelectionZoomRatio: 0.2f);
-            var controller = new WorldCameraController(settings);
+            var controller = new WorldCameraController(new FixedWorldCameraSettingsRepository(settings));
 
             try
             {
@@ -233,7 +237,7 @@ namespace DungeonInn.Tests.EditMode
                 maxOrthographicSize: 20f,
                 actorViewportMargin: 0.1f,
                 actorSelectionZoomRatio: 0.2f);
-            var controller = new WorldCameraController(settings);
+            var controller = new WorldCameraController(new FixedWorldCameraSettingsRepository(settings));
 
             try
             {
@@ -272,7 +276,7 @@ namespace DungeonInn.Tests.EditMode
                 maxOrthographicSize: 20f,
                 actorViewportMargin: 0.1f,
                 actorSelectionZoomRatio: 0.2f);
-            var controller = new WorldCameraController(settings);
+            var controller = new WorldCameraController(new FixedWorldCameraSettingsRepository(settings));
 
             try
             {
@@ -600,7 +604,7 @@ namespace DungeonInn.Tests.EditMode
                 new VisualConfigSettings(null, null));
             var materialSet = new MapMaterialSet(loader);
             var tileConfig = new MapTileVisualConfig(materialSet);
-            var service = new MapMeshBuildService(tileConfig, materialSet, DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault());
+            var service = new MapMeshBuildService(tileConfig, materialSet, new FixedWorldGameSettingsRepository());
 
             LogAssert.Expect(
                 LogType.Warning,
@@ -636,7 +640,7 @@ namespace DungeonInn.Tests.EditMode
                 new VisualConfigSettings(null, null));
             var materialSet = new MapMaterialSet(loader);
             var tileConfig = new MapTileVisualConfig(materialSet);
-            var service = new MapMeshBuildService(tileConfig, materialSet, DungeonInn.View.Scene.MainScene.World.WorldMapViewSettings.CreateDefault());
+            var service = new MapMeshBuildService(tileConfig, materialSet, new FixedWorldGameSettingsRepository());
 
             LogAssert.Expect(
                 LogType.Warning,
@@ -684,3 +688,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

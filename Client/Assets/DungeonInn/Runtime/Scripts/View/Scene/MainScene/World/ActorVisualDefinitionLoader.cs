@@ -117,7 +117,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 }
 
                 failedLoads.Add(key);
-                Debug.LogWarning(
+                UnityEngine.Debug.LogWarning(
                     $"[ActorVisualDefinitionLoader] Failed to load actor visual definition. VisualId={key.VisualId} SkinId={key.SkinId} Error={exception.Message}");
                 return null;
             }

@@ -35,7 +35,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void SyncActorAndRemoveActorMaintainNearbyCandidates()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var actor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f));
             var results = new List<Actor>();
 
@@ -65,7 +65,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void GroundActorIsMarkedDirtyAndRemovedFromIndex()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var actor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f));
             var results = new List<Actor>();
             var dirtyActorIds = new List<Guid>();
@@ -85,14 +85,14 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void DetectCombatEncounterProcessesDirtyActorsOnly()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var eventBus = new CollectingEventBus();
             var combatService = new ActorCombatService();
             var worldState = new TestWorldState(CreateDungeon());
             var useCase = new DetectCombatEncounterUseCase(
                 combatService,
                 spatialIndex,
-                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, new FixedWorldGameSettingsRepository()),
                 eventBus);
 
             var actor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f));
@@ -117,14 +117,14 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void DetectCombatEncounterClearsAttackersWhenTargetMovesToGround()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var eventBus = new CollectingEventBus();
             var combatService = new ActorCombatService();
             var worldState = new TestWorldState(CreateDungeon());
             var useCase = new DetectCombatEncounterUseCase(
                 combatService,
                 spatialIndex,
-                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, new FixedWorldGameSettingsRepository()),
                 eventBus);
 
             var actor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f));
@@ -146,14 +146,14 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void DetectCombatEncounterReevaluatesAttackersWhenTargetMovesOutOfRange()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var eventBus = new CollectingEventBus();
             var combatService = new ActorCombatService();
             var worldState = new TestWorldState(CreateDungeon());
             var useCase = new DetectCombatEncounterUseCase(
                 combatService,
                 spatialIndex,
-                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, new FixedWorldGameSettingsRepository()),
                 eventBus);
 
             var actor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f));
@@ -175,14 +175,14 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void DetectCombatEncounterInvalidatesLineOfSightCacheWhenTargetMoves()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var eventBus = new CollectingEventBus();
             var combatService = new ActorCombatService();
             var worldState = new TestWorldState(CreateDungeonWithWall(new GridPosition(6, 5)));
             var useCase = new DetectCombatEncounterUseCase(
                 combatService,
                 spatialIndex,
-                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new CombatEncounterTargetResolver(new StubGameClock(), spatialIndex, new FixedWorldGameSettingsRepository()),
                 eventBus);
 
             var actor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f));
@@ -323,3 +323,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

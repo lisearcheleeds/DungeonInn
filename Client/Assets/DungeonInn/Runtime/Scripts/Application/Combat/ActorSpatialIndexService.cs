@@ -12,16 +12,16 @@ namespace DungeonInn.Application.Combat
         readonly Dictionary<SpatialCellKey, List<Actor>> actorsByCell = new();
         readonly Dictionary<Guid, SpatialCellKey> cellByActorId = new();
         readonly HashSet<Guid> dirtyActorIds = new();
-        readonly CombatBalanceSettings combatBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         public int DirtyActorCount => dirtyActorIds.Count;
         public int Revision { get; private set; }
 
         [Inject]
-        public ActorSpatialIndexService(CombatBalanceSettings combatBalanceSettings)
+        public ActorSpatialIndexService(IWorldGameSettingsRepository worldGameSettingsRepository)
         {
-            this.combatBalanceSettings = combatBalanceSettings
-                ?? throw new ArgumentNullException(nameof(combatBalanceSettings));
+            this.worldGameSettingsRepository = worldGameSettingsRepository
+                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public void SyncActor(Actor actor)
@@ -40,6 +40,7 @@ namespace DungeonInn.Application.Combat
                 return;
             }
 
+            var combatBalanceSettings = worldGameSettingsRepository.GetCombatBalanceSettings();
             var nextCell = SpatialCellKey.From(actor.Position, combatBalanceSettings.SpatialIndexCellSizeMeters);
             if (cellByActorId.TryGetValue(actor.Id, out var currentCell) && currentCell.Equals(nextCell))
             {
@@ -80,6 +81,7 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentOutOfRangeException(nameof(neighborCellRadius));
             }
 
+            var combatBalanceSettings = worldGameSettingsRepository.GetCombatBalanceSettings();
             var centerCell = SpatialCellKey.From(position, combatBalanceSettings.SpatialIndexCellSizeMeters);
             for (var z = centerCell.Z - neighborCellRadius; z <= centerCell.Z + neighborCellRadius; z++)
             {

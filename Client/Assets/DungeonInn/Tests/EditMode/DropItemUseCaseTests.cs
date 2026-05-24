@@ -136,11 +136,11 @@ namespace DungeonInn.Tests.EditMode
             var random = new FixedGameRandom(fixedRoll);
             var useCase = new DropItemUseCase(random, eventBus);
             var worldState = new GameWorldState(
-                new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
             return (useCase, worldState, eventBus, random);
         }
 
@@ -188,6 +188,7 @@ namespace DungeonInn.Tests.EditMode
         {
             readonly int value;
             public FixedGameRandom(int value) => this.value = value;
+            public void Initialize(int seed) { }
             public int Next() => value;
             public int Next(int maxExclusive) => Math.Min(value, maxExclusive - 1);
             public int Next(int minInclusive, int maxExclusive) => Math.Clamp(value, minInclusive, maxExclusive - 1);
@@ -202,4 +203,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
 

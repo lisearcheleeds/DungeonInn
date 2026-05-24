@@ -44,12 +44,12 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void InstantAreaHitsEnemiesInRadiusAndIgnoresAllies()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var worldState = CreateWorldState(spatialIndex);
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
             var useCase = new AdvanceAreaEffectUseCase(
-                new AttackAreaTargetResolver(spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new AttackAreaTargetResolver(spatialIndex, new FixedWorldGameSettingsRepository()),
                 CreateCombatEffectExecutor(combatService, eventBus),
                 CreateActorDefeatOrchestrator(combatService, eventBus),
                 eventBus);
@@ -102,8 +102,8 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void InstantAreaUsesSpatialIndexCandidates()
         {
-            var spatialIndex = new ActorSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
-            var resolver = new AttackAreaTargetResolver(spatialIndex, DungeonInn.Application.World.CombatBalanceSettings.CreateDefault());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
+            var resolver = new AttackAreaTargetResolver(spatialIndex, new FixedWorldGameSettingsRepository());
             var attacker = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var indexedEnemy = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             var unindexedEnemy = CreateActor(2, new LayerPosition(MapLayerId.DungeonFloor(1), 7f, 5f), 50);
@@ -182,6 +182,7 @@ namespace DungeonInn.Tests.EditMode
 
         sealed class ZeroGameRandom : IGameRandom
         {
+            public void Initialize(int seed) { }
             public int Next() => 0;
             public int Next(int maxExclusive) => 0;
             public int Next(int minInclusive, int maxExclusive) => minInclusive;
@@ -218,10 +219,10 @@ namespace DungeonInn.Tests.EditMode
         {
             return new GameWorldState(
                 actorSpatialIndexService,
-                new ItemSpatialIndexService(DungeonInn.Application.World.CombatBalanceSettings.CreateDefault()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 ActorViewDataStoreTestFactory.Create(),
-                DungeonInn.Application.World.InitialWorldSettings.CreateDefault());
+                new FixedWorldGameSettingsRepository());
         }
 
         static Actor CreateActor(int factionId, LayerPosition position, int hp)
@@ -245,3 +246,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

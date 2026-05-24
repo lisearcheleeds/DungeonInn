@@ -20,6 +20,9 @@
 - [ ] 「テストしやすい」「差分が小さい」だけを理由に、本来の責務と異なる場所へ値・Prefab・Factory・設定を置いている
 - [ ] 既存 guideline に判定基準があるのに、「最小差分」を理由に古い命名・古い配置・互換用 API を残している
 - [ ] 1 フォルダ直下のクラス数が 40 個以上あるのに、責務別のサブフォルダ分割を検討・実施していない
+- [ ] System / bootstrap 用フォルダに、Content / GameSession / MainScene 固有の実装が置かれている
+- [ ] 入口画面が存在するのに、Launcher / bootstrap が実ゲームシーンへ直接遷移している
+- [ ] 別 Scene / 別 LifetimeScope が所有する Canvas / View / Presenter / Pool / scene-owned component を直接参照・操作している
 
 ---
 
@@ -32,7 +35,78 @@
 1. その値や参照は、コンテンツ定義か、ゲーム全体設定か、コード不変条件かを分類する
 2. 変更頻度、編集者、寿命、参照方向、実行時状態の有無を確認する
 3. Domain / Application / View / Infrastructure の依存方向に反しない置き場所を選ぶ
-4. 既存コードの都合で暫定配置する場合は、完了条件と撤去条件を明記する
+4. System / bootstrap と Content / GameSession のどちらが所有者かを確認する
+5. 既存コードの都合で暫定配置する場合は、完了条件と撤去条件を明記する
+
+---
+
+## System と Content / GameSession の分離
+
+`Core`、`System`、`Bootstrap`、`Product` などの名前を持つ領域は、アプリケーションを起動・維持する基盤のための場所である。
+ここにゲームセッションや具体コンテンツの実装を置くと、仮の遷移・仮の初期化が恒久設計に見え、依存方向が分かりにくくなる。
+
+### 分類
+
+| 分類 | 例 | 所有するもの |
+|---|---|---|
+| System / Bootstrap | Root, Product, Launcher, SceneGroupProvider | アプリ全体の起動、再起動、共通 service、最初の入口画面への遷移 |
+| GameSession | MainGame, GameSession, RunSession | NewGame / Continue / Load で生成され、セッション終了で破棄される state / Application service |
+| Content MainScene | World, Battle, Dungeon, Inn | 開始済みセッションを表示・操作する scene object / presenter / scene adapter |
+| Module / UI | HUD, Popup, ScreenStack, Audio | MainScene と分離して管理する補助表示・入力・UI |
+
+### 移動判断
+
+- Product 起動前から必要なものは System / Bootstrap に置く。
+- NewGame / Continue / Load 後に初めて必要になるものは GameSession に置く。
+- 特定 MainScene の GameObject、Camera、Input、View adapter はその MainScene 配下に置く。
+- HUD / Popup / EventLog / Minimap など Canvas や補助 UI は Module / UI 配下に置く。
+- `WorldCameraSettingsRepository` のような View 固有設定の repository は System ではなく、その View / MainScene の設定領域に置く。
+- `WorldGameSettingsRepository` のようなゲームセッション設定の repository は System ではなく GameSession 側に置く。
+
+### 禁止
+
+- System / Bootstrap フォルダに `World` / `Battle` / `Dungeon` / `HUD` などコンテンツ固有名の実装を置く。
+- Launcher から実ゲームシーンへ直接遷移する仮実装を、入口画面実装後も残す。
+- 「ProductLifetimeScope から登録しているから」という理由で、GameSession / Content 固有クラスを System 配下に置く。
+- System 層の controller が、GameSession scope 生成と Content scene 遷移の両方を恒久責務として持つ。
+
+### レビュー観点
+
+- そのクラスは Product 起動だけで必要か、ゲームセッション開始後に必要か
+- そのクラスの名前に具体コンテンツ名が含まれていないか
+- 登録される LifetimeScope とファイル配置の所有者が一致しているか
+- System 層から Content 層への参照が「入口画面への遷移」以上に広がっていないか
+- 暫定配置なら TODO に削除条件と移動先が書かれているか
+
+---
+
+## Scene / LifetimeScope 境界を跨ぐ直接参照の撤去
+
+Scene / ModuleScene / LifetimeScope の分離は、所有者と寿命を分けるために行う。
+分離後に別 Scene の Canvas / View / Presenter / Pool / scene-owned component を直接参照している場合、見た目だけ分離して責務は分離できていない。
+
+### 撤去対象
+
+- MainScene から ModuleScene の Canvas / View / Presenter / Pool を参照している
+- ModuleScene から MainScene の concrete controller / registry / camera / scene object を参照している
+- 親 scope が子 scope の scene-owned component を inject している
+- `FindObjectOfType` / hierarchy 探索 / serialized reference で別 Scene の所有物を取得している
+- 別 Scene の View 実体を更新するための Provider / Controller が存在している
+
+### 移動先
+
+- View / Canvas / Pool / Presenter の操作は、それを所有する Scene / ModuleScene 側へ移す。
+- MainScene 固有情報を UI が必要とする場合は、MainScene 側に抽象 interface を登録し、UI 側は抽象のみ参照する。
+- 複数 Scene が同じゲーム状態を読む場合は、GameSession / Application scope に state / query / store を置く。
+- 画面横断の補助機能は、専用 ModuleScene または親 scope の service として設計し、どちらか一方の Scene 所有物に寄せない。
+
+### 完了条件
+
+- [ ] 他 Scene 所有の Canvas / View / Presenter / Pool を参照する field / constructor parameter / serialized field が消えている
+- [ ] UI 更新の起点が UI 所有 ModuleScene 側にある
+- [ ] MainScene と ModuleScene の連携は抽象 interface または GameSession / Application service 経由になっている
+- [ ] hierarchy 探索で他 Scene の所有物を探していない
+- [ ] compile / test / PlayMode で、表示と破棄順が成立している
 
 ---
 
@@ -40,6 +114,8 @@
 
 | 置き場所 | 置いてよいもの | 置いてはいけないもの |
 |---|---|---|
+| System / Bootstrap | Root / Product 起動、共通 service、Launcher、SceneGroupProvider、最初の入口画面への遷移 | GameSession state、Content MainScene 固有実装、HUD / Popup、実ゲームシーンへの直遷移 |
+| GameSession | NewGame / Continue / Load で生成される state、Application service、ゲームセッション設定 Repository | Product 全体の常駐基盤、Scene-owned component、View 実体 |
 | `GameConstants` | コード不変条件、アルゴリズム係数、ドメイン共通の最低値、単位変換の基準値 | 調整されるゲームバランス、初期状態、マップサイズ、速度、Prefab address、表示設定 |
 | ScriptableObject | Designer / Inspector で調整する設定値、Visual 設定、Scene 単位の設定入力 | Domain / Application へ直接渡す runtime dependency、状態、cache、コンテンツ Prefab 一覧 |
 | Settings class | SO から変換された runtime 用の不変設定、DI で Application / View に渡す値 | UnityEngine.Object、Addressable handle、実行時に変わる状態 |
@@ -302,9 +378,12 @@ Get-ChildItem Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/Worl
 - [ ] SO は runtime settings class へ変換され、Domain / Application が SO に直接依存していない
 - [ ] コンテンツ Prefab address は発生元 Master / Spec / Definition から解決されている
 - [ ] LifetimeScope にコンテンツ Prefab 一覧や UI View 実体が残っていない
+- [ ] 別 Scene / 別 LifetimeScope 所有の Canvas / View / Presenter / Pool / scene-owned component を直接参照・操作していない
 - [ ] SO の Inspector 項目が `[Header]` で調整しやすく整理されている
 - [ ] 1 フォルダ直下のクラス数が 20 個以上の箇所について、分割要否を判断した
 - [ ] 1 フォルダ直下のクラス数が 40 個以上の箇所について、フォルダ分割済み、または分割しない理由と見直し条件を記録した
+- [ ] System / Bootstrap と GameSession / Content の配置境界が守られている
+- [ ] 入口画面が存在する場合、Launcher / bootstrap から実ゲームシーンへ直遷移していない
 - [ ] 互換 constructor / 旧 API / 旧定数を残した場合、残す理由と削除条件が記録されている
 - [ ] `rg "GameConstants\\."` や `rg "SerializedField"` などで残存箇所を確認した
 - [ ] `uloop.cmd compile --project-path Client` が成功している

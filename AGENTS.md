@@ -246,7 +246,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 - `docs/guidelines/application-boundary-guidelines.md`
 - `docs/guidelines/implementation-quality-guidelines.md`
 - `docs/guidelines/debugging-policy.md`
-- `docs/guidelines/self-review-preset.md`
+- `docs/guidelines/self-review-guidelines.md`
 
 ハードゲート違反を発見した場合、Codex は実装を停止して `review/{task_id}_question.md` に報告する。
 

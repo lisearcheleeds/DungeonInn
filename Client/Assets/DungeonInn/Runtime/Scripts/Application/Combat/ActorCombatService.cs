@@ -113,7 +113,7 @@ namespace DungeonInn.Application.Combat
 
         public bool IsTargetedByAny(Guid actorId)
         {
-            return targetedBy.TryGetValue(actorId, out var attackers) && attackers.Count > 0;
+            return targetedBy.TryGetValue(actorId, out var attackers) && 0 < attackers.Count;
         }
 
         public IReadOnlyCollection<Guid> GetAttackers(Guid targetId)

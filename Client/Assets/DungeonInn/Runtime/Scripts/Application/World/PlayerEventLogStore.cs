@@ -59,7 +59,7 @@ namespace DungeonInn.Application.World
                 .Subscribe(e => AddFromEvent(e, e.ActorId)).AddTo(ref bag);
         }
 
-        public void Add(PlayerEventLogEntry entry)
+        void Add(PlayerEventLogEntry entry)
         {
             if (MaxEntryCount <= entries.Count)
             {

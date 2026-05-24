@@ -20,14 +20,14 @@ namespace DungeonInn.Tests.EditMode
     public sealed class DungeonFloorGenerationTests
     {
         /// <summary>
-        /// 繝ｩ繝ｳ繝繝 seed 縺ｮ繝輔Ο繧｢繧定､・・ｽ・ｽ逕滂ｿｽE縺励∽ｸ雁ｱ､髫取ｮｵ縺九ｉ荳句ｱ､髫取ｮｵ縺ｾ縺ｧ蠢・・ｽ・ｽ遘ｻ蜍募庄閭ｽ縺ｪ騾夊ｷｯ縺ｧ謗･邯壹＆繧後※縺・・ｽ・ｽ縺薙→繧呈､懆ｨｼ縺吶ｋ縲・        /// </summary>
+        /// ランダム seed のフロアを?E?E??E?生?Eし、上層階段から下層階段まで?E?E??E?移動可能な通路で接続されてぁE?E??E?ことを検証する、E        /// </summary>
         [Test]
         public void GeneratedFloorsConnectUpStairToDownStair()
         {
             for (var seed = 0; seed < 100; seed++)
             {
                 var dungeon = new Dungeon(seed);
-                var useCase = new GenerateDungeonFloorUseCase(DungeonInn.Application.World.DungeonMapGenerationSettings.CreateDefault());
+                var useCase = new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository());
                 var floor = useCase.ExecuteAsync(
                         dungeon,
                         1,
@@ -161,3 +161,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

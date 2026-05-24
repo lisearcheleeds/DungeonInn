@@ -258,7 +258,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            Debug.LogWarning(
+            UnityEngine.Debug.LogWarning(
                 $"[ActorView] Actor visual sprite is null. ActorId={actorId} VisualId={visualDefinition.VisualId} State={animator.CurrentState} Direction={direction} Frame={animator.ClipFrameIndex}");
         }
 

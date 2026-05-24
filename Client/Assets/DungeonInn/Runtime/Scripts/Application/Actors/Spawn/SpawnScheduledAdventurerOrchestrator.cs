@@ -27,23 +27,20 @@ namespace DungeonInn.Application.Actors.Spawn
         readonly SpawnAdventurerUseCase spawnAdventurerUseCase;
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
-        readonly GroundMapGenerationSettings groundMapGenerationSettings;
-        readonly SpawnBalanceSettings spawnBalanceSettings;
+        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
         public SpawnScheduledAdventurerOrchestrator(
             SpawnAdventurerUseCase spawnAdventurerUseCase,
             IMasterRepository masterRepository,
             IGameRandom gameRandom,
-            GroundMapGenerationSettings groundMapGenerationSettings,
-            SpawnBalanceSettings spawnBalanceSettings)
+            IWorldGameSettingsRepository worldGameSettingsRepository)
         {
             this.spawnAdventurerUseCase = spawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
-            this.groundMapGenerationSettings = groundMapGenerationSettings
-                ?? throw new ArgumentNullException(nameof(groundMapGenerationSettings));
-            this.spawnBalanceSettings = spawnBalanceSettings ?? throw new ArgumentNullException(nameof(spawnBalanceSettings));
+            this.worldGameSettingsRepository =
+                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -53,6 +50,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 throw new ArgumentNullException(nameof(worldState));
             }
 
+            var spawnBalanceSettings = worldGameSettingsRepository.GetSpawnBalanceSettings();
             if (currentScheduleTick - worldState.SpawnSchedule.LastAdventurerSpawnTick < spawnBalanceSettings.AdventurerSpawnIntervalTicks)
             {
                 return null;
@@ -159,6 +157,7 @@ namespace DungeonInn.Application.Actors.Spawn
 
         GridPosition PickRandomEdgePosition()
         {
+            var groundMapGenerationSettings = worldGameSettingsRepository.GetGroundMapGenerationSettings();
             return gameRandom.Next(4) switch
             {
                 0 => new GridPosition(gameRandom.Next(groundMapGenerationSettings.Width), 0),

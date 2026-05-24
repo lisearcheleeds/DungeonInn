@@ -1,43 +1,32 @@
 using Cysharp.Threading.Tasks;
-using DungeonInn.View.Scene.MainScene.World;
-using Lighthouse.Scene;
-using UnityEngine;
 using VContainer;
 
 namespace DungeonInn.Core
 {
     public sealed class Launcher : ILauncher
     {
-        static readonly string LauncherSceneName = "Launcher";
-
-        readonly ISceneManager sceneManager;
+        readonly IEntrySceneTransitionService entrySceneTransitionService;
+        readonly IRebootService rebootService;
 
         [Inject]
-        public Launcher(ISceneManager sceneManager)
+        public Launcher(
+            IEntrySceneTransitionService entrySceneTransitionService,
+            IRebootService rebootService)
         {
-            this.sceneManager = sceneManager;
+            this.entrySceneTransitionService = entrySceneTransitionService;
+            this.rebootService = rebootService;
         }
 
         void ILauncher.Reboot()
         {
-            RebootProcess().Forget();
-
-            async UniTask RebootProcess()
-            {
-                await sceneManager.PreReboot();
-
-                await UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(LauncherSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-                await LaunchProcess();
-
-                TransitionNextScene();
-            }
+            rebootService.Reboot();
         }
 
         async UniTask ILauncher.Launch()
         {
             await FirstLaunchProcess();
             await LaunchProcess();
-            TransitionNextScene();
+            await entrySceneTransitionService.TransitionToEntrySceneAsync();
         }
 
         UniTask FirstLaunchProcess()
@@ -50,17 +39,5 @@ namespace DungeonInn.Core
             return UniTask.CompletedTask;
         }
 
-        void TransitionNextScene()
-        {
-            UniTask.Void(async () =>
-            {
-                await sceneManager.TransitionScene(new WorldScene.WorldTransitionData());
-
-                if (!string.IsNullOrEmpty(UnityEngine.SceneManagement.SceneManager.GetSceneByName(LauncherSceneName).name))
-                {
-                    await UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(LauncherSceneName);
-                }
-            });
-        }
     }
 }

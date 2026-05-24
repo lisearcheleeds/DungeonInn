@@ -44,6 +44,18 @@ namespace DungeonInn.View.Scene.MainScene.World
             return GetOrCreateLayerRoot(layerId, ResolveFallbackLayerName(layerId)).ActorRoot;
         }
 
+        public bool TryGetActorRoot(MapLayerId layerId, out Transform actorRoot)
+        {
+            if (!layerRoots.TryGetValue(layerId.Value, out var root))
+            {
+                actorRoot = null;
+                return false;
+            }
+
+            actorRoot = root.ActorRoot;
+            return true;
+        }
+
         public void DestroyLayerRoot(MapLayerId layerId)
         {
             if (!layerRoots.TryGetValue(layerId.Value, out var root))
@@ -61,7 +73,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             if (activeLayerId == layerId.Value)
             {
-                activeLayerId = orderedLayerIds.Count > 0 ? orderedLayerIds[0] : (int?)null;
+                activeLayerId = 0 < orderedLayerIds.Count ? orderedLayerIds[0] : (int?)null;
                 ApplyLayerVisibility();
             }
         }
