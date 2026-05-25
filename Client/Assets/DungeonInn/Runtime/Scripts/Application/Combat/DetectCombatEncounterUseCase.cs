@@ -72,40 +72,35 @@ namespace DungeonInn.Application.Combat
                     continue;
                 }
 
+                if (hadTarget)
+                {
+                    var target = worldState.FindActor(combatState.TargetActorId.Value);
+                    if (target == null || target.Hp <= 0 || target.Position.LayerId.Equals(MapLayerId.Ground) ||
+                        !target.Position.LayerId.Equals(actor.Position.LayerId))
+                    {
+                        actorCombatService.ClearTarget(actor.Id);
+                        eventBus.Publish(new CombatEncounterEnded(actor.Id));
+                    }
+
+                    continue;
+                }
+
                 var nearest = targetResolver.FindNearestHostile(worldState.Dungeon, actor);
 
                 if (nearest != null)
                 {
-                    var isNewTarget = !hadTarget || !combatState.TargetActorId.Value.Equals(nearest.Id);
-                    if (hadTarget && isNewTarget)
-                    {
-                        eventBus.Publish(new CombatEncounterEnded(actor.Id));
-                    }
-
                     actorCombatService.SetTarget(actor.Id, nearest.Id);
-
-                    if (!hadTarget || isNewTarget)
-                    {
-                        eventBus.Publish(new ActorAiDecisionRecorded(
-                            actor.Id,
-                            AiDecisionType.StartCombat,
-                            AiDecisionReasonType.NearestHostileInRange,
-                            nearest.Id,
-                            default,
-                            0,
-                            0,
-                            0,
-                            0));
-                        eventBus.Publish(new CombatEncounterStarted(actor.Id, nearest.Id));
-                    }
-                }
-                else
-                {
-                    actorCombatService.ClearTarget(actor.Id);
-                    if (hadTarget)
-                    {
-                        eventBus.Publish(new CombatEncounterEnded(actor.Id));
-                    }
+                    eventBus.Publish(new ActorAiDecisionRecorded(
+                        actor.Id,
+                        AiDecisionType.StartCombat,
+                        AiDecisionReasonType.NearestHostileInRange,
+                        nearest.Id,
+                        default,
+                        0,
+                        0,
+                        0,
+                        0));
+                    eventBus.Publish(new CombatEncounterStarted(actor.Id, nearest.Id));
                 }
             }
 

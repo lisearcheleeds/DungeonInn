@@ -66,7 +66,7 @@ namespace DungeonInn.Application.Combat
                     continue;
                 }
 
-                if (!HasLineOfSight(dungeon, actor, candidate))
+                if (!HasLineOfSightCached(dungeon, actor, candidate))
                 {
                     continue;
                 }
@@ -76,6 +76,26 @@ namespace DungeonInn.Application.Combat
             }
 
             return nearest;
+        }
+
+        public bool HasLineOfSight(Dungeon dungeon, Actor actor, Actor target)
+        {
+            if (dungeon == null)
+            {
+                throw new ArgumentNullException(nameof(dungeon));
+            }
+
+            if (actor == null)
+            {
+                throw new ArgumentNullException(nameof(actor));
+            }
+
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            return HasLineOfSight(dungeon, actor.Position, target.Position);
         }
 
         void RefreshLineOfSightCache()
@@ -101,7 +121,7 @@ namespace DungeonInn.Application.Combat
                     combatBalanceSettings.SpatialIndexCellSizeMeters));
         }
 
-        bool HasLineOfSight(Dungeon dungeon, Actor actor, Actor candidate)
+        bool HasLineOfSightCached(Dungeon dungeon, Actor actor, Actor candidate)
         {
             var actorPairKey = ActorPairKey.Create(actor.Id, candidate.Id);
             if (successfulLineOfSightTicks.TryGetValue(actorPairKey, out var cachedTick) &&

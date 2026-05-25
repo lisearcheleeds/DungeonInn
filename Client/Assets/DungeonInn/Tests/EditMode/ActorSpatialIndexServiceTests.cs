@@ -144,7 +144,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void DetectCombatEncounterReevaluatesAttackersWhenTargetMovesOutOfRange()
+        public void DetectCombatEncounterKeepsExistingTargetWhenTargetMovesOutOfEncounterRange()
         {
             var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var eventBus = new CollectingEventBus();
@@ -168,12 +168,12 @@ namespace DungeonInn.Tests.EditMode
             spatialIndex.SyncActor(enemy);
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
-            Assert.That(combatService.HasTarget(actor.Id), Is.False);
-            Assert.That(eventBus.GetEvents<CombatEncounterEnded>().Any(x => x.ActorId.Equals(actor.Id)), Is.True);
+            Assert.That(combatService.HasTarget(actor.Id), Is.True);
+            Assert.That(eventBus.GetEvents<CombatEncounterEnded>().Any(x => x.ActorId.Equals(actor.Id)), Is.False);
         }
 
         [Test]
-        public void DetectCombatEncounterInvalidatesLineOfSightCacheWhenTargetMoves()
+        public void DetectCombatEncounterKeepsExistingTargetWhenLineOfSightIsLost()
         {
             var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var eventBus = new CollectingEventBus();
@@ -197,8 +197,8 @@ namespace DungeonInn.Tests.EditMode
             spatialIndex.SyncActor(enemy);
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
-            Assert.That(combatService.HasTarget(actor.Id), Is.False);
-            Assert.That(eventBus.GetEvents<CombatEncounterEnded>().Any(x => x.ActorId.Equals(actor.Id)), Is.True);
+            Assert.That(combatService.HasTarget(actor.Id), Is.True);
+            Assert.That(eventBus.GetEvents<CombatEncounterEnded>().Any(x => x.ActorId.Equals(actor.Id)), Is.False);
         }
 
         static Dungeon CreateDungeon()

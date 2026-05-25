@@ -9,6 +9,6 @@ namespace DungeonInn.Application.Actors.Movement
         /// Returned paths may be backed by a provider-owned buffer. Callers must consume the result in the
         /// same frame and must not retain it after another path request.
         /// </summary>
-        IReadOnlyList<GridPosition> TryFindPath(MapLayerId layerId, GridPosition start, GridPosition goal);
+        IReadOnlyList<LayerPosition> TryFindPath(MapLayer layer, LayerPosition start, LayerPosition goal);
     }
 }

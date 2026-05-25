@@ -14,6 +14,8 @@ namespace DungeonInn.View.Scene.MainScene.World
 
         int? activeLayerId;
 
+        public event Action<MapLayerId> ActiveLayerChanged;
+
         [Inject]
         public MapLayerViewRegistry(WorldViewRoot viewRoot)
         {
@@ -73,7 +75,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             if (activeLayerId == layerId.Value)
             {
-                activeLayerId = 0 < orderedLayerIds.Count ? orderedLayerIds[0] : (int?)null;
+                SetActiveLayer(0 < orderedLayerIds.Count ? orderedLayerIds[0] : (int?)null);
                 ApplyLayerVisibility();
             }
         }
@@ -96,7 +98,7 @@ namespace DungeonInn.View.Scene.MainScene.World
                 return;
             }
 
-            activeLayerId = layerId.Value;
+            SetActiveLayer(layerId.Value);
             ApplyLayerVisibility();
         }
 
@@ -119,7 +121,11 @@ namespace DungeonInn.View.Scene.MainScene.World
                 Vector3.zero);
             layerRoots.Add(layerId.Value, layerRoot);
             AddOrderedLayerId(layerId.Value);
-            activeLayerId ??= layerId.Value;
+            if (!activeLayerId.HasValue)
+            {
+                SetActiveLayer(layerId.Value);
+            }
+
             ApplyLayerVisibility(layerRoot, layerId.Value);
             return layerRoot;
         }
@@ -133,8 +139,22 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             var currentIndex = ResolveActiveLayerIndex();
             var nextIndex = (currentIndex + direction + orderedLayerIds.Count) % orderedLayerIds.Count;
-            activeLayerId = orderedLayerIds[nextIndex];
+            SetActiveLayer(orderedLayerIds[nextIndex]);
             ApplyLayerVisibility();
+        }
+
+        void SetActiveLayer(int? layerId)
+        {
+            if (activeLayerId == layerId)
+            {
+                return;
+            }
+
+            activeLayerId = layerId;
+            if (activeLayerId.HasValue)
+            {
+                ActiveLayerChanged?.Invoke(new MapLayerId(activeLayerId.Value));
+            }
         }
 
         int ResolveActiveLayerIndex()

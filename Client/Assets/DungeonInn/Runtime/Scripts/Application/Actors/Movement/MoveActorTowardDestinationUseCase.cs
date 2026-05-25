@@ -1,6 +1,5 @@
 using System;
 using VContainer;
-using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Map;
 
@@ -9,17 +8,12 @@ namespace DungeonInn.Application.Actors.Movement
     public sealed class MoveActorTowardDestinationUseCase
     {
         readonly ActorMovementService actorMovementService;
-        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
 
         [Inject]
-        public MoveActorTowardDestinationUseCase(
-            ActorMovementService actorMovementService,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+        public MoveActorTowardDestinationUseCase(ActorMovementService actorMovementService)
         {
             this.actorMovementService = actorMovementService
                 ?? throw new ArgumentNullException(nameof(actorMovementService));
-            this.worldGameSettingsRepository = worldGameSettingsRepository
-                ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
         }
 
         public bool Execute(
@@ -37,8 +31,8 @@ namespace DungeonInn.Application.Actors.Movement
                 walkability,
                 speedMetersPerSecond,
                 deltaGameSeconds,
-                worldGameSettingsRepository.GetActorSimulationSettings().MoveArrivalDistanceMeters,
-                snapToDestinationOnArrival: true);
+                layer.CellSizeMeters * 0.5f,
+                snapToDestinationOnArrival: false);
         }
     }
 }

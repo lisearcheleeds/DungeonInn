@@ -61,7 +61,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             hudView.AddPauseListener(OnPauseClicked);
             hudView.AddSpeedNormalListener(OnSpeedNormalClicked);
             hudView.AddSpeedFastListener(OnSpeedFastClicked);
-            hudView.HideAlert();
 
             eventSubscriber.OnEvent<IGameEvent>()
                 .Subscribe(OnGameEvent)
@@ -87,8 +86,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
                 var economyStatus = getInnEconomyStatusUseCase.Execute();
                 hudView.SetGold($"Gold: {economyStatus.Current.GuildGold:N0}");
             }
-
-            UpdateAlert();
         }
 
         public void Dispose()
@@ -135,22 +132,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
                 return;
             }
 
-            hudView.ShowAlert(text);
             alertRemainingSeconds = AlertDisplaySeconds;
-        }
-
-        void UpdateAlert()
-        {
-            if (alertRemainingSeconds <= 0f)
-            {
-                return;
-            }
-
-            alertRemainingSeconds -= Time.unscaledDeltaTime;
-            if (alertRemainingSeconds <= 0f)
-            {
-                hudView.HideAlert();
-            }
         }
 
         void EnsureHudView()

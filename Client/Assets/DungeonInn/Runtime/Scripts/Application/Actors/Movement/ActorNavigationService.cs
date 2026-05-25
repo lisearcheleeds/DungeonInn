@@ -18,6 +18,7 @@ namespace DungeonInn.Application.Actors.Movement
         readonly Dictionary<GridPosition, int> gScore = new();
         readonly Dictionary<GridPosition, int> fScore = new();
         readonly List<GridPosition> pathBuffer = new();
+        readonly List<LayerPosition> waypointBuffer = new();
         readonly INavigationPathProvider navigationPathProvider;
         DisposableBag bag;
 
@@ -46,9 +47,11 @@ namespace DungeonInn.Application.Actors.Movement
             Guid actorId,
             MapLayer layer,
             IGridWalkability walkability,
-            GridPosition startGrid,
-            GridPosition goalGrid)
+            LayerPosition start,
+            LayerPosition goal)
         {
+            var startGrid = layer.ToGridPosition(start);
+            var goalGrid = layer.ToGridPosition(goal);
             if (!pathStates.TryGetValue(actorId, out var state))
             {
                 state = new ActorPathState();
@@ -60,10 +63,10 @@ namespace DungeonInn.Application.Actors.Movement
                 return state;
             }
 
-            var navPath = navigationPathProvider.TryFindPath(layer.Id, startGrid, goalGrid);
-            if (navPath != null && IsGridPathUsable(layer, walkability, startGrid, navPath))
+            var navPath = navigationPathProvider.TryFindPath(layer, start, goal);
+            if (navPath != null)
             {
-                state.SetPath(layer.Id, startGrid, navPath, goalGrid);
+                state.SetPath(layer, startGrid, navPath, goalGrid);
                 return state;
             }
 
@@ -83,7 +86,8 @@ namespace DungeonInn.Application.Actors.Movement
             }
             else
             {
-                state.SetPath(layer.Id, startGrid, pathBuffer, goalGrid);
+                ConvertGridPathToWaypoints(layer, pathBuffer, waypointBuffer);
+                state.SetPath(layer, startGrid, waypointBuffer, goalGrid);
             }
 
             return state;
@@ -97,63 +101,31 @@ namespace DungeonInn.Application.Actors.Movement
             }
         }
 
+        public void InvalidateLayerPaths(MapLayerId layerId)
+        {
+            foreach (var state in pathStates.Values)
+            {
+                if (state.CachedLayerId.Equals(layerId))
+                {
+                    state.Invalidate();
+                }
+            }
+        }
+
         public void RemovePathState(Guid actorId)
         {
             pathStates.Remove(actorId);
         }
 
-        static bool IsGridPathUsable(
+        static void ConvertGridPathToWaypoints(
             MapLayer layer,
-            IGridWalkability walkability,
-            GridPosition startGrid,
-            IReadOnlyList<GridPosition> path)
+            IReadOnlyList<GridPosition> gridPath,
+            List<LayerPosition> results)
         {
-            if (path.Count == 0)
+            results.Clear();
+            for (var i = 0; i < gridPath.Count; i++)
             {
-                return false;
-            }
-
-            var previous = startGrid;
-            for (var i = 0; i < path.Count; i++)
-            {
-                if (!IsClearCardinalSegment(layer, walkability, previous, path[i]))
-                {
-                    return false;
-                }
-
-                previous = path[i];
-            }
-
-            return true;
-        }
-
-        static bool IsClearCardinalSegment(
-            MapLayer layer,
-            IGridWalkability walkability,
-            GridPosition first,
-            GridPosition second)
-        {
-            if (first.Equals(second) || (first.X != second.X && first.Z != second.Z))
-            {
-                return false;
-            }
-
-            var stepX = Math.Sign(second.X - first.X);
-            var stepZ = Math.Sign(second.Z - first.Z);
-            var current = new GridPosition(first.X + stepX, first.Z + stepZ);
-            while (true)
-            {
-                if (!layer.Contains(current) || !walkability.IsWalkable(current))
-                {
-                    return false;
-                }
-
-                if (current.Equals(second))
-                {
-                    return true;
-                }
-
-                current = new GridPosition(current.X + stepX, current.Z + stepZ);
+                results.Add(layer.GetCellCenter(gridPath[i]));
             }
         }
 

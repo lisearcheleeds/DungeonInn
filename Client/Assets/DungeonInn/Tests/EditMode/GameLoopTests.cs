@@ -240,8 +240,7 @@ namespace DungeonInn.Tests.EditMode
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
-                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
-                    new FixedWorldGameSettingsRepository()),
+                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
@@ -319,8 +318,7 @@ namespace DungeonInn.Tests.EditMode
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var useCase = new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
-                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
-                    new FixedWorldGameSettingsRepository()),
+                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
@@ -365,7 +363,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void GoingToDungeonAdventurerSnapsToEntranceBeforeUsingStair()
+        public void GoingToDungeonAdventurerUsesEntranceAfterEnteringHalfTileArrivalRadius()
         {
             var worldState = CreateInitializedWorldState();
             var entrance = worldState.GroundMap.Layer.GetCellCenter(worldState.GroundMap.DungeonEntrancePosition);
@@ -376,7 +374,10 @@ namespace DungeonInn.Tests.EditMode
 
             var useCase = CreateLifecycleUseCase();
 
-            useCase.ExecuteAsync(worldState, 0.1f).GetAwaiter().GetResult();
+            for (var i = 0; i < 10 && actor.Position.LayerId.Equals(MapLayerId.Ground); i++)
+            {
+                useCase.ExecuteAsync(worldState, 0.1f).GetAwaiter().GetResult();
+            }
 
             Assert.That(actor.Position.LayerId, Is.EqualTo(MapLayerId.DungeonFloor(1)));
         }
@@ -461,19 +462,19 @@ namespace DungeonInn.Tests.EditMode
                 Guid.NewGuid(),
                 layer,
                 AlwaysWalkableGrid.Instance,
-                new GridPosition(0, 0),
-                new GridPosition(2, 0));
+                layer.GetCellCenter(new GridPosition(0, 0)),
+                layer.GetCellCenter(new GridPosition(2, 0)));
             var secondState = service.GetOrComputePathState(
                 Guid.NewGuid(),
                 layer,
                 AlwaysWalkableGrid.Instance,
-                new GridPosition(0, 0),
-                new GridPosition(0, 2));
+                layer.GetCellCenter(new GridPosition(0, 0)),
+                layer.GetCellCenter(new GridPosition(0, 2)));
 
             Assert.That(firstState.TryGetCurrentWaypoint(out var firstWaypoint), Is.True);
             Assert.That(secondState.TryGetCurrentWaypoint(out var secondWaypoint), Is.True);
-            Assert.That(firstWaypoint, Is.EqualTo(new GridPosition(1, 0)));
-            Assert.That(secondWaypoint, Is.EqualTo(new GridPosition(0, 1)));
+            Assert.That(firstWaypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(1, 0))));
+            Assert.That(secondWaypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(0, 1))));
         }
 
         [Test]
@@ -488,26 +489,26 @@ namespace DungeonInn.Tests.EditMode
                 actorId,
                 layer,
                 AlwaysWalkableGrid.Instance,
-                new GridPosition(0, 0),
-                new GridPosition(4, 0));
+                layer.GetCellCenter(new GridPosition(0, 0)),
+                layer.GetCellCenter(new GridPosition(4, 0)));
 
             Assert.That(firstState.TryGetCurrentWaypoint(out var firstWaypoint), Is.True);
-            Assert.That(firstWaypoint, Is.EqualTo(new GridPosition(1, 0)));
+            Assert.That(firstWaypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(1, 0))));
 
             var secondState = service.GetOrComputePathState(
                 actorId,
                 layer,
                 AlwaysWalkableGrid.Instance,
-                new GridPosition(0, 4),
-                new GridPosition(4, 0));
+                layer.GetCellCenter(new GridPosition(0, 4)),
+                layer.GetCellCenter(new GridPosition(4, 0)));
 
             Assert.That(secondState, Is.SameAs(firstState));
             Assert.That(secondState.TryGetCurrentWaypoint(out var secondWaypoint), Is.True);
-            Assert.That(secondWaypoint, Is.EqualTo(new GridPosition(0, 3)));
+            Assert.That(secondWaypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(0, 3))));
         }
 
         [Test]
-        public void ActorNavigationServiceFallsBackWhenProviderPathCrossesBlockedGridCells()
+        public void ActorNavigationServiceUsesProviderPathWithoutGridValidation()
         {
             var service = new ActorNavigationService(
                 new NoOpGameEventBus(),
@@ -520,27 +521,20 @@ namespace DungeonInn.Tests.EditMode
                 actorId,
                 layer,
                 walkability,
-                new GridPosition(0, 1),
-                new GridPosition(4, 1));
+                layer.GetCellCenter(new GridPosition(0, 1)),
+                layer.GetCellCenter(new GridPosition(4, 1)));
 
             Assert.That(state.HasFailed, Is.False);
             Assert.That(state.TryGetCurrentWaypoint(out var waypoint), Is.True);
-            Assert.That(waypoint, Is.EqualTo(new GridPosition(1, 1)));
+            Assert.That(waypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(4, 1))));
         }
 
         [Test]
-        public void ActorNavigationServiceFallsBackWhenProviderPathContainsBlockedCell()
+        public void ActorNavigationServiceFallsBackWhenProviderReturnsNull()
         {
-            var providerPath = new[]
-            {
-                new GridPosition(1, 1),
-                new GridPosition(2, 1),
-                new GridPosition(3, 1),
-                new GridPosition(4, 1)
-            };
             var service = new ActorNavigationService(
                 new NoOpGameEventBus(),
-                new StaticNavigationPathProvider(providerPath));
+                new NoOpNavigationPathProvider());
             var layer = new MapLayer(MapLayerId.DungeonFloor(1), 5, 3, 1f);
             var actorId = Guid.NewGuid();
             var walkability = new BlockedGridWalkability(new GridPosition(1, 1));
@@ -549,12 +543,49 @@ namespace DungeonInn.Tests.EditMode
                 actorId,
                 layer,
                 walkability,
-                new GridPosition(0, 1),
-                new GridPosition(4, 1));
+                layer.GetCellCenter(new GridPosition(0, 1)),
+                layer.GetCellCenter(new GridPosition(4, 1)));
 
             Assert.That(state.HasFailed, Is.False);
             Assert.That(state.TryGetCurrentWaypoint(out var waypoint), Is.True);
-            Assert.That(waypoint, Is.EqualTo(new GridPosition(0, 0)));
+            Assert.That(waypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(0, 0))));
+        }
+
+        [Test]
+        public void ActorNavigationServiceRecomputesLayerPathsAfterLayerInvalidation()
+        {
+            var provider = new ToggleNavigationPathProvider(new[] { new GridPosition(4, 1) });
+            var service = new ActorNavigationService(
+                new NoOpGameEventBus(),
+                provider);
+            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 5, 3, 1f);
+            var actorId = Guid.NewGuid();
+            var walkability = new BlockedGridWalkability(new GridPosition(1, 1));
+            var start = layer.GetCellCenter(new GridPosition(0, 1));
+            var goal = layer.GetCellCenter(new GridPosition(4, 1));
+
+            var firstState = service.GetOrComputePathState(
+                actorId,
+                layer,
+                walkability,
+                start,
+                goal);
+
+            Assert.That(firstState.TryGetCurrentWaypoint(out var firstWaypoint), Is.True);
+            Assert.That(firstWaypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(0, 0))));
+
+            provider.IsAvailable = true;
+            service.InvalidateLayerPaths(layer.Id);
+            var secondState = service.GetOrComputePathState(
+                actorId,
+                layer,
+                walkability,
+                start,
+                goal);
+
+            Assert.That(secondState, Is.SameAs(firstState));
+            Assert.That(secondState.TryGetCurrentWaypoint(out var secondWaypoint), Is.True);
+            Assert.That(secondWaypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(4, 1))));
         }
 
         [Test]
@@ -570,8 +601,8 @@ namespace DungeonInn.Tests.EditMode
                 actorId,
                 layer,
                 walkability,
-                new GridPosition(0, 0),
-                new GridPosition(2, 0));
+                layer.GetCellCenter(new GridPosition(0, 0)),
+                layer.GetCellCenter(new GridPosition(2, 0)));
 
             Assert.That(state.HasFailed, Is.True);
 
@@ -582,13 +613,90 @@ namespace DungeonInn.Tests.EditMode
                     actorId,
                     layer,
                     walkability,
-                    new GridPosition(0, 0),
-                    new GridPosition(2, 0));
+                    layer.GetCellCenter(new GridPosition(0, 0)),
+                    layer.GetCellCenter(new GridPosition(2, 0)));
             }
 
             Assert.That(state.HasFailed, Is.False);
             Assert.That(state.TryGetCurrentWaypoint(out var waypoint), Is.True);
-            Assert.That(waypoint, Is.EqualTo(new GridPosition(1, 0)));
+            Assert.That(waypoint, Is.EqualTo(layer.GetCellCenter(new GridPosition(1, 0))));
+        }
+
+        [Test]
+        public void MoveActorTowardDestinationUseCaseUsesHalfTileArrivalRadius()
+        {
+            var navigationService = new ActorNavigationService(
+                new NoOpGameEventBus(),
+                new NoOpNavigationPathProvider());
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
+            var useCase = new MoveActorTowardDestinationUseCase(
+                new ActorMovementService(navigationService, spatialIndex, actorViewDataStore));
+            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 4, 4, 4f);
+            var destination = layer.GetCellCenter(new GridPosition(1, 1));
+            var arrivalPosition = new LayerPosition(
+                layer.Id,
+                destination.X - 1.9f,
+                destination.Z);
+            var actor = CreateMonster(new LayerPosition(
+                layer.Id,
+                arrivalPosition.X,
+                arrivalPosition.Z));
+
+            var arrived = useCase.Execute(
+                actor,
+                destination,
+                layer,
+                AlwaysWalkableGrid.Instance,
+                speedMetersPerSecond: 0f,
+                deltaGameSeconds: 0f);
+
+            Assert.That(arrived, Is.True);
+            Assert.That(actor.Position, Is.EqualTo(arrivalPosition));
+
+            actor = CreateMonster(new LayerPosition(
+                layer.Id,
+                destination.X - 2.1f,
+                destination.Z));
+            arrived = useCase.Execute(
+                actor,
+                destination,
+                layer,
+                AlwaysWalkableGrid.Instance,
+                speedMetersPerSecond: 0f,
+                deltaGameSeconds: 0f);
+
+            Assert.That(arrived, Is.False);
+        }
+
+        [Test]
+        public void MoveActorTowardDestinationUseCaseStopsAtArrivalRadiusWithoutSnappingToDestination()
+        {
+            var navigationService = new ActorNavigationService(
+                new NoOpGameEventBus(),
+                new StaticNavigationPathProvider(new[] { new GridPosition(1, 1) }));
+            var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
+            var useCase = new MoveActorTowardDestinationUseCase(
+                new ActorMovementService(navigationService, spatialIndex, actorViewDataStore));
+            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 4, 4, 4f);
+            var destination = layer.GetCellCenter(new GridPosition(1, 1));
+            var actor = CreateMonster(new LayerPosition(
+                layer.Id,
+                destination.X - 3f,
+                destination.Z));
+
+            var arrived = useCase.Execute(
+                actor,
+                destination,
+                layer,
+                AlwaysWalkableGrid.Instance,
+                speedMetersPerSecond: 100f,
+                deltaGameSeconds: 1f);
+
+            Assert.That(arrived, Is.True);
+            Assert.That(actor.Position.X, Is.EqualTo(destination.X - 1.999f).Within(0.0001f));
+            Assert.That(actor.Position.Z, Is.EqualTo(destination.Z).Within(0.0001f));
         }
 
         static GameWorldState CreateInitializedWorldState()
@@ -683,8 +791,7 @@ namespace DungeonInn.Tests.EditMode
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             return new AdvanceActorLifecycleOrchestrator(
                 new MoveActorTowardDestinationUseCase(
-                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore),
-                    new FixedWorldGameSettingsRepository()),
+                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
@@ -767,12 +874,49 @@ namespace DungeonInn.Tests.EditMode
                 this.path = path;
             }
 
-            public IReadOnlyList<GridPosition> TryFindPath(
-                MapLayerId layerId,
-                GridPosition start,
-                GridPosition goal)
+            public IReadOnlyList<LayerPosition> TryFindPath(
+                MapLayer layer,
+                LayerPosition start,
+                LayerPosition goal)
             {
-                return path;
+                var results = new List<LayerPosition>();
+                for (var i = 0; i < path.Count; i++)
+                {
+                    results.Add(layer.GetCellCenter(path[i]));
+                }
+
+                return results;
+            }
+        }
+
+        sealed class ToggleNavigationPathProvider : INavigationPathProvider
+        {
+            readonly IReadOnlyList<GridPosition> path;
+
+            public ToggleNavigationPathProvider(IReadOnlyList<GridPosition> path)
+            {
+                this.path = path;
+            }
+
+            public bool IsAvailable { get; set; }
+
+            public IReadOnlyList<LayerPosition> TryFindPath(
+                MapLayer layer,
+                LayerPosition start,
+                LayerPosition goal)
+            {
+                if (!IsAvailable)
+                {
+                    return null;
+                }
+
+                var results = new List<LayerPosition>();
+                for (var i = 0; i < path.Count; i++)
+                {
+                    results.Add(layer.GetCellCenter(path[i]));
+                }
+
+                return results;
             }
         }
 

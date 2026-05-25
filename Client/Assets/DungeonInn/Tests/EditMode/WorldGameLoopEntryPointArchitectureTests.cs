@@ -329,8 +329,7 @@ namespace DungeonInn.Tests.EditMode
                         new ActorMovementService(
                             navigationService,
                             actorSpatialIndexService,
-                            actorViewDataStore),
-                        new FixedWorldGameSettingsRepository()),
+                            actorViewDataStore)),
                     new UseDungeonStairOrchestrator(
                         new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
                     new SelectDungeonTargetFloorUseCase(
@@ -363,7 +362,11 @@ namespace DungeonInn.Tests.EditMode
                         navigationService,
                         actorSpatialIndexService,
                         actorViewDataStore),
-                    new FixedWorldGameSettingsRepository()),
+                    new FixedWorldGameSettingsRepository(),
+                    new CombatEncounterTargetResolver(
+                        gameClock,
+                        actorSpatialIndexService,
+                        new FixedWorldGameSettingsRepository())),
                 new AdvanceProjectileUseCase(combatEffectExecutor, actorDefeatOrchestrator, eventBus, new FixedWorldGameSettingsRepository()),
                 new AdvanceAreaEffectUseCase(
                     new AttackAreaTargetResolver(actorSpatialIndexService, new FixedWorldGameSettingsRepository()),
@@ -545,14 +548,16 @@ namespace DungeonInn.Tests.EditMode
         {
             readonly List<GridPosition> path = new();
 
-            public IReadOnlyList<GridPosition> TryFindPath(
-                MapLayerId layerId,
-                GridPosition start,
-                GridPosition goal)
+            public IReadOnlyList<LayerPosition> TryFindPath(
+                MapLayer layer,
+                LayerPosition start,
+                LayerPosition goal)
             {
                 path.Clear();
-                path.Add(goal);
-                return path;
+                path.Add(layer.ToGridPosition(goal));
+                var result = new List<LayerPosition>();
+                result.Add(goal);
+                return result;
             }
         }
 

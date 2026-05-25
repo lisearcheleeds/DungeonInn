@@ -314,6 +314,12 @@ namespace DungeonInn.Tests.EditMode
                         actorPosition,
                         ActorBehaviorType.Adventurer,
                         "adventurer_novice")),
+                new FixedActorViewDataProvider(
+                    new ActorViewData(
+                        actorId,
+                        actorPosition,
+                        ActorBehaviorType.Adventurer,
+                        "adventurer_novice")),
                 new LayerPositionViewMapper(new FixedLayerPositionViewSettingsRepository(new LayerPositionViewSettings(-240f, 0f))),
                 registry,
                 visualDefinitionLoader,
@@ -336,6 +342,69 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(
                     Quaternion.Angle(actorView.transform.rotation, Quaternion.Euler(45f, 45f, 0f)),
                     Is.LessThan(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                registry.Dispose();
+                pool.Dispose();
+                prefabSource.Dispose();
+                visualDefinitionLoader.Dispose();
+                layerRegistry.Dispose();
+                viewRoot.Dispose();
+            }
+        }
+
+        [Test]
+        public void WorldActorPresenterRefreshesActiveLayerActorPositionWithoutDirtyChange()
+        {
+            var actorId = Guid.NewGuid();
+            var actorPosition = new LayerPosition(MapLayerId.DungeonFloor(1), 8f, 9f);
+            var viewRoot = new WorldViewRoot();
+            var layerRegistry = new MapLayerViewRegistry(viewRoot);
+            var prefabSource = new ActorPrefabSource(null);
+            var pool = new WorldActorViewPool(prefabSource);
+            var registry = new WorldActorViewRegistry(pool, layerRegistry);
+            var cameraObject = new GameObject("WorldActorPresenterRefreshLayerCamera");
+            var camera = cameraObject.AddComponent<Camera>();
+            var cameraController = new WorldCameraController(new FixedWorldCameraSettingsRepository(CreateWorldCameraSettingsForPresenterTest()));
+            cameraController.BindCamera(camera);
+            cameraController.UpdateCamera(0f);
+            var visualDefinitionLoader = new ActorVisualDefinitionLoader(
+                new ThrowingAssetManager(),
+                new HardcodedMasterRepository());
+            var provider = new FixedActorViewDataProvider(
+                Array.Empty<ActorViewData>(),
+                new[]
+                {
+                    new ActorViewData(
+                        actorId,
+                        actorPosition,
+                        ActorBehaviorType.Adventurer,
+                        "adventurer_novice")
+                });
+            var presenter = new WorldActorPresenter(
+                provider,
+                provider,
+                new LayerPositionViewMapper(new FixedLayerPositionViewSettingsRepository(new LayerPositionViewSettings(-240f, 0f))),
+                registry,
+                visualDefinitionLoader,
+                cameraController,
+                new ActorCombatAnimationPresenter(TestEventSubscriber.Instance));
+
+            try
+            {
+                presenter.UpdateVisuals();
+                var actorView = registry.GetOrCreateActorView(actorId, actorPosition, out var createdBeforeRefresh);
+                Assert.That(createdBeforeRefresh, Is.True);
+                Assert.That(actorView.transform.localPosition.x, Is.EqualTo(0f).Within(0.0001f));
+                Assert.That(actorView.transform.localPosition.z, Is.EqualTo(0f).Within(0.0001f));
+
+                presenter.RefreshLayerActors(MapLayerId.DungeonFloor(1));
+
+                Assert.That(actorView.transform.localPosition.x, Is.EqualTo(8f).Within(0.0001f));
+                Assert.That(actorView.transform.localPosition.z, Is.EqualTo(9f).Within(0.0001f));
+                Assert.That(actorView.transform.parent, Is.EqualTo(layerRegistry.GetOrCreateActorRoot(MapLayerId.DungeonFloor(1))));
             }
             finally
             {
@@ -823,16 +892,25 @@ namespace DungeonInn.Tests.EditMode
             }
         }
 
-        sealed class FixedActorViewDataProvider : IActorViewDataProvider
+        sealed class FixedActorViewDataProvider : IActorViewDataProvider, IActorStatusViewDataProvider
         {
             readonly ActorViewDataChangeBuffer initialChanges;
+            readonly IReadOnlyList<ActorViewData> activeActors;
             bool consumed;
 
             public FixedActorViewDataProvider(ActorViewData actor)
+                : this(new[] { actor }, new[] { actor })
+            {
+            }
+
+            public FixedActorViewDataProvider(
+                IReadOnlyList<ActorViewData> initialChangedActors,
+                IReadOnlyList<ActorViewData> activeActors)
             {
                 initialChanges = new ActorViewDataChangeBuffer(
-                    new[] { actor },
+                    initialChangedActors,
                     Array.Empty<Guid>());
+                this.activeActors = activeActors;
             }
 
             public ActorViewDataChangeBuffer ConsumeChanges()
@@ -846,6 +924,20 @@ namespace DungeonInn.Tests.EditMode
 
                 consumed = true;
                 return initialChanges;
+            }
+
+            public IReadOnlyList<Guid> ConsumeRemovedActorIds()
+            {
+                return Array.Empty<Guid>();
+            }
+
+            public void CopyActiveActorsTo(List<ActorViewData> results)
+            {
+                results.Clear();
+                for (var i = 0; i < activeActors.Count; i++)
+                {
+                    results.Add(activeActors[i]);
+                }
             }
         }
 

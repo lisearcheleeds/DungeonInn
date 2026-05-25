@@ -7,7 +7,8 @@ namespace DungeonInn.Application.Actors.Movement
     {
         const int FailedPathRecheckIntervalRequests = 30;
 
-        readonly List<GridPosition> path = new();
+        readonly List<LayerPosition> path = new();
+        readonly List<GridPosition> waypointGrids = new();
 
         public GridPosition CachedGoal { get; private set; }
         public GridPosition CachedStart { get; private set; }
@@ -51,16 +52,16 @@ namespace DungeonInn.Application.Actors.Movement
 
             if (waypointIndex <= 0)
             {
-                return !CachedStart.Equals(startGrid) && !path[0].Equals(startGrid);
+                return !CachedStart.Equals(startGrid) && !waypointGrids[0].Equals(startGrid);
             }
 
-            var previousWaypoint = path[waypointIndex - 1];
+            var previousWaypoint = waypointGrids[waypointIndex - 1];
             if (previousWaypoint.Equals(startGrid))
             {
                 return false;
             }
 
-            if (waypointIndex < path.Count && path[waypointIndex].Equals(startGrid))
+            if (waypointIndex < waypointGrids.Count && waypointGrids[waypointIndex].Equals(startGrid))
             {
                 return false;
             }
@@ -68,7 +69,7 @@ namespace DungeonInn.Application.Actors.Movement
             return true;
         }
 
-        public bool TryGetCurrentWaypoint(out GridPosition waypoint)
+        public bool TryGetCurrentWaypoint(out LayerPosition waypoint)
         {
             if (path.Count <= waypointIndex)
             {
@@ -86,18 +87,20 @@ namespace DungeonInn.Application.Actors.Movement
         }
 
         public void SetPath(
-            MapLayerId layerId,
+            MapLayer layer,
             GridPosition start,
-            IReadOnlyList<GridPosition> newPath,
+            IReadOnlyList<LayerPosition> newPath,
             GridPosition goal)
         {
             path.Clear();
+            waypointGrids.Clear();
             for (var i = 0; i < newPath.Count; i++)
             {
                 path.Add(newPath[i]);
+                waypointGrids.Add(layer.ToGridPosition(newPath[i]));
             }
 
-            CachedLayerId = layerId;
+            CachedLayerId = layer.Id;
             CachedStart = start;
             CachedGoal = goal;
             waypointIndex = 0;
@@ -109,6 +112,7 @@ namespace DungeonInn.Application.Actors.Movement
         public void MarkFailed(MapLayerId layerId, GridPosition start, GridPosition goal)
         {
             path.Clear();
+            waypointGrids.Clear();
             CachedLayerId = layerId;
             CachedStart = start;
             CachedGoal = goal;

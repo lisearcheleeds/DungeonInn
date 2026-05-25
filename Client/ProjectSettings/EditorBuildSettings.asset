@@ -9,9 +9,6 @@ EditorBuildSettings:
     path: Assets/DungeonInn/Runtime/Scene/Launcher.unity
     guid: 54370f34dae6d2b41a27fb229c33dee8
   - enabled: 1
-    path: Assets/DungeonInn/Runtime/Scene/MainScene/FirstScene.unity
-    guid: 417b1809f7d55864c9f9d3da29df8340
-  - enabled: 1
     path: Assets/DungeonInn/Runtime/Scene/MainScene/Title.unity
     guid: 66c2b4680f9f66548a244e4aacf71941
   - enabled: 1

@@ -9,7 +9,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
     {
         [SerializeField] TMP_Text dayTimeText;
         [SerializeField] TMP_Text goldText;
-        [SerializeField] TMP_Text alertText;
         [SerializeField] LHButton pauseButton;
         [SerializeField] LHButton speedNormalButton;
         [SerializeField] LHButton speedFastButton;
@@ -29,25 +28,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             if (goldText != null)
             {
                 goldText.text = text;
-            }
-        }
-
-        public void ShowAlert(string text)
-        {
-            if (alertText == null)
-            {
-                return;
-            }
-
-            alertText.gameObject.SetActive(true);
-            alertText.text = text;
-        }
-
-        public void HideAlert()
-        {
-            if (alertText != null)
-            {
-                alertText.gameObject.SetActive(false);
             }
         }
 

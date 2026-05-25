@@ -64,21 +64,19 @@ namespace DungeonInn.Application.Actors.Movement
                 return true;
             }
 
-            var startGrid = layer.ToGridPosition(actor.Position);
-            var goalGrid = layer.ToGridPosition(destination);
             var pathState = navigationService.GetOrComputePathState(
                 actor.Id,
                 layer,
                 walkability,
-                startGrid,
-                goalGrid);
+                actor.Position,
+                destination);
 
             if (pathState.HasFailed)
             {
                 return false;
             }
 
-            if (!pathState.TryGetCurrentWaypoint(out var nextWaypointGrid))
+            if (!pathState.TryGetCurrentWaypoint(out var nextWaypoint))
             {
                 if (snapToDestinationOnArrival)
                 {
@@ -88,12 +86,18 @@ namespace DungeonInn.Application.Actors.Movement
                 return true;
             }
 
-            var nextWaypoint = layer.GetCellCenter(nextWaypointGrid);
             var waypointDistSq = actor.Position.DistanceSquaredTo(nextWaypoint);
             var step = speedMetersPerSecond * deltaGameSeconds;
+            var nextWaypointIsDestination = nextWaypoint.DistanceSquaredTo(destination) <= 0.0001f;
 
             if (waypointDistSq <= step * step)
             {
+                if (nextWaypointIsDestination && 0f < arrivalDistance)
+                {
+                    MoveToArrivalBoundary(actor, destination, arrivalDistance);
+                    return true;
+                }
+
                 MoveTo(actor, nextWaypoint);
                 pathState.AdvanceWaypoint();
             }
@@ -114,6 +118,26 @@ namespace DungeonInn.Application.Actors.Movement
             }
 
             return arrived;
+        }
+
+        void MoveToArrivalBoundary(Actor actor, LayerPosition destination, float arrivalDistance)
+        {
+            const float ArrivalBoundaryInsetMeters = 0.001f;
+            var dx = destination.X - actor.Position.X;
+            var dz = destination.Z - actor.Position.Z;
+            var distSq = dx * dx + dz * dz;
+            if (distSq <= arrivalDistance * arrivalDistance)
+            {
+                return;
+            }
+
+            var dist = (float)Math.Sqrt(distSq);
+            var moveDistance = Math.Min(dist, Math.Max(0f, dist - arrivalDistance + ArrivalBoundaryInsetMeters));
+            var ratio = moveDistance / dist;
+            MoveTo(actor, new LayerPosition(
+                actor.Position.LayerId,
+                actor.Position.X + dx * ratio,
+                actor.Position.Z + dz * ratio));
         }
 
         void MoveTo(Actor actor, LayerPosition position)

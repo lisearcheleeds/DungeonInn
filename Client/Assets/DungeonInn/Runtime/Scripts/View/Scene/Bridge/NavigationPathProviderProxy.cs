@@ -17,17 +17,17 @@ namespace DungeonInn.View.Scene.Bridge
     {
         INavigationPathProvider current;
 
-        public IReadOnlyList<GridPosition> TryFindPath(
-            MapLayerId layerId,
-            GridPosition start,
-            GridPosition goal)
+        public IReadOnlyList<LayerPosition> TryFindPath(
+            MapLayer layer,
+            LayerPosition start,
+            LayerPosition goal)
         {
             if (current == null)
             {
                 return null;
             }
 
-            return current.TryFindPath(layerId, start, goal);
+            return current.TryFindPath(layer, start, goal);
         }
 
         public void Register(INavigationPathProvider provider)

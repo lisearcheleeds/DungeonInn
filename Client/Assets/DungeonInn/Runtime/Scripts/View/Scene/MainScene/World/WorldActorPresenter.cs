@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Application.World;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using UnityEngine;
 using VContainer;
@@ -13,6 +14,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     public sealed class WorldActorPresenter
     {
         readonly IActorViewDataProvider viewDataProvider;
+        readonly IActorStatusViewDataProvider activeActorProvider;
         readonly LayerPositionViewMapper positionMapper;
         readonly WorldActorViewRegistry actorViewRegistry;
         readonly ActorVisualDefinitionLoader visualDefinitionLoader;
@@ -23,6 +25,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         readonly Dictionary<Guid, string> appliedVisualIds = new();
         readonly HashSet<ActorVisualRequestKey> requestedVisuals = new();
         readonly HashSet<Guid> walkingActorsThisFrame = new();
+        readonly List<ActorViewData> activeActorBuffer = new();
         float frameYawDegrees;
         float frameDeltaTime;
         Quaternion frameCameraRotation;
@@ -30,6 +33,7 @@ namespace DungeonInn.View.Scene.MainScene.World
         [Inject]
         public WorldActorPresenter(
             IActorViewDataProvider viewDataProvider,
+            IActorStatusViewDataProvider activeActorProvider,
             LayerPositionViewMapper positionMapper,
             WorldActorViewRegistry actorViewRegistry,
             ActorVisualDefinitionLoader visualDefinitionLoader,
@@ -37,6 +41,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             ActorCombatAnimationPresenter combatAnimationPresenter)
         {
             this.viewDataProvider = viewDataProvider ?? throw new ArgumentNullException(nameof(viewDataProvider));
+            this.activeActorProvider = activeActorProvider ?? throw new ArgumentNullException(nameof(activeActorProvider));
             this.positionMapper = positionMapper ?? throw new ArgumentNullException(nameof(positionMapper));
             this.actorViewRegistry = actorViewRegistry ?? throw new ArgumentNullException(nameof(actorViewRegistry));
             this.visualDefinitionLoader =
@@ -65,31 +70,52 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             foreach (var actor in changes.ChangedActors)
             {
-                var actorView = actorViewRegistry.GetOrCreateActorView(
-                    actor.ActorId,
-                    actor.Position,
-                    out var created);
-                actorViewDataById[actor.ActorId] = actor;
-                RequestVisualIfNeeded(actor.VisualId);
-
-                var positionChanged = created ||
-                    !actorView.HasLastPosition ||
-                    !IsSamePosition(actorView.LastPosition, actor.Position);
-                if (positionChanged)
-                {
-                    var layerChanged = !created && !actorView.LastPosition.LayerId.Equals(actor.Position.LayerId);
-                    if (layerChanged)
-                    {
-                        actorViewRegistry.SetActorLayer(actorView, actor.Position);
-                    }
-
-                    actorView.SetLocalPosition(ResolveActorLocalPosition(actor));
-                    actorView.UpdateFacing(actor.Position);
-                    walkingActorsThisFrame.Add(actor.ActorId);
-                }
+                ApplyActorViewData(actor, forcePosition: false);
             }
 
             actorViewRegistry.ForEachActorView(updateActorViewAction);
+        }
+
+        public void RefreshLayerActors(MapLayerId layerId)
+        {
+            activeActorProvider.CopyActiveActorsTo(activeActorBuffer);
+            for (var i = 0; i < activeActorBuffer.Count; i++)
+            {
+                var actor = activeActorBuffer[i];
+                if (actor.Position.LayerId.Equals(layerId))
+                {
+                    ApplyActorViewData(actor, forcePosition: true);
+                }
+            }
+        }
+
+        void ApplyActorViewData(ActorViewData actor, bool forcePosition)
+        {
+            var actorView = actorViewRegistry.GetOrCreateActorView(
+                actor.ActorId,
+                actor.Position,
+                out var created);
+            actorViewDataById[actor.ActorId] = actor;
+            RequestVisualIfNeeded(actor.VisualId);
+
+            var positionChanged = forcePosition ||
+                created ||
+                !actorView.HasLastPosition ||
+                !IsSamePosition(actorView.LastPosition, actor.Position);
+            if (!positionChanged)
+            {
+                return;
+            }
+
+            if (forcePosition ||
+                !created && actorView.HasLastPosition && !actorView.LastPosition.LayerId.Equals(actor.Position.LayerId))
+            {
+                actorViewRegistry.SetActorLayer(actorView, actor.Position);
+            }
+
+            actorView.SetLocalPosition(ResolveActorLocalPosition(actor));
+            actorView.UpdateFacing(actor.Position);
+            walkingActorsThisFrame.Add(actor.ActorId);
         }
 
         void UpdateSingleActorView(Guid actorId, ActorView actorView)
@@ -206,12 +232,13 @@ namespace DungeonInn.View.Scene.MainScene.World
             var facing3 = new Vector3(facing.x, 0f, facing.y);
             var rightDot = Vector3.Dot(cameraRight, facing3);
             var forwardDot = Vector3.Dot(cameraForward, facing3);
-            if (0f <= forwardDot)
+            var epsilon = -0.01f;
+            if (epsilon <= forwardDot)
             {
-                return 0f <= rightDot ? ActorAnimationDirection.NE : ActorAnimationDirection.NW;
+                return epsilon <= rightDot ? ActorAnimationDirection.NE : ActorAnimationDirection.NW;
             }
 
-            return 0f <= rightDot ? ActorAnimationDirection.SE : ActorAnimationDirection.SW;
+            return epsilon <= rightDot ? ActorAnimationDirection.SE : ActorAnimationDirection.SW;
         }
     }
 }

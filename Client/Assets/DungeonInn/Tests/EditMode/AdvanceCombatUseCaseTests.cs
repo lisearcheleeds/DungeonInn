@@ -206,7 +206,7 @@ namespace DungeonInn.Tests.EditMode
         public void CombatApproachUsesNavigationPathInsteadOfDirectWallCrossing()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
-            var worldState = CreateWorldState();
+            var worldState = CreateWorldState(false);
             worldState.Initialize(
                 CreateGuild(),
                 CreateGroundMap(),
@@ -232,6 +232,7 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(attacker.Position.X, Is.EqualTo(0.5f).Within(0.0001f));
             Assert.That(attacker.Position.Z, Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(combatService.HasTarget(attacker.Id), Is.True);
             Assert.That(eventBus.GetEvents<CombatAttackOccurred>().Count, Is.EqualTo(0));
         }
 
@@ -421,6 +422,7 @@ namespace DungeonInn.Tests.EditMode
             var navigationService = new ActorNavigationService(
                 new NoOpGameEventBus(),
                 new NoOpNavigationPathProvider());
+            var settingsRepository = new FixedWorldGameSettingsRepository();
             return new AdvanceCombatUseCase(
                 combatService,
                 clock,
@@ -432,17 +434,29 @@ namespace DungeonInn.Tests.EditMode
                     navigationService,
                     spatialIndex,
                     actorViewDataStore),
-                new FixedWorldGameSettingsRepository());
+                settingsRepository,
+                new CombatEncounterTargetResolver(clock, spatialIndex, settingsRepository));
         }
 
         static GameWorldState CreateWorldState()
         {
-            return new GameWorldState(
+            return CreateWorldState(true);
+        }
+
+        static GameWorldState CreateWorldState(bool initialize)
+        {
+            var worldState = new GameWorldState(
                 new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 ActorViewDataStoreTestFactory.Create(),
                 new FixedWorldGameSettingsRepository());
+            if (initialize)
+            {
+                worldState.Initialize(CreateGuild(), CreateGroundMap(), CreateDungeonWithWall(new GridPosition(-1, -1)));
+            }
+
+            return worldState;
         }
 
         static AdventurerGuild CreateGuild()
@@ -465,7 +479,7 @@ namespace DungeonInn.Tests.EditMode
         static Dungeon CreateDungeonWithWall(GridPosition wall)
         {
             var dungeon = new Dungeon(1);
-            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 5, 3, 1f);
+            var layer = new MapLayer(MapLayerId.DungeonFloor(1), 80, 20, 1f);
             var cells = new DungeonCell[layer.Width * layer.Depth];
             for (var z = 0; z < layer.Depth; z++)
             {
@@ -483,7 +497,7 @@ namespace DungeonInn.Tests.EditMode
                 layer,
                 cells,
                 new DungeonStair(DungeonStairType.Up, new GridPosition(0, 0)),
-                new DungeonStair(DungeonStairType.Down, new GridPosition(4, 2)),
+                new DungeonStair(DungeonStairType.Down, new GridPosition(79, 19)),
                 Array.Empty<DungeonRoom>(),
                 new DungeonFloorGenerationSettings(0)));
             return dungeon;

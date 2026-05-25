@@ -25,6 +25,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<LayerPositionViewSettingsRepository>(Lifetime.Scoped).As<ILayerPositionViewSettingsRepository>();
             builder.Register<WorldCameraSettingsRepository>(Lifetime.Scoped).As<IWorldCameraSettingsRepository>();
             builder.Register<MapLayerViewRegistry>(Lifetime.Scoped);
+            builder.RegisterEntryPoint<WorldActiveLayerNavigationInvalidator>();
             builder.Register<LayerPositionViewMapper>(Lifetime.Scoped);
             builder.Register<WorldCameraController>(Lifetime.Scoped);
             builder.Register<WorldAddressableViewFactory>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
@@ -47,6 +48,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldActorViewPool>(Lifetime.Scoped);
             builder.Register<WorldActorViewRegistry>(Lifetime.Scoped);
             builder.Register<WorldActorPresenter>(Lifetime.Scoped);
+            builder.RegisterEntryPoint<WorldActiveLayerActorViewRefresher>();
             builder.Register<ProjectilePrefabSource>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<WorldProjectileViewPool>(Lifetime.Scoped);
             builder.Register<WorldProjectilePresenter>(Lifetime.Scoped);

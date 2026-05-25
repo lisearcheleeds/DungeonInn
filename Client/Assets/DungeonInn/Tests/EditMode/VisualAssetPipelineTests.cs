@@ -133,6 +133,11 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(initialWorldSettings.DungeonSeed, Is.EqualTo(12345));
             Assert.That(innBalanceSettings.FeePerStay, Is.EqualTo(10));
             Assert.That(actorSimulationSettings.MoveSpeedMetersPerSecond, Is.EqualTo(5f));
+            using (var serializedGameSettings = new SerializedObject(gameSettingsSo))
+            {
+                Assert.That(serializedGameSettings.FindProperty("actorMoveArrivalDistanceMeters"), Is.Null);
+            }
+
             Assert.That(spawnBalanceSettings.MaxAdventurerCount, Is.EqualTo(8));
             Assert.That(returnPolicySettings.GoalCompletedScore, Is.EqualTo(100));
             Assert.That(combatBalanceSettings.ProjectileHitRadiusMeters, Is.EqualTo(0.5f));

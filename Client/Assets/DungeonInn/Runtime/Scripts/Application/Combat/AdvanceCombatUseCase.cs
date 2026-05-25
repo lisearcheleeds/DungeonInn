@@ -10,6 +10,7 @@ using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
 using DungeonInn.Application.Event;
+using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Facilities;
 using DungeonInn.Application.Items;
@@ -29,6 +30,7 @@ namespace DungeonInn.Application.Combat
         readonly IEventPublisher eventPublisher;
         readonly ActorMovementService actorMovementService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly CombatEncounterTargetResolver targetResolver;
 
         [Inject]
         public AdvanceCombatUseCase(
@@ -39,7 +41,8 @@ namespace DungeonInn.Application.Combat
             ActorDefeatOrchestrator actorDefeatOrchestrator,
             IEventPublisher eventPublisher,
             ActorMovementService actorMovementService,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            CombatEncounterTargetResolver targetResolver)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -56,6 +59,7 @@ namespace DungeonInn.Application.Combat
                 ?? throw new ArgumentNullException(nameof(actorMovementService));
             this.worldGameSettingsRepository = worldGameSettingsRepository
                 ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.targetResolver = targetResolver ?? throw new ArgumentNullException(nameof(targetResolver));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -85,13 +89,44 @@ namespace DungeonInn.Application.Combat
                 var target = worldState.FindActor(combatState.TargetActorId.Value);
                 if (target == null || target.Hp <= 0)
                 {
-                    actorCombatService.ClearTarget(actor.Id);
+                    EndEncounter(actor.Id, bufferedEventPublisher);
+                    continue;
+                }
+
+                if (target.Position.LayerId.Equals(MapLayerId.Ground) ||
+                    !target.Position.LayerId.Equals(actor.Position.LayerId))
+                {
+                    EndEncounter(actor.Id, bufferedEventPublisher);
+                    continue;
+                }
+
+                var hasLineOfSight = targetResolver.HasLineOfSight(worldState.Dungeon, actor, target);
+                if (!hasLineOfSight)
+                {
+                    var moved = MoveTowardTarget(
+                        worldState,
+                        actor,
+                        target,
+                        deltaGameSeconds,
+                        0f,
+                        out var arrivedAtTarget);
+                    if (arrivedAtTarget || !moved)
+                    {
+                        EndEncounter(actor.Id, bufferedEventPublisher);
+                    }
+
                     continue;
                 }
 
                 if (!IsWithinWeaponRange(actor, target))
                 {
-                    MoveTowardTarget(worldState, actor, target, deltaGameSeconds);
+                    MoveTowardTarget(
+                        worldState,
+                        actor,
+                        target,
+                        deltaGameSeconds,
+                        actor.WeaponCombatParams.RangeMeters,
+                        out _);
 
                     continue;
                 }
@@ -120,28 +155,49 @@ namespace DungeonInn.Application.Combat
             return UniTask.CompletedTask;
         }
 
-        void MoveTowardTarget(IGameWorldState worldState, Actor actor, Actor target, float deltaGameSeconds)
+        bool MoveTowardTarget(
+            IGameWorldState worldState,
+            Actor actor,
+            Actor target,
+            float deltaGameSeconds,
+            float arrivalDistanceMeters,
+            out bool arrived)
         {
             if (!actor.Position.LayerId.Equals(target.Position.LayerId))
             {
-                return;
+                arrived = false;
+                return false;
             }
 
             if (actor.Position.LayerId.Equals(MapLayerId.Ground))
             {
-                return;
+                arrived = false;
+                return false;
             }
 
+            var previousPosition = actor.Position;
             var floor = worldState.Dungeon.GetFloor(actor.Position.LayerId.Value);
-            actorMovementService.MoveToward(
+            arrived = actorMovementService.MoveToward(
                 actor,
                 target.Position,
                 floor.Layer,
                 floor,
                 worldGameSettingsRepository.GetActorSimulationSettings().MoveSpeedMetersPerSecond,
                 deltaGameSeconds,
-                actor.WeaponCombatParams.RangeMeters,
+                arrivalDistanceMeters,
                 snapToDestinationOnArrival: false);
+            return 0.0001f < previousPosition.DistanceSquaredTo(actor.Position);
+        }
+
+        void EndEncounter(Guid actorId, IEventPublisher publisher)
+        {
+            if (!actorCombatService.HasTarget(actorId))
+            {
+                return;
+            }
+
+            actorCombatService.ClearTarget(actorId);
+            publisher.Publish(new CombatEncounterEnded(actorId));
         }
 
         static bool IsWithinWeaponRange(Actor actor, Actor target)

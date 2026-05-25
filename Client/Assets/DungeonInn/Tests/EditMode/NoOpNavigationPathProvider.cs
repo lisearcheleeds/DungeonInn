@@ -6,10 +6,10 @@ namespace DungeonInn.Tests.EditMode
 {
     sealed class NoOpNavigationPathProvider : INavigationPathProvider
     {
-        public IReadOnlyList<GridPosition> TryFindPath(
-            MapLayerId layerId,
-            GridPosition start,
-            GridPosition goal)
+        public IReadOnlyList<LayerPosition> TryFindPath(
+            MapLayer layer,
+            LayerPosition start,
+            LayerPosition goal)
         {
             return null;
         }

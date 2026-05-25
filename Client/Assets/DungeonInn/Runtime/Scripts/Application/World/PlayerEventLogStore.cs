@@ -53,7 +53,7 @@ namespace DungeonInn.Application.World
                 .Subscribe(e => AddFromEvent(e, e.ActorId)).AddTo(ref bag);
             eventSubscriber.OnEvent<ActorLeveledUp>()
                 .Subscribe(e => AddFromEvent(e, e.ActorId)).AddTo(ref bag);
-            eventSubscriber.OnEvent<ActorRecoveringAtInn>()
+            eventSubscriber.OnEvent<ActorReservedInn>()
                 .Subscribe(e => AddFromEvent(e, e.ActorId)).AddTo(ref bag);
             eventSubscriber.OnEvent<ActorFullyRecovered>()
                 .Subscribe(e => AddFromEvent(e, e.ActorId)).AddTo(ref bag);

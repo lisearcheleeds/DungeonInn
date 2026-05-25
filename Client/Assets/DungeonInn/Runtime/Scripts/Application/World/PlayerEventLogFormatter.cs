@@ -26,9 +26,9 @@ namespace DungeonInn.Application.World
             switch (gameEvent)
             {
                 case CombatAttackOccurred e:
-                    return $"{GetActorName(e.AttackerActorId)} が {GetActorName(e.TargetActorId)} に {e.Damage} ダメージ";
+                    return $"{GetActorName(e.AttackerActorId)} は {GetActorName(e.TargetActorId)} に {e.Damage} ダメージ";
                 case ProjectileFired e:
-                    return $"{GetActorName(e.AttackerActorId)} が {GetActorName(e.TargetActorId)} に向け投射";
+                    return $"{GetActorName(e.AttackerActorId)} は {GetActorName(e.TargetActorId)} に向けて投射した";
                 case ProjectileHit e:
                     return $"{GetActorName(e.AttackerActorId)} の投射物が {GetActorName(e.TargetActorId)} に {e.Damage} ダメージ";
                 case AreaEffectCreated e:
@@ -43,10 +43,12 @@ namespace DungeonInn.Application.World
                     return $"{GetActorName(e.ActorId)} が {GetItemName(e.ItemInstance.Stack.ItemId)} を拾った";
                 case ActorLeveledUp e:
                     return $"{GetActorName(e.ActorId)} が Lv.{e.NewLevel} になった";
-                case ActorRecoveringAtInn e:
-                    return $"{GetActorName(e.ActorId)} が宿屋で回復中 ({e.CurrentHp}/{e.MaxHp})";
+                case ActorReservedInn e:
+                    return $"{GetActorName(e.ActorId)} は宿屋で休み始めた";
+                case ActorRecoveringAtInn:
+                    return string.Empty;
                 case ActorFullyRecovered e:
-                    return $"{GetActorName(e.ActorId)} が完全回復した";
+                    return $"{GetActorName(e.ActorId)} は宿屋での回復を終えた";
                 default:
                     return string.Empty;
             }

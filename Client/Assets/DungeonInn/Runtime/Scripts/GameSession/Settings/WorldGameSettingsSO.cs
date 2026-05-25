@@ -63,7 +63,6 @@ namespace DungeonInn.GameSession.Settings
 
         [Header("Actor Simulation")]
         [SerializeField] float actorMoveSpeedMetersPerSecond = 5f;
-        [SerializeField] float actorMoveArrivalDistanceMeters = 2.5f;
         [SerializeField] float adventurerItemPickupRadiusMeters = 1.5f;
         [SerializeField] int adventurerExplorationRoomArrivalTarget = 8;
 
@@ -155,7 +154,6 @@ namespace DungeonInn.GameSession.Settings
         {
             return new ActorSimulationSettings(
                 actorMoveSpeedMetersPerSecond,
-                actorMoveArrivalDistanceMeters,
                 adventurerItemPickupRadiusMeters,
                 adventurerExplorationRoomArrivalTarget);
         }

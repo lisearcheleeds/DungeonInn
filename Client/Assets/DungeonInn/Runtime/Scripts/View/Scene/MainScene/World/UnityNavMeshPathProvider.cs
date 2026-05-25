@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using DungeonInn.Application.Actors.Movement;
-using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using UnityEngine;
 using UnityEngine.AI;
@@ -13,7 +12,7 @@ namespace DungeonInn.View.Scene.MainScene.World
     {
         readonly MapLayerViewRegistry layerViewRegistry;
         readonly NavMeshPath navMeshPath = new();
-        readonly List<GridPosition> resultPath = new();
+        readonly List<LayerPosition> resultPath = new();
 
         [Inject]
         public UnityNavMeshPathProvider(MapLayerViewRegistry layerViewRegistry)
@@ -21,19 +20,19 @@ namespace DungeonInn.View.Scene.MainScene.World
             this.layerViewRegistry = layerViewRegistry ?? throw new ArgumentNullException(nameof(layerViewRegistry));
         }
 
-        public IReadOnlyList<GridPosition> TryFindPath(
-            MapLayerId layerId,
-            GridPosition start,
-            GridPosition goal)
+        public IReadOnlyList<LayerPosition> TryFindPath(
+            MapLayer layer,
+            LayerPosition start,
+            LayerPosition goal)
         {
-            var tileRoot = layerViewRegistry.GetTileRoot(layerId);
+            var tileRoot = layerViewRegistry.GetTileRoot(layer.Id);
             if (tileRoot == null)
             {
                 return null;
             }
 
-            var worldStart = GridToWorld(tileRoot, start);
-            var worldGoal = GridToWorld(tileRoot, goal);
+            var worldStart = LayerToWorld(tileRoot, start);
+            var worldGoal = LayerToWorld(tileRoot, goal);
             if (!NavMesh.CalculatePath(worldStart, worldGoal, NavMesh.AllAreas, navMeshPath))
             {
                 return null;
@@ -48,30 +47,31 @@ namespace DungeonInn.View.Scene.MainScene.World
             var corners = navMeshPath.corners;
             for (var i = 1; i < corners.Length; i++)
             {
-                var gridPosition = WorldToGrid(tileRoot, corners[i]);
+                var waypoint = WorldToLayerPosition(layer, tileRoot, corners[i]);
                 if (resultPath.Count == 0 ||
-                    !resultPath[resultPath.Count - 1].Equals(gridPosition))
+                    0.0001f < resultPath[resultPath.Count - 1].DistanceSquaredTo(waypoint))
                 {
-                    resultPath.Add(gridPosition);
+                    resultPath.Add(waypoint);
                 }
             }
 
             return resultPath.Count == 0 ? null : resultPath;
         }
 
-        static Vector3 GridToWorld(Transform tileRoot, GridPosition grid)
+        static Vector3 LayerToWorld(Transform tileRoot, LayerPosition position)
         {
-            var localX = (grid.X + 0.5f) * GameConstants.MapCellWidthMeters;
-            var localZ = (grid.Z + 0.5f) * GameConstants.MapCellWidthMeters;
-            return tileRoot.TransformPoint(new Vector3(localX, 0f, localZ));
+            return tileRoot.TransformPoint(new Vector3(position.X, 0f, position.Z));
         }
 
-        static GridPosition WorldToGrid(Transform tileRoot, Vector3 worldPoint)
+        static LayerPosition WorldToLayerPosition(MapLayer layer, Transform tileRoot, Vector3 worldPoint)
         {
             var local = tileRoot.InverseTransformPoint(worldPoint);
-            return new GridPosition(
-                Mathf.FloorToInt(local.x / GameConstants.MapCellWidthMeters),
-                Mathf.FloorToInt(local.z / GameConstants.MapCellWidthMeters));
+            var maxX = layer.Width * layer.CellSizeMeters - 0.0001f;
+            var maxZ = layer.Depth * layer.CellSizeMeters - 0.0001f;
+            return new LayerPosition(
+                layer.Id,
+                Mathf.Clamp(local.x, 0f, maxX),
+                Mathf.Clamp(local.z, 0f, maxZ));
         }
     }
 }

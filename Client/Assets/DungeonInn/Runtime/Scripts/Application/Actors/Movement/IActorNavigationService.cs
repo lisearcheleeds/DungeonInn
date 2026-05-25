@@ -9,10 +9,11 @@ namespace DungeonInn.Application.Actors.Movement
             Guid actorId,
             MapLayer layer,
             IGridWalkability walkability,
-            GridPosition startGrid,
-            GridPosition goalGrid);
+            LayerPosition start,
+            LayerPosition goal);
 
         void InvalidatePath(Guid actorId);
+        void InvalidateLayerPaths(MapLayerId layerId);
         void RemovePathState(Guid actorId);
     }
 }

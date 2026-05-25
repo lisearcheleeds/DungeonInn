@@ -52,11 +52,10 @@ MonoBehaviour:
   innWaitingSatisfactionDelta: -2
   innCannotPaySatisfactionDelta: -1
   actorMoveSpeedMetersPerSecond: 5
-  actorMoveArrivalDistanceMeters: 2.5
   adventurerItemPickupRadiusMeters: 1.5
   adventurerExplorationRoomArrivalTarget: 8
   adventurerSpawnIntervalTicks: 5
-  monsterSpawnIntervalTicks: 10
+  monsterSpawnIntervalTicks: 3
   initialMaxAdventurerCount: 8
   initialMaxMonsterCount: 20
   adventurerReturnDecisionThresholdScore: 100
