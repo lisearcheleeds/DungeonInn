@@ -1,0 +1,23 @@
+using System.Collections.Generic;
+using DungeonInn.Domain.Item;
+using DungeonInn.Master;
+
+namespace DungeonInn.Domain.Actor
+{
+    public sealed class StaffWeaponCalculator : IWeaponCalculator
+    {
+        public int CalculateAttack(
+            ActorStats stats,
+            WeaponMaster weaponMaster,
+            EquipmentMaster weaponEquipmentMaster,
+            IActorBehavior behavior,
+            int level,
+            IReadOnlyList<StatBonus> allEquipmentBonuses)
+        {
+            var intelligence = stats.Intelligence + StatBonusHelper.GetSum(allEquipmentBonuses, StatType.Intelligence);
+            var wisdom = stats.Wisdom + StatBonusHelper.GetSum(allEquipmentBonuses, StatType.Wisdom);
+            return WeaponCalculatorMath.ClampAttack(
+                intelligence * 3 + wisdom + level + WeaponCalculatorMath.GetWeaponAttack(weaponMaster, weaponEquipmentMaster));
+        }
+    }
+}

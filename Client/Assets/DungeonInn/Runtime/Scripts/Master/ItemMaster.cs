@@ -7,7 +7,7 @@ namespace DungeonInn.Master
     {
         public int Id { get; }
         public string Name { get; }
-        public ItemCategory Category { get; }
+        public ItemTag Tags { get; }
         public int BasePrice { get; }
         public int Quality { get; }
         public bool CanTrade { get; }
@@ -17,7 +17,7 @@ namespace DungeonInn.Master
         public ItemMaster(
             int id,
             string name,
-            ItemCategory category,
+            ItemTag tags,
             int basePrice,
             int quality,
             bool canTrade,
@@ -32,6 +32,11 @@ namespace DungeonInn.Master
             if (id < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
+            if (tags == ItemTag.None)
+            {
+                throw new ArgumentOutOfRangeException(nameof(tags));
             }
 
             if (basePrice < 0)
@@ -56,12 +61,17 @@ namespace DungeonInn.Master
 
             Id = id;
             Name = name;
-            Category = category;
+            Tags = tags;
             BasePrice = basePrice;
             Quality = Math.Max(0, quality);
             CanTrade = canTrade;
             MaxStackCount = maxStackCount;
             ActorEffectMasterId = actorEffectMasterId;
+        }
+
+        public bool HasTag(ItemTag tag)
+        {
+            return (Tags & tag) == tag;
         }
     }
 }

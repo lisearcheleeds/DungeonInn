@@ -92,7 +92,7 @@ interface IItemStackLimitResolver { int GetMaxStackCount(int itemId); }
 |---|---|
 | `Id` | アイテムID |
 | `Name` | 表示名 |
-| `Category` | Material / Consumable / Equipment |
+| `Tags` | `ItemTag` flags（Material / Recovery / Weapon / Armor / Accessory などを複数指定可） |
 | `BasePrice` | 基本価格 |
 | `CanTrade` | 取引可能フラグ |
 | `MaxStackCount` | 1スロットに積める最大個数 |
@@ -109,7 +109,7 @@ Gold はアイテムの一種として統一的に扱う。
 
 - `Inventory.Gold` → `itemCounts[SpecialItemIds.Money]` のショートカット
 - `Inventory.AddGold(amount)` / `TrySpendGold(amount)` で操作
-- マスタ定義：`ItemMaster(1, "Gold", Material, 1, 1, false)` （取引不可）
+- マスタ定義：`ItemMaster(1, "Gold", ItemTag.Currency, 1, 1, false)` （取引不可）
 
 ---
 

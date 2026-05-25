@@ -40,8 +40,8 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(firstDetail.HasValue, Is.True);
             Assert.That(secondDetail.HasValue, Is.True);
             Assert.That(firstDetail.Value.EquipmentNames.Count, Is.EqualTo(3));
-            Assert.That(firstDetail.Value.EquipmentNames[0], Is.EqualTo("Novice Sword"));
-            Assert.That(firstDetail.Value.EquipmentNames[1], Is.EqualTo("Cloth Armor"));
+            Assert.That(firstDetail.Value.EquipmentNames[0], Is.EqualTo("\u6728\u306e\u5263"));
+            Assert.That(firstDetail.Value.EquipmentNames[1], Is.EqualTo("\u5e03"));
             Assert.That(firstDetail.Value.EquipmentNames[2], Is.EqualTo("-"));
             Assert.That(firstDetail.Value.ActiveEffects.Count, Is.EqualTo(1));
             Assert.That(firstDetail.Value.ActiveEffects[0].ActorEffectMasterId, Is.EqualTo(1));

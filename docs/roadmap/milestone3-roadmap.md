@@ -39,8 +39,8 @@
 作るもの:
 
 - `ItemMaster`（アイテム定義: ID, 名前, タイプ, 売却価格, 装備ステータス）
-  - 既存の `ItemMaster`（id, name, ItemCategory, basePrice, quality, canTrade）は概ね対応済み
-  - `ItemCategory`（Material / Consumable / Equipment）が `ItemType` の役割を担う
+  - 既存の `ItemMaster`（id, name, ItemTag, basePrice, quality, canTrade）は概ね対応済み
+  - `ItemTag`（flags: Material / Recovery / Weapon / Armor / Accessory ...）が `ItemType` の役割を担う
   - 装備ステータスは `EquipmentMaster.Defense` + `WeaponMaster` で既に表現済み
 - `IItemMasterRepository`（`IMasterRepository` からアイテム参照に特化した部分インターフェース）
 

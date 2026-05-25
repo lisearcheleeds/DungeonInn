@@ -399,7 +399,7 @@ MasterMemory 導入前は `IMasterRepository` / `HardcodedMasterRepository` が�
 
 将来追加する消費アイテム用マスタ。
 `ItemMaster.Id` と同じ `ItemId` を主キーとして持つ。
-現状の `Potion` は `ItemCategory.Consumable` として分類されているだけで、使用効果はまだ持たない。
+現状の `Potion` は `ItemTag.Recovery` と `ActorEffectMasterId` によって回復効果へ接続する。
 
 想定項目:
 
@@ -775,7 +775,7 @@ Domain/
 │   ├── FacilityUsageType
 │   └── InnReservation
 ├── Item/
-│   ├── ItemCategory
+│   ├── ItemTag
 │   ├── EquipmentSlot
 │   ├── WeaponType
 │   ├── Inventory

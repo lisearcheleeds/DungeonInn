@@ -25,7 +25,7 @@ namespace DungeonInn.Application.Economy
         readonly List<ItemStack> sellBuffer = new();
         readonly ActorProcessingCandidateService candidateService;
         readonly List<Guid> actorIdBuffer = new();
-        readonly Dictionary<ItemCategory, Facility> saleFacilityByCategory = new();
+        readonly Dictionary<FacilityType, Facility> saleFacilityByType = new();
 
         [Inject]
         public SellItemsUseCase(
@@ -111,7 +111,7 @@ namespace DungeonInn.Application.Economy
             foreach (var stack in sellBuffer)
             {
                 var itemMaster = masterRepository.GetItemMaster(stack.ItemId);
-                if (!TryFindSaleFacility(guild, itemMaster.Category, out var facility))
+                if (!TryFindSaleFacility(guild, itemMaster, out var facility))
                 {
                     continue;
                 }
@@ -137,17 +137,17 @@ namespace DungeonInn.Application.Economy
             }
         }
 
-        bool TryFindSaleFacility(AdventurerGuild guild, ItemCategory itemCategory, out Facility facility)
+        bool TryFindSaleFacility(AdventurerGuild guild, ItemMaster itemMaster, out Facility facility)
         {
-            if (saleFacilityByCategory.TryGetValue(itemCategory, out facility))
-            {
-                return true;
-            }
-
-            if (!TryGetSaleFacilityType(itemCategory, out var facilityType))
+            if (!TryGetSaleFacilityType(itemMaster, out var facilityType))
             {
                 facility = null;
                 return false;
+            }
+
+            if (saleFacilityByType.TryGetValue(facilityType, out facility))
+            {
+                return true;
             }
 
             foreach (var candidate in guild.Facilities)
@@ -155,7 +155,7 @@ namespace DungeonInn.Application.Economy
                 if (candidate.Type == facilityType)
                 {
                     facility = candidate;
-                    saleFacilityByCategory[itemCategory] = facility;
+                    saleFacilityByType[facilityType] = facility;
                     return true;
                 }
             }
@@ -164,33 +164,33 @@ namespace DungeonInn.Application.Economy
             return false;
         }
 
-        static bool TryGetSaleFacilityType(ItemCategory itemCategory, out FacilityType facilityType)
+        static bool TryGetSaleFacilityType(ItemMaster itemMaster, out FacilityType facilityType)
         {
-            switch (itemCategory)
+            if (IsEquipmentItem(itemMaster))
             {
-                case ItemCategory.Material:
-                    facilityType = FacilityType.GeneralStore;
-                    return true;
-                case ItemCategory.Equipment:
-                    facilityType = FacilityType.EquipmentShop;
-                    return true;
-                default:
-                    facilityType = default;
-                    return false;
+                facilityType = FacilityType.EquipmentShop;
+                return true;
             }
+
+            facilityType = FacilityType.GeneralStore;
+            return true;
         }
 
         static bool IsSellable(Actor actor, ItemMaster itemMaster)
         {
-            switch (itemMaster.Category)
+            if (IsEquipmentItem(itemMaster))
             {
-                case ItemCategory.Material:
-                    return true;
-                case ItemCategory.Equipment:
-                    return !IsEquipped(actor, itemMaster.Id);
-                default:
-                    return false;
+                return !IsEquipped(actor, itemMaster.Id);
             }
+
+            return true;
+        }
+
+        static bool IsEquipmentItem(ItemMaster itemMaster)
+        {
+            return itemMaster.HasTag(ItemTag.Weapon) ||
+                itemMaster.HasTag(ItemTag.Armor) ||
+                itemMaster.HasTag(ItemTag.Accessory);
         }
 
         static bool IsEquipped(Actor actor, int itemId)

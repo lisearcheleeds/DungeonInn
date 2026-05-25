@@ -18,6 +18,8 @@ namespace DungeonInn.Domain.Actor
                     return new AxeWeaponCalculator();
                 case WeaponType.Scythe:
                     return new ScytheWeaponCalculator();
+                case WeaponType.Staff:
+                    return new StaffWeaponCalculator();
                 case WeaponType.Claws:
                     return new ClawsWeaponCalculator();
                 case WeaponType.Fangs:
@@ -42,6 +44,8 @@ namespace DungeonInn.Domain.Actor
                     return new[] { (StatType.Strength, 4) };
                 case WeaponType.Scythe:
                     return new[] { (StatType.Strength, 2), (StatType.Dexterity, 2) };
+                case WeaponType.Staff:
+                    return new[] { (StatType.Intelligence, 3), (StatType.Wisdom, 1) };
                 case WeaponType.Claws:
                     return new[] { (StatType.Dexterity, 3), (StatType.Strength, 2) };
                 case WeaponType.Fangs:

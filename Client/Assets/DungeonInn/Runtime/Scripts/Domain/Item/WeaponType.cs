@@ -7,6 +7,7 @@ namespace DungeonInn.Domain.Item
         Bow,
         Axe,
         Scythe,
+        Staff,
         Fist,
         Claws,
         Fangs

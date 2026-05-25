@@ -234,7 +234,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     continue;
                 }
 
-                if (itemMasterRepository.GetItemMaster(kvp.Key).Category == ItemCategory.Consumable)
+                var itemMaster = itemMasterRepository.GetItemMaster(kvp.Key);
+                if (itemMaster.HasTag(ItemTag.Recovery) && 0 < itemMaster.ActorEffectMasterId)
                 {
                     return true;
                 }

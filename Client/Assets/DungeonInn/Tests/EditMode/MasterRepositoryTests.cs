@@ -32,7 +32,7 @@ namespace DungeonInn.Tests.EditMode
             var itemMaster = repository.GetItemMaster(2001);
             var actorEffectMaster = repository.GetActorEffectMaster(itemMaster.ActorEffectMasterId);
 
-            Assert.That(itemMaster.Category, Is.EqualTo(ItemCategory.Consumable));
+            Assert.That(itemMaster.HasTag(ItemTag.Recovery), Is.True);
             Assert.That(actorEffectMaster.ReapplyPolicy, Is.EqualTo(ActorEffectReapplyPolicy.AppendDuration));
             Assert.That(actorEffectMaster.StatusEffectSpecs[0].Type, Is.EqualTo(StatusEffectType.HealHpOverTime));
             Assert.That(actorEffectMaster.StatusEffectSpecs[0].Amount, Is.EqualTo(30));

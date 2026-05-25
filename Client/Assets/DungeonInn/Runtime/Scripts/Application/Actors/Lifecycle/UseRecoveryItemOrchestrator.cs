@@ -123,7 +123,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 }
 
                 var itemMaster = masterRepository.GetItemMaster(kvp.Key);
-                if (itemMaster.Category != ItemCategory.Consumable || itemMaster.ActorEffectMasterId < 1)
+                if (!itemMaster.HasTag(ItemTag.Recovery) || itemMaster.ActorEffectMasterId < 1)
                 {
                     continue;
                 }

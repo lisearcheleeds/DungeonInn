@@ -153,14 +153,66 @@ namespace DungeonInn.Master
         {
             return new[]
             {
-                new ItemMaster(1, "Gold", ItemCategory.Material, 1, 1, false, 100000),
-                new ItemMaster(1001, "Herb", ItemCategory.Material, 10, 1, true, 10),
-                new ItemMaster(1002, "Goblin Ear", ItemCategory.Material, 25, 1, true, 10),
-                new ItemMaster(2001, "Potion", ItemCategory.Consumable, 30, 1, true, 10, 1),
-                new ItemMaster(3001, "Novice Sword", ItemCategory.Equipment, 80, 1, true, 1),
-                new ItemMaster(3002, "Novice Bow", ItemCategory.Equipment, 80, 1, true, 1),
-                new ItemMaster(3003, "Cloth Armor", ItemCategory.Equipment, 60, 1, true, 1),
-                new ItemMaster(3004, "Iron Sword", ItemCategory.Equipment, 120, 5, true, 1)
+                new ItemMaster(1, "Gold", ItemTag.Currency, 1, 1, false, 100000),
+                new ItemMaster(1001, "薬草", ItemTag.Material | ItemTag.Recovery, 10, 1, true, 10),
+                new ItemMaster(1002, "Goblin Ear", ItemTag.Material | ItemTag.SellOnly, 25, 1, true, 10),
+                new ItemMaster(1101, "鉄鉱石", ItemTag.Material | ItemTag.Ore, 35, 1, true, 20),
+                new ItemMaster(1102, "銅鉱石", ItemTag.Material | ItemTag.Ore, 25, 1, true, 20),
+                new ItemMaster(1103, "鉄", ItemTag.Material | ItemTag.Metal, 45, 2, true, 20),
+                new ItemMaster(1104, "鋼", ItemTag.Material | ItemTag.Metal, 70, 3, true, 20),
+                new ItemMaster(1105, "銅", ItemTag.Material | ItemTag.Metal, 35, 1, true, 20),
+                new ItemMaster(1106, "ダイヤ", ItemTag.Material | ItemTag.Gem | ItemTag.Valuable, 300, 5, true, 10),
+                new ItemMaster(1107, "ルビー", ItemTag.Material | ItemTag.Gem | ItemTag.Valuable, 220, 4, true, 10),
+                new ItemMaster(1108, "サファイア", ItemTag.Material | ItemTag.Gem | ItemTag.Valuable, 220, 4, true, 10),
+                new ItemMaster(1109, "パール", ItemTag.Material | ItemTag.Gem | ItemTag.Valuable, 160, 3, true, 10),
+                new ItemMaster(1110, "汚い布", ItemTag.Material, 8, 1, true, 20),
+                new ItemMaster(1111, "布", ItemTag.Material, 18, 1, true, 20),
+                new ItemMaster(1112, "綺麗な布", ItemTag.Material | ItemTag.Valuable, 40, 2, true, 20),
+                new ItemMaster(1113, "機械部品", ItemTag.Material | ItemTag.CraftingComponent, 90, 3, true, 20),
+                new ItemMaster(1114, "電子部品", ItemTag.Material | ItemTag.CraftingComponent, 110, 3, true, 20),
+                new ItemMaster(1115, "ねじ", ItemTag.Material | ItemTag.CraftingComponent, 12, 1, true, 50),
+                new ItemMaster(1116, "歯車", ItemTag.Material | ItemTag.CraftingComponent, 30, 1, true, 30),
+                new ItemMaster(1117, "レンズ", ItemTag.Material | ItemTag.CraftingComponent, 45, 2, true, 20),
+                new ItemMaster(1118, "センサー", ItemTag.Material | ItemTag.CraftingComponent, 85, 3, true, 20),
+                new ItemMaster(1119, "ポンプ", ItemTag.Material | ItemTag.CraftingComponent, 65, 2, true, 20),
+                new ItemMaster(1120, "ライト", ItemTag.Material | ItemTag.CraftingComponent, 35, 1, true, 20),
+                new ItemMaster(1121, "ボタン", ItemTag.Material | ItemTag.CraftingComponent, 15, 1, true, 50),
+                new ItemMaster(1122, "プラスチック", ItemTag.Material | ItemTag.CraftingComponent, 20, 1, true, 30),
+                new ItemMaster(1201, "ピッケル", ItemTag.Tool, 80, 2, true, 1),
+                new ItemMaster(1202, "スコップ", ItemTag.Tool, 60, 1, true, 1),
+                new ItemMaster(1203, "ドライバー", ItemTag.Tool | ItemTag.CraftingComponent, 45, 1, true, 1),
+                new ItemMaster(2001, "ポーション", ItemTag.Recovery, 30, 1, true, 10, 1),
+                new ItemMaster(2002, "ハイポーション", ItemTag.Recovery, 90, 2, true, 10, 1),
+                new ItemMaster(2003, "エリクサー", ItemTag.Recovery | ItemTag.ManaRecovery | ItemTag.Valuable, 300, 5, true, 5, 1),
+                new ItemMaster(2004, "マナポーション", ItemTag.ManaRecovery, 50, 1, true, 10),
+                new ItemMaster(2101, "ゆでたまご", ItemTag.Food, 8, 1, true, 20),
+                new ItemMaster(2102, "おにぎり", ItemTag.Food, 12, 1, true, 20),
+                new ItemMaster(2103, "ビール", ItemTag.Drink, 20, 1, true, 20),
+                new ItemMaster(2104, "肉", ItemTag.Food | ItemTag.Material, 25, 1, true, 20),
+                new ItemMaster(2105, "謎の肉", ItemTag.Food | ItemTag.Material, 18, 1, true, 20),
+                new ItemMaster(2106, "魚", ItemTag.Food | ItemTag.Material, 20, 1, true, 20),
+                new ItemMaster(2107, "魚の串焼き", ItemTag.Food, 35, 1, true, 20),
+                new ItemMaster(2108, "肉の串焼き", ItemTag.Food, 40, 1, true, 20),
+                new ItemMaster(2109, "ラーメン", ItemTag.Food, 50, 2, true, 20),
+                new ItemMaster(2110, "コロッケ", ItemTag.Food, 18, 1, true, 20),
+                new ItemMaster(2111, "ポテト", ItemTag.Food, 14, 1, true, 20),
+                new ItemMaster(2112, "からあげ", ItemTag.Food, 28, 1, true, 20),
+                new ItemMaster(3001, "木の剣", ItemTag.Weapon, 80, 1, true, 1),
+                new ItemMaster(3002, "木の弓", ItemTag.Weapon, 80, 1, true, 1),
+                new ItemMaster(3003, "布", ItemTag.Armor | ItemTag.Material, 60, 1, true, 1),
+                new ItemMaster(3004, "鉄の剣", ItemTag.Weapon, 120, 5, true, 1),
+                new ItemMaster(3005, "鉄の斧", ItemTag.Weapon, 130, 5, true, 1),
+                new ItemMaster(3006, "鉄の大鎌", ItemTag.Weapon, 150, 5, true, 1),
+                new ItemMaster(3007, "鉄の杖", ItemTag.Weapon, 120, 5, true, 1),
+                new ItemMaster(3008, "木の斧", ItemTag.Weapon, 75, 1, true, 1),
+                new ItemMaster(3009, "木の大鎌", ItemTag.Weapon, 90, 1, true, 1),
+                new ItemMaster(3010, "木の杖", ItemTag.Weapon, 70, 1, true, 1),
+                new ItemMaster(3011, "木の棒", ItemTag.Weapon, 20, 1, true, 1),
+                new ItemMaster(3012, "鉄の弓", ItemTag.Weapon, 130, 5, true, 1),
+                new ItemMaster(4001, "ダイヤのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 420, 5, true, 1),
+                new ItemMaster(4002, "ルビーのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 340, 4, true, 1),
+                new ItemMaster(4003, "サファイアのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 340, 4, true, 1),
+                new ItemMaster(4004, "パールのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 260, 3, true, 1)
             }.ToDictionary(x => x.Id);
         }
 
@@ -217,6 +269,63 @@ namespace DungeonInn.Master
                 {
                     new StatBonus(StatType.Strength, 5),
                     new StatBonus(StatType.Dexterity, 2)
+                }),
+                new EquipmentMaster(3005, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Strength, 6)
+                }),
+                new EquipmentMaster(3006, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Strength, 4),
+                    new StatBonus(StatType.Dexterity, 3)
+                }),
+                new EquipmentMaster(3007, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Intelligence, 5),
+                    new StatBonus(StatType.Wisdom, 2)
+                }),
+                new EquipmentMaster(3008, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Strength, 3)
+                }),
+                new EquipmentMaster(3009, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Strength, 2),
+                    new StatBonus(StatType.Dexterity, 2)
+                }),
+                new EquipmentMaster(3010, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Intelligence, 3),
+                    new StatBonus(StatType.Wisdom, 1)
+                }),
+                new EquipmentMaster(3011, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Intelligence, 1)
+                }),
+                new EquipmentMaster(3012, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Dexterity, 5),
+                    new StatBonus(StatType.Strength, 2)
+                }),
+                new EquipmentMaster(4001, EquipmentSlot.Accessory, 0, new[]
+                {
+                    new StatBonus(StatType.Charisma, 4),
+                    new StatBonus(StatType.Wisdom, 2)
+                }),
+                new EquipmentMaster(4002, EquipmentSlot.Accessory, 0, new[]
+                {
+                    new StatBonus(StatType.Strength, 3),
+                    new StatBonus(StatType.Charisma, 1)
+                }),
+                new EquipmentMaster(4003, EquipmentSlot.Accessory, 0, new[]
+                {
+                    new StatBonus(StatType.Intelligence, 3),
+                    new StatBonus(StatType.Wisdom, 1)
+                }),
+                new EquipmentMaster(4004, EquipmentSlot.Accessory, 0, new[]
+                {
+                    new StatBonus(StatType.Constitution, 2),
+                    new StatBonus(StatType.Charisma, 1)
                 })
             }.ToDictionary(x => x.ItemId);
         }
@@ -227,7 +336,15 @@ namespace DungeonInn.Master
             {
                 new WeaponMaster(3001, WeaponType.Sword, GetWeaponTypeCombatMaster(WeaponType.Sword), 8, 0, 0),
                 new WeaponMaster(3002, WeaponType.Bow, GetWeaponTypeCombatMaster(WeaponType.Bow), 7, 0, 0),
-                new WeaponMaster(3004, WeaponType.Sword, GetWeaponTypeCombatMaster(WeaponType.Sword), 10, 0, 0)
+                new WeaponMaster(3004, WeaponType.Sword, GetWeaponTypeCombatMaster(WeaponType.Sword), 10, 0, 0),
+                new WeaponMaster(3005, WeaponType.Axe, GetWeaponTypeCombatMaster(WeaponType.Axe), 12, 0, 0),
+                new WeaponMaster(3006, WeaponType.Scythe, GetWeaponTypeCombatMaster(WeaponType.Scythe), 11, 0, 0),
+                new WeaponMaster(3007, WeaponType.Staff, GetWeaponTypeCombatMaster(WeaponType.Staff), 9, 0, 0),
+                new WeaponMaster(3008, WeaponType.Axe, GetWeaponTypeCombatMaster(WeaponType.Axe), 7, 0, 0),
+                new WeaponMaster(3009, WeaponType.Scythe, GetWeaponTypeCombatMaster(WeaponType.Scythe), 8, 0, 0),
+                new WeaponMaster(3010, WeaponType.Staff, GetWeaponTypeCombatMaster(WeaponType.Staff), 6, 0, 0),
+                new WeaponMaster(3011, WeaponType.Staff, GetWeaponTypeCombatMaster(WeaponType.Staff), 2, 0, 0),
+                new WeaponMaster(3012, WeaponType.Bow, GetWeaponTypeCombatMaster(WeaponType.Bow), 10, 0, 0)
             }.ToDictionary(x => x.ItemId);
         }
 
