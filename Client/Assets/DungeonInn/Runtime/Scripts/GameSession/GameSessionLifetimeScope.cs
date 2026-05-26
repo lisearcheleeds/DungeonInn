@@ -85,6 +85,7 @@ namespace DungeonInn.GameSession
                 .As<IGameWorldStateReader>()
                 .As<IGameWorldStateWriter>();
             builder.Register<WorldMapViewDataProvider>(Lifetime.Singleton).As<IWorldMapViewDataProvider>();
+            builder.Register<GetDungeonLayerInfoUseCase>(Lifetime.Singleton);
             builder.Register<ActorViewDataStore>(Lifetime.Singleton)
                 .As<IActorViewDataProvider>()
                 .As<IActorStatusViewDataProvider>()
@@ -110,7 +111,15 @@ namespace DungeonInn.GameSession
             builder.Register<InnEconomyStatisticsService>(Lifetime.Singleton);
             builder.Register<InnDailyReportStore>(Lifetime.Singleton);
             builder.Register<InnEconomyStatusCalculator>(Lifetime.Singleton);
+            builder.Register<GuildCombinedInventoryViewService>(Lifetime.Singleton);
+            builder.Register<GuildInventoryWithdrawalService>(Lifetime.Singleton);
+            builder.Register<FacilityUpgradePreviewService>(Lifetime.Singleton);
             builder.Register<GetInnEconomyStatusUseCase>(Lifetime.Singleton);
+            builder.Register<GetGuildManagementStatusUseCase>(Lifetime.Singleton);
+            builder.Register<GetFacilityUpgradePreviewUseCase>(Lifetime.Singleton);
+            builder.Register<UpgradeFacilityUseCase>(Lifetime.Singleton);
+            builder.Register<GetMarketOffersUseCase>(Lifetime.Singleton);
+            builder.Register<FulfillMarketOfferUseCase>(Lifetime.Singleton);
             builder.Register<GetInnGuestListUseCase>(Lifetime.Singleton);
             builder.Register<GetInnEconomyReportUseCase>(Lifetime.Singleton);
             builder.Register<AssignStaffUseCase>(Lifetime.Singleton);

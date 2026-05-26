@@ -100,7 +100,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void SpawnAdventurerUsesGuildInventoryForRookieEquipment()
+        public void SpawnAdventurerDoesNotGrantRookieEquipment()
         {
             var repository = new HardcodedMasterRepository();
             var profileRegistry = new NoOpActorProfileRegistry();
@@ -111,7 +111,6 @@ namespace DungeonInn.Tests.EditMode
             var guild = new AdventurerGuild(Guid.NewGuid(), guildInventory, Array.Empty<DungeonInn.Domain.Facility.Facility>());
 
             var actor = useCase.ExecuteAsync(
-                guild,
                 new ActorFactoryRequest(
                     1,
                     Guid.NewGuid(),
@@ -119,17 +118,18 @@ namespace DungeonInn.Tests.EditMode
                     new ActorFaction(1, "Adventurer"),
                     123,
                     ActorBehaviorType.Adventurer,
-                    string.Empty),
-                10).GetAwaiter().GetResult();
+                    string.Empty)).GetAwaiter().GetResult();
 
-            Assert.That(guild.Inventory.Has(new ItemStack(3001, 1)), Is.False);
-            Assert.That(guild.Inventory.Has(new ItemStack(3003, 1)), Is.False);
+            Assert.That(guild.Inventory.Has(new ItemStack(3001, 1)), Is.True);
+            Assert.That(guild.Inventory.Has(new ItemStack(3003, 1)), Is.True);
             Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.False);
             Assert.That(actor.Inventory.Has(new ItemStack(3003, 1)), Is.False);
             Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
-            Assert.That(actor.Equipment.EquippedWeaponType, Is.EqualTo(WeaponType.Sword));
-            Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Armor).HasValue, Is.True);
-            Assert.That(guild.Transactions.Count, Is.EqualTo(1));
+            Assert.That(actor.Equipment.EquippedWeaponType, Is.Null);
+            Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Armor).HasValue, Is.False);
+            Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));
+            Assert.That(actor.WeaponAttack, Is.GreaterThan(0));
+            Assert.That(guild.Transactions.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -138,14 +138,9 @@ namespace DungeonInn.Tests.EditMode
             var repository = new HardcodedMasterRepository();
             var profileRegistry = new RecordingActorProfileRegistry();
             var useCase = CreateSpawnAdventurerUseCase(repository, profileRegistry, new NoOpGameEventBus());
-            var guildInventory = new Inventory(new FixedItemStackLimitResolver());
-            guildInventory.Add(new ItemStack(3001, 1));
-            guildInventory.Add(new ItemStack(3003, 1));
-            var guild = new AdventurerGuild(Guid.NewGuid(), guildInventory, Array.Empty<DungeonInn.Domain.Facility.Facility>());
             var actorId = Guid.NewGuid();
 
             useCase.ExecuteAsync(
-                guild,
                 new ActorFactoryRequest(
                     1,
                     actorId,
@@ -153,8 +148,7 @@ namespace DungeonInn.Tests.EditMode
                     new ActorFaction(1, "Adventurer"),
                     123,
                     ActorBehaviorType.Adventurer,
-                    "Alice"),
-                10).GetAwaiter().GetResult();
+                    "Alice")).GetAwaiter().GetResult();
 
             Assert.That(profileRegistry.TryGetProfile(actorId, out var profile), Is.True);
             Assert.That(profile.DisplayName, Is.EqualTo("Alice"));

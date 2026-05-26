@@ -12,6 +12,9 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         [SerializeField] LHButton pauseButton;
         [SerializeField] LHButton speedNormalButton;
         [SerializeField] LHButton speedFastButton;
+        [SerializeField] LHButton dungeonInfoButton;
+        [SerializeField] LHButton guildManagementButton;
+        [SerializeField] LHButton marketButton;
 
         TMP_Text pauseButtonLabel;
 
@@ -61,6 +64,30 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             if (speedFastButton != null)
             {
                 speedFastButton.onClick.AddListener(onClick);
+            }
+        }
+
+        public void AddDungeonInfoListener(UnityAction onClick)
+        {
+            if (dungeonInfoButton != null)
+            {
+                dungeonInfoButton.onClick.AddListener(onClick);
+            }
+        }
+
+        public void AddGuildManagementListener(UnityAction onClick)
+        {
+            if (guildManagementButton != null)
+            {
+                guildManagementButton.onClick.AddListener(onClick);
+            }
+        }
+
+        public void AddMarketListener(UnityAction onClick)
+        {
+            if (marketButton != null)
+            {
+                marketButton.onClick.AddListener(onClick);
             }
         }
 

@@ -8,6 +8,21 @@
 
 ---
 
+## 現行コード確認時の注意
+
+このレビュー本文と末尾の「Milestone 9 キャリーオーバー」は、2026-05-24 時点の後続対応前の指摘一覧である。
+その後、`docs/roadmap/milestone8-roadmap-fix-2.md` の追加対応で多くが解消済みになっている。
+
+Milestone 9 着手前にこのファイルを読む場合は、本文の未対応表だけで判断せず、必ず以下を確認すること。
+
+- `docs/roadmap/milestone8-roadmap-fix-2.md`
+- このファイル末尾の「2026-05-25 現行実装確認ログ」
+- 現行コード検索結果
+
+特に `MainGameLifetimeScope` / `DungeonInn.MainGame` 系の指摘は、現行コードでは `GameSessionLifetimeScope` / `GameSessionLifecycle` / `DungeonInn.GameSession` へ置き換え済みである。
+
+---
+
 ## 統合作業の記録
 
 ### 重複指摘の統合
@@ -530,3 +545,39 @@ Codex スキャンで `RecoverAdventurerAtInnUseCase.cs`・`WorldCameraControlle
 | M8-T-12 | GetInnGuestListUseCase リスト再利用バッファ化 | 低 |
 | M8-T-13 | MinimapPresenter SetPixel バッチ化 | 低 |
 | M8-T-14 | イベントアラートテキストのリフレクション除去 | 低 |
+
+---
+
+## 2026-05-25 現行実装確認ログ
+
+Codex が Milestone 9 着手前に現行コードを確認した結果、上記キャリーオーバー一覧の多くは後続対応で解消済みだった。
+以降の作業者は、この節を現在状態の入口として扱う。
+
+### 確認コマンド
+
+- `rg -n "MainGameLifetimeScope|MainGameLifetimeScopeController|MainGameAssetScopeHolder|DungeonInn\.MainGame|GameHUDDriver|GetAwaiter\(\)\.GetResult\(\)|GetType\(\)\.Name|mapTexture\.SetPixel\(" Client/Assets/DungeonInn/Runtime/Scripts`
+- `rg -n "BeginSession|EndSession|CleanupBeforeReboot|Register<GameRandom>|gameRandom.Initialize|interface IWorldGameSettingsRepository|GetWorldMapViewSettings|interface IActorScreenPositionProvider|TryGetScreenPosition\(LayerPosition|RegisterEntryPoint<GameHUDEntryPoint>|GetRemainingSeconds|GameEventAlertFormatter.Format" Client/Assets/DungeonInn/Runtime/Scripts`
+
+### 現行ステータス
+
+| ID | 2026-05-25 現行コード確認結果 |
+|---|---|
+| M8-T-1 | 解消済み。`MainGame` 系は現行 Runtime コードに存在せず、`GameSession` 系へ置換済み。`docs/roadmap/milestone8-roadmap-fix-2.md` も参照。 |
+| M8-T-2 | 解消済み。`GameSessionLifecycle.BeginSession()` / `EndSession()` が session scope を所有し、`TitlePresenter` 失敗時、`ProductSceneManager` の非 session 遷移時、`RebootService` cleanup 時に破棄経路がある。 |
+| M8-T-3 | 解消済み。`GameRandom` は `GameSessionLifetimeScope` に登録され、`WorldSimulationOrchestrator.InitializeAsync()` で `InitialWorldSettings.GameRandomSeed` を適用している。 |
+| M8-T-4 | 解消済み。`IWorldGameSettingsRepository` から `WorldMapViewSettings` は削除済み。World 表示設定は View 側 `IWorldMapViewSettingsRepository` / `WorldMapViewSettingsRepository` が所有している。 |
+| M8-T-5 | 一部対応。GameHUD は World 具象 `ActorSelectionService` を直接 inject していない。一方、`IActorScreenPositionProvider` の契約はまだ `LayerPosition` を露出しているため、HUD 専用 DTO 化は未完了。 |
+| M8-T-6 | 解消済み。`WorldHudPresenter` / `InnStatusPanelPresenter` に `GetAwaiter().GetResult()` は残っておらず、該当 UseCase は同期 `Execute()` に変更済み。 |
+| M8-T-7 | 解消済み。`GameHUDLifetimeScope` は `RegisterEntryPoint<GameHUDEntryPoint>()` を登録し、`GameHUDDriver` は Runtime コードに残っていない。 |
+| M8-T-8 | 要再確認。今回の現行確認では対象外。Milestone 9 作業前に必要なら `GetActorDetailQuery` / `ActorDetailViewData` と EditMode test を確認する。 |
+| M8-T-9 | 解消済み。`GetInnGuestListUseCase.Execute(List<InnGuestSummary>)` は `AdventurerRecoveryStateService.GetRemainingSeconds()` で回復残秒数を計算している。 |
+| M8-T-10 | 要再確認。今回の現行確認では対象外。commit 前に Coding Rules スキャンで確認する。 |
+| M8-T-11 | 解消済み。`docs/guidelines/coding-rules.md` に Application 層 DTO は `Summary` / `Status` suffix を使ってよい旨が追記済み。 |
+| M8-T-12 | 解消済み。`GetInnGuestListUseCase.Execute(List<InnGuestSummary> buffer)` と `InnStatusPanelPresenter.guestBuffer` による再利用バッファ化済み。 |
+| M8-T-13 | 解消済み。Runtime コード検索で `mapTexture.SetPixel(` は検出されない。 |
+| M8-T-14 | 解消済み。`WorldHudPresenter` は `GameEventAlertFormatter.Format(gameEvent)` を使用し、`GetType().Name` は Runtime コードに残っていない。 |
+
+### 次に残す判断
+
+Milestone 9 着手前に、上表の `要再確認` と `一部対応` だけを現行コードで再確認する。
+古い「Milestone 9 キャリーオーバー」表をそのまま未対応一覧として扱わないこと。

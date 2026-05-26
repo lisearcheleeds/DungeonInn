@@ -39,6 +39,11 @@ namespace DungeonInn.View.Base
             return inputActions.ScreenStack;
         }
 
+        protected UniTask CloseScreenStackAsync()
+        {
+            return screenStackModule.Close();
+        }
+
         public override UniTask OnEnter(bool isResume)
         {
             var layer = CreateInputLayer(inputActions);

@@ -42,6 +42,9 @@ namespace DungeonInn.Editor
         const string WorldHudViewPrefabPath = GameHUDPrefabDirectory + "/WorldHudView.prefab";
         const string InnStatusPanelViewPrefabPath = GameHUDPrefabDirectory + "/InnStatusPanelView.prefab";
         const string MinimapViewPrefabPath = GameHUDPrefabDirectory + "/MinimapView.prefab";
+        const string DungeonInfoWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/DungeonInfoWindow.prefab";
+        const string GuildManagementWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/GuildManagementWindow.prefab";
+        const string MarketWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/MarketWindow.prefab";
         const string EffectDummySpritePath = "Assets/DungeonInn/Runtime/Art/Sprites/Effect/Dummy.png";
         const string AddressablesGroupName = "DungeonInn Visual";
         const string MapMaterialShaderName = "Universal Render Pipeline/Lit";
@@ -776,6 +779,9 @@ namespace DungeonInn.Editor
             MarkAssetAddressable(settings, group, WorldHudViewPrefabPath, "GameHUD/UI/WorldHudView");
             MarkAssetAddressable(settings, group, InnStatusPanelViewPrefabPath, "GameHUD/UI/InnStatusPanelView");
             MarkAssetAddressable(settings, group, MinimapViewPrefabPath, "GameHUD/UI/MinimapView");
+            MarkAssetAddressable(settings, group, DungeonInfoWindowPrefabPath, "DungeonInfoWindow");
+            MarkAssetAddressable(settings, group, GuildManagementWindowPrefabPath, "GuildManagementWindow");
+            MarkAssetAddressable(settings, group, MarketWindowPrefabPath, "MarketWindow");
         }
 
         static void RegisterSettingsSOs(AddressableAssetSettings settings, AddressableAssetGroup group)

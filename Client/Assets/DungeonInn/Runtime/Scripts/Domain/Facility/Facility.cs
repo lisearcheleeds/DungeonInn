@@ -56,9 +56,18 @@ namespace DungeonInn.Domain.Facility
         public void ApplyStaffPoint(int staffPoint)
         {
             StaffPoint = Math.Max(0, staffPoint);
-            Level = 1 + StaffPoint / PointsPerLevel;
-            Quality = Level;
-            Capacity = Math.Max(1, Level);
+        }
+
+        public void UpgradeTo(int level, int quality, int capacity)
+        {
+            if (level <= Level)
+            {
+                throw new ArgumentOutOfRangeException(nameof(level));
+            }
+
+            Level = level;
+            Quality = Math.Max(1, quality);
+            Capacity = Math.Max(1, capacity);
         }
 
         public ItemStack CalculateUsagePrice(FacilityUsageRequest request)

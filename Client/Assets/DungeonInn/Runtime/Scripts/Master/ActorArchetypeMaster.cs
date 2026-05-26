@@ -17,7 +17,6 @@ namespace DungeonInn.Master
         public ActorStats BaseStats { get; }
         public int InitialLevel { get; }
         public int LevelTableId { get; }
-        public IReadOnlyList<int> InitialEquipmentItemIds { get; }
         public IReadOnlyList<ItemStack> InitialInventoryItemIds { get; }
 
         public ActorArchetypeMaster(
@@ -30,7 +29,6 @@ namespace DungeonInn.Master
             ActorStats baseStats,
             int initialLevel,
             int levelTableId,
-            IReadOnlyList<int> initialEquipmentItemIds,
             IReadOnlyList<ItemStack> initialInventoryItemIds)
         {
             if (id < 1)
@@ -72,7 +70,6 @@ namespace DungeonInn.Master
             BaseStats = baseStats ?? throw new ArgumentNullException(nameof(baseStats));
             InitialLevel = initialLevel;
             LevelTableId = levelTableId;
-            InitialEquipmentItemIds = (initialEquipmentItemIds ?? Array.Empty<int>()).ToArray();
             InitialInventoryItemIds = (initialInventoryItemIds ?? Array.Empty<ItemStack>()).ToArray();
         }
     }

@@ -8,6 +8,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using LighthouseExtends.ScreenStack;
 using VContainer;
+using DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack;
 
 namespace DungeonInn
 {
@@ -26,7 +27,9 @@ namespace DungeonInn
         {
             return data switch
             {
-
+                DungeonInfoWindowData d => CreateScreenStackEntityAsync<DungeonInfoWindow, DungeonInfoWindowData>("DungeonInfoWindow", d, ct),
+                GuildManagementWindowData d => CreateScreenStackEntityAsync<GuildManagementWindow, GuildManagementWindowData>("GuildManagementWindow", d, ct),
+                MarketWindowData d => CreateScreenStackEntityAsync<MarketWindow, MarketWindowData>("MarketWindow", d, ct),
                 _ => throw new ArgumentOutOfRangeException(nameof(data), data.GetType().FullName, "Unknown screenStack data type")
             };
         }

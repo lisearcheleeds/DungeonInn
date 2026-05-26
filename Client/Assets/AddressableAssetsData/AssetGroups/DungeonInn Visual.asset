@@ -20,6 +20,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0d45b2a5881a4a18829a0f55e57149a1
+    m_Address: DungeonInfoWindow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 10babdb29e72fb24aa1f0a13a8b1969c
     m_Address: Sprites/Goblin/WalkSW1
     m_ReadOnly: 0
@@ -42,6 +47,16 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1d9857a21b169f545be000f815da2484
     m_Address: Materials/Map/GroundWalkable
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2a3c7f3e982c4a0bb2a9e6411f77a204
+    m_Address: GuildManagementWindow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3fe92b64170b4e0d9e9ae7f15bb91c32
+    m_Address: MarketWindow
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

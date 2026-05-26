@@ -102,7 +102,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 ActorBehaviorType.Adventurer,
                 adventurerSpawnMaster.DisplayName);
 
-            var actor = await spawnAdventurerUseCase.ExecuteAsync(worldState.Guild, request, currentScheduleTick);
+            var actor = await spawnAdventurerUseCase.ExecuteAsync(request);
             worldState.RegisterActor(actor);
             if (adventurerSpawnMaster.SpawnOnce)
             {

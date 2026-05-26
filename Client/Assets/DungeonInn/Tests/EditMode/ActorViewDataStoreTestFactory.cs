@@ -30,7 +30,6 @@ namespace DungeonInn.Tests.EditMode
                     source.BaseStats,
                     source.InitialLevel,
                     source.LevelTableId,
-                    source.InitialEquipmentItemIds,
                     source.InitialInventoryItemIds);
             }
 

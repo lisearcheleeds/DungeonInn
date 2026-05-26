@@ -12,7 +12,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 {
     public sealed class WorldHudPresenter : IDisposable
     {
-        const float AlertDisplaySeconds = 3f;
         const int MinutesPerDay = 1440;
 
         readonly GetGameTimeStateUseCase getGameTimeStateUseCase;
@@ -22,10 +21,10 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         readonly GameHUDAddressableViewFactory viewFactory;
         readonly GameHUDModuleScene gameHUDModuleScene;
         readonly IEventSubscriber eventSubscriber;
+        readonly IGameHudWindowOpenService windowOpenService;
 
         WorldHudView hudView;
         DisposableBag bag;
-        float alertRemainingSeconds;
 
         [Inject]
         public WorldHudPresenter(
@@ -35,7 +34,8 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             SetGameTimeScaleUseCase setGameTimeScaleUseCase,
             GameHUDAddressableViewFactory viewFactory,
             GameHUDModuleScene gameHUDModuleScene,
-            IEventSubscriber eventSubscriber)
+            IEventSubscriber eventSubscriber,
+            IGameHudWindowOpenService windowOpenService)
         {
             this.getGameTimeStateUseCase =
                 getGameTimeStateUseCase ?? throw new ArgumentNullException(nameof(getGameTimeStateUseCase));
@@ -48,6 +48,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
             this.gameHUDModuleScene = gameHUDModuleScene ?? throw new ArgumentNullException(nameof(gameHUDModuleScene));
             this.eventSubscriber = eventSubscriber ?? throw new ArgumentNullException(nameof(eventSubscriber));
+            this.windowOpenService = windowOpenService ?? throw new ArgumentNullException(nameof(windowOpenService));
         }
 
         public void Initialize()
@@ -61,6 +62,9 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             hudView.AddPauseListener(OnPauseClicked);
             hudView.AddSpeedNormalListener(OnSpeedNormalClicked);
             hudView.AddSpeedFastListener(OnSpeedFastClicked);
+            hudView.AddDungeonInfoListener(OnDungeonInfoClicked);
+            hudView.AddGuildManagementListener(OnGuildManagementClicked);
+            hudView.AddMarketListener(OnMarketClicked);
 
             eventSubscriber.OnEvent<IGameEvent>()
                 .Subscribe(OnGameEvent)
@@ -118,6 +122,21 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             setGameTimeScaleUseCase.Execute(2f);
         }
 
+        void OnDungeonInfoClicked()
+        {
+            windowOpenService.OpenDungeonInfo();
+        }
+
+        void OnGuildManagementClicked()
+        {
+            windowOpenService.OpenGuildManagement();
+        }
+
+        void OnMarketClicked()
+        {
+            windowOpenService.OpenMarket();
+        }
+
         void OnGameEvent(IGameEvent gameEvent)
         {
             EnsureHudView();
@@ -131,8 +150,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             {
                 return;
             }
-
-            alertRemainingSeconds = AlertDisplaySeconds;
         }
 
         void EnsureHudView()

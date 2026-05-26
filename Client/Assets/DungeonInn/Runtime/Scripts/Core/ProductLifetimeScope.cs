@@ -100,6 +100,8 @@ namespace DungeonInn.Core
                 builder.Register<ProductTextTableLoader>(Lifetime.Singleton).As<ITextTableLoader>();
                 builder.Register<HardcodedMasterRepository>(Lifetime.Singleton)
                     .As<IMasterRepository>()
+                    .As<IFacilityUpgradeMasterRepository>()
+                    .As<IMarketOfferMasterRepository>()
                     .As<IItemMasterRepository>()
                     .As<IItemStackLimitResolver>();
                 builder.Register<ActorFactory>(Lifetime.Singleton).As<IActorFactory>();

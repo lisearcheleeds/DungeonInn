@@ -1,5 +1,6 @@
 using VContainer;
 using VContainer.Unity;
+using DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack;
 
 namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 {
@@ -15,6 +16,8 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             builder.Register<WorldActorStatusPresenter>(Lifetime.Scoped).AsSelf();
             builder.Register<ActorDetailPopupPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<MinimapPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<GameHudScreenStackViewDataFactory>(Lifetime.Scoped);
+            builder.Register<GameHudWindowOpenService>(Lifetime.Scoped).AsImplementedInterfaces();
             builder.Register<WorldHudPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<InnStatusPanelPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<PlayerGameEventLogPresenter>(Lifetime.Scoped).AsSelf();
