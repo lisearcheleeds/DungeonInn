@@ -30,6 +30,8 @@
 - [ ] 別 Scene / 別 LifetimeScope が所有する Canvas / View / Presenter / Pool / scene-owned component を直接参照・操作していない
 - [ ] 既存 guideline 上で適切な命名・責務・設定配置が判断できるのに、「最小差分」を理由に曖昧な旧名・不適切な責務・互換用 API を残していない
 - [ ] System / bootstrap 層のクラスに、Content / GameSession 固有の開始処理・状態生成・コンテンツ遷移を混ぜていない
+- [ ] milestone / task / temporary などの作業管理名を Runtime のフォルダ名・namespace・クラス責務に持ち込んでいない
+- [ ] 実装前に、理想的な責務境界・依存方向・配置方針を確認してから実装している
 
 ## 完了前チェックリスト
 
@@ -55,6 +57,8 @@
 - [ ] Scene / LifetimeScope 境界を跨ぐ参照が、具象 View ではなく抽象 interface / Application service / 所有者側 Presenter 経由になっている
 - [ ] 最小差分を理由に、本文ルールに沿ったリネーム・責務移動・不要 API 削除を省略していない
 - [ ] System と Content の境界が名前・namespace・配置・依存方向から読み取れる
+- [ ] Runtime 配置が milestone / task / temporary など作業過程ではなく、機能責務・所有 Scene / Module・レイヤー境界で決まっている
+- [ ] 既存実装に合わせる点と、破壊的に直す点を区別して確認した
 
 ---
 
@@ -876,7 +880,66 @@ public sealed class ActorHudPresenter
 
 ---
 
-## 20. UnityEngine.Object を保持するクラスは invalidation 単位と Dispose 単位を揃える
+## 20. 実装前に理想設計を確認し、作業管理名を Runtime に持ち込まない
+
+実装前に、現在のコードへ最小差分で足す方法だけを考えてはならない。
+まず「本来どのクラスが何を所有すべきか」「どの Scene / Module / LifetimeScope が責務を持つか」「依存方向はどちら向きか」を確認する。
+
+既存コードは重要な参考情報だが、作業時点の妥協や暫定実装を含む場合がある。
+既存実装に合わせる場合は、合わせる理由を説明できること。
+破壊的に直す場合は、責務分離・依存方向・将来拡張の観点で正しい理由を説明できること。
+
+### 実装前に確認すること
+
+- この機能の本来の責務境界
+- Domain / Application / Infrastructure / View のどこに属するか
+- 所有する Scene / Module / LifetimeScope
+- Runtime / Editor / Prefab / Addressable の配置
+- 既存実装に合わせる点
+- 破壊的に変更すべき点
+- 確認すべき compile / test / PlayMode シナリオ
+
+### Runtime 配置の原則
+
+Runtime 配下のフォルダ・namespace・クラス責務は、機能責務と所有境界で決める。
+milestone や task は進行管理の単位であり、実装構造の単位ではない。
+
+良い配置単位:
+
+- Scene / Module の所有境界
+- Domain / Application / Infrastructure / View のレイヤー
+- Feature / Presenter / View / Pool / Factory / Settings などの責務
+- 画面名・Window 名・機能名
+
+悪い配置単位:
+
+- `Milestone9`
+- `Task0012`
+- `Temp`
+- `CodexWork`
+- `FixForReview`
+- `Migration`
+
+### DungeonInn Example
+
+Milestone 9 の ScreenStack 実装では、最初に Runtime 配下へ `Milestone9` フォルダを作ってしまった。
+これは作業管理上の名前を Runtime 設計へ持ち込んだ誤りである。
+
+正しい配置は、ScreenStack という機能入口は `GameHUD/ScreenStack` に置き、各 Window のコンテンツ定義は `GameHUD/DungeonInfoWindow`、`GameHUD/GuildManagementWindow`、`GameHUD/MarketWindow` のように画面責務で分ける形である。
+Prefab も milestone ではなく、所有する UI 領域である `Runtime/Prefab/GameHUD` 配下に置く。
+
+### レビュー観点
+
+- [ ] 実装前に理想的な責務境界・依存方向・配置方針を説明したか
+- [ ] 既存実装への追従が必要な理由を確認したか
+- [ ] 破壊的変更が必要な場合、その理由を責務・依存・拡張性で説明できるか
+- [ ] Runtime 配置に milestone / task / temporary など作業過程の名前が混ざっていないか
+- [ ] Scene / Module / LifetimeScope の所有境界に沿って配置しているか
+- [ ] Prefab / ScriptableObject / Addressable の配置も所有者と責務に沿っているか
+
+---
+
+## 21. UnityEngine.Object を保持するクラスは invalidation 単位と Dispose 単位を揃える
 
 スコープ（Layer・Floor・Actor等）をキーとした UnityEngine.Object のコレクションを持つクラスは、そのスコープが無効化された際に対応するリソースをクリーンアップするメソッドを別途実装すること。`Dispose` のみに依存しない。
 
@@ -950,7 +1013,7 @@ public sealed class EnvironmentObjectPlacer : IDisposable
 
 ---
 
-## 21. Fallback / Placeholder アセット生成ロジックを複数クラスに持たない
+## 22. Fallback / Placeholder アセット生成ロジックを複数クラスに持たない
 
 UnityEngine.Object の Fallback（色・サイズ・PPU・ピボット・フィルターモード等）を生成するコードは単一の Factory クラスに集約し、複数クラスに同一ロジックを置かない。
 

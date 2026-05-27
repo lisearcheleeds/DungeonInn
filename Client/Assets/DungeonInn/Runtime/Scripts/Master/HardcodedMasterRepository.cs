@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Master
@@ -10,6 +11,7 @@ namespace DungeonInn.Master
     public sealed class HardcodedMasterRepository :
         IMasterRepository,
         IFacilityUpgradeMasterRepository,
+        IFacilityLineupMasterRepository,
         IMarketOfferMasterRepository,
         IItemStackLimitResolver
     {
@@ -27,6 +29,10 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<string, EnvironmentPropVisualMaster> environmentPropVisualMasters;
         readonly IReadOnlyDictionary<string, ActorVisualMaster> actorVisualMasters;
         readonly IReadOnlyDictionary<int, FacilityUpgradeMaster> facilityUpgradeMasters;
+        readonly IReadOnlyDictionary<(FacilityType FacilityType, int FromLevel), FacilityUpgradeMaster>
+            facilityUpgradeMasterByFacilityAndLevel;
+        readonly IReadOnlyDictionary<int, FacilityLineupMaster> facilityLineupMasters;
+        readonly IReadOnlyDictionary<int, FacilityLineupItemMaster> facilityLineupItemMasters;
         readonly IReadOnlyDictionary<int, MarketOfferMaster> marketOfferMasters;
 
         public IReadOnlyDictionary<int, ItemMaster> ItemMasters => itemMasters;
@@ -43,6 +49,8 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => environmentPropVisualMasters;
         public IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters => actorVisualMasters;
         public IReadOnlyDictionary<int, FacilityUpgradeMaster> FacilityUpgradeMasters => facilityUpgradeMasters;
+        public IReadOnlyDictionary<int, FacilityLineupMaster> FacilityLineupMasters => facilityLineupMasters;
+        public IReadOnlyDictionary<int, FacilityLineupItemMaster> FacilityLineupItemMasters => facilityLineupItemMasters;
         public IReadOnlyDictionary<int, MarketOfferMaster> MarketOfferMasters => marketOfferMasters;
 
         public HardcodedMasterRepository()
@@ -57,6 +65,10 @@ namespace DungeonInn.Master
             environmentPropVisualMasters = CreateEnvironmentPropVisualMasters();
             actorVisualMasters = CreateActorVisualMasters();
             facilityUpgradeMasters = CreateFacilityUpgradeMasters();
+            facilityUpgradeMasterByFacilityAndLevel = facilityUpgradeMasters.Values
+                .ToDictionary(x => (x.FacilityType, x.FromLevel));
+            facilityLineupMasters = CreateFacilityLineupMasters();
+            facilityLineupItemMasters = CreateFacilityLineupItemMasters();
             marketOfferMasters = CreateMarketOfferMasters();
             speciesMasters = CreateSpeciesMasters();
             actorArchetypeMasters = CreateActorArchetypeMasters();
@@ -136,14 +148,11 @@ namespace DungeonInn.Master
         }
 
         public bool TryGetFacilityUpgradeMaster(
-            DungeonInn.Domain.Facility.FacilityType facilityType,
+            FacilityType facilityType,
             int fromLevel,
             out FacilityUpgradeMaster master)
         {
-            master = facilityUpgradeMasters.Values.FirstOrDefault(x =>
-                x.FacilityType == facilityType &&
-                x.FromLevel == fromLevel);
-            return master != null;
+            return facilityUpgradeMasterByFacilityAndLevel.TryGetValue((facilityType, fromLevel), out master);
         }
 
         public MarketOfferMaster GetMarketOfferMaster(int offerId)
@@ -157,7 +166,7 @@ namespace DungeonInn.Master
             {
                 new FacilityUpgradeMaster(
                     1,
-                    DungeonInn.Domain.Facility.FacilityType.Inn,
+                    FacilityType.Inn,
                     1,
                     2,
                     2,
@@ -165,7 +174,7 @@ namespace DungeonInn.Master
                     new[] { new ItemStack(SpecialItemIds.Money, 100), new ItemStack(1110, 3) }),
                 new FacilityUpgradeMaster(
                     2,
-                    DungeonInn.Domain.Facility.FacilityType.GeneralStore,
+                    FacilityType.GeneralStore,
                     1,
                     2,
                     2,
@@ -173,12 +182,38 @@ namespace DungeonInn.Master
                     new[] { new ItemStack(SpecialItemIds.Money, 120), new ItemStack(1001, 5) }),
                 new FacilityUpgradeMaster(
                     3,
-                    DungeonInn.Domain.Facility.FacilityType.EquipmentShop,
+                    FacilityType.EquipmentShop,
                     1,
                     2,
                     2,
                     1,
                     new[] { new ItemStack(SpecialItemIds.Money, 150), new ItemStack(1101, 2) })
+            }.ToDictionary(x => x.Id);
+        }
+
+        static IReadOnlyDictionary<int, FacilityLineupMaster> CreateFacilityLineupMasters()
+        {
+            return new[]
+            {
+                new FacilityLineupMaster(1, FacilityType.GeneralStore, 1, 1),
+                new FacilityLineupMaster(2, FacilityType.GeneralStore, 2, 2),
+                new FacilityLineupMaster(3, FacilityType.EquipmentShop, 1, 1),
+                new FacilityLineupMaster(4, FacilityType.EquipmentShop, 2, 2)
+            }.ToDictionary(x => x.Id);
+        }
+
+        static IReadOnlyDictionary<int, FacilityLineupItemMaster> CreateFacilityLineupItemMasters()
+        {
+            return new[]
+            {
+                new FacilityLineupItemMaster(1, 1, 2001, 1),
+                new FacilityLineupItemMaster(2, 1, 2101, 2),
+                new FacilityLineupItemMaster(3, 2, 2002, 1),
+                new FacilityLineupItemMaster(4, 2, 2108, 2),
+                new FacilityLineupItemMaster(5, 3, 3001, 1),
+                new FacilityLineupItemMaster(6, 3, 3002, 2),
+                new FacilityLineupItemMaster(7, 4, 3004, 1),
+                new FacilityLineupItemMaster(8, 4, 3012, 2)
             }.ToDictionary(x => x.Id);
         }
 
@@ -188,19 +223,19 @@ namespace DungeonInn.Master
             {
                 new MarketOfferMaster(
                     1,
-                    0,
+                    3,
                     1,
                     new[] { new ItemStack(1002, 10) },
                     new[] { new ItemStack(SpecialItemIds.Money, 1000) }),
                 new MarketOfferMaster(
                     2,
-                    0,
+                    4,
                     2,
                     new[] { new ItemStack(1001, 20) },
                     new[] { new ItemStack(SpecialItemIds.Money, 800) }),
                 new MarketOfferMaster(
                     3,
-                    0,
+                    5,
                     3,
                     new[] { new ItemStack(1101, 5) },
                     new[] { new ItemStack(SpecialItemIds.Money, 1200) })
@@ -496,8 +531,7 @@ namespace DungeonInn.Master
                     WeaponType.Fist,
                     new ActorStats(10, 8, 8, 8, 8, 8),
                     1,
-                    1,
-                    new[] { new ItemStack(SpecialItemIds.Money, 100), new ItemStack(2001, 1) }),
+                    1),
                 new ActorArchetypeMaster(
                     2,
                     "Goblin",
@@ -507,8 +541,7 @@ namespace DungeonInn.Master
                     WeaponType.Claws,
                     new ActorStats(3, 6, 3, 2, 2, 1),
                     1,
-                    2,
-                    Array.Empty<ItemStack>()),
+                    2),
                 new ActorArchetypeMaster(
                     3,
                     "Orc",
@@ -518,8 +551,7 @@ namespace DungeonInn.Master
                     WeaponType.Scythe,
                     new ActorStats(8, 7, 8, 4, 4, 3),
                     1,
-                    2,
-                    Array.Empty<ItemStack>()),
+                    2),
                 new ActorArchetypeMaster(
                     4,
                     "Ogre",
@@ -529,8 +561,7 @@ namespace DungeonInn.Master
                     WeaponType.Fist,
                     new ActorStats(14, 8, 14, 6, 6, 8),
                     1,
-                    2,
-                    Array.Empty<ItemStack>()),
+                    2),
                 new ActorArchetypeMaster(
                     5,
                     "Goblin Archer",
@@ -540,8 +571,7 @@ namespace DungeonInn.Master
                     WeaponType.Bow,
                     new ActorStats(3, 9, 3, 2, 2, 1),
                     1,
-                    2,
-                    Array.Empty<ItemStack>())
+                    2)
             }.ToDictionary(x => x.Id);
         }
 
@@ -628,7 +658,6 @@ namespace DungeonInn.Master
                 GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType);
                 GetLevelTable(archetypeMaster.LevelTableId);
                 GetActorVisualMaster(archetypeMaster.VisualId, GameConstants.DefaultActorSkinId);
-                ValidateItemStacks(archetypeMaster.InitialInventoryItemIds);
             }
 
             foreach (var adventurerSpawnMaster in adventurerSpawnMasters.Values)
@@ -663,6 +692,16 @@ namespace DungeonInn.Master
                 {
                     throw new InvalidOperationException("Dungeon floor exploration requires actor archetype spawn table.");
                 }
+            }
+
+            foreach (var lineupItemMaster in facilityLineupItemMasters.Values)
+            {
+                if (!facilityLineupMasters.ContainsKey(lineupItemMaster.LineupId))
+                {
+                    throw new InvalidOperationException("Facility lineup item references unknown lineup.");
+                }
+
+                RequireItem(lineupItemMaster.ItemId);
             }
         }
 

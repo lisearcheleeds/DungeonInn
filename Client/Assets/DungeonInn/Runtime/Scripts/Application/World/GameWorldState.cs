@@ -37,6 +37,7 @@ namespace DungeonInn.Application.World
 
         public bool IsInitialized { get; private set; }
         public AdventurerGuild Guild { get; private set; }
+        public AdventurerGuild WritableGuild => Guild;
         public GroundMap GroundMap { get; private set; }
         public Dungeon Dungeon { get; private set; }
         public InnEconomyState InnEconomy => innEconomy;

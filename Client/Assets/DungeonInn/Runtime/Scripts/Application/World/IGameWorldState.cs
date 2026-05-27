@@ -28,6 +28,7 @@ namespace DungeonInn.Application.World
 
     public interface IGameWorldStateWriter
     {
+        AdventurerGuild WritableGuild { get; }
         void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon);
         void RegisterActor(Actor actor);
         bool RemoveActor(Guid actorId);

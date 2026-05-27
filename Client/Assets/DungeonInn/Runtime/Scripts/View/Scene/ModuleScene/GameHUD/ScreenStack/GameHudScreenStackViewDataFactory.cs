@@ -9,28 +9,27 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
 {
     public sealed class GameHudScreenStackViewDataFactory
     {
-        readonly GetDungeonLayerInfoUseCase getDungeonLayerInfoUseCase;
-        readonly GetGuildManagementStatusUseCase getGuildManagementStatusUseCase;
-        readonly GetMarketOffersUseCase getMarketOffersUseCase;
+        readonly IDungeonInfoScreenService dungeonInfoScreenService;
+        readonly IGuildManagementScreenService guildManagementScreenService;
+        readonly IMarketScreenService marketScreenService;
 
         [Inject]
         public GameHudScreenStackViewDataFactory(
-            GetDungeonLayerInfoUseCase getDungeonLayerInfoUseCase,
-            GetGuildManagementStatusUseCase getGuildManagementStatusUseCase,
-            GetMarketOffersUseCase getMarketOffersUseCase)
+            IDungeonInfoScreenService dungeonInfoScreenService,
+            IGuildManagementScreenService guildManagementScreenService,
+            IMarketScreenService marketScreenService)
         {
-            this.getDungeonLayerInfoUseCase =
-                getDungeonLayerInfoUseCase ?? throw new ArgumentNullException(nameof(getDungeonLayerInfoUseCase));
-            this.getGuildManagementStatusUseCase =
-                getGuildManagementStatusUseCase ?? throw new ArgumentNullException(nameof(getGuildManagementStatusUseCase));
-            this.getMarketOffersUseCase =
-                getMarketOffersUseCase ?? throw new ArgumentNullException(nameof(getMarketOffersUseCase));
+            this.dungeonInfoScreenService =
+                dungeonInfoScreenService ?? throw new ArgumentNullException(nameof(dungeonInfoScreenService));
+            this.guildManagementScreenService =
+                guildManagementScreenService ?? throw new ArgumentNullException(nameof(guildManagementScreenService));
+            this.marketScreenService = marketScreenService ?? throw new ArgumentNullException(nameof(marketScreenService));
         }
 
         public DungeonInfoWindowViewData CreateDungeonInfo()
         {
             var layers = new List<DungeonLayerListItemViewData>();
-            foreach (var summary in getDungeonLayerInfoUseCase.Execute())
+            foreach (var summary in dungeonInfoScreenService.GetLayers())
             {
                 var monsters = summary.MonsterSpawns
                     .Select(monster => new DungeonLayerMonsterSpawnViewData(
@@ -47,7 +46,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
                     .ToArray();
 
                 layers.Add(new DungeonLayerListItemViewData(
-                    $"Floor {summary.FloorIndex}",
+                    summary.FloorIndex == 0 ? "Ground" : $"Floor {summary.FloorIndex}",
                     summary.IsGenerated ? "Generated" : "Not generated",
                     $"Adventurers {summary.AdventurerCount} / Monsters {summary.MonsterCount}",
                     new DungeonLayerPopupViewData(monsters, drops)));
@@ -58,7 +57,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
 
         public GuildManagementWindowViewData CreateGuildManagement()
         {
-            var summary = getGuildManagementStatusUseCase.Execute();
+            var summary = guildManagementScreenService.GetStatus();
             var kpi = summary.EconomyKpi;
             var kpis = new[]
             {
@@ -69,9 +68,13 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
                 $"Reputation: {kpi.Reputation:N0}"
             };
             var facilities = summary.Facilities
-                .Select(x =>
+                .Select(x => new GuildFacilityRowViewData(
+                    x.FacilityId,
                     $"{x.Name} Lv.{x.Level} Q{x.Quality} Capacity {x.Capacity} " +
-                    $"Funds {x.Gold:N0} Sales {x.Sales:N0} - {FormatUpgradePreview(x.UpgradePreview)}")
+                    $"Funds {x.Gold:N0} Sales {x.Sales:N0} - {FormatUpgradePreview(x.UpgradePreview)}",
+                    x.Lineup.Select(lineup => $"{lineup.ItemName} (Lv.{lineup.RequiredLevel})").ToArray(),
+                    x.UpgradePreview.CanUpgrade,
+                    FormatUpgradePreview(x.UpgradePreview)))
                 .ToArray();
             var inventory = summary.CombinedInventory
                 .Take(12)
@@ -85,7 +88,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
 
         public MarketWindowViewData CreateMarket()
         {
-            return new MarketWindowViewData(getMarketOffersUseCase.Execute()
+            return new MarketWindowViewData(marketScreenService.GetOffers()
                 .Select(x => new MarketOfferViewData(
                     x.OfferId,
                     x.Requirements.Select(r => new MarketOfferRequirementViewData(

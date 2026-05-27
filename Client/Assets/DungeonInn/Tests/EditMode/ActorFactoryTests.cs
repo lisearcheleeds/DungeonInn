@@ -41,8 +41,8 @@ namespace DungeonInn.Tests.EditMode
                 string.Empty));
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
-            Assert.That(actor.Inventory.Gold, Is.EqualTo(100));
-            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
+            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.False);
             Assert.That(actor.Equipment.EquippedWeaponType, Is.Null);
             Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));
             Assert.That(actor.Hp, Is.EqualTo(actor.Params.MaxHp));
@@ -94,7 +94,7 @@ namespace DungeonInn.Tests.EditMode
                 string.Empty));
 
             Assert.That(adventurer.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
-            Assert.That(adventurer.Inventory.Has(new ItemStack(2001, 1)), Is.True);
+            Assert.That(adventurer.Inventory.Has(new ItemStack(2001, 1)), Is.False);
             Assert.That(monster.RequireBehavior<MonsterBehavior>().SpeciesId, Is.EqualTo(1));
             Assert.That(monster.NaturalWeaponType, Is.EqualTo(WeaponType.Claws));
         }
@@ -124,7 +124,7 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(guild.Inventory.Has(new ItemStack(3003, 1)), Is.True);
             Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.False);
             Assert.That(actor.Inventory.Has(new ItemStack(3003, 1)), Is.False);
-            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
+            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.False);
             Assert.That(actor.Equipment.EquippedWeaponType, Is.Null);
             Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Armor).HasValue, Is.False);
             Assert.That(actor.NaturalWeaponType, Is.EqualTo(WeaponType.Fist));

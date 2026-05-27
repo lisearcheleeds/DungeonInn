@@ -9,6 +9,10 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
 {
     public abstract class GameHudScreenStackWindowBase : ProductScreenStackBase
     {
+        const float WindowWidth = 1280f;
+        const float WindowHeight = 720f;
+        const float HeaderHeight = 72f;
+
         [SerializeField] TMP_Text titleText;
         [SerializeField] TMP_Text bodyText;
         [SerializeField] LHButton closeButton;
@@ -87,19 +91,20 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             var rootRect = GetComponent<RectTransform>();
             rootRect.anchorMin = new Vector2(0.5f, 0.5f);
             rootRect.anchorMax = new Vector2(0.5f, 0.5f);
-            rootRect.sizeDelta = new Vector2(720f, 520f);
+            rootRect.sizeDelta = new Vector2(WindowWidth, WindowHeight);
 
             var image = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
-            image.color = new Color(0.08f, 0.09f, 0.1f, 0.96f);
+            image.color = new Color(0.07f, 0.08f, 0.09f, 0.97f);
 
             titleText = titleText != null
                 ? titleText
-                : CreateText("Title", transform, 28, TextAlignmentOptions.Center);
+                : CreateText("HeaderTitle", transform, 28, TextAlignmentOptions.Left);
             var titleRect = titleText.GetComponent<RectTransform>();
             titleRect.anchorMin = new Vector2(0f, 1f);
             titleRect.anchorMax = new Vector2(1f, 1f);
-            titleRect.anchoredPosition = new Vector2(0f, -42f);
-            titleRect.sizeDelta = new Vector2(-48f, 48f);
+            titleRect.offsetMin = new Vector2(32f, -HeaderHeight);
+            titleRect.offsetMax = new Vector2(-96f, 0f);
+            titleText.fontStyle = FontStyles.Bold;
 
             bodyText = bodyText != null
                 ? bodyText
@@ -107,17 +112,17 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             var bodyRect = bodyText.GetComponent<RectTransform>();
             bodyRect.anchorMin = new Vector2(0f, 0f);
             bodyRect.anchorMax = new Vector2(1f, 1f);
-            bodyRect.offsetMin = new Vector2(32f, 72f);
-            bodyRect.offsetMax = new Vector2(-32f, -96f);
+            bodyRect.offsetMin = new Vector2(32f, 32f);
+            bodyRect.offsetMax = new Vector2(-32f, -HeaderHeight - 20f);
 
             closeButton = closeButton != null
                 ? closeButton
-                : CreateButton("CloseButton", transform, "Close");
+                : CreateButton("CloseButton", transform, "X");
             var closeRect = closeButton.GetComponent<RectTransform>();
-            closeRect.anchorMin = new Vector2(1f, 0f);
-            closeRect.anchorMax = new Vector2(1f, 0f);
-            closeRect.anchoredPosition = new Vector2(-92f, 36f);
-            closeRect.sizeDelta = new Vector2(140f, 44f);
+            closeRect.anchorMin = new Vector2(1f, 1f);
+            closeRect.anchorMax = new Vector2(1f, 1f);
+            closeRect.anchoredPosition = new Vector2(-36f, -36f);
+            closeRect.sizeDelta = new Vector2(44f, 44f);
         }
 
         static TMP_Text CreateText(

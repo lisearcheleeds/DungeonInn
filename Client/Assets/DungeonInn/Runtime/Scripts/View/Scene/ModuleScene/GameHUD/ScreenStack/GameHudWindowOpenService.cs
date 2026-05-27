@@ -12,18 +12,21 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
     {
         readonly IScreenStackModule screenStackModule;
         readonly GameHudScreenStackViewDataFactory viewDataFactory;
-        readonly FulfillMarketOfferUseCase fulfillMarketOfferUseCase;
+        readonly IGuildManagementScreenService guildManagementScreenService;
+        readonly IMarketScreenService marketScreenService;
 
         [Inject]
         public GameHudWindowOpenService(
             IScreenStackModule screenStackModule,
             GameHudScreenStackViewDataFactory viewDataFactory,
-            FulfillMarketOfferUseCase fulfillMarketOfferUseCase)
+            IGuildManagementScreenService guildManagementScreenService,
+            IMarketScreenService marketScreenService)
         {
             this.screenStackModule = screenStackModule ?? throw new ArgumentNullException(nameof(screenStackModule));
             this.viewDataFactory = viewDataFactory ?? throw new ArgumentNullException(nameof(viewDataFactory));
-            this.fulfillMarketOfferUseCase =
-                fulfillMarketOfferUseCase ?? throw new ArgumentNullException(nameof(fulfillMarketOfferUseCase));
+            this.guildManagementScreenService =
+                guildManagementScreenService ?? throw new ArgumentNullException(nameof(guildManagementScreenService));
+            this.marketScreenService = marketScreenService ?? throw new ArgumentNullException(nameof(marketScreenService));
         }
 
         public void OpenDungeonInfo()
@@ -35,7 +38,10 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
         public void OpenGuildManagement()
         {
             Debug.Log("[GameHUD.ScreenStack] Open requested: GuildManagementWindow");
-            screenStackModule.Open(new GuildManagementWindowData(viewDataFactory.CreateGuildManagement())).Forget();
+            screenStackModule.Open(new GuildManagementWindowData(
+                viewDataFactory.CreateGuildManagement(),
+                viewDataFactory.CreateGuildManagement,
+                facilityId => guildManagementScreenService.UpgradeFacility(facilityId))).Forget();
         }
 
         public void OpenMarket()
@@ -44,12 +50,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             screenStackModule.Open(new MarketWindowData(
                 viewDataFactory.CreateMarket(),
                 viewDataFactory.CreateMarket,
-                FulfillMarketOffer)).Forget();
-        }
-
-        void FulfillMarketOffer(int offerId)
-        {
-            fulfillMarketOfferUseCase.Execute(offerId);
+                offerId => marketScreenService.FulfillOffer(offerId))).Forget();
         }
     }
 }

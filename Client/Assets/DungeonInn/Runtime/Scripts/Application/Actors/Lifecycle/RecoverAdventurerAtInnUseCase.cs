@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
+using DungeonInn.Application.Economy;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Map;
@@ -19,6 +20,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly AdventurerRecoveryStateService recoveryStateService;
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly FacilityEffectService facilityEffectService;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
@@ -27,7 +29,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IGameClock gameClock,
             AdventurerRecoveryStateService recoveryStateService,
             ActorProcessingCandidateService candidateService,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            FacilityEffectService facilityEffectService)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
@@ -35,6 +38,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.facilityEffectService = facilityEffectService ?? throw new ArgumentNullException(nameof(facilityEffectService));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -81,14 +85,17 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
         void TickRecovery(AdventurerGuild guild, Actor actor, AdventurerBehavior behavior, float deltaGameSeconds)
         {
-            if (!guild.HasActiveInnReservation(actor.Id))
+            if (!guild.TryGetActiveInnReservation(actor.Id, out var reservation))
             {
                 return;
             }
 
             var accumulated = recoveryStateService.GetAccumulatedHp(actor.Id);
             var innBalanceSettings = worldGameSettingsRepository.GetInnBalanceSettings();
-            accumulated += actor.Params.MaxHp * innBalanceSettings.HpRecoveryPercentPerMinute / 60f * deltaGameSeconds;
+            var inn = guild.GetFacility(reservation.InnFacilityId);
+            var recoveryPercentPerMinute =
+                facilityEffectService.CalculateInnHpRecoveryPercentPerMinute(inn, innBalanceSettings);
+            accumulated += actor.Params.MaxHp * recoveryPercentPerMinute / 60f * deltaGameSeconds;
             var healAmount = (int)accumulated;
 
             if (0 < healAmount)

@@ -16,6 +16,7 @@ namespace DungeonInn.Application.Economy
         readonly InnEconomyStatusCalculator economyStatusCalculator;
         readonly GuildCombinedInventoryViewService combinedInventoryViewService;
         readonly FacilityUpgradePreviewService facilityUpgradePreviewService;
+        readonly GetFacilityLineupUseCase getFacilityLineupUseCase;
 
         [Inject]
         public GetGuildManagementStatusUseCase(
@@ -24,7 +25,8 @@ namespace DungeonInn.Application.Economy
             InnEconomyStatisticsService statisticsService,
             InnEconomyStatusCalculator economyStatusCalculator,
             GuildCombinedInventoryViewService combinedInventoryViewService,
-            FacilityUpgradePreviewService facilityUpgradePreviewService)
+            FacilityUpgradePreviewService facilityUpgradePreviewService,
+            GetFacilityLineupUseCase getFacilityLineupUseCase)
         {
             this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
@@ -35,6 +37,8 @@ namespace DungeonInn.Application.Economy
                 combinedInventoryViewService ?? throw new ArgumentNullException(nameof(combinedInventoryViewService));
             this.facilityUpgradePreviewService =
                 facilityUpgradePreviewService ?? throw new ArgumentNullException(nameof(facilityUpgradePreviewService));
+            this.getFacilityLineupUseCase =
+                getFacilityLineupUseCase ?? throw new ArgumentNullException(nameof(getFacilityLineupUseCase));
         }
 
         public bool CanExecute => worldState.IsInitialized;
@@ -78,7 +82,8 @@ namespace DungeonInn.Application.Economy
                     x.Capacity,
                     x.Inventory.Gold,
                     CalculateFacilitySales(x.Id),
-                    facilityUpgradePreviewService.Create(x.Type, x.Level)))
+                    facilityUpgradePreviewService.Create(x.Type, x.Level),
+                    getFacilityLineupUseCase.Execute(x.Type, x.Level)))
                 .ToArray();
         }
 

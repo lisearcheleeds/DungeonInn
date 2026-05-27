@@ -12,8 +12,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
     {
         const float UpdateIntervalSeconds = 0.5f;
 
-        readonly GetInnGuestListUseCase getInnGuestListUseCase;
-        readonly GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
+        readonly IInnStatusPanelScreenService innStatusPanelScreenService;
         readonly GameHUDAddressableViewFactory viewFactory;
         readonly GameHUDModuleScene gameHUDModuleScene;
         readonly List<InnGuestSummary> guestBuffer = new();
@@ -23,15 +22,12 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 
         [Inject]
         public InnStatusPanelPresenter(
-            GetInnGuestListUseCase getInnGuestListUseCase,
-            GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
+            IInnStatusPanelScreenService innStatusPanelScreenService,
             GameHUDAddressableViewFactory viewFactory,
             GameHUDModuleScene gameHUDModuleScene)
         {
-            this.getInnGuestListUseCase =
-                getInnGuestListUseCase ?? throw new ArgumentNullException(nameof(getInnGuestListUseCase));
-            this.getInnEconomyStatusUseCase =
-                getInnEconomyStatusUseCase ?? throw new ArgumentNullException(nameof(getInnEconomyStatusUseCase));
+            this.innStatusPanelScreenService =
+                innStatusPanelScreenService ?? throw new ArgumentNullException(nameof(innStatusPanelScreenService));
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
             this.gameHUDModuleScene = gameHUDModuleScene ?? throw new ArgumentNullException(nameof(gameHUDModuleScene));
         }
@@ -73,15 +69,15 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
                 return;
             }
 
-            if (getInnGuestListUseCase.CanExecute)
+            if (innStatusPanelScreenService.CanGetGuestList)
             {
-                getInnGuestListUseCase.Execute(guestBuffer);
+                innStatusPanelScreenService.FillGuests(guestBuffer);
                 panelView.SetGuests(guestBuffer);
             }
 
-            if (getInnEconomyStatusUseCase.CanExecute)
+            if (innStatusPanelScreenService.CanGetEconomyStatus)
             {
-                var economyStatus = getInnEconomyStatusUseCase.Execute();
+                var economyStatus = innStatusPanelScreenService.GetEconomyStatus();
                 panelView.SetEconomySummary(economyStatus);
             }
         }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using LighthouseExtends.ScreenStack;
 using LighthouseExtends.UIComponent.Button;
 using TMPro;
@@ -24,11 +23,28 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
 
         void Refresh()
         {
-            ApplyContent(
-                "Market",
-                Format(screenStackData.ViewData));
+            ApplyContent("Market", string.Empty);
+            SetBodyTextVisible(false);
+            RenderOffers(screenStackData.ViewData);
             RebuildOfferButtons(screenStackData.ViewData);
             Debug.Log($"[GameHUD.ScreenStack] MarketWindow displayed. Offers={screenStackData.ViewData.Offers.Count}");
+        }
+
+        void RenderOffers(MarketWindowViewData viewData)
+        {
+            var bodyRoot = GetBodyRoot();
+            ClearChildren(bodyRoot);
+
+            if (viewData.Offers.Count == 0)
+            {
+                CreateText(bodyRoot, "No market offers are currently available.", 22, TextAlignmentOptions.Center);
+                return;
+            }
+
+            for (var index = 0; index < viewData.Offers.Count; index++)
+            {
+                CreateOfferRow(bodyRoot, viewData.Offers[index], index);
+            }
         }
 
         void RebuildOfferButtons(MarketWindowViewData viewData)
@@ -68,13 +84,13 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
                 typeof(CanvasRenderer),
                 typeof(Image),
                 typeof(LHButton));
-            buttonObject.transform.SetParent(transform, false);
+            buttonObject.transform.SetParent(GetBodyRoot(), false);
 
             var rect = buttonObject.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(0f, 0f);
-            rect.anchoredPosition = new Vector2(104f + index * 148f, 36f);
-            rect.sizeDelta = new Vector2(132f, 38f);
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-96f, -52f - index * 172f);
+            rect.sizeDelta = new Vector2(144f, 42f);
 
             var image = buttonObject.GetComponent<Image>();
             image.color = offer.CanFulfill
@@ -115,21 +131,70 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             Refresh();
         }
 
-        static string Format(MarketWindowViewData viewData)
+        static void CreateOfferRow(RectTransform bodyRoot, MarketOfferViewData offer, int index)
         {
-            var builder = new StringBuilder();
-            foreach (var offer in viewData.Offers)
-            {
-                builder.AppendLine($"Offer #{offer.OfferId} - {offer.Status} - Reward {offer.Reward}");
-                foreach (var requirement in offer.Requirements)
-                {
-                    builder.AppendLine($"- {requirement.ItemName}: {requirement.Count} {requirement.Missing}");
-                }
+            var rowObject = new GameObject($"OfferRow{offer.OfferId}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            rowObject.transform.SetParent(bodyRoot, false);
+            var rect = rowObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -index * 172f);
+            rect.sizeDelta = new Vector2(0f, 156f);
+            rect.pivot = new Vector2(0.5f, 1f);
 
-                builder.AppendLine();
+            rowObject.GetComponent<Image>().color = offer.CanFulfill
+                ? new Color(0.1f, 0.16f, 0.13f, 0.94f)
+                : new Color(0.13f, 0.13f, 0.14f, 0.94f);
+
+            CreateAnchoredText(rowObject.transform, $"Offer #{offer.OfferId}", 24, new Vector2(20f, -18f), new Vector2(260f, 34f));
+            CreateAnchoredText(rowObject.transform, offer.Status, 18, new Vector2(20f, -54f), new Vector2(260f, 28f))
+                .color = offer.CanFulfill ? new Color(0.65f, 0.95f, 0.74f, 1f) : new Color(0.9f, 0.72f, 0.58f, 1f);
+            CreateAnchoredText(rowObject.transform, $"Reward: {offer.Reward}", 20, new Vector2(840f, -22f), new Vector2(220f, 34f));
+
+            var requirementLines = new List<string>();
+            foreach (var requirement in offer.Requirements)
+            {
+                requirementLines.Add($"{requirement.ItemName}: {requirement.Count} {requirement.Missing}");
             }
 
-            return builder.ToString();
+            CreateAnchoredText(rowObject.transform, string.Join("\n", requirementLines), 18, new Vector2(300f, -22f), new Vector2(500f, 112f));
+        }
+
+        static void ClearChildren(RectTransform root)
+        {
+            for (var index = root.childCount - 1; 0 <= index; index--)
+            {
+                Destroy(root.GetChild(index).gameObject);
+            }
+        }
+
+        static TMP_Text CreateAnchoredText(Transform parent, string text, int fontSize, Vector2 position, Vector2 size)
+        {
+            var textComponent = CreateText(parent, text, fontSize, TextAlignmentOptions.TopLeft);
+            var rect = textComponent.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+            rect.pivot = new Vector2(0f, 1f);
+            return textComponent;
+        }
+
+        static TMP_Text CreateText(
+            Transform parent,
+            string text,
+            int fontSize,
+            TextAlignmentOptions alignment)
+        {
+            var textObject = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textObject.transform.SetParent(parent, false);
+            var textComponent = textObject.GetComponent<TMP_Text>();
+            textComponent.text = text;
+            textComponent.fontSize = fontSize;
+            textComponent.color = Color.white;
+            textComponent.alignment = alignment;
+            textComponent.textWrappingMode = TextWrappingModes.Normal;
+            return textComponent;
         }
     }
 }

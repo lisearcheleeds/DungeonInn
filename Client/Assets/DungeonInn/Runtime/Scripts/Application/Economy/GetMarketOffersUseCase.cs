@@ -12,23 +12,27 @@ namespace DungeonInn.Application.Economy
         readonly IMarketOfferMasterRepository marketOfferMasterRepository;
         readonly IItemMasterRepository itemMasterRepository;
         readonly GuildCombinedInventoryViewService combinedInventoryViewService;
+        readonly GuildProgressService guildProgressService;
 
         [Inject]
         public GetMarketOffersUseCase(
             IMarketOfferMasterRepository marketOfferMasterRepository,
             IItemMasterRepository itemMasterRepository,
-            GuildCombinedInventoryViewService combinedInventoryViewService)
+            GuildCombinedInventoryViewService combinedInventoryViewService,
+            GuildProgressService guildProgressService)
         {
             this.marketOfferMasterRepository = marketOfferMasterRepository
                 ?? throw new ArgumentNullException(nameof(marketOfferMasterRepository));
             this.itemMasterRepository = itemMasterRepository ?? throw new ArgumentNullException(nameof(itemMasterRepository));
             this.combinedInventoryViewService =
                 combinedInventoryViewService ?? throw new ArgumentNullException(nameof(combinedInventoryViewService));
+            this.guildProgressService = guildProgressService ?? throw new ArgumentNullException(nameof(guildProgressService));
         }
 
         public IReadOnlyList<MarketOfferSummary> Execute()
         {
             return marketOfferMasterRepository.MarketOfferMasters.Values
+                .Where(guildProgressService.IsMarketOfferUnlocked)
                 .OrderBy(x => x.DisplayPriority)
                 .Take(3)
                 .Select(CreateSummary)

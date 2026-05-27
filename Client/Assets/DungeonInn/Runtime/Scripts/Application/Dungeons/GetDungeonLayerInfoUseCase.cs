@@ -32,6 +32,15 @@ namespace DungeonInn.Application.Dungeons
             }
 
             var summaries = new List<DungeonLayerInfoSummary>();
+            summaries.Add(new DungeonLayerInfoSummary(
+                0,
+                true,
+                CountActors(0, ActorBehaviorType.Adventurer),
+                CountActors(0, ActorBehaviorType.Monster),
+                0f,
+                Array.Empty<DungeonLayerMonsterSpawnSummary>(),
+                Array.Empty<DungeonLayerItemDropSummary>()));
+
             foreach (var floorMaster in masterRepository.DungeonFloorExplorationMasters.Values.OrderBy(x => x.FloorIndex))
             {
                 var monsterSpawnTable = masterRepository.GetSpawnTableMaster(floorMaster.MonsterSpawnTableId);

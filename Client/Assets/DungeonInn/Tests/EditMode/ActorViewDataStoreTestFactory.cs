@@ -29,8 +29,7 @@ namespace DungeonInn.Tests.EditMode
                     source.DefaultWeaponType,
                     source.BaseStats,
                     source.InitialLevel,
-                    source.LevelTableId,
-                    source.InitialInventoryItemIds);
+                    source.LevelTableId);
             }
 
             public IReadOnlyDictionary<int, ItemMaster> ItemMasters => inner.ItemMasters;

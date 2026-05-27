@@ -13,28 +13,31 @@ namespace DungeonInn.Application.Economy
 {
     public sealed class FulfillMarketOfferUseCase
     {
-        readonly IGameWorldStateReader worldState;
+        readonly IGameWorldStateWriter worldStateWriter;
         readonly IMarketOfferMasterRepository marketOfferMasterRepository;
         readonly GuildCombinedInventoryViewService combinedInventoryViewService;
         readonly GuildInventoryWithdrawalService withdrawalService;
+        readonly GuildProgressService guildProgressService;
         readonly IGameClock gameClock;
         readonly IEventPublisher eventPublisher;
 
         [Inject]
         public FulfillMarketOfferUseCase(
-            IGameWorldStateReader worldState,
+            IGameWorldStateWriter worldStateWriter,
             IMarketOfferMasterRepository marketOfferMasterRepository,
             GuildCombinedInventoryViewService combinedInventoryViewService,
             GuildInventoryWithdrawalService withdrawalService,
+            GuildProgressService guildProgressService,
             IGameClock gameClock,
             IEventPublisher eventPublisher)
         {
-            this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
+            this.worldStateWriter = worldStateWriter ?? throw new ArgumentNullException(nameof(worldStateWriter));
             this.marketOfferMasterRepository = marketOfferMasterRepository
                 ?? throw new ArgumentNullException(nameof(marketOfferMasterRepository));
             this.combinedInventoryViewService =
                 combinedInventoryViewService ?? throw new ArgumentNullException(nameof(combinedInventoryViewService));
             this.withdrawalService = withdrawalService ?? throw new ArgumentNullException(nameof(withdrawalService));
+            this.guildProgressService = guildProgressService ?? throw new ArgumentNullException(nameof(guildProgressService));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }
@@ -42,13 +45,18 @@ namespace DungeonInn.Application.Economy
         public MarketOfferFulfillmentResult Execute(int offerId)
         {
             var offer = marketOfferMasterRepository.GetMarketOfferMaster(offerId);
+            if (!guildProgressService.IsMarketOfferUnlocked(offer))
+            {
+                throw new InvalidOperationException("Market offer is not unlocked.");
+            }
+
             if (!combinedInventoryViewService.HasAll(offer.Requirements))
             {
                 throw new InvalidOperationException("Guild combined inventory does not satisfy market offer.");
             }
 
             var withdrawalResult = withdrawalService.Withdraw(offer.Requirements);
-            ((IExchangeParticipant)worldState.Guild).AddRange(offer.Rewards);
+            ((IExchangeParticipant)worldStateWriter.WritableGuild).AddRange(offer.Rewards);
             var transactions = RecordTransactions(withdrawalResult);
             var rewardGold = CountGold(offer.Rewards);
             eventPublisher.Publish(new MarketOfferFulfilled(offerId, rewardGold));
@@ -68,7 +76,7 @@ namespace DungeonInn.Application.Economy
                     new[] { source.ItemStack },
                     Array.Empty<ItemStack>(),
                     gameClock.CurrentScheduleTick);
-                worldState.Guild.RecordTransaction(transaction);
+                worldStateWriter.WritableGuild.RecordTransaction(transaction);
                 transactions.Add(transaction);
             }
 

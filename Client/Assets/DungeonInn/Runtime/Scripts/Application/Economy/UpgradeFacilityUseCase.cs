@@ -12,7 +12,7 @@ namespace DungeonInn.Application.Economy
 {
     public sealed class UpgradeFacilityUseCase
     {
-        readonly IGameWorldStateReader worldState;
+        readonly IGameWorldStateWriter worldStateWriter;
         readonly IFacilityUpgradeMasterRepository facilityUpgradeMasterRepository;
         readonly GuildCombinedInventoryViewService combinedInventoryViewService;
         readonly GuildInventoryWithdrawalService withdrawalService;
@@ -21,14 +21,14 @@ namespace DungeonInn.Application.Economy
 
         [Inject]
         public UpgradeFacilityUseCase(
-            IGameWorldStateReader worldState,
+            IGameWorldStateWriter worldStateWriter,
             IFacilityUpgradeMasterRepository facilityUpgradeMasterRepository,
             GuildCombinedInventoryViewService combinedInventoryViewService,
             GuildInventoryWithdrawalService withdrawalService,
             IGameClock gameClock,
             IEventPublisher eventPublisher)
         {
-            this.worldState = worldState ?? throw new ArgumentNullException(nameof(worldState));
+            this.worldStateWriter = worldStateWriter ?? throw new ArgumentNullException(nameof(worldStateWriter));
             this.facilityUpgradeMasterRepository = facilityUpgradeMasterRepository
                 ?? throw new ArgumentNullException(nameof(facilityUpgradeMasterRepository));
             this.combinedInventoryViewService =
@@ -40,7 +40,7 @@ namespace DungeonInn.Application.Economy
 
         public FacilityUpgradeResult Execute(Guid facilityId)
         {
-            var facility = worldState.Guild.GetFacility(facilityId);
+            var facility = worldStateWriter.WritableGuild.GetFacility(facilityId);
             if (!facilityUpgradeMasterRepository.TryGetFacilityUpgradeMaster(
                     facility.Type,
                     facility.Level,
@@ -85,7 +85,7 @@ namespace DungeonInn.Application.Economy
                     new[] { source.ItemStack },
                     Array.Empty<Domain.Item.ItemStack>(),
                     gameClock.CurrentScheduleTick);
-                worldState.Guild.RecordTransaction(transaction);
+                worldStateWriter.WritableGuild.RecordTransaction(transaction);
                 transactions.Add(transaction);
             }
 

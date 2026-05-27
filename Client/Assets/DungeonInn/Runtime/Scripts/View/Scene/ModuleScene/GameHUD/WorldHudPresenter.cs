@@ -14,10 +14,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
     {
         const int MinutesPerDay = 1440;
 
-        readonly GetGameTimeStateUseCase getGameTimeStateUseCase;
-        readonly GetInnEconomyStatusUseCase getInnEconomyStatusUseCase;
-        readonly ToggleGamePauseUseCase toggleGamePauseUseCase;
-        readonly SetGameTimeScaleUseCase setGameTimeScaleUseCase;
+        readonly IWorldHudScreenService worldHudScreenService;
         readonly GameHUDAddressableViewFactory viewFactory;
         readonly GameHUDModuleScene gameHUDModuleScene;
         readonly IEventSubscriber eventSubscriber;
@@ -28,23 +25,14 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 
         [Inject]
         public WorldHudPresenter(
-            GetGameTimeStateUseCase getGameTimeStateUseCase,
-            GetInnEconomyStatusUseCase getInnEconomyStatusUseCase,
-            ToggleGamePauseUseCase toggleGamePauseUseCase,
-            SetGameTimeScaleUseCase setGameTimeScaleUseCase,
+            IWorldHudScreenService worldHudScreenService,
             GameHUDAddressableViewFactory viewFactory,
             GameHUDModuleScene gameHUDModuleScene,
             IEventSubscriber eventSubscriber,
             IGameHudWindowOpenService windowOpenService)
         {
-            this.getGameTimeStateUseCase =
-                getGameTimeStateUseCase ?? throw new ArgumentNullException(nameof(getGameTimeStateUseCase));
-            this.getInnEconomyStatusUseCase =
-                getInnEconomyStatusUseCase ?? throw new ArgumentNullException(nameof(getInnEconomyStatusUseCase));
-            this.toggleGamePauseUseCase =
-                toggleGamePauseUseCase ?? throw new ArgumentNullException(nameof(toggleGamePauseUseCase));
-            this.setGameTimeScaleUseCase =
-                setGameTimeScaleUseCase ?? throw new ArgumentNullException(nameof(setGameTimeScaleUseCase));
+            this.worldHudScreenService =
+                worldHudScreenService ?? throw new ArgumentNullException(nameof(worldHudScreenService));
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
             this.gameHUDModuleScene = gameHUDModuleScene ?? throw new ArgumentNullException(nameof(gameHUDModuleScene));
             this.eventSubscriber = eventSubscriber ?? throw new ArgumentNullException(nameof(eventSubscriber));
@@ -81,13 +69,13 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
                 return;
             }
 
-            var timeState = getGameTimeStateUseCase.Execute();
+            var timeState = worldHudScreenService.GetTimeState();
             hudView.SetDayTime(FormatDayTime(timeState));
             hudView.SetPauseButtonLabel(timeState.IsPaused ? "Resume" : "Pause");
 
-            if (getInnEconomyStatusUseCase.CanExecute)
+            if (worldHudScreenService.CanGetInnEconomyStatus)
             {
-                var economyStatus = getInnEconomyStatusUseCase.Execute();
+                var economyStatus = worldHudScreenService.GetInnEconomyStatus();
                 hudView.SetGold($"Gold: {economyStatus.Current.GuildGold:N0}");
             }
         }
@@ -108,18 +96,18 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 
         void OnPauseClicked()
         {
-            var timeState = toggleGamePauseUseCase.Execute();
+            var timeState = worldHudScreenService.TogglePause();
             hudView?.SetPauseButtonLabel(timeState.IsPaused ? "Resume" : "Pause");
         }
 
         void OnSpeedNormalClicked()
         {
-            setGameTimeScaleUseCase.Execute(1f);
+            worldHudScreenService.SetTimeScale(1f);
         }
 
         void OnSpeedFastClicked()
         {
-            setGameTimeScaleUseCase.Execute(2f);
+            worldHudScreenService.SetTimeScale(2f);
         }
 
         void OnDungeonInfoClicked()

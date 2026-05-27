@@ -86,6 +86,11 @@ namespace DungeonInn.Domain.Guild
             return activeReservationByAdventurer.ContainsKey(adventurerId);
         }
 
+        public bool TryGetActiveInnReservation(Guid adventurerId, out InnReservation reservation)
+        {
+            return activeReservationByAdventurer.TryGetValue(adventurerId, out reservation);
+        }
+
         public int CountActiveInnReservations(Guid innFacilityId)
         {
             var count = 0;

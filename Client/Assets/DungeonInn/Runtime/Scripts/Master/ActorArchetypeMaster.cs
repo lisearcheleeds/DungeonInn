@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 
@@ -17,7 +15,6 @@ namespace DungeonInn.Master
         public ActorStats BaseStats { get; }
         public int InitialLevel { get; }
         public int LevelTableId { get; }
-        public IReadOnlyList<ItemStack> InitialInventoryItemIds { get; }
 
         public ActorArchetypeMaster(
             int id,
@@ -28,8 +25,7 @@ namespace DungeonInn.Master
             WeaponType defaultWeaponType,
             ActorStats baseStats,
             int initialLevel,
-            int levelTableId,
-            IReadOnlyList<ItemStack> initialInventoryItemIds)
+            int levelTableId)
         {
             if (id < 1)
             {
@@ -70,7 +66,6 @@ namespace DungeonInn.Master
             BaseStats = baseStats ?? throw new ArgumentNullException(nameof(baseStats));
             InitialLevel = initialLevel;
             LevelTableId = levelTableId;
-            InitialInventoryItemIds = (initialInventoryItemIds ?? Array.Empty<ItemStack>()).ToArray();
         }
     }
 }

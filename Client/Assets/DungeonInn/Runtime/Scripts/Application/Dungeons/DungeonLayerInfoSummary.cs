@@ -15,7 +15,7 @@ namespace DungeonInn.Application.Dungeons
             IReadOnlyList<DungeonLayerMonsterSpawnSummary> monsterSpawns,
             IReadOnlyList<DungeonLayerItemDropSummary> itemDrops)
         {
-            if (floorIndex < 1)
+            if (floorIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(floorIndex));
             }

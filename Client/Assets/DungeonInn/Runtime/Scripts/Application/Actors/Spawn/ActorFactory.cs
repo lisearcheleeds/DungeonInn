@@ -1,6 +1,5 @@
 using System;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 using VContainer;
 
@@ -28,7 +27,7 @@ namespace DungeonInn.Application.Actors.Spawn
 
             var levelTable = masterRepository.GetLevelTable(archetypeMaster.LevelTableId);
             var naturalWeaponTypeCombatMaster = masterRepository.GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType);
-            var actor = ActorFactoryCore.CreateActor(
+            return ActorFactoryCore.CreateActor(
                 request.ActorId,
                 archetypeMaster,
                 levelTable,
@@ -38,9 +37,6 @@ namespace DungeonInn.Application.Actors.Spawn
                 CreateBehavior(archetypeMaster),
                 masterRepository,
                 naturalWeaponTypeCombatMaster);
-
-            actor.GainItems(archetypeMaster.InitialInventoryItemIds);
-            return actor;
         }
 
         static void ValidateBehaviorType(

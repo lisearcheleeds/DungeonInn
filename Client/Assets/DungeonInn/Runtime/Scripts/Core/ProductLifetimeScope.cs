@@ -101,6 +101,7 @@ namespace DungeonInn.Core
                 builder.Register<HardcodedMasterRepository>(Lifetime.Singleton)
                     .As<IMasterRepository>()
                     .As<IFacilityUpgradeMasterRepository>()
+                    .As<IFacilityLineupMasterRepository>()
                     .As<IMarketOfferMasterRepository>()
                     .As<IItemMasterRepository>()
                     .As<IItemStackLimitResolver>();

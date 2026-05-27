@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using DungeonInn.Domain.Facility;
 
 namespace DungeonInn.Application.Economy
@@ -14,7 +16,8 @@ namespace DungeonInn.Application.Economy
             int capacity,
             int gold,
             int sales,
-            FacilityUpgradePreviewSummary upgradePreview)
+            FacilityUpgradePreviewSummary upgradePreview,
+            IReadOnlyList<FacilityLineupSummary> lineup)
         {
             FacilityId = facilityId;
             FacilityType = facilityType;
@@ -27,6 +30,7 @@ namespace DungeonInn.Application.Economy
             Gold = Math.Max(0, gold);
             Sales = Math.Max(0, sales);
             UpgradePreview = upgradePreview ?? throw new ArgumentNullException(nameof(upgradePreview));
+            Lineup = (lineup ?? Array.Empty<FacilityLineupSummary>()).ToArray();
         }
 
         public Guid FacilityId { get; }
@@ -38,5 +42,6 @@ namespace DungeonInn.Application.Economy
         public int Gold { get; }
         public int Sales { get; }
         public FacilityUpgradePreviewSummary UpgradePreview { get; }
+        public IReadOnlyList<FacilityLineupSummary> Lineup { get; }
     }
 }
