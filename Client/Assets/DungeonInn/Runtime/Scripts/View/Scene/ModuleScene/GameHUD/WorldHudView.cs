@@ -2,6 +2,7 @@ using LighthouseExtends.UIComponent.Button;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 {
@@ -17,6 +18,8 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         [SerializeField] LHButton marketButton;
 
         TMP_Text pauseButtonLabel;
+        RectTransform root;
+        LHButton settingsButton;
 
         public void SetDayTime(string text)
         {
@@ -91,9 +94,17 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             }
         }
 
+        public void AddSettingsListener(UnityAction onClick)
+        {
+            EnsureSettingsButton();
+            settingsButton.onClick.RemoveAllListeners();
+            settingsButton.onClick.AddListener(onClick);
+        }
+
         void Awake()
         {
             EnsurePauseButtonLabel();
+            EnsureSettingsButton();
         }
 
         void EnsurePauseButtonLabel()
@@ -105,5 +116,68 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 
             pauseButtonLabel = pauseButton.GetComponentInChildren<TMP_Text>(true);
         }
+
+        void EnsureSettingsButton()
+        {
+            if (settingsButton != null)
+            {
+                return;
+            }
+
+            root = gameObject.GetComponent<RectTransform>();
+            if (root == null)
+            {
+                root = gameObject.AddComponent<RectTransform>();
+            }
+
+            settingsButton = CreateButton(root, "Settings", new Vector2(-92f, -34f), new Vector2(148f, 42f));
+            var settingsRect = settingsButton.GetComponent<RectTransform>();
+            settingsRect.anchorMin = new Vector2(1f, 1f);
+            settingsRect.anchorMax = new Vector2(1f, 1f);
+        }
+
+        static LHButton CreateButton(Transform parent, string label, Vector2 position, Vector2 size)
+        {
+            var buttonObject = new GameObject(
+                label + "Button",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(LHButton));
+            buttonObject.transform.SetParent(parent, false);
+            var rectTransform = buttonObject.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.anchoredPosition = position;
+            rectTransform.sizeDelta = size;
+
+            var image = buttonObject.GetComponent<Image>();
+            image.color = new Color(0.16f, 0.18f, 0.2f, 1f);
+
+            var button = buttonObject.GetComponent<LHButton>();
+            button.targetGraphic = image;
+            var text = CreateText(buttonObject.transform, label, 18, TextAlignmentOptions.Center);
+            var textRect = text.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            return button;
+        }
+
+        static TMP_Text CreateText(Transform parent, string text, int fontSize, TextAlignmentOptions alignment)
+        {
+            var textObject = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textObject.transform.SetParent(parent, false);
+            var textComponent = textObject.GetComponent<TMP_Text>();
+            textComponent.text = text;
+            textComponent.fontSize = fontSize;
+            textComponent.color = Color.white;
+            textComponent.alignment = alignment;
+            textComponent.textWrappingMode = TextWrappingModes.NoWrap;
+            return textComponent;
+        }
+
     }
 }

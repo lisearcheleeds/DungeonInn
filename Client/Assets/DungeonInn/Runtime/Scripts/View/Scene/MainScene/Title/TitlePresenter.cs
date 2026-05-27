@@ -1,73 +1,151 @@
 using System;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Core;
-using DungeonInn.View.Scene.MainScene.World;
+using DungeonInn.Application.NewGame;
+using DungeonInn.Application.SaveLoad;
+using DungeonInn.GameSession;
 using UnityEngine;
 using VContainer;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace DungeonInn.View.Scene.MainScene.Title
 {
     public sealed class TitlePresenter : ITitlePresenter
     {
-        readonly IProductSceneManager sceneManager;
-        readonly IGameSessionLifecycle gameSessionLifecycle;
+        readonly GameSessionStartCoordinator gameSessionStartCoordinator;
+        readonly GetSaveSlotSummariesUseCase getSaveSlotSummariesUseCase;
+        readonly GetLatestSaveSlotUseCase getLatestSaveSlotUseCase;
         readonly TitleView titleView;
 
         bool isTransitioning;
 
         [Inject]
         public TitlePresenter(
-            IProductSceneManager sceneManager,
-            IGameSessionLifecycle gameSessionLifecycle,
+            GameSessionStartCoordinator gameSessionStartCoordinator,
+            GetSaveSlotSummariesUseCase getSaveSlotSummariesUseCase,
+            GetLatestSaveSlotUseCase getLatestSaveSlotUseCase,
             TitleView titleView)
         {
-            this.sceneManager = sceneManager;
-            this.gameSessionLifecycle = gameSessionLifecycle;
-            this.titleView = titleView;
+            this.gameSessionStartCoordinator = gameSessionStartCoordinator
+                ?? throw new ArgumentNullException(nameof(gameSessionStartCoordinator));
+            this.getSaveSlotSummariesUseCase = getSaveSlotSummariesUseCase
+                ?? throw new ArgumentNullException(nameof(getSaveSlotSummariesUseCase));
+            this.getLatestSaveSlotUseCase = getLatestSaveSlotUseCase
+                ?? throw new ArgumentNullException(nameof(getLatestSaveSlotUseCase));
+            this.titleView = titleView ?? throw new ArgumentNullException(nameof(titleView));
         }
 
         void ITitlePresenter.Setup()
         {
-            titleView.SetStartGameListener(StartNewGame);
+            titleView.SetMenuListeners(
+                ShowNewGameSeedPanel,
+                Continue,
+                ShowLoadSlots,
+                Exit);
+            titleView.SetSeedPanelListeners(StartNewGameFromSeed, titleView.HideSeedPanel);
+            titleView.SetSlotCancelListener(titleView.HideSlotPanel);
         }
 
         void ITitlePresenter.OnEnter()
         {
             isTransitioning = false;
-            titleView.SetStartGameInteractable(true);
+            titleView.SetMenuInteractable(true);
+            titleView.SetContinueInteractable(getLatestSaveSlotUseCase.TryExecute(out _));
+            titleView.HideSeedPanel();
+            titleView.HideSlotPanel();
         }
 
-        void StartNewGame()
+        void ShowNewGameSeedPanel()
         {
             if (isTransitioning)
             {
                 return;
             }
 
-            isTransitioning = true;
-            titleView.SetStartGameInteractable(false);
-            UniTask.Void(StartNewGameAsync);
+            titleView.ShowSeedPanel();
         }
 
-        async UniTaskVoid StartNewGameAsync()
+        void StartNewGameFromSeed()
+        {
+            if (isTransitioning)
+            {
+                return;
+            }
+
+            var seed = NewGameSeedParser.ParseOrDefault(titleView.SeedText);
+            StartTransitionAsync(() => gameSessionStartCoordinator.StartNewGameAsync(seed)).Forget();
+        }
+
+        void Continue()
+        {
+            if (isTransitioning)
+            {
+                return;
+            }
+
+            StartTransitionAsync(async () =>
+            {
+                await gameSessionStartCoordinator.TryContinueAsync();
+            }).Forget();
+        }
+
+        void ShowLoadSlots()
+        {
+            if (isTransitioning)
+            {
+                return;
+            }
+
+            titleView.ShowSlotPanel(
+                getSaveSlotSummariesUseCase.Execute(),
+                null,
+                LoadSlot);
+        }
+
+        void LoadSlot(int slotId)
+        {
+            if (isTransitioning)
+            {
+                return;
+            }
+
+            StartTransitionAsync(async () =>
+            {
+                await gameSessionStartCoordinator.TryLoadGameAsync(slotId);
+            }).Forget();
+        }
+
+        async UniTask StartTransitionAsync(Func<UniTask> action)
         {
             try
             {
-                gameSessionLifecycle.BeginSession();
-                await sceneManager.TransitionScene(new WorldScene.WorldTransitionData());
+                isTransitioning = true;
+                titleView.SetMenuInteractable(false);
+                titleView.HideSeedPanel();
+                titleView.HideSlotPanel();
+                await action();
             }
             catch (OperationCanceledException)
             {
-                gameSessionLifecycle.EndSession();
                 throw;
             }
             catch (Exception exception)
             {
-                gameSessionLifecycle.EndSession();
+                Debug.LogError($"[Title] Failed to transition from title.\n{exception}");
                 isTransitioning = false;
-                titleView.SetStartGameInteractable(true);
-                Debug.LogError($"[Title] Failed to start new game.\n{exception}");
+                titleView.SetMenuInteractable(true);
+                titleView.SetContinueInteractable(getLatestSaveSlotUseCase.TryExecute(out _));
             }
+        }
+
+        static void Exit()
+        {
+#if UNITY_EDITOR
+            EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
     }
 }

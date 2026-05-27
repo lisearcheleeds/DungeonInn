@@ -30,6 +30,7 @@ namespace DungeonInn.Application.World
     {
         AdventurerGuild WritableGuild { get; }
         void Initialize(AdventurerGuild guild, GroundMap groundMap, Dungeon dungeon);
+        void RestoreGuild(AdventurerGuild guild, InnEconomyState innEconomy);
         void RegisterActor(Actor actor);
         bool RemoveActor(Guid actorId);
         void AddItem(ItemInstance item);

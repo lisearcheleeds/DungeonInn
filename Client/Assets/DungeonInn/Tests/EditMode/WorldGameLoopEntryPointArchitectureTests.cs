@@ -17,6 +17,7 @@ using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.Facilities;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
+using DungeonInn.Application.SaveLoad;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
@@ -27,6 +28,7 @@ using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
+using DungeonInn.GameSession;
 using R3;
 using UnityEngine;
 using DungeonInn.View.Scene.MainScene.World;
@@ -414,7 +416,16 @@ namespace DungeonInn.Tests.EditMode
                     new InnDailyReportStore(),
                     eventBus,
                     new InnEconomyStatusCalculator(new FixedWorldGameSettingsRepository())),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                new GameSessionStartRequestStore(),
+                new RestoreGameSaveSnapshotUseCase(
+                    new NoOpGameClockRestorer(),
+                    worldState,
+                    worldState,
+                    masterRepository,
+                    masterRepository,
+                    new TutorialProgressService()),
+                new ActiveSaveSlotService());
         }
 
         static GameWorldState CreateWorldState(
@@ -588,6 +599,18 @@ namespace DungeonInn.Tests.EditMode
             public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)
             {
                 return new GameClockAdvanceResult(0, Array.Empty<int>());
+            }
+        }
+
+        sealed class NoOpGameClockRestorer : IGameClockRestorer
+        {
+            public void Restore(
+                int totalScheduleTick,
+                float elapsedRealTimeSeconds,
+                float elapsedGameTimeSeconds,
+                float timeScale,
+                bool isPaused)
+            {
             }
         }
 

@@ -81,6 +81,17 @@ namespace DungeonInn.Application.World
             IsInitialized = true;
         }
 
+        public void RestoreGuild(AdventurerGuild guild, InnEconomyState innEconomy)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException("Game world state must be initialized before restore.");
+            }
+
+            Guild = guild ?? throw new ArgumentNullException(nameof(guild));
+            this.innEconomy = innEconomy ?? throw new ArgumentNullException(nameof(innEconomy));
+        }
+
         public void RegisterActor(Actor actor)
         {
             if (actor == null)

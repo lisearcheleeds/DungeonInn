@@ -6,15 +6,13 @@ using DungeonInn.Application.Economy;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Common;
-using DungeonInn.View.Scene.MainScene.World;
 
 namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 {
     public sealed class WorldHudPresenter : IDisposable
     {
-        const int MinutesPerDay = 1440;
-
         readonly IWorldHudScreenService worldHudScreenService;
+        readonly GetGameClockViewDataUseCase getGameClockViewDataUseCase;
         readonly GameHUDAddressableViewFactory viewFactory;
         readonly GameHUDModuleScene gameHUDModuleScene;
         readonly IEventSubscriber eventSubscriber;
@@ -26,6 +24,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         [Inject]
         public WorldHudPresenter(
             IWorldHudScreenService worldHudScreenService,
+            GetGameClockViewDataUseCase getGameClockViewDataUseCase,
             GameHUDAddressableViewFactory viewFactory,
             GameHUDModuleScene gameHUDModuleScene,
             IEventSubscriber eventSubscriber,
@@ -33,6 +32,8 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         {
             this.worldHudScreenService =
                 worldHudScreenService ?? throw new ArgumentNullException(nameof(worldHudScreenService));
+            this.getGameClockViewDataUseCase = getGameClockViewDataUseCase
+                ?? throw new ArgumentNullException(nameof(getGameClockViewDataUseCase));
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
             this.gameHUDModuleScene = gameHUDModuleScene ?? throw new ArgumentNullException(nameof(gameHUDModuleScene));
             this.eventSubscriber = eventSubscriber ?? throw new ArgumentNullException(nameof(eventSubscriber));
@@ -53,6 +54,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             hudView.AddDungeonInfoListener(OnDungeonInfoClicked);
             hudView.AddGuildManagementListener(OnGuildManagementClicked);
             hudView.AddMarketListener(OnMarketClicked);
+            hudView.AddSettingsListener(OnSettingsClicked);
 
             eventSubscriber.OnEvent<IGameEvent>()
                 .Subscribe(OnGameEvent)
@@ -69,9 +71,9 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
                 return;
             }
 
-            var timeState = worldHudScreenService.GetTimeState();
-            hudView.SetDayTime(FormatDayTime(timeState));
-            hudView.SetPauseButtonLabel(timeState.IsPaused ? "Resume" : "Pause");
+            var clockViewData = getGameClockViewDataUseCase.Execute();
+            hudView.SetDayTime(clockViewData.DayTimeText);
+            hudView.SetPauseButtonLabel(clockViewData.IsPaused ? "Resume" : "Pause");
 
             if (worldHudScreenService.CanGetInnEconomyStatus)
             {
@@ -83,15 +85,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         public void Dispose()
         {
             bag.Dispose();
-        }
-
-        static string FormatDayTime(GameTimeState timeState)
-        {
-            var gameTotalMinutes =
-                timeState.CurrentTickOfDay * MinutesPerDay / GameConstants.GameScheduleTicksPerDay;
-            var hours = gameTotalMinutes / 60;
-            var minutes = gameTotalMinutes % 60;
-            return $"Day {timeState.CurrentDay + 1}  {hours:D2}:{minutes:D2}";
         }
 
         void OnPauseClicked()
@@ -123,6 +116,11 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         void OnMarketClicked()
         {
             windowOpenService.OpenMarket();
+        }
+
+        void OnSettingsClicked()
+        {
+            windowOpenService.OpenSystemMenu();
         }
 
         void OnGameEvent(IGameEvent gameEvent)

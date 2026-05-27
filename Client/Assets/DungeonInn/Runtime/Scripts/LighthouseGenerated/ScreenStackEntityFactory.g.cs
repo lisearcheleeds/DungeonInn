@@ -30,6 +30,8 @@ namespace DungeonInn
                 DungeonInfoWindowData d => CreateScreenStackEntityAsync<DungeonInfoWindow, DungeonInfoWindowData>("DungeonInfoWindow", d, ct),
                 GuildManagementWindowData d => CreateScreenStackEntityAsync<GuildManagementWindow, GuildManagementWindowData>("GuildManagementWindow", d, ct),
                 MarketWindowData d => CreateScreenStackEntityAsync<MarketWindow, MarketWindowData>("MarketWindow", d, ct),
+                SaveSlotSelectionWindowData d => CreateScreenStackEntityAsync<SaveSlotSelectionWindow, SaveSlotSelectionWindowData>("SaveSlotSelectionWindow", d, ct),
+                SystemMenuWindowData d => CreateScreenStackEntityAsync<SystemMenuWindow, SystemMenuWindowData>("SystemMenuWindow", d, ct),
                 _ => throw new ArgumentOutOfRangeException(nameof(data), data.GetType().FullName, "Unknown screenStack data type")
             };
         }

@@ -211,7 +211,7 @@ Continue / LoadGame 後に表示済み案内が過剰に繰り返されないよ
   - GameClock
   - Guild
   - Facilities
-  - Actors
+  - Adventurer / GuildStaff の継続状態
   - Inventory
   - Dungeon
   - Economy / Transaction
@@ -223,6 +223,10 @@ Continue / LoadGame 後に表示済み案内が過剰に繰り返されないよ
   - Addressable handle
   - Scene-owned object
   - ScreenStack 開閉状態
+  - Actor 座標
+  - 探索中の一時状態
+  - Monster
+  - Projectile / AreaEffect
 - JSON または独自形式で保存 / 読込を実装する
 - Slot 1〜3 の path / metadata 管理を実装する
 - Continue から latest saved slot を復元する
@@ -445,6 +449,9 @@ Milestone 10 では、永続運用のために必要な最小範囲に集中す�
 - 単一 Start 導線は 5 ボタンの正式メニューへ破壊的に置き換える。
 - `TitlePresenter` は SaveData IO や GameWorldState 初期化を持たず、開始 request と scene transition の調整に留める。
 - Continue 可否は Save metadata query から取得する。
+- Title UI は 1280x720 を基準に、タイトル領域とメニュー領域を明確に分離する。タイトルテキストは上部中央、5 ボタンは中央縦並びにし、Seed / Load slot panel はメニューと重ならない位置または ScreenStack window として表示する。
+- TitleView は既存 Scene の Canvas / RectTransform / CanvasScaler に合わせ、ボタンやタイトルを viewport 中央からの固定値だけで積むのではなく、上部タイトル領域・中央メニュー領域・補助パネル領域の親 RectTransform を分けて配置する。
+- 1280x720 Play 確認で、Title text / NewGame / Continue / LoadGame / Option / Exit / Seed panel / Load slot panel が重ならないことを完了条件に含める。
 
 ### Phase 3: New Game / Seed
 
@@ -473,6 +480,7 @@ Milestone 10 では、永続運用のために必要な最小範囲に集中す�
 - Save / Load は新規 Application + Infrastructure 機能として追加する。
 - `GameClock` や `GameWorldState` に安易な public setter を追加するのではなく、復元責務を明確にした usecase / state restoration 経路を設計する。
 - SaveData には View / Presenter / Addressable handle / scene-owned object を含めない。
+- Actor 座標、探索中の一時状態、Monster、Projectile、AreaEffect は SaveData に含めない。再開時、冒険者は地上の開始位置へ戻し、Monster は spawn table で再生成する。
 
 ### Phase 5: GameHUD System Menu
 
@@ -484,6 +492,7 @@ Milestone 10 では、永続運用のために必要な最小範囲に集中す�
 修正方針:
 
 - GameHUD に設定ボタンを追加し、System Menu を GameHUD-owned ScreenStack window として開く。
+- GameHUD の設定ボタン自体は HUD 上に常時表示してよいが、押下後に表示される System Menu 本体は `WorldHudView` 配下の動的 Panel ではなく ScreenStack window として表現する。
 - Save / Load slot selection は Title と GameHUD の両方から使うため、GameHUD 専有ではなく共通 ScreenStack window として追加する。
 - Title へ戻る時は `IProductSceneManager` の通常遷移を使い、`ProductSceneManager.EndSessionIfSessionExit()` に GameSession scope 破棄を任せる。
 
@@ -675,6 +684,8 @@ Title を正式なゲーム開始入口にし、単一 Start ボタンを 5 ボ�
   - NewGame / Continue / LoadGame / Option / Exit の `LHButton`
   - Seed 入力表示の入口
   - Save slot window 表示の入口
+  - 1280x720 基準の安定した Title layout root
+  - タイトル領域、メニュー領域、補助パネル領域を分けた RectTransform
 - `TitlePresenter`
   - Save metadata query から Continue 可否を取得
   - NewGame flow / Continue flow / LoadGame flow を開始
@@ -695,16 +706,27 @@ Title を正式なゲーム開始入口にし、単一 Start ボタンを 5 ボ�
 - `Client/Assets/DungeonInn/Runtime/Scripts/View/Scene/MainScene/Title/`
 - Save metadata query は Application / SaveLoad
 
+UI レイアウト:
+
+- Title は 1280x720 を基準にする。
+- 画面上部に `Dungeon Inn` のタイトル領域を固定し、ボタン列と重ならない高さを確保する。
+- 5 ボタンは中央の menu column に縦並びで配置し、ボタン間隔は固定しつつ最下部が画面外へ出ないようにする。
+- Seed 入力 panel / Load slot panel は menu column と重ならない補助領域へ配置する。画面幅が足りない場合は ScreenStack window として開く設計を優先する。
+- `TitleText` と動的に生成するタイトルテキストを二重表示しない。既存 Scene 上の title object を使うか、新規 root を使う場合は旧 title object を明示的に非表示にする。
+
 破壊的に直す点:
 
 - `TitleView.startGameButton` 前提を廃止する。
 - `TitlePresenter.StartNewGameAsync()` の直接 World 遷移を開始 request flow へ置き換える。
+- 既存 `TitleText` / `StartGameButton` と新規生成 UI が混在して位置崩れを起こす状態を解消する。
 
 禁止:
 
 - `TitleView` が SaveData を読むこと。
 - `TitlePresenter` が JSON / file IO を直接呼ぶこと。
 - `TitlePresenter` が GameWorldState を直接初期化すること。
+- タイトルテキストとボタンを同じ座標系へ場当たり的に積み、1280x720 で重なりを起こすこと。
+- 旧 `TitleText` と新規 `Dungeon Inn` テキストを同時表示すること。
 
 完了条件:
 
@@ -712,6 +734,8 @@ Title を正式なゲーム開始入口にし、単一 Start ボタンを 5 ボ�
 - [ ] Continue 可否が save metadata 由来である
 - [ ] Option はイベント未設定である
 - [ ] `IProductSceneManager` で World / Title 遷移している
+- [ ] 1280x720 で Title text と 5 ボタンが重ならない
+- [ ] 1280x720 で Seed panel / Load slot panel が menu column を覆って操作不能にしない
 
 ### Task 3: NewGame / Seed の設計
 
@@ -769,12 +793,13 @@ GameSession の状態を 3 スロットに保存し、Title / GameHUD から復�
   - clock snapshot
   - guild snapshot
   - facility snapshot
-  - actor snapshot
+  - adventurer / staff snapshot
   - inventory snapshot
   - dungeon snapshot
   - economy / transaction snapshot
   - tutorial snapshot
   - new game seed
+  - actor position, monster, projectile, area effect は含めない
 - `GameSaveMetadata`
   - slot id
   - saved at
@@ -814,6 +839,7 @@ GameSession の状態を 3 スロットに保存し、Title / GameHUD から復�
 
 - Domain live object をそのまま JSON serializer に渡すこと。
 - SaveData に `UnityEngine.Object` を含めること。
+- Actor 座標、探索中の一時状態、Monster、Projectile、AreaEffect を SaveData に含めること。
 - View / Presenter が `IGameSaveRepository` を直接呼ぶこと。
 - Auto Save を追加すること。
 
@@ -844,11 +870,65 @@ GameSession の状態を 3 スロットに保存し、Title / GameHUD から復�
 - Save / Load は共通 ScreenStack の `SaveSlotSelectionWindow` を開く。
 - Title は `IProductSceneManager` で Title scene へ戻る。GameSession scope 破棄は `ProductSceneManager.EndSessionIfSessionExit()` に任せる。
 
+ScreenStack window としての理想クラス・リレーション:
+
+```text
+WorldHudView
+  -> settings button click を WorldHudPresenter へ通知する
+  -> System Menu 本体は持たない
+
+WorldHudPresenter
+  -> IGameHudWindowOpenService.OpenSystemMenu() を呼ぶ
+  -> Save / Load / Title の実処理は直接持たない
+
+IGameHudWindowOpenService / GameHudWindowOpenService
+  -> GameHUD 側から ScreenStack を開くための境界
+  -> SystemMenuWindowData を生成または受け取り、ScreenStack へ渡す
+  -> Window prefab / View 実体には依存しない
+
+SystemMenuWindowData
+  -> Save / Load / Option / Title の選択時 callback または command entry を持つ
+  -> 表示文言・選択可否などの ViewData を持つ
+  -> file IO / GameWorldState / Domain live object は持たない
+
+SystemMenuWindow
+  -> ScreenStack window として表示される View
+  -> Save / Load / Option / Title button を描画する
+  -> button click を SystemMenuWindowData の command へ通知する
+  -> SaveData repository や scene transition を直接呼ばない
+
+SystemMenuActionHandler または SystemMenuPresenter
+  -> SystemMenuWindowData の command 実体を組み立てる
+  -> Save 選択時は SaveSlotSelectionWindow を開く
+  -> Load 選択時は SaveSlotSelectionWindow を開く
+  -> Title 選択時は IProductSceneManager へ遷移依頼する
+  -> Option は M10 では no-op / 未設定に留める
+
+SaveSlotSelectionWindow
+  -> Title / GameHUD から共通利用される ScreenStack window
+  -> slot summary ViewData の表示と slot 選択通知だけを持つ
+  -> Save / Load の実行は呼び出し元から渡された command に委譲する
+```
+
+依存方向:
+
+- `WorldHudView -> WorldHudPresenter -> IGameHudWindowOpenService -> ScreenStack`
+- `SystemMenuWindow -> SystemMenuWindowData -> command`
+- `SystemMenuWindow` から Application / Infrastructure へ直接依存しない。
+- `SaveGameUseCase` / `GetSaveSlotSummariesUseCase` / `GameSessionStartCoordinator` などの Application / GameSession 処理は、Window ではなく Presenter / ActionHandler / WindowOpenService 側で接続する。
+
+Lifetime:
+
+- `WorldHudView` / `WorldHudPresenter` / `GameHudWindowOpenService` は GameHUD ModuleScene / GameHUDLifetimeScope 所有。
+- `SystemMenuWindow` は GameHUD-owned ScreenStack window として ScreenStack ModuleScene 上に表示されるが、開く責務は GameHUD 側 service が持つ。
+- `SaveSlotSelectionWindow` は Title / GameHUD 共通の ScreenStack window として、どちらの scene からも window data 経由で開ける。
+
 所有者:
 
 - GameHUD ModuleScene / GameHUDLifetimeScope
 - `SystemMenuWindow` は GameHUD-owned ScreenStack 配下
 - `SaveSlotSelectionWindow` は Title / GameHUD 共用の ScreenStack 配下
+- `WorldHudView` は設定ボタンの表示とクリック通知だけを所有し、System Menu の GameObject / Panel / button 群を所有しない
 
 配置:
 
@@ -859,6 +939,8 @@ GameSession の状態を 3 スロットに保存し、Title / GameHUD から復�
 禁止:
 
 - World MainScene に System Menu Canvas を直置きすること。
+- `WorldHudView` が `SystemMenuPanel` や Save / Load slot panel を動的生成して保持すること。
+- `WorldHudPresenter` が System Menu のボタン単位の表示制御を直接持つこと。
 - System Menu が file IO を直接行うこと。
 - Title へ戻る時に SceneManager を直接呼ぶこと。
 - Title へ戻る前に View / Window から `GameSessionLifecycle.EndSession()` を直接呼ぶこと。
@@ -867,6 +949,8 @@ GameSession の状態を 3 スロットに保存し、Title / GameHUD から復�
 完了条件:
 
 - [ ] GameHUD 設定ボタンから System Menu が開く
+- [ ] System Menu は ScreenStack window として開く
+- [ ] `WorldHudView` 配下に System Menu 本体の動的 Panel を持たない
 - [ ] Save / Load / Option / Title が表示される
 - [ ] Option はイベント未設定である
 - [ ] Title で session が破棄される

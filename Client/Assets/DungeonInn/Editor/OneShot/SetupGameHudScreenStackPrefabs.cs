@@ -16,6 +16,8 @@ namespace DungeonInn.Editor.OneShot
             CreateOrUpdateWindowPrefab<DungeonInfoWindow>("DungeonInfoWindow");
             CreateOrUpdateWindowPrefab<GuildManagementWindow>("GuildManagementWindow");
             CreateOrUpdateWindowPrefab<MarketWindow>("MarketWindow");
+            CreateOrUpdateWindowPrefab<SystemMenuWindow>("SystemMenuWindow");
+            CreateOrUpdateWindowPrefab<SaveSlotSelectionWindow>("SaveSlotSelectionWindow");
             VisualAssetSetup.RunAddressablesSetup();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

@@ -45,6 +45,8 @@ namespace DungeonInn.Editor
         const string DungeonInfoWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/DungeonInfoWindow.prefab";
         const string GuildManagementWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/GuildManagementWindow.prefab";
         const string MarketWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/MarketWindow.prefab";
+        const string SystemMenuWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/SystemMenuWindow.prefab";
+        const string SaveSlotSelectionWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/SaveSlotSelectionWindow.prefab";
         const string EffectDummySpritePath = "Assets/DungeonInn/Runtime/Art/Sprites/Effect/Dummy.png";
         const string AddressablesGroupName = "DungeonInn Visual";
         const string MapMaterialShaderName = "Universal Render Pipeline/Lit";
@@ -782,6 +784,8 @@ namespace DungeonInn.Editor
             MarkAssetAddressable(settings, group, DungeonInfoWindowPrefabPath, "DungeonInfoWindow");
             MarkAssetAddressable(settings, group, GuildManagementWindowPrefabPath, "GuildManagementWindow");
             MarkAssetAddressable(settings, group, MarketWindowPrefabPath, "MarketWindow");
+            MarkAssetAddressable(settings, group, SystemMenuWindowPrefabPath, "SystemMenuWindow");
+            MarkAssetAddressable(settings, group, SaveSlotSelectionWindowPrefabPath, "SaveSlotSelectionWindow");
         }
 
         static void RegisterSettingsSOs(AddressableAssetSettings settings, AddressableAssetGroup group)

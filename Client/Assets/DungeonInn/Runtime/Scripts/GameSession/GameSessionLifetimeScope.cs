@@ -11,6 +11,7 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Facilities;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
+using DungeonInn.Application.SaveLoad;
 using DungeonInn.Application.World;
 using DungeonInn.GameSession.Settings;
 using DungeonInn.View.Scene;
@@ -79,7 +80,7 @@ namespace DungeonInn.GameSession
 
             // === Application: World state / game loop ===
             builder.Register<GameRandom>(Lifetime.Singleton).As<IGameRandom>().AsSelf();
-            builder.Register<GameClock>(Lifetime.Singleton).As<IGameClock>();
+            builder.Register<GameClock>(Lifetime.Singleton).As<IGameClock>().As<IGameClockRestorer>();
             builder.Register<GameWorldState>(Lifetime.Singleton)
                 .As<IGameWorldState>()
                 .As<IGameWorldStateReader>()
@@ -106,7 +107,13 @@ namespace DungeonInn.GameSession
             builder.Register<ResumeGameTimeUseCase>(Lifetime.Singleton);
             builder.Register<ToggleGamePauseUseCase>(Lifetime.Singleton);
             builder.Register<GetGameTimeStateUseCase>(Lifetime.Singleton);
+            builder.Register<GetGameClockViewDataUseCase>(Lifetime.Singleton);
             builder.Register<WorldHudScreenService>(Lifetime.Singleton).As<IWorldHudScreenService>();
+            builder.Register<ActiveSaveSlotService>(Lifetime.Singleton);
+            builder.Register<TutorialProgressService>(Lifetime.Singleton);
+            builder.Register<CreateGameSaveSnapshotUseCase>(Lifetime.Singleton);
+            builder.Register<RestoreGameSaveSnapshotUseCase>(Lifetime.Singleton);
+            builder.Register<SaveGameUseCase>(Lifetime.Singleton);
 
             // === Application: Economy / inn ===
             builder.Register<GetGameEventHistoryUseCase>(Lifetime.Singleton);

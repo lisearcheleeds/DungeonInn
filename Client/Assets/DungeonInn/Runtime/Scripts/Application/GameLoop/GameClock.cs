@@ -3,7 +3,7 @@ using System;
 
 namespace DungeonInn.Application.GameLoop
 {
-    public sealed class GameClock : IGameClock
+    public sealed class GameClock : IGameClock, IGameClockRestorer
     {
         const float ScheduleTickSeconds = 1f;
 
@@ -36,6 +36,41 @@ namespace DungeonInn.Application.GameLoop
         public void Resume()
         {
             IsPaused = false;
+        }
+
+        public void Restore(
+            int totalScheduleTick,
+            float elapsedRealTimeSeconds,
+            float elapsedGameTimeSeconds,
+            float timeScale,
+            bool isPaused)
+        {
+            if (totalScheduleTick < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(totalScheduleTick));
+            }
+
+            if (elapsedRealTimeSeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(elapsedRealTimeSeconds));
+            }
+
+            if (elapsedGameTimeSeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(elapsedGameTimeSeconds));
+            }
+
+            if (timeScale <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeScale));
+            }
+
+            TotalScheduleTick = totalScheduleTick;
+            ElapsedRealTimeSeconds = elapsedRealTimeSeconds;
+            ElapsedGameTimeSeconds = elapsedGameTimeSeconds;
+            TimeScale = timeScale;
+            IsPaused = isPaused;
+            scheduleAccumulatorSeconds = 0f;
         }
 
         public GameClockAdvanceResult Advance(float unscaledDeltaTimeSeconds)

@@ -1,7 +1,9 @@
 using DungeonInn.Application.Actors.Spawn;
+using DungeonInn.Application.SaveLoad;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.GameSession;
+using DungeonInn.Infrastructure.SaveLoad;
 using DungeonInn.Infrastructure.TextTable;
 using DungeonInn.Input;
 using DungeonInn.Master;
@@ -94,6 +96,11 @@ namespace DungeonInn.Core
                 }
 
                 builder.Register<AssetManager>(Lifetime.Singleton).AsImplementedInterfaces();
+                builder.Register<JsonGameSaveRepository>(Lifetime.Singleton).As<IGameSaveRepository>();
+                builder.Register<GetSaveSlotSummariesUseCase>(Lifetime.Singleton);
+                builder.Register<GetLatestSaveSlotUseCase>(Lifetime.Singleton);
+                builder.Register<GameSessionStartRequestStore>(Lifetime.Singleton);
+                builder.Register<GameSessionStartCoordinator>(Lifetime.Singleton);
                 builder.Register<GameSessionLifecycle>(Lifetime.Singleton)
                     .As<IGameSessionLifecycle>()
                     .AsSelf();

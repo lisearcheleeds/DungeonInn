@@ -14,10 +14,12 @@ using DungeonInn.Application.Economy;
 using DungeonInn.Application.Facilities;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
+using DungeonInn.Application.SaveLoad;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
+using DungeonInn.GameSession;
 using VContainer;
 
 namespace DungeonInn.Application.World
@@ -45,6 +47,9 @@ namespace DungeonInn.Application.World
         readonly AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator;
         readonly PublishInnDailyReportUseCase publishInnDailyReportUseCase;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly GameSessionStartRequestStore startRequestStore;
+        readonly RestoreGameSaveSnapshotUseCase restoreGameSaveSnapshotUseCase;
+        readonly ActiveSaveSlotService activeSaveSlotService;
         readonly Dictionary<int, float> realtimeMovedSecondsByLayer = new();
         readonly HashSet<int> scheduledActorLayerIds = new();
 
@@ -72,7 +77,10 @@ namespace DungeonInn.Application.World
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
             AdvanceInnRecoveryOrchestrator advanceInnRecoveryOrchestrator,
             PublishInnDailyReportUseCase publishInnDailyReportUseCase,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            GameSessionStartRequestStore startRequestStore,
+            RestoreGameSaveSnapshotUseCase restoreGameSaveSnapshotUseCase,
+            ActiveSaveSlotService activeSaveSlotService)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
@@ -96,17 +104,36 @@ namespace DungeonInn.Application.World
             this.publishInnDailyReportUseCase = publishInnDailyReportUseCase ?? throw new ArgumentNullException(nameof(publishInnDailyReportUseCase));
             this.worldGameSettingsRepository = worldGameSettingsRepository
                 ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.startRequestStore = startRequestStore
+                ?? throw new ArgumentNullException(nameof(startRequestStore));
+            this.restoreGameSaveSnapshotUseCase = restoreGameSaveSnapshotUseCase
+                ?? throw new ArgumentNullException(nameof(restoreGameSaveSnapshotUseCase));
+            this.activeSaveSlotService = activeSaveSlotService
+                ?? throw new ArgumentNullException(nameof(activeSaveSlotService));
         }
 
         public async UniTask<WorldSimulationInitializeResult> InitializeAsync(CancellationToken cancellationToken)
         {
             await worldGameSettingsRepository.LoadAsync(cancellationToken);
-            var initialWorldSettings = worldGameSettingsRepository.GetInitialWorldSettings();
-            gameRandom.Initialize(initialWorldSettings.GameRandomSeed);
+            var startRequest = startRequestStore.Current;
+            gameRandom.Initialize(startRequest.GameRandomSeed);
             await initializeGameWorldUseCase.ExecuteAsync(
                 new InitializeGameWorldRequest(
-                    initialWorldSettings.DungeonSeed,
+                    startRequest.DungeonSeed,
                     Array.Empty<DungeonDepthBandConfig>()));
+
+            if (startRequest.Mode == GameSessionStartMode.LoadGame)
+            {
+                restoreGameSaveSnapshotUseCase.Execute(startRequest.SaveData);
+                if (startRequest.LoadSlotId.HasValue)
+                {
+                    activeSaveSlotService.SetActiveSlot(startRequest.LoadSlotId.Value);
+                }
+            }
+            else
+            {
+                activeSaveSlotService.Clear();
+            }
 
             cancellationToken.ThrowIfCancellationRequested();
 

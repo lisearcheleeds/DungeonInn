@@ -88,49 +88,13 @@ namespace DungeonInn.Editor.OneShot
             var backgroundImage = GetOrAddComponent<Image>(background);
             backgroundImage.color = new Color(0.08f, 0.09f, 0.10f, 1f);
 
-            ConfigureText(
-                background.transform,
-                "TitleText",
-                "Dungeon Inn",
-                new Vector2(0f, 120f),
-                new Vector2(720f, 120f),
-                64f,
-                new Color(0.94f, 0.92f, 0.86f, 1f));
-
-            var startButton = ConfigureButton(background.transform);
+            RemoveChildIfExists(background.transform, "TitleText");
+            RemoveChildIfExists(background.transform, "StartGameButton");
+            RemoveChildIfExists(background.transform, "TitleLayoutRoot");
+            RemoveChildIfExists(background.transform, "MenuLayoutRoot");
+            RemoveChildIfExists(background.transform, "PanelLayoutRoot");
             var titleView = GetOrAddComponent(background, ResolveTitleViewType());
-            SetObjectReference(titleView, "startGameButton", startButton);
             return titleView;
-        }
-
-        static Component ConfigureButton(Transform parent)
-        {
-            var buttonObject = GetOrCreateChild(parent, "StartGameButton");
-            var rectTransform = buttonObject.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            rectTransform.anchoredPosition = new Vector2(0f, -40f);
-            rectTransform.sizeDelta = new Vector2(320f, 76f);
-
-            var image = GetOrAddComponent<Image>(buttonObject);
-            image.color = new Color(0.78f, 0.64f, 0.32f, 1f);
-
-            var button = GetOrAddComponent(buttonObject, ResolveLHButtonType());
-            var serializedButton = new SerializedObject(button);
-            serializedButton.FindProperty("m_TargetGraphic").objectReferenceValue = image;
-            serializedButton.FindProperty("m_Interactable").boolValue = true;
-            serializedButton.ApplyModifiedPropertiesWithoutUndo();
-
-            ConfigureText(
-                buttonObject.transform,
-                "StartGameButtonLabel",
-                "Start Game",
-                Vector2.zero,
-                new Vector2(320f, 76f),
-                32f,
-                new Color(0.08f, 0.07f, 0.05f, 1f));
-            return button;
         }
 
         static void ConfigureText(
@@ -172,6 +136,15 @@ namespace DungeonInn.Editor.OneShot
             var gameObject = new GameObject(name, typeof(RectTransform));
             gameObject.transform.SetParent(parent, false);
             return gameObject;
+        }
+
+        static void RemoveChildIfExists(Transform parent, string name)
+        {
+            var existing = parent.Find(name);
+            if (existing != null)
+            {
+                Object.DestroyImmediate(existing.gameObject);
+            }
         }
 
         static void SetLayerRecursively(GameObject target, int layer)
@@ -228,13 +201,6 @@ namespace DungeonInn.Editor.OneShot
             return ResolveType(
                 "LighthouseExtends.Animation.LHSceneTransitionAnimatorManager, LighthouseExtends.Animation.Runtime",
                 "LHSceneTransitionAnimatorManager type was not found.");
-        }
-
-        static Type ResolveLHButtonType()
-        {
-            return ResolveType(
-                "LighthouseExtends.UIComponent.Button.LHButton, LighthouseExtends.UIComponent.Runtime",
-                "LHButton type was not found.");
         }
 
         static Type ResolveTextMeshProType()

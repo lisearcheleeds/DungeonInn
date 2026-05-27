@@ -248,6 +248,8 @@ codex exec --dangerously-bypass-approvals-and-sandbox -s danger-full-access - < 
 - `docs/guidelines/debugging-policy.md`
 - `docs/guidelines/self-review-guidelines.md`
 
+- 既存互換維持だけを理由に、理想設計上不要な旧実装・旧API・旧Scene/Prefab要素を残すことは禁止する。
+
 ハードゲート違反を発見した場合、Codex は実装を停止して `review/{task_id}_question.md` に報告する。
 
 ハードゲートは即時停止・修正が必要な最低条件であり、本文の設計方針・判断基準を省略してよいという意味ではない。
