@@ -171,7 +171,7 @@ namespace DungeonInn.Master
                     2,
                     2,
                     2,
-                    new[] { new ItemStack(SpecialItemIds.Money, 100), new ItemStack(1110, 3) }),
+                    new[] { new ItemStack(SpecialItemIds.Money, 1000) }),
                 new FacilityUpgradeMaster(
                     2,
                     FacilityType.GeneralStore,
@@ -179,7 +179,7 @@ namespace DungeonInn.Master
                     2,
                     2,
                     1,
-                    new[] { new ItemStack(SpecialItemIds.Money, 120), new ItemStack(1001, 5) }),
+                    new[] { new ItemStack(SpecialItemIds.Money, 1000) }),
                 new FacilityUpgradeMaster(
                     3,
                     FacilityType.EquipmentShop,
@@ -187,7 +187,7 @@ namespace DungeonInn.Master
                     2,
                     2,
                     1,
-                    new[] { new ItemStack(SpecialItemIds.Money, 150), new ItemStack(1101, 2) })
+                    new[] { new ItemStack(SpecialItemIds.Money, 1000) })
             }.ToDictionary(x => x.Id);
         }
 

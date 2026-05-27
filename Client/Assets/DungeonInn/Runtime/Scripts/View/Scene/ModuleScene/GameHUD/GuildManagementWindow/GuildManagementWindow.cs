@@ -57,7 +57,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
                     break;
                 case GuildManagementTab.Facilities:
                     RenderFacilities(bodyRoot, viewData);
-                    RebuildUpgradeButtons(viewData);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -121,22 +120,11 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             CreatePanel(bodyRoot, "Combined Inventory", viewData.Inventory, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -62f), new Vector2(560f, 500f));
         }
 
-        static void RenderFacilities(RectTransform bodyRoot, GuildManagementWindowViewData viewData)
+        void RenderFacilities(RectTransform bodyRoot, GuildManagementWindowViewData viewData)
         {
             for (var index = 0; index < viewData.Facilities.Count; index++)
             {
                 CreateFacilityRow(bodyRoot, viewData.Facilities[index], index);
-            }
-        }
-
-        void RebuildUpgradeButtons(GuildManagementWindowViewData viewData)
-        {
-            var index = 0;
-            foreach (var facility in viewData.Facilities)
-            {
-                var button = CreateUpgradeButton(facility, index);
-                upgradeButtons.Add(button);
-                index++;
             }
         }
 
@@ -156,7 +144,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             upgradeButtons.Clear();
         }
 
-        LHButton CreateUpgradeButton(GuildFacilityRowViewData facility, int index)
+        void CreateFacilityUpgradeButton(RectTransform rowRoot, GuildFacilityRowViewData facility, int index)
         {
             var buttonObject = new GameObject(
                 $"UpgradeFacility{index}Button",
@@ -164,13 +152,14 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
                 typeof(CanvasRenderer),
                 typeof(Image),
                 typeof(LHButton));
-            buttonObject.transform.SetParent(GetBodyRoot(), false);
+            buttonObject.transform.SetParent(rowRoot, false);
 
             var rect = buttonObject.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(1f, 1f);
             rect.anchorMax = new Vector2(1f, 1f);
-            rect.anchoredPosition = new Vector2(-82f, -124f - index * 150f);
-            rect.sizeDelta = new Vector2(132f, 40f);
+            rect.anchoredPosition = new Vector2(-18f, -75f);
+            rect.sizeDelta = new Vector2(144f, 42f);
+            rect.pivot = new Vector2(1f, 0.5f);
 
             var image = buttonObject.GetComponent<Image>();
             image.color = facility.CanUpgrade
@@ -184,6 +173,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             {
                 button.onClick.AddListener(() => UpgradeFacility(facility.FacilityId));
             }
+            upgradeButtons.Add(button);
 
             var labelObject = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
             labelObject.transform.SetParent(buttonObject.transform, false);
@@ -199,8 +189,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             label.alignment = TextAlignmentOptions.Center;
             label.textWrappingMode = TextWrappingModes.NoWrap;
             label.text = facility.CanUpgrade ? $"Upgrade {index + 1}" : $"Locked {index + 1}";
-
-            return button;
         }
 
         void UpgradeFacility(Guid facilityId)
@@ -211,30 +199,31 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
             Refresh();
         }
 
-        static void CreateFacilityRow(RectTransform bodyRoot, GuildFacilityRowViewData facility, int index)
+        void CreateFacilityRow(RectTransform bodyRoot, GuildFacilityRowViewData facility, int index)
         {
             var rowObject = new GameObject($"FacilityRow{index + 1}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             rowObject.transform.SetParent(bodyRoot, false);
             var rect = rowObject.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(1f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -62f - index * 150f);
-            rect.sizeDelta = new Vector2(-170f, 136f);
+            rect.anchoredPosition = new Vector2(0f, -62f - index * 168f);
+            rect.sizeDelta = new Vector2(0f, 150f);
             rect.pivot = new Vector2(0.5f, 1f);
 
             rowObject.GetComponent<Image>().color = facility.CanUpgrade
                 ? new Color(0.1f, 0.15f, 0.18f, 0.94f)
                 : new Color(0.13f, 0.13f, 0.14f, 0.94f);
 
-            CreateAnchoredText(rowObject.transform, facility.Description, 18, new Vector2(18f, -16f), new Vector2(480f, 42f));
-            CreateAnchoredText(rowObject.transform, $"Upgrade: {facility.UpgradeStatus}", 16, new Vector2(18f, -56f), new Vector2(410f, 30f))
+            CreateAnchoredText(rowObject.transform, facility.Description, 18, new Vector2(18f, -16f), new Vector2(780f, 42f));
+            CreateAnchoredText(rowObject.transform, $"Upgrade: {facility.UpgradeStatus}", 16, new Vector2(18f, -58f), new Vector2(780f, 30f))
                 .color = facility.CanUpgrade ? new Color(0.7f, 0.92f, 1f, 1f) : new Color(0.8f, 0.72f, 0.64f, 1f);
             CreateAnchoredText(
                 rowObject.transform,
                 facility.Lineup.Count == 0 ? "Lineup: None" : $"Lineup: {string.Join(", ", facility.Lineup)}",
                 16,
-                new Vector2(18f, -88f),
-                new Vector2(600f, 28f));
+                new Vector2(18f, -92f),
+                new Vector2(940f, 42f));
+            CreateFacilityUpgradeButton(rect, facility, index);
         }
 
         static void CreatePanel(
