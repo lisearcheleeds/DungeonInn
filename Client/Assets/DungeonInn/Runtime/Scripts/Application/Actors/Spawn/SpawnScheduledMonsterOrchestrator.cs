@@ -28,19 +28,22 @@ namespace DungeonInn.Application.Actors.Spawn
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly SpawnTableResolver spawnTableResolver;
 
         [Inject]
         public SpawnScheduledMonsterOrchestrator(
             SpawnMonsterUseCase spawnMonsterUseCase,
             IMasterRepository masterRepository,
             IGameRandom gameRandom,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            SpawnTableResolver spawnTableResolver)
         {
             this.spawnMonsterUseCase = spawnMonsterUseCase ?? throw new ArgumentNullException(nameof(spawnMonsterUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.spawnTableResolver = spawnTableResolver ?? throw new ArgumentNullException(nameof(spawnTableResolver));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -79,8 +82,12 @@ namespace DungeonInn.Application.Actors.Spawn
             var room = floor.Rooms[currentScheduleTick % floor.Rooms.Count];
             var position = floor.Layer.GetCellCenter(room.Center);
 
-            var depthBandMaster = masterRepository.GetDungeonDepthBandMasterForFloor(floor.FloorIndex);
-            var spawnTable = masterRepository.GetSpawnTableMaster(depthBandMaster.MonsterSpawnTableId);
+            var context = spawnTableResolver.CreateDungeonRoomContext(floor.FloorIndex, room);
+            var spawnTable = spawnTableResolver.ResolveMonsterSpawnTable(context);
+            if (spawnTable == null)
+            {
+                return null;
+            }
             if (spawnTable.TargetType != SpawnTableTargetType.ActorArchetype)
             {
                 throw new InvalidOperationException("Monster schedule requires actor archetype spawn table.");

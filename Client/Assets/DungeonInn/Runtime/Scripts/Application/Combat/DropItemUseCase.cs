@@ -5,6 +5,7 @@ using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
+using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.Combat
@@ -13,12 +14,17 @@ namespace DungeonInn.Application.Combat
     {
         readonly IGameRandom gameRandom;
         readonly IEventPublisher eventPublisher;
+        readonly IMasterRepository masterRepository;
 
         [Inject]
-        public DropItemUseCase(IGameRandom gameRandom, IEventPublisher eventPublisher)
+        public DropItemUseCase(
+            IGameRandom gameRandom,
+            IEventPublisher eventPublisher,
+            IMasterRepository masterRepository)
         {
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
+            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
         }
 
         public void Execute(Actor defeatedActor, IGameWorldState worldState)
@@ -43,12 +49,14 @@ namespace DungeonInn.Application.Combat
                 throw new ArgumentNullException(nameof(eventPublisher));
             }
 
-            if (defeatedActor.Behavior is not IActorDropSource dropSource)
+            if (defeatedActor.Behavior is not MonsterBehavior)
             {
                 return;
             }
 
-            foreach (var entry in dropSource.DropTable)
+            var archetypeMaster = masterRepository.GetActorArchetypeMaster(defeatedActor.ArchetypeId);
+            var speciesMaster = masterRepository.GetSpeciesMaster(archetypeMaster.SpeciesId);
+            foreach (var entry in speciesMaster.SpeciesDrops)
             {
                 var roll = gameRandom.Next(0, 10000) / 10000f;
                 if (entry.Probability <= roll)

@@ -18,15 +18,19 @@ namespace DungeonInn.Application.Dungeons
         const int ReferencePointPlacementMaxAttempts = 32;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly IMasterRepository masterRepository;
+        readonly AssignDungeonRoomRolesUseCase assignDungeonRoomRolesUseCase;
 
         [Inject]
         public GenerateDungeonFloorUseCase(
             IWorldGameSettingsRepository worldGameSettingsRepository,
-            IMasterRepository masterRepository)
+            IMasterRepository masterRepository,
+            AssignDungeonRoomRolesUseCase assignDungeonRoomRolesUseCase)
         {
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.assignDungeonRoomRolesUseCase =
+                assignDungeonRoomRolesUseCase ?? throw new ArgumentNullException(nameof(assignDungeonRoomRolesUseCase));
         }
 
         /// <summary>
@@ -41,7 +45,7 @@ namespace DungeonInn.Application.Dungeons
             }
 
             var generationSettings = worldGameSettingsRepository.GetDungeonMapGenerationSettings();
-            var settings = ResolveSettings(floorIndex, generationSettings);
+            var settings = ResolveSettings(floorIndex);
             var layer = new MapLayer(
                 MapLayerId.DungeonFloor(floorIndex),
                 generationSettings.FloorWidth,
@@ -49,6 +53,7 @@ namespace DungeonInn.Application.Dungeons
                 GameConstants.MapCellWidthMeters);
             var random = new Random(dungeon.Seed + floorIndex * GameConstants.DungeonFloorSeedMultiplier);
             var blueprint = CreateBlueprint(layer, settings, generationSettings, random);
+            var rooms = assignDungeonRoomRolesUseCase.Execute(floorIndex, blueprint.Rooms);
             var cells = CreateCells(layer, blueprint);
             var upStair = new DungeonStair(DungeonStairType.Up, blueprint.UpStairPosition);
             var downStair = new DungeonStair(DungeonStairType.Down, blueprint.DownStairPosition);
@@ -58,31 +63,21 @@ namespace DungeonInn.Application.Dungeons
                 cells,
                 upStair,
                 downStair,
-                blueprint.Rooms,
+                rooms,
                 settings);
 
             dungeon.AddFloor(floor);
             return UniTask.FromResult(floor);
         }
 
-        DungeonFloorGenerationSettings ResolveSettings(
-            int floorIndex,
-            DungeonMapGenerationSettings generationSettings)
+        DungeonFloorGenerationSettings ResolveSettings(int floorIndex)
         {
             if (floorIndex < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(floorIndex));
             }
 
-            try
-            {
-                return masterRepository.GetDungeonDepthBandMasterForFloor(floorIndex).GenerationSettings;
-            }
-            catch (KeyNotFoundException)
-            {
-                return new DungeonFloorGenerationSettings(
-                    themeId: floorIndex / generationSettings.ThemeFloorsPerTheme);
-            }
+            return masterRepository.GetDungeonDepthBandMasterForFloor(floorIndex).GenerationSettings;
         }
 
         DungeonFloorBlueprint CreateBlueprint(

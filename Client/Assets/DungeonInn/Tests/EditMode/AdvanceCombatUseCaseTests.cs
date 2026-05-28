@@ -286,7 +286,9 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, WeaponMaster> WeaponMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<int, ActorLoadoutMaster> ActorLoadoutMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<int, AdventurerSpawnBandMaster> AdventurerSpawnBandMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, AdventurerSpawnMaster> AdventurerSpawnMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, ActorEffectMaster> ActorEffectMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => throw new NotSupportedException();
@@ -315,10 +317,14 @@ namespace DungeonInn.Tests.EditMode
                 throw new NotSupportedException();
             }
 
+            public ActorLoadoutMaster GetActorLoadoutMaster(int loadoutId) => throw new NotSupportedException();
+
             public ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId)
             {
                 throw new NotSupportedException();
             }
+
+            public AdventurerSpawnBandMaster GetAdventurerSpawnBandMaster(int currentDay) => throw new NotSupportedException();
 
             public AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId)
             {
@@ -392,7 +398,7 @@ namespace DungeonInn.Tests.EditMode
 
         static DropItemUseCase CreateDropItemUseCase(IGameEventBus eventBus)
         {
-            return new DropItemUseCase(new ZeroGameRandom(), eventBus);
+            return new DropItemUseCase(new ZeroGameRandom(), eventBus, new HardcodedMasterRepository());
         }
 
         static CombatEffectExecutor CreateCombatEffectExecutor(
@@ -566,8 +572,12 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(2, "Faction 2"),
-                new MonsterBehavior(1, new[] { new ActorDropEntry(1001, 1f, 1, 1) }),
+                new MonsterBehavior(1),
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
     }
 }
+
+
+
+

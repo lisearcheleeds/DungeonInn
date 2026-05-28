@@ -28,19 +28,25 @@ namespace DungeonInn.Application.Actors.Spawn
         readonly IMasterRepository masterRepository;
         readonly IGameRandom gameRandom;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly SpawnTableResolver spawnTableResolver;
+        readonly IGameClock gameClock;
 
         [Inject]
         public SpawnScheduledAdventurerOrchestrator(
             SpawnAdventurerUseCase spawnAdventurerUseCase,
             IMasterRepository masterRepository,
             IGameRandom gameRandom,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            SpawnTableResolver spawnTableResolver,
+            IGameClock gameClock)
         {
             this.spawnAdventurerUseCase = spawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.spawnTableResolver = spawnTableResolver ?? throw new ArgumentNullException(nameof(spawnTableResolver));
+            this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -73,7 +79,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 return null;
             }
 
-            var spawnTable = masterRepository.GetSpawnTableMaster(1);
+            var spawnTable = spawnTableResolver.ResolveAdventurerSpawnTable(gameClock);
             if (spawnTable.TargetType != SpawnTableTargetType.AdventurerSpawn)
             {
                 throw new InvalidOperationException("Adventurer schedule requires adventurer spawn table.");

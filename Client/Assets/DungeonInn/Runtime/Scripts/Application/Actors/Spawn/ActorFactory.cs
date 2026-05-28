@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
 using VContainer;
@@ -27,7 +27,7 @@ namespace DungeonInn.Application.Actors.Spawn
 
             var levelTable = masterRepository.GetLevelTable(archetypeMaster.LevelTableId);
             var naturalWeaponTypeCombatMaster = masterRepository.GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType);
-            return ActorFactoryCore.CreateActor(
+            var actor = ActorFactoryCore.CreateActor(
                 request.ActorId,
                 archetypeMaster,
                 levelTable,
@@ -37,6 +37,8 @@ namespace DungeonInn.Application.Actors.Spawn
                 CreateBehavior(archetypeMaster),
                 masterRepository,
                 naturalWeaponTypeCombatMaster);
+            ApplyLoadout(actor, archetypeMaster);
+            return actor;
         }
 
         static void ValidateBehaviorType(
@@ -62,10 +64,51 @@ namespace DungeonInn.Application.Actors.Spawn
                     return new AdventurerBehavior(0, AdventurerLifecycleState.Arrived);
                 case ActorBehaviorType.Monster:
                     var speciesMaster = masterRepository.GetSpeciesMaster(archetypeMaster.SpeciesId);
-                    return new MonsterBehavior(speciesMaster.Id, speciesMaster.SpeciesDrops);
+                    return new MonsterBehavior(speciesMaster.Id);
                 default:
                     throw new InvalidOperationException("Actor factory does not support this actor behavior type.");
             }
         }
+
+        void ApplyLoadout(Actor actor, ActorArchetypeMaster archetypeMaster)
+        {
+            if (archetypeMaster.LoadoutMasterId < 1)
+            {
+                return;
+            }
+
+            var loadoutMaster = masterRepository.GetActorLoadoutMaster(archetypeMaster.LoadoutMasterId);
+            EquipWeapon(actor, loadoutMaster.WeaponItemId);
+            Equip(actor, loadoutMaster.ArmorItemId);
+            foreach (var accessoryItemId in loadoutMaster.AccessoryItemIds)
+            {
+                Equip(actor, accessoryItemId);
+            }
+
+            actor.GainItems(loadoutMaster.InitialInventory);
+        }
+
+        void EquipWeapon(Actor actor, int itemId)
+        {
+            if (itemId < 1)
+            {
+                return;
+            }
+
+            actor.Equip(
+                masterRepository.GetEquipmentMaster(itemId),
+                masterRepository.GetWeaponMaster(itemId));
+        }
+
+        void Equip(Actor actor, int itemId)
+        {
+            if (itemId < 1)
+            {
+                return;
+            }
+
+            actor.Equip(masterRepository.GetEquipmentMaster(itemId));
+        }
     }
 }
+

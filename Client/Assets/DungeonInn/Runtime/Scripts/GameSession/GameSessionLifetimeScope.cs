@@ -96,8 +96,8 @@ namespace DungeonInn.GameSession
             builder.Register<GetActorStatusSummaryQuery>(Lifetime.Singleton);
             builder.Register<GameWorldFrameBuffer>(Lifetime.Singleton);
             builder.Register<InitializeWorldMapUseCase>(Lifetime.Singleton);
+            builder.Register<AssignDungeonRoomRolesUseCase>(Lifetime.Singleton);
             builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Singleton);
-            builder.Register<GetDungeonSpecialRoomTypeUseCase>(Lifetime.Singleton);
             builder.Register<EnsureDungeonFloorGeneratedOrchestrator>(Lifetime.Singleton);
             builder.Register<InitializeDungeonOrchestrator>(Lifetime.Singleton);
             builder.Register<InitializeGameWorldOrchestrator>(Lifetime.Singleton);
@@ -145,6 +145,7 @@ namespace DungeonInn.GameSession
             builder.Register<CompleteActorSpawnUseCase>(Lifetime.Singleton);
             builder.Register<SpawnAdventurerUseCase>(Lifetime.Singleton);
             builder.Register<SpawnMonsterUseCase>(Lifetime.Singleton);
+            builder.Register<SpawnTableResolver>(Lifetime.Singleton);
             builder.Register<SpawnScheduledAdventurerOrchestrator>(Lifetime.Singleton);
             builder.Register<SpawnScheduledMonsterOrchestrator>(Lifetime.Singleton);
 
@@ -166,6 +167,8 @@ namespace DungeonInn.GameSession
             builder.Register<UpdateEquipmentUseCase>(Lifetime.Singleton);
             builder.Register<SellItemsUseCase>(Lifetime.Singleton);
             builder.Register<UseConsumableItemUseCase>(Lifetime.Singleton);
+            builder.Register<RecoveryItemCandidateQuery>(Lifetime.Singleton);
+            builder.Register<RecoveryEffectEstimator>(Lifetime.Singleton);
             builder.Register<RecoveryItemSelectionPolicy>(Lifetime.Singleton);
             builder.Register<UseRecoveryItemOrchestrator>(Lifetime.Singleton);
             builder.Register<AdvanceActorEffectsUseCase>(Lifetime.Singleton);

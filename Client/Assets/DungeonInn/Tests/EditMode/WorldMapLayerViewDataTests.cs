@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -669,7 +669,7 @@ namespace DungeonInn.Tests.EditMode
                     ActorBehaviorType.Adventurer)
                 .SetName("Adventurer maps to Adventurer");
             yield return new TestCaseData(
-                    new MonsterBehavior(1, Array.Empty<ActorDropEntry>()),
+                    new MonsterBehavior(1),
                     ActorBehaviorType.Monster)
                 .SetName("Monster maps to Monster");
             yield return new TestCaseData(
@@ -973,4 +973,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
 

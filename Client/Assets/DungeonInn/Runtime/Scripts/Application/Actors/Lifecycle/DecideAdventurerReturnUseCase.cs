@@ -22,9 +22,10 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IActorCombatService actorCombatService;
         readonly IEventPublisher eventPublisher;
         readonly AdventurerReturnTrackingService returnTrackingService;
-        readonly IItemMasterRepository itemMasterRepository;
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly RecoveryItemCandidateQuery recoveryItemCandidateQuery;
+        readonly RecoveryEffectEstimator recoveryEffectEstimator;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
@@ -32,17 +33,21 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IActorCombatService actorCombatService,
             IEventPublisher eventPublisher,
             AdventurerReturnTrackingService returnTrackingService,
-            IItemMasterRepository itemMasterRepository,
             ActorProcessingCandidateService candidateService,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            RecoveryItemCandidateQuery recoveryItemCandidateQuery,
+            RecoveryEffectEstimator recoveryEffectEstimator)
         {
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.returnTrackingService = returnTrackingService ?? throw new ArgumentNullException(nameof(returnTrackingService));
-            this.itemMasterRepository = itemMasterRepository ?? throw new ArgumentNullException(nameof(itemMasterRepository));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.recoveryItemCandidateQuery =
+                recoveryItemCandidateQuery ?? throw new ArgumentNullException(nameof(recoveryItemCandidateQuery));
+            this.recoveryEffectEstimator =
+                recoveryEffectEstimator ?? throw new ArgumentNullException(nameof(recoveryEffectEstimator));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState)
@@ -136,12 +141,17 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 score += returnPolicySettings.GoalCompletedScore;
             }
 
+            var candidates = recoveryItemCandidateQuery.Execute(actor);
+            var estimatedHp = HasActiveRecoveryEffect(actor)
+                ? actor.Params.MaxHp
+                : recoveryEffectEstimator.EstimateHpAfterRecovery(actor, candidates);
             var hpRatio = actor.Hp / (float)actor.Params.MaxHp;
+            var estimatedHpRatio = estimatedHp / (float)actor.Params.MaxHp;
             if (hpRatio <= returnPolicySettings.CriticalHpRatio)
             {
                 score += returnPolicySettings.CriticalHpScore;
             }
-            else if (hpRatio <= returnPolicySettings.LowHpRatio && !HasRecoveryItem(actor))
+            else if (hpRatio <= returnPolicySettings.LowHpRatio && estimatedHpRatio <= returnPolicySettings.LowHpRatio)
             {
                 score += returnPolicySettings.LowHpWithoutRecoveryItemScore;
             }
@@ -155,7 +165,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             {
                 reasonType = AiDecisionReasonType.CriticalHp;
             }
-            else if (hpRatio <= returnPolicySettings.LowHpRatio && !HasRecoveryItem(actor))
+            else if (hpRatio <= returnPolicySettings.LowHpRatio && estimatedHpRatio <= returnPolicySettings.LowHpRatio)
             {
                 reasonType = AiDecisionReasonType.LowHpWithoutRecoveryItem;
             }
@@ -218,30 +228,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
             var progress = actor.CurrentGoal.TargetId <= actor.Position.LayerId.Value ? 1 : 0;
             actor.CurrentGoal.SetProgress(progress);
             return actor.CurrentGoal.IsCompleted();
-        }
-
-        bool HasRecoveryItem(Actor actor)
-        {
-            if (HasActiveRecoveryEffect(actor))
-            {
-                return true;
-            }
-
-            foreach (var kvp in actor.Inventory.ItemCounts)
-            {
-                if (kvp.Value < 1)
-                {
-                    continue;
-                }
-
-                var itemMaster = itemMasterRepository.GetItemMaster(kvp.Key);
-                if (itemMaster.HasTag(ItemTag.Recovery) && 0 < itemMaster.ActorEffectMasterId)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         static bool HasActiveRecoveryEffect(Actor actor)

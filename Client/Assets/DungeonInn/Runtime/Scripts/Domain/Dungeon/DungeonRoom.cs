@@ -11,6 +11,7 @@ namespace DungeonInn.Domain.Dungeon
         public int Width { get; }
         public int Depth { get; }
         public int RouteDepth { get; }
+        public DungeonRoomRole Role { get; }
         public IReadOnlyList<GridPosition> Cells { get; }
 
         public DungeonRoom(
@@ -19,6 +20,18 @@ namespace DungeonInn.Domain.Dungeon
             int width,
             int depth,
             int routeDepth,
+            IReadOnlyList<GridPosition> cells)
+            : this(id, center, width, depth, routeDepth, DungeonRoomRole.Normal, cells)
+        {
+        }
+
+        public DungeonRoom(
+            int id,
+            GridPosition center,
+            int width,
+            int depth,
+            int routeDepth,
+            DungeonRoomRole role,
             IReadOnlyList<GridPosition> cells)
         {
             if (id < 0)
@@ -46,7 +59,13 @@ namespace DungeonInn.Domain.Dungeon
             Width = width;
             Depth = depth;
             RouteDepth = routeDepth;
+            Role = role;
             Cells = cells ?? throw new ArgumentNullException(nameof(cells));
+        }
+
+        public DungeonRoom WithRole(DungeonRoomRole role)
+        {
+            return new DungeonRoom(Id, Center, Width, Depth, RouteDepth, role, Cells);
         }
     }
 }

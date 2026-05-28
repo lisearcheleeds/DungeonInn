@@ -102,7 +102,7 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository())),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()))),
                 repository,
                 new NoOpGameEventBus(),
                 new FixedWorldGameSettingsRepository());
@@ -128,3 +128,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

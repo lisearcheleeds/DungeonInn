@@ -36,7 +36,9 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, EquipmentMaster> EquipmentMasters => inner.EquipmentMasters;
             public IReadOnlyDictionary<int, WeaponMaster> WeaponMasters => inner.WeaponMasters;
             public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => inner.WeaponTypeCombatMasters;
+            public IReadOnlyDictionary<int, ActorLoadoutMaster> ActorLoadoutMasters => inner.ActorLoadoutMasters;
             public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => inner.ActorArchetypeMasters;
+            public IReadOnlyDictionary<int, AdventurerSpawnBandMaster> AdventurerSpawnBandMasters => inner.AdventurerSpawnBandMasters;
             public IReadOnlyDictionary<int, AdventurerSpawnMaster> AdventurerSpawnMasters => inner.AdventurerSpawnMasters;
             public IReadOnlyDictionary<int, ActorEffectMaster> ActorEffectMasters => inner.ActorEffectMasters;
             public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => inner.SpeciesMasters;
@@ -66,6 +68,11 @@ namespace DungeonInn.Tests.EditMode
                 return inner.GetWeaponTypeCombatMaster(weaponType);
             }
 
+            public ActorLoadoutMaster GetActorLoadoutMaster(int loadoutId)
+            {
+                return inner.GetActorLoadoutMaster(loadoutId);
+            }
+
             public ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId)
             {
                 if (archetypeId == 0)
@@ -74,6 +81,11 @@ namespace DungeonInn.Tests.EditMode
                 }
 
                 return inner.GetActorArchetypeMaster(archetypeId);
+            }
+
+            public AdventurerSpawnBandMaster GetAdventurerSpawnBandMaster(int currentDay)
+            {
+                return inner.GetAdventurerSpawnBandMaster(currentDay);
             }
 
             public AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId)
@@ -123,3 +135,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
+

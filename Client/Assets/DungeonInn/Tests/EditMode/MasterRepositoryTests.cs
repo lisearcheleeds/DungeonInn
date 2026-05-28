@@ -18,7 +18,9 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(repository.WeaponMasters, Is.Not.Empty);
             Assert.That(repository.WeaponTypeCombatMasters, Is.Not.Empty);
             Assert.That(repository.ActorArchetypeMasters, Is.Not.Empty);
+            Assert.That(repository.ActorLoadoutMasters, Is.Not.Empty);
             Assert.That(repository.AdventurerSpawnMasters, Is.Not.Empty);
+            Assert.That(repository.AdventurerSpawnBandMasters, Is.Not.Empty);
             Assert.That(repository.ActorEffectMasters, Is.Not.Empty);
             Assert.That(repository.SpeciesMasters, Is.Not.Empty);
             Assert.That(repository.SpawnTableMasters, Is.Not.Empty);
@@ -158,6 +160,9 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(repository.GetActorArchetypeMaster(202).Name, Is.EqualTo("Boss Dragonkin"));
             Assert.That(repository.GetSpawnTableMaster(5).Entries, Is.Not.Empty);
             Assert.That(repository.GetAdventurerSpawnMaster(9).SpawnOnce, Is.False);
+            Assert.That(repository.GetActorLoadoutMaster(1).WeaponItemId, Is.EqualTo(3001));
+            Assert.That(repository.GetAdventurerSpawnBandMaster(0).SpawnTableId, Is.EqualTo(1));
+            Assert.That(repository.GetAdventurerSpawnBandMaster(3).SpawnTableId, Is.EqualTo(7));
         }
     }
 }

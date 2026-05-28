@@ -15,6 +15,7 @@ namespace DungeonInn.Master
         public ActorStats BaseStats { get; }
         public int InitialLevel { get; }
         public int LevelTableId { get; }
+        public int LoadoutMasterId { get; }
 
         public ActorArchetypeMaster(
             int id,
@@ -25,7 +26,8 @@ namespace DungeonInn.Master
             WeaponType defaultWeaponType,
             ActorStats baseStats,
             int initialLevel,
-            int levelTableId)
+            int levelTableId,
+            int loadoutMasterId = 0)
         {
             if (id < 1)
             {
@@ -57,6 +59,11 @@ namespace DungeonInn.Master
                 throw new ArgumentOutOfRangeException(nameof(speciesId));
             }
 
+            if (loadoutMasterId < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(loadoutMasterId));
+            }
+
             Id = id;
             Name = name;
             VisualId = visualId;
@@ -66,6 +73,7 @@ namespace DungeonInn.Master
             BaseStats = baseStats ?? throw new ArgumentNullException(nameof(baseStats));
             InitialLevel = initialLevel;
             LevelTableId = levelTableId;
+            LoadoutMasterId = loadoutMasterId;
         }
     }
 }

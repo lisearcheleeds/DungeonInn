@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
@@ -27,7 +27,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void MonsterRecoverKeepsRecoveryAmountsAndHasNoBehaviorSpecificEffect()
         {
-            var behavior = new MonsterBehavior(1, Array.Empty<ActorDropEntry>());
+            var behavior = new MonsterBehavior(1);
             var actor = CreateActor(behavior);
 
             actor.Recover(10, 5, 3, 7, 2);
@@ -81,4 +81,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
 

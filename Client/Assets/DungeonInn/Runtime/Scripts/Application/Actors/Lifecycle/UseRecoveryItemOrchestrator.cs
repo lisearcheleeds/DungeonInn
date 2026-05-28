@@ -31,6 +31,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IEventPublisher eventBus;
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly RecoveryItemCandidateQuery recoveryItemCandidateQuery;
         readonly RecoveryItemSelectionPolicy recoveryItemSelectionPolicy;
         readonly List<Guid> actorIdBuffer = new();
 
@@ -40,6 +41,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IEventPublisher eventBus,
             ActorProcessingCandidateService candidateService,
             IWorldGameSettingsRepository worldGameSettingsRepository,
+            RecoveryItemCandidateQuery recoveryItemCandidateQuery,
             RecoveryItemSelectionPolicy recoveryItemSelectionPolicy)
         {
             this.useConsumableItemUseCase = useConsumableItemUseCase ?? throw new ArgumentNullException(nameof(useConsumableItemUseCase));
@@ -47,6 +49,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.recoveryItemCandidateQuery =
+                recoveryItemCandidateQuery ?? throw new ArgumentNullException(nameof(recoveryItemCandidateQuery));
             this.recoveryItemSelectionPolicy =
                 recoveryItemSelectionPolicy ?? throw new ArgumentNullException(nameof(recoveryItemSelectionPolicy));
         }
@@ -75,14 +79,15 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     continue;
                 }
 
+                var candidates = recoveryItemCandidateQuery.Execute(actor);
                 if (worldGameSettingsRepository.GetAdventurerReturnPolicySettings().LowHpRatio
-                    < actor.Hp / (float)actor.Params.MaxHp)
+                    < actor.Hp / (float)actor.Params.MaxHp && !CanUseFullRecovery(actor, candidates))
                 {
                     candidateService.ClearRecoveryItemCandidate(actor.Id);
                     continue;
                 }
 
-                var itemId = recoveryItemSelectionPolicy.SelectItemId(actor);
+                var itemId = recoveryItemSelectionPolicy.SelectItemId(actor, candidates);
                 if (itemId < 1)
                 {
                     candidateService.ClearRecoveryItemCandidate(actor.Id);
@@ -107,5 +112,18 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
         }
 
+        static bool CanUseFullRecovery(Actor actor, IReadOnlyList<RecoveryItemCandidate> candidates)
+        {
+            var missingHp = actor.Params.MaxHp - actor.Hp;
+            foreach (var candidate in candidates)
+            {
+                if (candidate.HealAmount <= missingHp)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

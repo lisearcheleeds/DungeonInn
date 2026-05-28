@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -287,7 +287,7 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(2, "Monster"),
-                new MonsterBehavior(1, Array.Empty<ActorDropEntry>()),
+                new MonsterBehavior(1),
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
@@ -305,13 +305,15 @@ namespace DungeonInn.Tests.EditMode
         {
             var achievementRegistry = new ActorExplorationAchievementRegistry(eventBus);
             var trackingService = new AdventurerReturnTrackingService(eventBus, profileRegistry, achievementRegistry);
+            var masterRepository = new HardcodedMasterRepository();
             var useCase = new DecideAdventurerReturnUseCase(
                 combatService,
                 eventBus,
                 trackingService,
-                new HardcodedMasterRepository(),
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                new RecoveryItemCandidateQuery(masterRepository),
+                new RecoveryEffectEstimator());
             return new DecideAdventurerReturnUseCaseFixture(useCase, trackingService, achievementRegistry);
         }
 
@@ -386,4 +388,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
 

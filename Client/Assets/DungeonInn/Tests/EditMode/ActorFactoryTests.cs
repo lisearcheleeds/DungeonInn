@@ -133,6 +133,27 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void ActorFactoryAppliesAdventurerLoadoutFromMaster()
+        {
+            var factory = new ActorFactory(new HardcodedMasterRepository());
+
+            var actor = factory.Create(new ActorFactoryRequest(
+                11,
+                Guid.NewGuid(),
+                new LayerPosition(MapLayerId.Ground, 0, 0),
+                new ActorFaction(1, "Adventurer"),
+                123,
+                ActorBehaviorType.Adventurer,
+                string.Empty));
+
+            Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(3001));
+            Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Armor), Is.EqualTo(3101));
+            Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
+            Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.False);
+            Assert.That(actor.Equipment.EquippedWeaponType, Is.EqualTo(WeaponType.Sword));
+        }
+
+        [Test]
         public void SpawnAdventurerRegistersRequestDisplayName()
         {
             var repository = new HardcodedMasterRepository();

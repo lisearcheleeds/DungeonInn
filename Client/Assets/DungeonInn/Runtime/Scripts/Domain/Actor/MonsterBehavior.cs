@@ -1,15 +1,12 @@
 using System;
-using System.Collections.Generic;
-using DungeonInn.Domain.Item;
 
 namespace DungeonInn.Domain.Actor
 {
-    public sealed class MonsterBehavior : IActorBehavior, IActorDropSource
+    public sealed class MonsterBehavior : IActorBehavior
     {
         public int SpeciesId { get; }
-        public IReadOnlyList<ActorDropEntry> DropTable { get; }
 
-        public MonsterBehavior(int speciesId, IReadOnlyList<ActorDropEntry> dropTable)
+        public MonsterBehavior(int speciesId)
         {
             if (speciesId < 1)
             {
@@ -17,7 +14,6 @@ namespace DungeonInn.Domain.Actor
             }
 
             SpeciesId = speciesId;
-            DropTable = dropTable ?? throw new ArgumentNullException(nameof(dropTable));
         }
 
         public void OnRecovered(

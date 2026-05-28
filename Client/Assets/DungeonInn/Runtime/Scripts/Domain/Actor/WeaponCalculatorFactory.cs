@@ -15,7 +15,7 @@ namespace DungeonInn.Domain.Actor
                 case WeaponType.Bow:
                     return new BowWeaponCalculator();
                 case WeaponType.Dagger:
-                    return new BowWeaponCalculator();
+                    return new DaggerWeaponCalculator();
                 case WeaponType.Axe:
                     return new AxeWeaponCalculator();
                 case WeaponType.Scythe:

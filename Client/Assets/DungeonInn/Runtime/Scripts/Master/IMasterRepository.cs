@@ -7,7 +7,9 @@ namespace DungeonInn.Master
     {
         IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters { get; }
         IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters { get; }
+        IReadOnlyDictionary<int, ActorLoadoutMaster> ActorLoadoutMasters { get; }
         IReadOnlyDictionary<int, AdventurerSpawnMaster> AdventurerSpawnMasters { get; }
+        IReadOnlyDictionary<int, AdventurerSpawnBandMaster> AdventurerSpawnBandMasters { get; }
         IReadOnlyDictionary<int, ActorEffectMaster> ActorEffectMasters { get; }
         IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters { get; }
         IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters { get; }
@@ -18,7 +20,9 @@ namespace DungeonInn.Master
 
         WeaponTypeCombatMaster GetWeaponTypeCombatMaster(WeaponType weaponType);
         ActorArchetypeMaster GetActorArchetypeMaster(int archetypeId);
+        ActorLoadoutMaster GetActorLoadoutMaster(int loadoutId);
         AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId);
+        AdventurerSpawnBandMaster GetAdventurerSpawnBandMaster(int currentDay);
         ActorEffectMaster GetActorEffectMaster(int actorEffectId);
         SpeciesMaster GetSpeciesMaster(int speciesId);
         SpawnTableMaster GetSpawnTableMaster(int spawnTableId);

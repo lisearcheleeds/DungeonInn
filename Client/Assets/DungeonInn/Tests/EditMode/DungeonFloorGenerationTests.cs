@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
@@ -28,7 +29,7 @@ namespace DungeonInn.Tests.EditMode
             for (var seed = 0; seed < 100; seed++)
             {
                 var dungeon = new Dungeon(seed);
-                var useCase = new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository());
+                var useCase = new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()));
                 var floor = useCase.ExecuteAsync(
                         dungeon,
                         1)
@@ -60,6 +61,24 @@ namespace DungeonInn.Tests.EditMode
                         $"Generated room has no cells. seed:{seed} room:{room.Id}");
                 }
             }
+        }
+
+        [Test]
+        public void GeneratedFloorAssignsDepthBandSpecialRoomRole()
+        {
+            var dungeon = new Dungeon(0);
+            var masterRepository = new HardcodedMasterRepository();
+            var useCase = new GenerateDungeonFloorUseCase(
+                new FixedWorldGameSettingsRepository(),
+                masterRepository,
+                new AssignDungeonRoomRolesUseCase(masterRepository));
+
+            var floor = useCase.ExecuteAsync(dungeon, 4).GetAwaiter().GetResult();
+
+            Assert.That(floor.Rooms.Count(room => room.Role == DungeonRoomRole.Treasure), Is.EqualTo(1));
+            Assert.That(
+                floor.Rooms.Count(room => room.Role == DungeonRoomRole.Normal),
+                Is.EqualTo(floor.Rooms.Count - 1));
         }
 
         static bool IsConnected(DungeonFloor floor, GridPosition start, GridPosition goal)
@@ -161,3 +180,4 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+

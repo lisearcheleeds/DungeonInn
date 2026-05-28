@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -29,10 +29,10 @@ namespace DungeonInn.Tests.EditMode
     public sealed class DropItemUseCaseTests
     {
         [Test]
-        public void EmptyDropTableProducesNoItems()
+        public void SpeciesWithoutDropsProducesNoItems()
         {
             var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 0);
-            var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), Array.Empty<ActorDropEntry>());
+            var actor = CreateMonsterActor(1, 10, new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
 
             useCase.Execute(actor, worldState);
 
@@ -44,28 +44,25 @@ namespace DungeonInn.Tests.EditMode
         public void ProbabilityPassDropsItemAndAddsToWorldState()
         {
             var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 0);
-            var drops = new[] { new ActorDropEntry(1001, 1.0f, 1, 1) };
-            var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 3f, 7f), drops);
+            var actor = CreateMonsterActor(2, 1, new LayerPosition(MapLayerId.DungeonFloor(1), 3f, 7f));
 
             useCase.Execute(actor, worldState);
 
             var droppedEvents = eventBus.GetEvents<ItemDropped>();
-            Assert.That(droppedEvents.Count, Is.EqualTo(1));
+            Assert.That(droppedEvents.Count, Is.EqualTo(2));
             Assert.That(droppedEvents[0].ActorId, Is.EqualTo(actor.Id));
-            Assert.That(droppedEvents[0].ItemInstance.Stack.ItemId, Is.EqualTo(1001));
+            Assert.That(droppedEvents[0].ItemInstance.Stack.ItemId, Is.EqualTo(1002));
             Assert.That(droppedEvents[0].ItemInstance.Stack.Count, Is.EqualTo(1));
-            Assert.That(worldState.Items.Count, Is.EqualTo(1));
-            Assert.That(worldState.Items[0].Stack.ItemId, Is.EqualTo(1001));
+            Assert.That(worldState.Items.Count, Is.EqualTo(2));
+            Assert.That(worldState.Items[0].Stack.ItemId, Is.EqualTo(1002));
             Assert.That(worldState.Items[0].Stack.Count, Is.EqualTo(1));
         }
 
         [Test]
         public void ProbabilityFailProducesNoItems()
         {
-            // roll = 5001/10000 = 0.5001 which is > 0.5, so skip
-            var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 5001);
-            var drops = new[] { new ActorDropEntry(1001, 0.5f, 1, 1) };
-            var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), drops);
+            var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 9000);
+            var actor = CreateMonsterActor(2, 1, new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
 
             useCase.Execute(actor, worldState);
 
@@ -77,46 +74,38 @@ namespace DungeonInn.Tests.EditMode
         public void FixedCountDropsOneStackWithCorrectAmount()
         {
             var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 0);
-            var drops = new[] { new ActorDropEntry(1001, 1.0f, 3, 3) };
-            var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), drops);
+            var actor = CreateMonsterActor(2, 1, new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
 
             useCase.Execute(actor, worldState);
 
-            Assert.That(eventBus.GetEvents<ItemDropped>().Count, Is.EqualTo(1));
-            Assert.That(worldState.Items.Count, Is.EqualTo(1));
-            Assert.That(worldState.Items[0].Stack.Count, Is.EqualTo(3));
+            Assert.That(eventBus.GetEvents<ItemDropped>().Count, Is.EqualTo(2));
+            Assert.That(worldState.Items.Count, Is.EqualTo(2));
+            Assert.That(worldState.Items.Single(item => item.Stack.ItemId == 1002).Stack.Count, Is.EqualTo(1));
         }
 
         [Test]
         public void RangeCountUsesRandomAmountWithinBounds()
         {
-            // FixedGameRandom.Next(min, max) returns min, so amount = MinCount
             var (useCase, worldState, _, _) = CreateContext(fixedRoll: 0);
-            var drops = new[] { new ActorDropEntry(1001, 1.0f, 1, 3) };
-            var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), drops);
+            var actor = CreateMonsterActor(2, 1, new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
 
             useCase.Execute(actor, worldState);
 
-            Assert.That(worldState.Items[0].Stack.Count, Is.InRange(1, 3));
+            Assert.That(worldState.Items.Single(item => item.Stack.ItemId == 1).Stack.Count, Is.InRange(1, 4));
         }
 
         [Test]
         public void MultipleEntriesEachRolledIndependently()
         {
             var (useCase, worldState, eventBus, _) = CreateContext(fixedRoll: 0);
-            var drops = new[]
-            {
-                new ActorDropEntry(1001, 1.0f, 1, 1),
-                new ActorDropEntry(1002, 1.0f, 1, 1)
-            };
-            var actor = CreateMonsterActor(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f), drops);
+            var actor = CreateMonsterActor(2, 1, new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
 
             useCase.Execute(actor, worldState);
 
             var droppedEvents = eventBus.GetEvents<ItemDropped>();
             Assert.That(droppedEvents.Count, Is.EqualTo(2));
-            Assert.That(droppedEvents.Any(droppedEvent => droppedEvent.ItemInstance.Stack.ItemId == 1001), Is.True);
             Assert.That(droppedEvents.Any(droppedEvent => droppedEvent.ItemInstance.Stack.ItemId == 1002), Is.True);
+            Assert.That(droppedEvents.Any(droppedEvent => droppedEvent.ItemInstance.Stack.ItemId == 1), Is.True);
         }
 
         [Test]
@@ -134,7 +123,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var eventBus = new CollectingEventBus();
             var random = new FixedGameRandom(fixedRoll);
-            var useCase = new DropItemUseCase(random, eventBus);
+            var useCase = new DropItemUseCase(random, eventBus, new HardcodedMasterRepository());
             var worldState = new GameWorldState(
                 new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
                 new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
@@ -144,11 +133,11 @@ namespace DungeonInn.Tests.EditMode
             return (useCase, worldState, eventBus, random);
         }
 
-        static Actor CreateMonsterActor(LayerPosition position, IReadOnlyList<ActorDropEntry> dropTable)
+        static Actor CreateMonsterActor(int archetypeId, int speciesId, LayerPosition position)
         {
             return new Actor(
                 Guid.NewGuid(),
-                0,
+                archetypeId,
                 new ActorStats(5, 5, 5, 5, 5, 5),
                 new Inventory(new FixedItemStackLimitResolver()),
                 1,
@@ -160,7 +149,7 @@ namespace DungeonInn.Tests.EditMode
                 1,
                 position,
                 new ActorFaction(2, "Monster"),
-                new MonsterBehavior(1, dropTable),
+                new MonsterBehavior(speciesId),
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
@@ -203,5 +192,7 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
+
 
 

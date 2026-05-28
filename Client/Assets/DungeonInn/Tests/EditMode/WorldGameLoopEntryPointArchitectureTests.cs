@@ -287,11 +287,12 @@ namespace DungeonInn.Tests.EditMode
             var achievementRegistry = new ActorExplorationAchievementRegistry(eventBus);
             var completeActorSpawnUseCase = new CompleteActorSpawnUseCase(profileRegistry, eventBus);
             var actorFactory = new ActorFactory(masterRepository);
+            var spawnTableResolver = new SpawnTableResolver(masterRepository);
             var combatDefeatResolver = new CombatDefeatResolver(actorCombatService);
             var actorDefeatOrchestrator = new ActorDefeatOrchestrator(
                 combatDefeatResolver,
                 new GrantExperienceUseCase(masterRepository, eventBus),
-                new DropItemUseCase(new GameRandom(), eventBus));
+                new DropItemUseCase(new GameRandom(), eventBus, masterRepository));
             var combatEffectExecutor = new CombatEffectExecutor(new CombatDamageResolver(actorCombatService));
             var recoveryStateService = new AdventurerRecoveryStateService(eventBus);
 
@@ -302,7 +303,7 @@ namespace DungeonInn.Tests.EditMode
                 new InitializeGameWorldOrchestrator(
                     worldState,
                     new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
-                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository())),
+                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()))),
                     masterRepository,
                     eventBus,
                     new FixedWorldGameSettingsRepository()),
@@ -313,7 +314,9 @@ namespace DungeonInn.Tests.EditMode
                         completeActorSpawnUseCase),
                     masterRepository,
                     new GameRandom(),
-                    new FixedWorldGameSettingsRepository()),
+                    new FixedWorldGameSettingsRepository(),
+                    spawnTableResolver,
+                    gameClock),
                 new SpawnScheduledMonsterOrchestrator(
                     new SpawnMonsterUseCase(
                         actorFactory,
@@ -321,7 +324,8 @@ namespace DungeonInn.Tests.EditMode
                         completeActorSpawnUseCase),
                     masterRepository,
                     new GameRandom(),
-                    new FixedWorldGameSettingsRepository()),
+                    new FixedWorldGameSettingsRepository(),
+                    spawnTableResolver),
                 new AdvanceActorAiOrchestrator(
                     TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
                     new IActorAiPolicy[] { new AdventurerAiPolicy() },
@@ -333,7 +337,7 @@ namespace DungeonInn.Tests.EditMode
                             actorSpatialIndexService,
                             actorViewDataStore)),
                     new UseDungeonStairOrchestrator(
-                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()), new NoOpEventPublisher())),
+                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository())), new NoOpEventPublisher())),
                     new SelectDungeonTargetFloorUseCase(
                         masterRepository,
                         new ActorCombatPowerCalculator(),
@@ -387,15 +391,17 @@ namespace DungeonInn.Tests.EditMode
                     eventBus,
                     candidateService,
                     new FixedWorldGameSettingsRepository(),
-                    new RecoveryItemSelectionPolicy(masterRepository)),
+                    new RecoveryItemCandidateQuery(masterRepository),
+                    new RecoveryItemSelectionPolicy()),
                 new AdvanceActorEffectsUseCase(candidateService),
                 new DecideAdventurerReturnUseCase(
                     actorCombatService,
                     eventBus,
                     new AdventurerReturnTrackingService(eventBus, profileRegistry, achievementRegistry),
-                    masterRepository,
                     candidateService,
-                    new FixedWorldGameSettingsRepository()),
+                    new FixedWorldGameSettingsRepository(),
+                    new RecoveryItemCandidateQuery(masterRepository),
+                    new RecoveryEffectEstimator()),
                 new AdvanceInnRecoveryOrchestrator(
                     new RecoverAdventurerAtInnUseCase(
                         eventBus,
@@ -635,3 +641,5 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
+
+

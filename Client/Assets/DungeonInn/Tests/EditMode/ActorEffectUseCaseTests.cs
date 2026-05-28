@@ -133,7 +133,8 @@ namespace DungeonInn.Tests.EditMode
                 eventBus,
                 candidateService,
                 new FixedWorldGameSettingsRepository(),
-                new RecoveryItemSelectionPolicy(repository));
+                new RecoveryItemCandidateQuery(repository),
+                new RecoveryItemSelectionPolicy());
             var worldState = CreateWorldState(candidateService);
             var actor = CreateAdventurer(30);
             actor.GainItem(new ItemStack(2001, 1));
@@ -153,12 +154,13 @@ namespace DungeonInn.Tests.EditMode
         public void RecoveryItemSelectionChoosesLeastWasteRecoveryItem()
         {
             var repository = new HardcodedMasterRepository();
-            var policy = new RecoveryItemSelectionPolicy(repository);
+            var query = new RecoveryItemCandidateQuery(repository);
+            var policy = new RecoveryItemSelectionPolicy();
             var actor = CreateAdventurer(40);
             actor.GainItem(new ItemStack(2001, 1));
             actor.GainItem(new ItemStack(2002, 1));
 
-            var selectedItemId = policy.SelectItemId(actor);
+            var selectedItemId = policy.SelectItemId(actor, query.Execute(actor));
 
             Assert.That(selectedItemId, Is.EqualTo(2001));
         }
@@ -167,11 +169,12 @@ namespace DungeonInn.Tests.EditMode
         public void RecoveryItemSelectionChoosesHighPotionWhenOnlyHighPotionExists()
         {
             var repository = new HardcodedMasterRepository();
-            var policy = new RecoveryItemSelectionPolicy(repository);
+            var query = new RecoveryItemCandidateQuery(repository);
+            var policy = new RecoveryItemSelectionPolicy();
             var actor = CreateAdventurer(5);
             actor.GainItem(new ItemStack(2002, 1));
 
-            var selectedItemId = policy.SelectItemId(actor);
+            var selectedItemId = policy.SelectItemId(actor, query.Execute(actor));
 
             Assert.That(selectedItemId, Is.EqualTo(2002));
         }

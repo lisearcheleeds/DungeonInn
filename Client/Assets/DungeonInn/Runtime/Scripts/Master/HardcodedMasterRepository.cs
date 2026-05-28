@@ -21,7 +21,9 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, WeaponMaster> weaponMasters;
         readonly IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> weaponTypeCombatMasters;
         readonly IReadOnlyDictionary<int, ActorArchetypeMaster> actorArchetypeMasters;
+        readonly IReadOnlyDictionary<int, ActorLoadoutMaster> actorLoadoutMasters;
         readonly IReadOnlyDictionary<int, AdventurerSpawnMaster> adventurerSpawnMasters;
+        readonly IReadOnlyDictionary<int, AdventurerSpawnBandMaster> adventurerSpawnBandMasters;
         readonly IReadOnlyDictionary<int, ActorEffectMaster> actorEffectMasters;
         readonly IReadOnlyDictionary<int, SpeciesMaster> speciesMasters;
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
@@ -41,7 +43,9 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, WeaponMaster> WeaponMasters => weaponMasters;
         public IReadOnlyDictionary<WeaponType, WeaponTypeCombatMaster> WeaponTypeCombatMasters => weaponTypeCombatMasters;
         public IReadOnlyDictionary<int, ActorArchetypeMaster> ActorArchetypeMasters => actorArchetypeMasters;
+        public IReadOnlyDictionary<int, ActorLoadoutMaster> ActorLoadoutMasters => actorLoadoutMasters;
         public IReadOnlyDictionary<int, AdventurerSpawnMaster> AdventurerSpawnMasters => adventurerSpawnMasters;
+        public IReadOnlyDictionary<int, AdventurerSpawnBandMaster> AdventurerSpawnBandMasters => adventurerSpawnBandMasters;
         public IReadOnlyDictionary<int, ActorEffectMaster> ActorEffectMasters => actorEffectMasters;
         public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => speciesMasters;
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
@@ -61,6 +65,7 @@ namespace DungeonInn.Master
             equipmentMasters = CreateEquipmentMasters();
             weaponTypeCombatMasters = WeaponTypeCombatMasterCatalog.CreateAll();
             weaponMasters = CreateWeaponMasters();
+            actorLoadoutMasters = CreateActorLoadoutMasters();
             levelTables = CreateLevelTables();
             dungeonDepthBandMasters = CreateDungeonDepthBandMasters();
             environmentPropVisualMasters = CreateEnvironmentPropVisualMasters();
@@ -75,6 +80,7 @@ namespace DungeonInn.Master
             actorArchetypeMasters = CreateActorArchetypeMasters();
             adventurerSpawnMasters = CreateAdventurerSpawnMasters();
             spawnTableMasters = CreateSpawnTableMasters();
+            adventurerSpawnBandMasters = CreateAdventurerSpawnBandMasters();
             ValidateReferences();
         }
 
@@ -103,9 +109,38 @@ namespace DungeonInn.Master
             return GetRequired(actorArchetypeMasters, archetypeId, nameof(ActorArchetypeMaster));
         }
 
+        public ActorLoadoutMaster GetActorLoadoutMaster(int loadoutId)
+        {
+            return GetRequired(actorLoadoutMasters, loadoutId, nameof(ActorLoadoutMaster));
+        }
+
         public AdventurerSpawnMaster GetAdventurerSpawnMaster(int adventurerSpawnId)
         {
             return GetRequired(adventurerSpawnMasters, adventurerSpawnId, nameof(AdventurerSpawnMaster));
+        }
+
+        public AdventurerSpawnBandMaster GetAdventurerSpawnBandMaster(int currentDay)
+        {
+            AdventurerSpawnBandMaster selectedMaster = null;
+            foreach (var master in adventurerSpawnBandMasters.Values)
+            {
+                if (currentDay < master.MinDay)
+                {
+                    continue;
+                }
+
+                if (selectedMaster == null || selectedMaster.Priority < master.Priority)
+                {
+                    selectedMaster = master;
+                }
+            }
+
+            if (selectedMaster != null)
+            {
+                return selectedMaster;
+            }
+
+            throw new KeyNotFoundException($"{nameof(AdventurerSpawnBandMaster)} does not exist. Day: {currentDay}");
         }
 
         public ActorEffectMaster GetActorEffectMaster(int actorEffectId)
@@ -612,6 +647,43 @@ namespace DungeonInn.Master
             }.ToDictionary(x => x.ItemId);
         }
 
+        static IReadOnlyDictionary<int, ActorLoadoutMaster> CreateActorLoadoutMasters()
+        {
+            return new[]
+            {
+                new ActorLoadoutMaster(
+                    1,
+                    3001,
+                    3101,
+                    Array.Empty<int>(),
+                    new[] { new ItemStack(2001, 1) }),
+                new ActorLoadoutMaster(
+                    2,
+                    3010,
+                    3103,
+                    new[] { 4006 },
+                    new[] { new ItemStack(2001, 1) }),
+                new ActorLoadoutMaster(
+                    3,
+                    3002,
+                    3101,
+                    Array.Empty<int>(),
+                    new[] { new ItemStack(2001, 1) }),
+                new ActorLoadoutMaster(
+                    4,
+                    3011,
+                    3103,
+                    new[] { 4006 },
+                    new[] { new ItemStack(2001, 1), new ItemStack(2002, 1) }),
+                new ActorLoadoutMaster(
+                    5,
+                    3013,
+                    3101,
+                    new[] { 4005 },
+                    new[] { new ItemStack(2001, 1) })
+            }.ToDictionary(x => x.Id);
+        }
+
         static IReadOnlyDictionary<int, LevelTable> CreateLevelTables()
         {
             var adventurerXp = new int[101];
@@ -777,6 +849,7 @@ namespace DungeonInn.Master
                     WeaponType.Sword,
                     new ActorStats(12, 8, 11, 5, 5, 7),
                     1,
+                    1,
                     1),
                 new ActorArchetypeMaster(
                     12,
@@ -787,7 +860,8 @@ namespace DungeonInn.Master
                     WeaponType.Staff,
                     new ActorStats(5, 7, 7, 13, 11, 7),
                     1,
-                    1),
+                    1,
+                    2),
                 new ActorArchetypeMaster(
                     13,
                     "Archer Adventurer",
@@ -797,7 +871,8 @@ namespace DungeonInn.Master
                     WeaponType.Bow,
                     new ActorStats(8, 13, 8, 6, 7, 6),
                     1,
-                    1),
+                    1,
+                    3),
                 new ActorArchetypeMaster(
                     14,
                     "Healer Adventurer",
@@ -807,7 +882,8 @@ namespace DungeonInn.Master
                     WeaponType.Staff,
                     new ActorStats(6, 7, 9, 8, 14, 8),
                     1,
-                    1),
+                    1,
+                    4),
                 new ActorArchetypeMaster(
                     15,
                     "Scout Adventurer",
@@ -817,7 +893,8 @@ namespace DungeonInn.Master
                     WeaponType.Dagger,
                     new ActorStats(8, 14, 8, 6, 7, 8),
                     1,
-                    1),
+                    1,
+                    5),
                 new ActorArchetypeMaster(
                     101,
                     "Slime",
@@ -953,21 +1030,24 @@ namespace DungeonInn.Master
 
         static IReadOnlyDictionary<int, SpawnTableMaster> CreateSpawnTableMasters()
         {
-            var adventurerEntries = new[]
+            var earlyAdventurerEntries = new[]
             {
                 new SpawnTableEntryMaster(1, 1, 1, 100, 1, 1),
-                new SpawnTableEntryMaster(2, 1, 2, 100, 1, 1),
-                new SpawnTableEntryMaster(3, 1, 3, 100, 1, 1),
-                new SpawnTableEntryMaster(4, 1, 4, 100, 1, 1),
-                new SpawnTableEntryMaster(5, 1, 5, 100, 1, 1),
                 new SpawnTableEntryMaster(6, 1, 6, 100, 1, 1),
                 new SpawnTableEntryMaster(7, 1, 7, 100, 1, 1),
-                new SpawnTableEntryMaster(8, 1, 8, 100, 1, 1),
                 new SpawnTableEntryMaster(9, 1, 9, 80, 1, 2),
-                new SpawnTableEntryMaster(10, 1, 10, 60, 1, 2),
-                new SpawnTableEntryMaster(11, 1, 11, 70, 1, 2),
-                new SpawnTableEntryMaster(12, 1, 12, 50, 1, 2),
                 new SpawnTableEntryMaster(13, 1, 13, 65, 1, 2)
+            };
+            var middleAdventurerEntries = new[]
+            {
+                new SpawnTableEntryMaster(34, 7, 2, 80, 1, 1),
+                new SpawnTableEntryMaster(35, 7, 3, 80, 1, 1),
+                new SpawnTableEntryMaster(36, 7, 5, 80, 1, 1),
+                new SpawnTableEntryMaster(37, 7, 10, 90, 1, 3),
+                new SpawnTableEntryMaster(38, 7, 11, 100, 1, 3),
+                new SpawnTableEntryMaster(39, 7, 12, 90, 1, 3),
+                new SpawnTableEntryMaster(40, 7, 9, 60, 1, 3),
+                new SpawnTableEntryMaster(41, 7, 13, 60, 1, 3)
             };
             var shallowMonsterEntries = new[]
             {
@@ -1007,12 +1087,22 @@ namespace DungeonInn.Master
 
             return new[]
             {
-                new SpawnTableMaster(1, "Default Adventurer Spawn", SpawnTableTargetType.AdventurerSpawn, adventurerEntries),
+                new SpawnTableMaster(1, "Early Adventurer Spawn", SpawnTableTargetType.AdventurerSpawn, earlyAdventurerEntries),
                 new SpawnTableMaster(2, "Shallow Monster Spawn", SpawnTableTargetType.ActorArchetype, shallowMonsterEntries),
                 new SpawnTableMaster(3, "Middle Monster Spawn", SpawnTableTargetType.ActorArchetype, middleMonsterEntries),
                 new SpawnTableMaster(4, "Deep Monster Spawn", SpawnTableTargetType.ActorArchetype, deepMonsterEntries),
                 new SpawnTableMaster(5, "Boss Monster Spawn", SpawnTableTargetType.ActorArchetype, bossMonsterEntries),
-                new SpawnTableMaster(6, "Endless Monster Spawn", SpawnTableTargetType.ActorArchetype, endlessMonsterEntries)
+                new SpawnTableMaster(6, "Endless Monster Spawn", SpawnTableTargetType.ActorArchetype, endlessMonsterEntries),
+                new SpawnTableMaster(7, "Middle Adventurer Spawn", SpawnTableTargetType.AdventurerSpawn, middleAdventurerEntries)
+            }.ToDictionary(x => x.Id);
+        }
+
+        static IReadOnlyDictionary<int, AdventurerSpawnBandMaster> CreateAdventurerSpawnBandMasters()
+        {
+            return new[]
+            {
+                new AdventurerSpawnBandMaster(1, 0, 1, 10),
+                new AdventurerSpawnBandMaster(2, 3, 7, 20)
             }.ToDictionary(x => x.Id);
         }
 
@@ -1042,12 +1132,28 @@ namespace DungeonInn.Master
                 }
             }
 
+            foreach (var loadoutMaster in actorLoadoutMasters.Values)
+            {
+                ValidateOptionalEquipment(loadoutMaster.WeaponItemId, EquipmentSlot.Weapon);
+                ValidateOptionalEquipment(loadoutMaster.ArmorItemId, EquipmentSlot.Armor);
+                foreach (var accessoryItemId in loadoutMaster.AccessoryItemIds)
+                {
+                    ValidateOptionalEquipment(accessoryItemId, EquipmentSlot.Accessory);
+                }
+
+                ValidateItemStacks(loadoutMaster.InitialInventory);
+            }
+
             foreach (var archetypeMaster in actorArchetypeMasters.Values)
             {
                 GetSpeciesMaster(archetypeMaster.SpeciesId);
                 GetWeaponTypeCombatMaster(archetypeMaster.DefaultWeaponType);
                 GetLevelTable(archetypeMaster.LevelTableId);
                 GetActorVisualMaster(archetypeMaster.VisualId, GameConstants.DefaultActorSkinId);
+                if (0 < archetypeMaster.LoadoutMasterId)
+                {
+                    GetActorLoadoutMaster(archetypeMaster.LoadoutMasterId);
+                }
             }
 
             foreach (var adventurerSpawnMaster in adventurerSpawnMasters.Values)
@@ -1072,6 +1178,15 @@ namespace DungeonInn.Master
                 foreach (var entry in spawnTableMaster.Entries)
                 {
                     ValidateSpawnTableEntry(spawnTableMaster, entry);
+                }
+            }
+
+            foreach (var spawnBandMaster in adventurerSpawnBandMasters.Values)
+            {
+                var spawnTableMaster = GetSpawnTableMaster(spawnBandMaster.SpawnTableId);
+                if (spawnTableMaster.TargetType != SpawnTableTargetType.AdventurerSpawn)
+                {
+                    throw new InvalidOperationException("Adventurer spawn band requires adventurer spawn table.");
                 }
             }
 
@@ -1155,6 +1270,25 @@ namespace DungeonInn.Master
             }
 
             throw new KeyNotFoundException($"{masterName} does not exist. Id: {id}");
+        }
+
+        void ValidateOptionalEquipment(int itemId, EquipmentSlot expectedSlot)
+        {
+            if (itemId == 0)
+            {
+                return;
+            }
+
+            var equipmentMaster = GetEquipmentMaster(itemId);
+            if (equipmentMaster.Slot != expectedSlot)
+            {
+                throw new InvalidOperationException("Actor loadout equipment slot does not match expected slot.");
+            }
+
+            if (expectedSlot == EquipmentSlot.Weapon)
+            {
+                GetWeaponMaster(itemId);
+            }
         }
 
         static string CreateActorVisualKey(string visualId, int skinId)
