@@ -108,6 +108,9 @@ namespace DungeonInn.View.Scene.MainScene.World
                     return ActorAnimationKey.Walk;
                 case ActorAnimationState.Work:
                     return ActorAnimationKey.Work;
+                case ActorAnimationState.Casting:
+                case ActorAnimationState.WindUp:
+                    return ActorAnimationKey.Idle;
                 case ActorAnimationState.Attack:
                     return ActorAnimationKey.Attack;
                 case ActorAnimationState.Damage:

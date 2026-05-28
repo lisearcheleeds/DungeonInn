@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using R3;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
@@ -38,13 +39,21 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var phaseStateStore = CreatePhaseStateStore();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus, phaseStateStore);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
             worldState.RegisterActor(target);
             combatService.SetTarget(attacker.Id, target.Id);
 
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            Assert.That(eventBus.GetEvents<CombatAttackOccurred>().Count, Is.EqualTo(0));
+            Assert.That(target.Hp, Is.EqualTo(50));
+
+            clock.ElapsedGameTimeSeconds = 0.2f;
+            phaseStateStore.TickAll(0.2f);
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 
             var attacks = eventBus.GetEvents<CombatAttackOccurred>();
@@ -65,7 +74,8 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var phaseStateStore = CreatePhaseStateStore();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus, phaseStateStore);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             worldState.RegisterActor(attacker);
@@ -73,10 +83,13 @@ namespace DungeonInn.Tests.EditMode
             combatService.SetTarget(attacker.Id, target.Id);
 
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            clock.ElapsedGameTimeSeconds = 0.2f;
+            phaseStateStore.TickAll(0.2f);
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
             var hpAfterFirstAttack = target.Hp;
             eventBus.Clear();
 
-            clock.ElapsedGameTimeSeconds = 0.1f;
+            clock.ElapsedGameTimeSeconds = 0.3f;
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 
             var attacksAfterCooldown = eventBus.GetEvents<CombatAttackOccurred>();
@@ -91,7 +104,8 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var phaseStateStore = CreatePhaseStateStore();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus, phaseStateStore);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
             worldState.RegisterActor(attacker);
@@ -99,7 +113,7 @@ namespace DungeonInn.Tests.EditMode
             combatService.SetTarget(attacker.Id, target.Id);
             combatService.SetTarget(target.Id, attacker.Id);
 
-            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            ExecuteAttackAtEffect(useCase, phaseStateStore, clock, worldState);
 
             var deaths = eventBus.GetEvents<ActorDefeated>();
             Assert.That(deaths.Count, Is.EqualTo(1));
@@ -117,7 +131,8 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var phaseStateStore = CreatePhaseStateStore();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus, phaseStateStore);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 1);
             var observedDefeatEvent = false;
@@ -138,7 +153,7 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(combatService.HasTarget(target.Id), Is.False);
             };
 
-            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            ExecuteAttackAtEffect(useCase, phaseStateStore, clock, worldState);
 
             Assert.That(observedDefeatEvent, Is.True);
         }
@@ -150,7 +165,8 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var phaseStateStore = CreatePhaseStateStore();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus, phaseStateStore);
             var attacker = CreateActor(
                 "Attacker",
                 1,
@@ -163,7 +179,7 @@ namespace DungeonInn.Tests.EditMode
             combatService.SetTarget(attacker.Id, target.Id);
             combatService.SetTarget(target.Id, attacker.Id);
 
-            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            ExecuteAttackAtEffect(useCase, phaseStateStore, clock, worldState);
 
             var events = eventBus.GetEvents();
             Assert.That(events.Select(gameEvent => gameEvent.GetType()).ToArray(), Is.EqualTo(new[]
@@ -171,6 +187,7 @@ namespace DungeonInn.Tests.EditMode
                 typeof(CombatAttackOccurred),
                 typeof(CombatEncounterEnded),
                 typeof(ActorDefeated),
+                typeof(ItemDropped),
                 typeof(ItemDropped),
                 typeof(ExperienceGranted)
             }));
@@ -183,7 +200,8 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var combatService = new ActorCombatService();
             var eventBus = new CollectingGameEventBus();
-            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus);
+            var phaseStateStore = CreatePhaseStateStore();
+            var useCase = CreateAdvanceCombatUseCase(combatService, clock, eventBus, phaseStateStore);
             var attacker = CreateActor("Attacker", 1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
             var target = CreateActor("Target", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f), 50);
             attacker.ChangeNaturalWeaponType(WeaponTypeCombatMasterCatalog.Get(WeaponType.Scythe));
@@ -194,12 +212,20 @@ namespace DungeonInn.Tests.EditMode
             useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
 
             var createdAreas = eventBus.GetEvents<AreaEffectCreated>();
+            Assert.That(worldState.AreaEffects.Count, Is.EqualTo(0));
+            Assert.That(createdAreas.Count, Is.EqualTo(0));
+            Assert.That(target.Hp, Is.EqualTo(50));
+
+            clock.ElapsedGameTimeSeconds = 0.2f;
+            phaseStateStore.TickAll(0.2f);
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+
+            createdAreas = eventBus.GetEvents<AreaEffectCreated>();
             Assert.That(worldState.AreaEffects.Count, Is.EqualTo(1));
             Assert.That(createdAreas.Count, Is.EqualTo(1));
             Assert.That(worldState.AreaEffects[0].AttackerActorId, Is.EqualTo(attacker.Id));
             Assert.That(worldState.AreaEffects[0].CenterPosition, Is.EqualTo(target.Position));
             Assert.That(worldState.AreaEffects[0].AreaSpec.Shape, Is.EqualTo(AttackAreaShape.Circle));
-            Assert.That(target.Hp, Is.EqualTo(50));
         }
 
         [Test]
@@ -423,6 +449,15 @@ namespace DungeonInn.Tests.EditMode
             IGameClock clock,
             IGameEventBus eventBus)
         {
+            return CreateAdvanceCombatUseCase(combatService, clock, eventBus, CreatePhaseStateStore());
+        }
+
+        static AdvanceCombatUseCase CreateAdvanceCombatUseCase(
+            IActorCombatService combatService,
+            IGameClock clock,
+            IGameEventBus eventBus,
+            IActorActionPhaseStateStore phaseStateStore)
+        {
             var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var navigationService = new ActorNavigationService(
@@ -441,7 +476,25 @@ namespace DungeonInn.Tests.EditMode
                     spatialIndex,
                     actorViewDataStore),
                 settingsRepository,
-                new CombatEncounterTargetResolver(clock, spatialIndex, settingsRepository));
+                new CombatEncounterTargetResolver(clock, spatialIndex, settingsRepository),
+                phaseStateStore);
+        }
+
+        static ActorActionPhaseStateStore CreatePhaseStateStore()
+        {
+            return new ActorActionPhaseStateStore(new HardcodedActorActionPhaseMasterRepository());
+        }
+
+        static void ExecuteAttackAtEffect(
+            AdvanceCombatUseCase useCase,
+            ActorActionPhaseStateStore phaseStateStore,
+            FakeGameClock clock,
+            IGameWorldState worldState)
+        {
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
+            clock.ElapsedGameTimeSeconds = 0.2f;
+            phaseStateStore.TickAll(0.2f);
+            useCase.ExecuteAsync(worldState, 0f).GetAwaiter().GetResult();
         }
 
         static GameWorldState CreateWorldState()
@@ -560,7 +613,7 @@ namespace DungeonInn.Tests.EditMode
         {
             return new Actor(
                 Guid.NewGuid(),
-                0,
+                102,
                 new ActorStats(5, 5, 5, 5, 5, 5),
                 new Inventory(new FixedItemStackLimitResolver()),
                 1,

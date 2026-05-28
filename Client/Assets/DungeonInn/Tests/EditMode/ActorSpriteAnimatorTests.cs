@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
+using DungeonInn.Domain.Actor;
 using DungeonInn.View.Scene.MainScene.World;
 using NUnit.Framework;
 using R3;
@@ -137,6 +139,118 @@ namespace DungeonInn.Tests.EditMode
 
                 Assert.That(presenter.TryGetOverride(actorId, out var state), Is.True);
                 Assert.That(state, Is.EqualTo(ActorAnimationState.Dead));
+            }
+            finally
+            {
+                presenter.Dispose();
+                subscriber.Dispose();
+            }
+        }
+
+        [Test]
+        public void PhaseStartedUpdatesMatchingActorAnimationOverride()
+        {
+            var subscriber = new ManualEventSubscriber();
+            var presenter = new ActorCombatAnimationPresenter(subscriber);
+            var actorId = Guid.NewGuid();
+
+            try
+            {
+                presenter.Initialize();
+
+                subscriber.Publish(new ActorActionPhaseStartedEvent(
+                    actorId,
+                    ActorActionType.Attack,
+                    null,
+                    ActorActionPhaseName.WindUp));
+                Assert.That(presenter.TryGetOverride(actorId, out var windUpState), Is.True);
+                Assert.That(windUpState, Is.EqualTo(ActorAnimationState.WindUp));
+
+                subscriber.Publish(new ActorActionPhaseStartedEvent(
+                    actorId,
+                    ActorActionType.Attack,
+                    null,
+                    ActorActionPhaseName.Effect));
+                Assert.That(presenter.TryGetOverride(actorId, out var effectState), Is.True);
+                Assert.That(effectState, Is.EqualTo(ActorAnimationState.Attack));
+            }
+            finally
+            {
+                presenter.Dispose();
+                subscriber.Dispose();
+            }
+        }
+
+        [Test]
+        public void PhaseSequenceCompletedClearsAnimationOverride()
+        {
+            var subscriber = new ManualEventSubscriber();
+            var presenter = new ActorCombatAnimationPresenter(subscriber);
+            var actorId = Guid.NewGuid();
+
+            try
+            {
+                presenter.Initialize();
+
+                subscriber.Publish(new ActorActionPhaseStartedEvent(
+                    actorId,
+                    ActorActionType.Attack,
+                    null,
+                    ActorActionPhaseName.WindUp));
+                subscriber.Publish(new ActorActionSequenceCompletedEvent(actorId, ActorActionType.Attack, null));
+
+                Assert.That(presenter.TryGetOverride(actorId, out _), Is.False);
+            }
+            finally
+            {
+                presenter.Dispose();
+                subscriber.Dispose();
+            }
+        }
+
+        [Test]
+        public void PhaseSequenceCompletedDoesNotClearDeadAnimationOverride()
+        {
+            var subscriber = new ManualEventSubscriber();
+            var presenter = new ActorCombatAnimationPresenter(subscriber);
+            var actorId = Guid.NewGuid();
+
+            try
+            {
+                presenter.Initialize();
+
+                subscriber.Publish(new ActorDefeated(actorId, null, DeathCause.Combat));
+                subscriber.Publish(new ActorActionSequenceCompletedEvent(actorId, ActorActionType.Attack, null));
+
+                Assert.That(presenter.TryGetOverride(actorId, out var state), Is.True);
+                Assert.That(state, Is.EqualTo(ActorAnimationState.Dead));
+            }
+            finally
+            {
+                presenter.Dispose();
+                subscriber.Dispose();
+            }
+        }
+
+        [Test]
+        public void PhaseStartedForDifferentActorDoesNotChangeRequestedActorAnimationOverride()
+        {
+            var subscriber = new ManualEventSubscriber();
+            var presenter = new ActorCombatAnimationPresenter(subscriber);
+            var actorId = Guid.NewGuid();
+            var otherActorId = Guid.NewGuid();
+
+            try
+            {
+                presenter.Initialize();
+
+                subscriber.Publish(new ActorActionPhaseStartedEvent(
+                    otherActorId,
+                    ActorActionType.Attack,
+                    null,
+                    ActorActionPhaseName.WindUp));
+
+                Assert.That(presenter.TryGetOverride(actorId, out _), Is.False);
             }
             finally
             {

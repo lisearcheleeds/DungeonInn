@@ -6,11 +6,13 @@ using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.Combat;
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
+using DungeonInn.Application.Event;
 using DungeonInn.Application.Facilities;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
@@ -50,6 +52,8 @@ namespace DungeonInn.Application.World
         readonly GameSessionStartRequestStore startRequestStore;
         readonly RestoreGameSaveSnapshotUseCase restoreGameSaveSnapshotUseCase;
         readonly ActiveSaveSlotService activeSaveSlotService;
+        readonly IActorActionPhaseStateStore phaseStateStore;
+        readonly IEventPublisher eventPublisher;
         readonly Dictionary<int, float> realtimeMovedSecondsByLayer = new();
         readonly HashSet<int> scheduledActorLayerIds = new();
 
@@ -80,7 +84,9 @@ namespace DungeonInn.Application.World
             IWorldGameSettingsRepository worldGameSettingsRepository,
             GameSessionStartRequestStore startRequestStore,
             RestoreGameSaveSnapshotUseCase restoreGameSaveSnapshotUseCase,
-            ActiveSaveSlotService activeSaveSlotService)
+            ActiveSaveSlotService activeSaveSlotService,
+            IActorActionPhaseStateStore phaseStateStore,
+            IEventPublisher eventPublisher)
         {
             this.gameLoopUseCase = gameLoopUseCase ?? throw new ArgumentNullException(nameof(gameLoopUseCase));
             this.gameRandom = gameRandom ?? throw new ArgumentNullException(nameof(gameRandom));
@@ -110,6 +116,8 @@ namespace DungeonInn.Application.World
                 ?? throw new ArgumentNullException(nameof(restoreGameSaveSnapshotUseCase));
             this.activeSaveSlotService = activeSaveSlotService
                 ?? throw new ArgumentNullException(nameof(activeSaveSlotService));
+            this.phaseStateStore = phaseStateStore ?? throw new ArgumentNullException(nameof(phaseStateStore));
+            this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }
 
         public async UniTask<WorldSimulationInitializeResult> InitializeAsync(CancellationToken cancellationToken)
@@ -174,8 +182,13 @@ namespace DungeonInn.Application.World
                     request.CancellationToken);
             }
 
+            BufferedEventPublisher phaseEventPublisher = null;
             if (shouldAdvanceTimeDependentSystems && 0 < gameWorldState.Actors.Count)
             {
+                phaseEventPublisher = new BufferedEventPublisher(eventPublisher);
+                var phaseTickResult = phaseStateStore.TickAll(result.ElapsedGameTimeSeconds);
+                PublishPhaseEvents(phaseTickResult, phaseEventPublisher);
+
                 aiEvaluationFrameId++;
                 await advanceActorAiOrchestrator.ExecuteAsync(
                     gameWorldState.Actors,
@@ -219,6 +232,38 @@ namespace DungeonInn.Application.World
             {
                 await advanceInnRecoveryOrchestrator.ExecuteAsync(gameWorldState, frameDeltaGameSeconds);
                 request.CancellationToken.ThrowIfCancellationRequested();
+            }
+
+            if (shouldAdvanceTimeDependentSystems)
+            {
+                phaseEventPublisher?.Flush();
+            }
+        }
+
+        void PublishPhaseEvents(
+            ActorActionPhaseTickResult phaseTickResult,
+            IEventPublisher publisher)
+        {
+            foreach (var transition in phaseTickResult.Transitions)
+            {
+                publisher.Publish(new ActorActionPhaseStartedEvent(
+                    transition.ActorId,
+                    transition.Key.ActionType,
+                    transition.Key.SubTypeId,
+                    transition.PhaseDef.PhaseName));
+            }
+
+            foreach (var actorId in phaseTickResult.CompletedActorIds)
+            {
+                if (!phaseStateStore.TryGetLastCompletedPhaseKey(actorId, out var key))
+                {
+                    continue;
+                }
+
+                publisher.Publish(new ActorActionSequenceCompletedEvent(
+                    actorId,
+                    key.ActionType,
+                    key.SubTypeId));
             }
         }
 

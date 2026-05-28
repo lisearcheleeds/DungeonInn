@@ -446,6 +446,43 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void MonsterSpawnUsesGeneratedFloorWhenEarlierFloorReachedMonsterLimit()
+        {
+            var worldState = CreateInitializedWorldState();
+            var masterRepository = new HardcodedMasterRepository();
+            var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(
+                new GenerateDungeonFloorUseCase(
+                    new FixedWorldGameSettingsRepository(),
+                    masterRepository,
+                    new AssignDungeonRoomRolesUseCase(masterRepository)),
+                new NoOpEventPublisher());
+            floorGenerator.ExecuteAsync(worldState.Dungeon, 2).GetAwaiter().GetResult();
+            var firstFloor = worldState.Dungeon.GetFloor(1);
+            var secondFloor = worldState.Dungeon.GetFloor(2);
+            for (var i = 0; i < SpawnBalanceSettings.CreateDefault().MaxMonsterCount; i++)
+            {
+                worldState.RegisterActor(CreateMonster(firstFloor.GetArrivalPosition(DungeonStairType.Up)));
+            }
+
+            var orchestrator = new SpawnScheduledMonsterOrchestrator(
+                new SpawnMonsterUseCase(
+                    new ActorFactory(masterRepository),
+                    masterRepository,
+                    new CompleteActorSpawnUseCase(new ActorProfileRegistry(), new NoOpGameEventBus())),
+                masterRepository,
+                new GameRandom(),
+                new FixedWorldGameSettingsRepository(),
+                new SpawnTableResolver(masterRepository));
+
+            var spawned = orchestrator.ExecuteAsync(worldState, 10).GetAwaiter().GetResult();
+
+            Assert.That(spawned, Is.Not.Null);
+            Assert.That(spawned.Position.LayerId, Is.EqualTo(secondFloor.Layer.Id));
+            Assert.That(CountMonstersOnLayer(worldState, firstFloor.Layer.Id), Is.EqualTo(SpawnBalanceSettings.CreateDefault().MaxMonsterCount));
+            Assert.That(CountMonstersOnLayer(worldState, secondFloor.Layer.Id), Is.EqualTo(1));
+        }
+
+        [Test]
         public void ActorNavigationServiceKeepsActorPathWhenSearchBufferIsReused()
         {
             var service = new ActorNavigationService(
@@ -768,6 +805,21 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(2, "Monster"),
                 new MonsterBehavior(1),
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
+        }
+
+        static int CountMonstersOnLayer(GameWorldState worldState, MapLayerId layerId)
+        {
+            var count = 0;
+            foreach (var actor in worldState.Actors)
+            {
+                if (actor.Behavior is MonsterBehavior &&
+                    actor.Position.LayerId.Equals(layerId))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         static AdvanceActorLifecycleOrchestrator CreateLifecycleUseCase()

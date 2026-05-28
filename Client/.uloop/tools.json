@@ -1,7 +1,7 @@
 {
   "version": "2.1.0",
   "serverVersion": "2.1.0",
-  "updatedAt": "2026-05-24T11:23:41.319Z",
+  "updatedAt": "2026-05-28T15:43:41.035Z",
   "tools": [
     {
       "name": "validate-serialized-fields",

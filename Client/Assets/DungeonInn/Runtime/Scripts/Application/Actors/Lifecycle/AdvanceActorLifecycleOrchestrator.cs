@@ -252,6 +252,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             if (arrived)
             {
                 behavior.RecordExplorationRoomArrival();
+                eventPublisher.Publish(new ExplorationRoomArrived(actor.Id));
                 explorationStateService.RemoveDestination(actor.Id);
                 navigationService.InvalidatePath(actor.Id);
 

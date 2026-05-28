@@ -2,6 +2,7 @@ using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.Combat;
@@ -71,6 +72,10 @@ namespace DungeonInn.GameSession
             builder.Register<AdventurerRecoveryStateService>(Lifetime.Singleton);
             builder.Register<ActorProcessingCandidateService>(Lifetime.Singleton);
             builder.Register<AdventurerExplorationStateService>(Lifetime.Singleton);
+            builder.Register<HardcodedActorActionPhaseMasterRepository>(Lifetime.Singleton)
+                .As<IActorActionPhaseMasterRepository>();
+            builder.Register<ActorActionPhaseStateStore>(Lifetime.Singleton)
+                .As<IActorActionPhaseStateStore>();
 
             // === Application: Navigation / spatial queries ===
             builder.Register<ActorNavigationService>(Lifetime.Singleton).As<IActorNavigationService>();

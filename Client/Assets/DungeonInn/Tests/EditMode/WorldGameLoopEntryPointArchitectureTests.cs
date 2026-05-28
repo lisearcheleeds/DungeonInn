@@ -7,6 +7,7 @@ using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.Combat;
@@ -247,6 +248,69 @@ namespace DungeonInn.Tests.EditMode
                 Is.EqualTo(ActorSimulation.MoveSpeedMetersPerSecond).Within(0.0001f));
         }
 
+        [Test]
+        public void PhaseTickPublishesPhaseStartedAndSequenceCompletedEvents()
+        {
+            var eventBus = new CollectingEventBus();
+            var gameClock = new StubGameClock();
+            var actorSpatialIndexService = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
+            var worldState = CreateWorldState(
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore);
+            var actor = CreateActor(1, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f));
+            var phaseStateStore = new ActorActionPhaseStateStore(new HardcodedActorActionPhaseMasterRepository());
+            worldState.RegisterActor(actor);
+            phaseStateStore.TryStart(actor.Id, new ActorActionPhaseKey(ActorActionType.Attack, null), 0f);
+            var orchestrator = CreateWorldSimulationOrchestrator(
+                new SequenceGameLoopUseCase(
+                    new GameLoopTickResult(
+                        0,
+                        0,
+                        Array.Empty<int>(),
+                        0.2f,
+                        0.2f,
+                        1f,
+                        false),
+                    new GameLoopTickResult(
+                        0,
+                        0,
+                        Array.Empty<int>(),
+                        1f,
+                        1f,
+                        1f,
+                        false)),
+                worldState,
+                eventBus,
+                gameClock,
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore,
+                new NoOpNavigationPathProvider(),
+                phaseStateStore);
+
+            orchestrator.AdvanceFrameAsync(new WorldFrameAdvanceRequest(0.2f, default))
+                .GetAwaiter()
+                .GetResult();
+            orchestrator.AdvanceFrameAsync(new WorldFrameAdvanceRequest(0.8f, default))
+                .GetAwaiter()
+                .GetResult();
+
+            Assert.That(
+                eventBus.GetEvents<ActorActionPhaseStartedEvent>()
+                    .Select(gameEvent => gameEvent.PhaseName)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    ActorActionPhaseName.WindUp,
+                    ActorActionPhaseName.Effect,
+                    ActorActionPhaseName.Recovery
+                }));
+            Assert.That(eventBus.GetEvents<ActorActionSequenceCompletedEvent>().Count, Is.EqualTo(1));
+        }
+
         static WorldSimulationOrchestrator CreateWorldSimulationOrchestrator(
             IGameLoopUseCase gameLoopUseCase,
             GameWorldState worldState,
@@ -276,6 +340,29 @@ namespace DungeonInn.Tests.EditMode
             ActorProcessingCandidateService candidateService,
             ActorViewDataStore actorViewDataStore,
             INavigationPathProvider navigationPathProvider)
+        {
+            return CreateWorldSimulationOrchestrator(
+                gameLoopUseCase,
+                worldState,
+                eventBus,
+                gameClock,
+                actorSpatialIndexService,
+                candidateService,
+                actorViewDataStore,
+                navigationPathProvider,
+                new ActorActionPhaseStateStore(new HardcodedActorActionPhaseMasterRepository()));
+        }
+
+        static WorldSimulationOrchestrator CreateWorldSimulationOrchestrator(
+            IGameLoopUseCase gameLoopUseCase,
+            GameWorldState worldState,
+            CollectingEventBus eventBus,
+            IGameClock gameClock,
+            ActorSpatialIndexService actorSpatialIndexService,
+            ActorProcessingCandidateService candidateService,
+            ActorViewDataStore actorViewDataStore,
+            INavigationPathProvider navigationPathProvider,
+            ActorActionPhaseStateStore phaseStateStore)
         {
             var masterRepository = new HardcodedMasterRepository();
             var itemSpatialIndexService = new ItemSpatialIndexService(new FixedWorldGameSettingsRepository());
@@ -328,8 +415,9 @@ namespace DungeonInn.Tests.EditMode
                     spawnTableResolver),
                 new AdvanceActorAiOrchestrator(
                     TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
-                    new IActorAiPolicy[] { new AdventurerAiPolicy() },
-                    new ApplyActorAiDecisionUseCase()),
+                    new IActorAiPolicy[] { new AdventurerAiPolicy(TestEventSubscriber.Instance) },
+                    new ApplyActorAiDecisionUseCase(phaseStateStore),
+                    phaseStateStore),
                 new AdvanceActorLifecycleOrchestrator(
                     new MoveActorTowardDestinationUseCase(
                         new ActorMovementService(
@@ -372,7 +460,8 @@ namespace DungeonInn.Tests.EditMode
                     new CombatEncounterTargetResolver(
                         gameClock,
                         actorSpatialIndexService,
-                        new FixedWorldGameSettingsRepository())),
+                        new FixedWorldGameSettingsRepository()),
+                    phaseStateStore),
                 new AdvanceProjectileUseCase(combatEffectExecutor, actorDefeatOrchestrator, eventBus, new FixedWorldGameSettingsRepository()),
                 new AdvanceAreaEffectUseCase(
                     new AttackAreaTargetResolver(actorSpatialIndexService, new FixedWorldGameSettingsRepository()),
@@ -431,7 +520,9 @@ namespace DungeonInn.Tests.EditMode
                     masterRepository,
                     masterRepository,
                     new TutorialProgressService()),
-                new ActiveSaveSlotService());
+                new ActiveSaveSlotService(),
+                phaseStateStore,
+                eventBus);
         }
 
         static GameWorldState CreateWorldState(

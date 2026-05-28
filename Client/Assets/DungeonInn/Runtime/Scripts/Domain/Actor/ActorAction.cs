@@ -10,6 +10,7 @@ namespace DungeonInn.Domain.Actor
         public int TargetId { get; }
         public bool HasTargetPosition { get; }
         public LayerPosition TargetPosition { get; }
+        public Guid? SubTypeId { get; }
 
         public ActorAction(
             ActorActionType type,
@@ -17,12 +18,24 @@ namespace DungeonInn.Domain.Actor
             int targetId,
             bool hasTargetPosition,
             LayerPosition targetPosition)
+            : this(type, state, targetId, hasTargetPosition, targetPosition, null)
+        {
+        }
+
+        public ActorAction(
+            ActorActionType type,
+            ActorActionState state,
+            int targetId,
+            bool hasTargetPosition,
+            LayerPosition targetPosition,
+            Guid? subTypeId)
         {
             Type = type;
             State = state;
             TargetId = Math.Max(0, targetId);
             HasTargetPosition = hasTargetPosition;
             TargetPosition = targetPosition;
+            SubTypeId = subTypeId;
         }
 
         public static ActorAction None()
@@ -38,6 +51,16 @@ namespace DungeonInn.Domain.Actor
         public static ActorAction MoveTo(LayerPosition targetPosition)
         {
             return new ActorAction(ActorActionType.Move, ActorActionState.NotStarted, 0, true, targetPosition);
+        }
+
+        public static ActorAction Attack(int targetId)
+        {
+            return Attack(targetId, null);
+        }
+
+        public static ActorAction Attack(int targetId, Guid? subTypeId)
+        {
+            return new ActorAction(ActorActionType.Attack, ActorActionState.NotStarted, targetId, false, default, subTypeId);
         }
 
         public void Start()

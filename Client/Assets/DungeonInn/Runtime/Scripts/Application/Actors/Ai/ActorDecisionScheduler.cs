@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using R3;
 using VContainer;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Domain.Actor;
@@ -27,6 +28,15 @@ namespace DungeonInn.Application.Actors.Ai
                 .AddTo(ref bag);
             eventSubscriber.OnEvent<ActorDeparted>()
                 .Subscribe(gameEvent => { RemoveState(gameEvent.ActorId); })
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ExplorationRoomArrived>()
+                .Subscribe(gameEvent => { MarkEvent(gameEvent.ActorId, ActorAiEventType.CurrentActionCompleted); })
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ItemPickedUp>()
+                .Subscribe(gameEvent => { MarkEvent(gameEvent.ActorId, ActorAiEventType.CurrentActionCompleted); })
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ActorActionSequenceCompletedEvent>()
+                .Subscribe(gameEvent => { MarkEvent(gameEvent.ActorId, ActorAiEventType.CurrentActionCompleted); })
                 .AddTo(ref bag);
         }
 

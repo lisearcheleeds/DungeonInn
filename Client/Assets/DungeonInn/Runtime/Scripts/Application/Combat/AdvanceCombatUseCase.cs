@@ -5,14 +5,15 @@ using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
-using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Facilities;
+using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
@@ -31,6 +32,7 @@ namespace DungeonInn.Application.Combat
         readonly ActorMovementService actorMovementService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly CombatEncounterTargetResolver targetResolver;
+        readonly IActorActionPhaseStateStore phaseStateStore;
 
         [Inject]
         public AdvanceCombatUseCase(
@@ -42,7 +44,8 @@ namespace DungeonInn.Application.Combat
             IEventPublisher eventPublisher,
             ActorMovementService actorMovementService,
             IWorldGameSettingsRepository worldGameSettingsRepository,
-            CombatEncounterTargetResolver targetResolver)
+            CombatEncounterTargetResolver targetResolver,
+            IActorActionPhaseStateStore phaseStateStore)
         {
             this.actorCombatService = actorCombatService
                 ?? throw new ArgumentNullException(nameof(actorCombatService));
@@ -60,6 +63,7 @@ namespace DungeonInn.Application.Combat
             this.worldGameSettingsRepository = worldGameSettingsRepository
                 ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
             this.targetResolver = targetResolver ?? throw new ArgumentNullException(nameof(targetResolver));
+            this.phaseStateStore = phaseStateStore ?? throw new ArgumentNullException(nameof(phaseStateStore));
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -136,19 +140,39 @@ namespace DungeonInn.Application.Combat
                     continue;
                 }
 
-                var targetDefeated = combatEffectExecutor.ExecuteAttack(
+                if (!phaseStateStore.IsActive(actor.Id))
+                {
+                    var key = CreateAttackPhaseKey(actor);
+                    if (phaseStateStore.TryStart(actor.Id, key, currentGameTimeSeconds))
+                    {
+                        continue;
+                    }
+
+                    ExecuteAttack(
+                        worldState,
+                        actor,
+                        target,
+                        combatState,
+                        currentGameTimeSeconds,
+                        bufferedEventPublisher);
+                    continue;
+                }
+
+                if (!phaseStateStore.TryGetEnteredPhaseDef(
+                    actor.Id,
+                    ActorActionPhaseName.Effect,
+                    out _))
+                {
+                    continue;
+                }
+
+                ExecuteAttack(
                     worldState,
                     actor,
                     target,
-                    actor.WeaponCombatParams.AttackSpec,
+                    combatState,
+                    currentGameTimeSeconds,
                     bufferedEventPublisher);
-                if (targetDefeated && worldState.FindActor(target.Id) != null)
-                {
-                    actorDefeatOrchestrator.Execute(worldState, actor, target, bufferedEventPublisher);
-                }
-
-                combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
-                actorCombatService.MarkCombatParticipation(actor.Id);
             }
 
             bufferedEventPublisher.Flush();
@@ -198,6 +222,39 @@ namespace DungeonInn.Application.Combat
 
             actorCombatService.ClearTarget(actorId);
             publisher.Publish(new CombatEncounterEnded(actorId));
+        }
+
+        void ExecuteAttack(
+            IGameWorldState worldState,
+            Actor actor,
+            Actor target,
+            ActorCombatState combatState,
+            float currentGameTimeSeconds,
+            IEventPublisher publisher)
+        {
+            var targetDefeated = combatEffectExecutor.ExecuteAttack(
+                worldState,
+                actor,
+                target,
+                actor.WeaponCombatParams.AttackSpec,
+                publisher);
+            if (targetDefeated && worldState.FindActor(target.Id) != null)
+            {
+                actorDefeatOrchestrator.Execute(worldState, actor, target, publisher);
+            }
+
+            combatState.RecordAttack(currentGameTimeSeconds, actor.WeaponCombatParams.AttackIntervalSeconds);
+            actorCombatService.MarkCombatParticipation(actor.Id);
+        }
+
+        static ActorActionPhaseKey CreateAttackPhaseKey(Actor actor)
+        {
+            if (actor.CurrentAction.Type == ActorActionType.Attack)
+            {
+                return new ActorActionPhaseKey(ActorActionType.Attack, actor.CurrentAction.SubTypeId);
+            }
+
+            return new ActorActionPhaseKey(ActorActionType.Attack, null);
         }
 
         static bool IsWithinWeaponRange(Actor actor, Actor target)

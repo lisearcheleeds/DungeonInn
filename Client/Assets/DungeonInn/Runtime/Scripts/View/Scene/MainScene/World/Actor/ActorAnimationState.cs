@@ -5,6 +5,8 @@ namespace DungeonInn.View.Scene.MainScene.World
         Idle,
         Walk,
         Work,
+        Casting,
+        WindUp,
         Attack,
         Damage,
         Dead

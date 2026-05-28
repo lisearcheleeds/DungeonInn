@@ -17,6 +17,7 @@ using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using VContainer;
 
@@ -62,32 +63,19 @@ namespace DungeonInn.Application.Actors.Spawn
 
             worldState.SpawnSchedule.LastMonsterSpawnTick = currentScheduleTick;
 
-            // TODO: Spawn limit should come from SpawnTableMaster.
-            var monsterCount = 0;
-            foreach (var worldActor in worldState.Actors)
-            {
-                if (worldActor.Behavior is MonsterBehavior)
-                {
-                    monsterCount++;
-                }
-            }
-
-            if (monsterCount >= spawnBalanceSettings.MaxMonsterCount)
+            var floor = SelectSpawnableFloor(worldState, spawnBalanceSettings.MaxMonsterCount);
+            if (floor == null)
             {
                 return null;
             }
 
-            var selectedFloorIndex = gameRandom.Next(worldState.Dungeon.Floors.Count);
-            var floor = SelectFloor(worldState, selectedFloorIndex);
-            var room = floor.Rooms[currentScheduleTick % floor.Rooms.Count];
+            var room = SelectSpawnableRoom(floor, currentScheduleTick, out var spawnTable);
+            if (room == null)
+            {
+                return null;
+            }
+
             var position = floor.Layer.GetCellCenter(room.Center);
-
-            var context = spawnTableResolver.CreateDungeonRoomContext(floor.FloorIndex, room);
-            var spawnTable = spawnTableResolver.ResolveMonsterSpawnTable(context);
-            if (spawnTable == null)
-            {
-                return null;
-            }
             if (spawnTable.TargetType != SpawnTableTargetType.ActorArchetype)
             {
                 throw new InvalidOperationException("Monster schedule requires actor archetype spawn table.");
@@ -134,20 +122,84 @@ namespace DungeonInn.Application.Actors.Spawn
             return spawnTable.Entries[spawnTable.Entries.Count - 1];
         }
 
-        static DungeonFloor SelectFloor(IGameWorldState worldState, int selectionIndex)
+        DungeonFloor SelectSpawnableFloor(IGameWorldState worldState, int maxMonsterCountPerFloor)
         {
-            var currentIndex = 0;
-            foreach (var floor in worldState.Dungeon.Floors.Values)
+            if (maxMonsterCountPerFloor <= 0)
             {
-                if (currentIndex == selectionIndex)
-                {
-                    return floor;
-                }
-
-                currentIndex++;
+                return null;
             }
 
-            throw new InvalidOperationException("Generated dungeon floor does not exist.");
+            DungeonFloor selectedFloor = null;
+            var selectedMonsterCount = int.MaxValue;
+            var tieCount = 0;
+            foreach (var floor in worldState.Dungeon.Floors.Values)
+            {
+                if (floor.Rooms.Count == 0)
+                {
+                    continue;
+                }
+
+                var monsterCount = CountMonstersOnLayer(worldState, floor.Layer.Id);
+                if (maxMonsterCountPerFloor <= monsterCount)
+                {
+                    continue;
+                }
+
+                if (monsterCount < selectedMonsterCount)
+                {
+                    selectedFloor = floor;
+                    selectedMonsterCount = monsterCount;
+                    tieCount = 1;
+                    continue;
+                }
+
+                if (monsterCount == selectedMonsterCount)
+                {
+                    tieCount++;
+                    if (gameRandom.Next(tieCount) == 0)
+                    {
+                        selectedFloor = floor;
+                    }
+                }
+            }
+
+            return selectedFloor;
+        }
+
+        DungeonRoom SelectSpawnableRoom(
+            DungeonFloor floor,
+            int currentScheduleTick,
+            out SpawnTableMaster spawnTable)
+        {
+            var startIndex = currentScheduleTick % floor.Rooms.Count;
+            for (var i = 0; i < floor.Rooms.Count; i++)
+            {
+                var room = floor.Rooms[(startIndex + i) % floor.Rooms.Count];
+                var context = spawnTableResolver.CreateDungeonRoomContext(floor.FloorIndex, room);
+                spawnTable = spawnTableResolver.ResolveMonsterSpawnTable(context);
+                if (spawnTable != null)
+                {
+                    return room;
+                }
+            }
+
+            spawnTable = null;
+            return null;
+        }
+
+        static int CountMonstersOnLayer(IGameWorldState worldState, MapLayerId layerId)
+        {
+            var count = 0;
+            foreach (var worldActor in worldState.Actors)
+            {
+                if (worldActor.Behavior is MonsterBehavior &&
+                    worldActor.Position.LayerId.Equals(layerId))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 }

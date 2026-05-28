@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using VContainer;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -9,15 +13,10 @@ using DungeonInn.Application.Combat;
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
 using DungeonInn.Application.Facilities;
+using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
-using DungeonInn.Application.GameLoop;
-
-using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
-
 using DungeonInn.Domain.Actor;
-using VContainer;
 
 namespace DungeonInn.Application.Actors.Ai
 {
@@ -26,6 +25,7 @@ namespace DungeonInn.Application.Actors.Ai
         readonly ActorDecisionScheduler scheduler;
         readonly IReadOnlyList<IActorAiPolicy> policies;
         readonly ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase;
+        readonly IActorActionPhaseStateStore phaseStateStore;
 
         [Inject]
         public AdvanceActorAiOrchestrator(
@@ -34,7 +34,8 @@ namespace DungeonInn.Application.Actors.Ai
             MonsterAiPolicy monsterAiPolicy,
             PetAiPolicy petAiPolicy,
             GuildStaffAiPolicy guildStaffAiPolicy,
-            ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase)
+            ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase,
+            IActorActionPhaseStateStore phaseStateStore)
             : this(
                 scheduler,
                 new IActorAiPolicy[]
@@ -44,18 +45,21 @@ namespace DungeonInn.Application.Actors.Ai
                     petAiPolicy ?? throw new ArgumentNullException(nameof(petAiPolicy)),
                     guildStaffAiPolicy ?? throw new ArgumentNullException(nameof(guildStaffAiPolicy))
                 },
-                applyActorAiDecisionUseCase)
+                applyActorAiDecisionUseCase,
+                phaseStateStore)
         {
         }
 
-        public AdvanceActorAiOrchestrator(
+        internal AdvanceActorAiOrchestrator(
             ActorDecisionScheduler scheduler,
             IReadOnlyList<IActorAiPolicy> policies,
-            ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase)
+            ApplyActorAiDecisionUseCase applyActorAiDecisionUseCase,
+            IActorActionPhaseStateStore phaseStateStore)
         {
             this.scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
             this.policies = policies ?? throw new ArgumentNullException(nameof(policies));
             this.applyActorAiDecisionUseCase = applyActorAiDecisionUseCase ?? throw new ArgumentNullException(nameof(applyActorAiDecisionUseCase));
+            this.phaseStateStore = phaseStateStore ?? throw new ArgumentNullException(nameof(phaseStateStore));
         }
 
         public UniTask MarkEventAsync(Guid actorId, ActorAiEventType eventType)
@@ -75,7 +79,12 @@ namespace DungeonInn.Application.Actors.Ai
                 throw new ArgumentNullException(nameof(actors));
             }
 
-            if (!scheduler.TryGetEvaluationTarget(actors, currentTimeSeconds, evaluationFrameId, out var actor, out var runtimeState))
+            if (!TryGetEvaluationTarget(
+                actors,
+                currentTimeSeconds,
+                evaluationFrameId,
+                out var actor,
+                out var runtimeState))
             {
                 return false;
             }
@@ -86,10 +95,13 @@ namespace DungeonInn.Application.Actors.Ai
             try
             {
                 var decision = Evaluate(policy, context, dirty);
-                await applyActorAiDecisionUseCase.ExecuteAsync(actor, decision);
+                await applyActorAiDecisionUseCase.ExecuteAsync(actor, decision, currentTimeSeconds);
                 runtimeState.ClearDirty(dirty);
                 runtimeState.MarkDirty(decision.AdditionalDirtyFlags);
-                runtimeState.MarkEvaluated(currentTimeSeconds, evaluationFrameId, cooldownSeconds);
+                runtimeState.MarkEvaluated(
+                    currentTimeSeconds,
+                    evaluationFrameId,
+                    Math.Max(cooldownSeconds, decision.CooldownSeconds));
                 return true;
             }
             catch
@@ -97,6 +109,36 @@ namespace DungeonInn.Application.Actors.Ai
                 runtimeState.MarkEvaluated(currentTimeSeconds, evaluationFrameId, cooldownSeconds);
                 throw;
             }
+        }
+
+        bool TryGetEvaluationTarget(
+            IEnumerable<Actor> actors,
+            float currentTimeSeconds,
+            int evaluationFrameId,
+            out Actor actor,
+            out ActorAiRuntimeState runtimeState)
+        {
+            foreach (var candidate in actors)
+            {
+                if (phaseStateStore.IsActive(candidate.Id))
+                {
+                    continue;
+                }
+
+                var candidateState = scheduler.GetOrCreateState(candidate.Id);
+                if (!candidateState.CanEvaluate(currentTimeSeconds, evaluationFrameId))
+                {
+                    continue;
+                }
+
+                actor = candidate;
+                runtimeState = candidateState;
+                return true;
+            }
+
+            actor = null;
+            runtimeState = null;
+            return false;
         }
 
         IActorAiPolicy ResolvePolicy(Actor actor)

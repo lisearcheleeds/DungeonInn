@@ -1020,11 +1020,11 @@ namespace DungeonInn.Master
                 new AdventurerSpawnMaster(6, "ガレン", 11, true),
                 new AdventurerSpawnMaster(7, "セト", 11, true),
                 new AdventurerSpawnMaster(8, "ユーミ", 14, true),
-                new AdventurerSpawnMaster(9, "Warrior", 11, false),
-                new AdventurerSpawnMaster(10, "Mage", 12, false),
-                new AdventurerSpawnMaster(11, "Archer", 13, false),
-                new AdventurerSpawnMaster(12, "Healer", 14, false),
-                new AdventurerSpawnMaster(13, "Scout", 15, false)
+                new AdventurerSpawnMaster(9, "トリンダメア", 11, false),
+                new AdventurerSpawnMaster(10, "マルザハール", 12, false),
+                new AdventurerSpawnMaster(11, "アッシュ", 13, false),
+                new AdventurerSpawnMaster(12, "ソラカ", 14, false),
+                new AdventurerSpawnMaster(13, "クイン", 15, false)
             }.ToDictionary(x => x.Id);
         }
 

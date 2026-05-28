@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using R3;
@@ -40,6 +41,14 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             eventSubscriber.OnEvent<CombatEncounterEnded>()
                 .Subscribe(OnCombatEncounterEnded)
+                .AddTo(ref bag);
+
+            eventSubscriber.OnEvent<ActorActionPhaseStartedEvent>()
+                .Subscribe(OnActorActionPhaseStarted)
+                .AddTo(ref bag);
+
+            eventSubscriber.OnEvent<ActorActionSequenceCompletedEvent>()
+                .Subscribe(OnActorActionSequenceCompleted)
                 .AddTo(ref bag);
         }
 
@@ -96,6 +105,16 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
         }
 
+        void OnActorActionPhaseStarted(ActorActionPhaseStartedEvent gameEvent)
+        {
+            SetOverrideUnlessDead(gameEvent.ActorId, ResolvePhaseAnimationState(gameEvent.PhaseName));
+        }
+
+        void OnActorActionSequenceCompleted(ActorActionSequenceCompletedEvent gameEvent)
+        {
+            ClearOverrideUnlessDead(gameEvent.ActorId);
+        }
+
         void SetOverrideUnlessDead(Guid actorId, ActorAnimationState state)
         {
             if (overrides.TryGetValue(actorId, out var currentState) &&
@@ -105,6 +124,33 @@ namespace DungeonInn.View.Scene.MainScene.World
             }
 
             overrides[actorId] = state;
+        }
+
+        void ClearOverrideUnlessDead(Guid actorId)
+        {
+            if (overrides.TryGetValue(actorId, out var currentState) &&
+                currentState != ActorAnimationState.Dead)
+            {
+                overrides.Remove(actorId);
+            }
+        }
+
+        static ActorAnimationState ResolvePhaseAnimationState(ActorActionPhaseName phaseName)
+        {
+            switch (phaseName)
+            {
+                case ActorActionPhaseName.Casting:
+                    return ActorAnimationState.Casting;
+                case ActorActionPhaseName.WindUp:
+                    return ActorAnimationState.WindUp;
+                case ActorActionPhaseName.Effect:
+                    return ActorAnimationState.Attack;
+                case ActorActionPhaseName.Recovery:
+                case ActorActionPhaseName.Stagger:
+                    return ActorAnimationState.Idle;
+                default:
+                    return ActorAnimationState.Idle;
+            }
         }
     }
 }
