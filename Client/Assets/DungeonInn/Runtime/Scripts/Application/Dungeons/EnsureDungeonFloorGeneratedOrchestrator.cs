@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.World;
@@ -23,17 +22,14 @@ namespace DungeonInn.Application.Dungeons
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
         }
 
-        public async UniTask<DungeonFloor> ExecuteAsync(
-            Dungeon dungeon,
-            int floorIndex,
-            IReadOnlyList<DungeonDepthBandConfig> depthBandConfigs)
+        public async UniTask<DungeonFloor> ExecuteAsync(Dungeon dungeon, int floorIndex)
         {
             if (dungeon.TryGetFloor(floorIndex, out var floor))
             {
                 return floor;
             }
 
-            floor = await generateDungeonFloorUseCase.ExecuteAsync(dungeon, floorIndex, depthBandConfigs);
+            floor = await generateDungeonFloorUseCase.ExecuteAsync(dungeon, floorIndex);
             eventPublisher.Publish(new MapLayerAddedEvent(MapLayerId.DungeonFloor(floorIndex)));
             return floor;
         }

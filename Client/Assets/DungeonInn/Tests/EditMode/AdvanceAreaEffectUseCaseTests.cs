@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -161,7 +161,7 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<int, LevelTable> LevelTables => throw new NotSupportedException();
-            public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => throw new NotSupportedException();
+            public IReadOnlyDictionary<int, DungeonDepthBandMaster> DungeonDepthBandMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => throw new NotSupportedException();
             public IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters => throw new NotSupportedException();
             public ItemMaster GetItemMaster(int itemId) => throw new NotSupportedException();
@@ -174,7 +174,7 @@ namespace DungeonInn.Tests.EditMode
             public SpeciesMaster GetSpeciesMaster(int speciesId) => throw new NotSupportedException();
             public SpawnTableMaster GetSpawnTableMaster(int spawnTableId) => throw new NotSupportedException();
             public LevelTable GetLevelTable(int levelTableId) => throw new NotSupportedException();
-            public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex) => throw new NotSupportedException();
+            public DungeonDepthBandMaster GetDungeonDepthBandMasterForFloor(int floorIndex) => throw new NotSupportedException();
             public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key) => throw new NotSupportedException();
             public ActorVisualMaster GetActorVisualMaster(string visualId, int skinId) => throw new NotSupportedException();
             public int GetMaxStackCount(int itemId) => throw new NotSupportedException();
@@ -246,4 +246,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

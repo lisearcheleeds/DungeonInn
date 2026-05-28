@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Dungeon;
 using VContainer;
@@ -16,10 +15,10 @@ namespace DungeonInn.Application.Dungeons
             this.generateDungeonFloorUseCase = generateDungeonFloorUseCase ?? throw new ArgumentNullException(nameof(generateDungeonFloorUseCase));
         }
 
-        public async UniTask<Dungeon> ExecuteAsync(int seed, IReadOnlyList<DungeonDepthBandConfig> depthBandConfigs)
+        public async UniTask<Dungeon> ExecuteAsync(int seed)
         {
             var dungeon = new Dungeon(seed);
-            await generateDungeonFloorUseCase.ExecuteAsync(dungeon, 1, depthBandConfigs);
+            await generateDungeonFloorUseCase.ExecuteAsync(dungeon, 1);
             return dungeon;
         }
     }

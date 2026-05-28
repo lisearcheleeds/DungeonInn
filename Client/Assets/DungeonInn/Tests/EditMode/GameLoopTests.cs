@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -199,15 +199,13 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository())),
                 new HardcodedMasterRepository(),
                 eventBus,
                 new FixedWorldGameSettingsRepository());
 
             var result = useCase.ExecuteAsync(
-                    new InitializeGameWorldRequest(
-                        InitialWorld.DungeonSeed,
-                        System.Array.Empty<DungeonDepthBandConfig>()))
+                    new InitializeGameWorldRequest(InitialWorld.DungeonSeed))
                 .GetAwaiter()
                 .GetResult();
 
@@ -242,7 +240,7 @@ namespace DungeonInn.Tests.EditMode
                 new MoveActorTowardDestinationUseCase(
                     new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
                 new UseDungeonStairOrchestrator(
-                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
+                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
@@ -271,13 +269,12 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateInitializedWorldState();
             var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(
-                new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()),
+                new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()),
                 new NoOpEventPublisher());
             var firstFloor = worldState.Dungeon.GetFloor(1);
             var secondFloor = floorGenerator.ExecuteAsync(
                     worldState.Dungeon,
-                    2,
-                    Array.Empty<DungeonDepthBandConfig>())
+                    2)
                 .GetAwaiter()
                 .GetResult();
             var activeActor = CreateExploringAdventurer(firstFloor.GetArrivalPosition(DungeonStairType.Up));
@@ -320,7 +317,7 @@ namespace DungeonInn.Tests.EditMode
                 new MoveActorTowardDestinationUseCase(
                     new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
                 new UseDungeonStairOrchestrator(
-                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
+                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
@@ -386,11 +383,10 @@ namespace DungeonInn.Tests.EditMode
         public void ReturningAdventurerAscendsToPreviousFloorBeforeGround()
         {
             var worldState = CreateInitializedWorldState();
-            var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher());
+            var floorGenerator = new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()), new NoOpEventPublisher());
             var secondFloor = floorGenerator.ExecuteAsync(
                     worldState.Dungeon,
-                    2,
-                    Array.Empty<DungeonDepthBandConfig>())
+                    2)
                 .GetAwaiter()
                 .GetResult();
             var actor = CreateAdventurer(
@@ -436,13 +432,12 @@ namespace DungeonInn.Tests.EditMode
             var dungeon = new Dungeon(123);
             var eventPublisher = new CapturingEventPublisher();
             var orchestrator = new EnsureDungeonFloorGeneratedOrchestrator(
-                new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()),
+                new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()),
                 eventPublisher);
 
             orchestrator.ExecuteAsync(
                     dungeon,
-                    2,
-                    Array.Empty<DungeonDepthBandConfig>())
+                    2)
                 .GetAwaiter()
                 .GetResult();
 
@@ -705,15 +700,13 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository())),
                 new HardcodedMasterRepository(),
                 new NoOpGameEventBus(),
                 new FixedWorldGameSettingsRepository());
 
             useCase.ExecuteAsync(
-                    new InitializeGameWorldRequest(
-                        InitialWorld.DungeonSeed,
-                        Array.Empty<DungeonDepthBandConfig>()))
+                    new InitializeGameWorldRequest(InitialWorld.DungeonSeed))
                 .GetAwaiter()
                 .GetResult();
 
@@ -793,7 +786,7 @@ namespace DungeonInn.Tests.EditMode
                 new MoveActorTowardDestinationUseCase(
                     new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
                 new UseDungeonStairOrchestrator(
-                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
+                    new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
                 new SelectDungeonExplorationGoalUseCase(1),
                 navigationService,
@@ -938,4 +931,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

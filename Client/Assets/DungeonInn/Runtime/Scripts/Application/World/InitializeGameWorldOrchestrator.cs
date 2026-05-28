@@ -54,7 +54,7 @@ namespace DungeonInn.Application.World
             }
 
             var groundMap = await initializeWorldMapUseCase.ExecuteAsync();
-            var dungeon = await initializeDungeonUseCase.ExecuteAsync(request.DungeonSeed, request.DepthBandConfigs);
+            var dungeon = await initializeDungeonUseCase.ExecuteAsync(request.DungeonSeed);
             var guild = CreateInitialGuild();
 
             gameWorldState.Initialize(guild, groundMap, dungeon);

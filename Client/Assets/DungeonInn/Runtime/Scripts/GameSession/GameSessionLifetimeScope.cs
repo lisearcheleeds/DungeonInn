@@ -97,6 +97,7 @@ namespace DungeonInn.GameSession
             builder.Register<GameWorldFrameBuffer>(Lifetime.Singleton);
             builder.Register<InitializeWorldMapUseCase>(Lifetime.Singleton);
             builder.Register<GenerateDungeonFloorUseCase>(Lifetime.Singleton);
+            builder.Register<GetDungeonSpecialRoomTypeUseCase>(Lifetime.Singleton);
             builder.Register<EnsureDungeonFloorGeneratedOrchestrator>(Lifetime.Singleton);
             builder.Register<InitializeDungeonOrchestrator>(Lifetime.Singleton);
             builder.Register<InitializeGameWorldOrchestrator>(Lifetime.Singleton);
@@ -165,6 +166,7 @@ namespace DungeonInn.GameSession
             builder.Register<UpdateEquipmentUseCase>(Lifetime.Singleton);
             builder.Register<SellItemsUseCase>(Lifetime.Singleton);
             builder.Register<UseConsumableItemUseCase>(Lifetime.Singleton);
+            builder.Register<RecoveryItemSelectionPolicy>(Lifetime.Singleton);
             builder.Register<UseRecoveryItemOrchestrator>(Lifetime.Singleton);
             builder.Register<AdvanceActorEffectsUseCase>(Lifetime.Singleton);
             builder.Register<AdvanceCombatUseCase>(Lifetime.Singleton);

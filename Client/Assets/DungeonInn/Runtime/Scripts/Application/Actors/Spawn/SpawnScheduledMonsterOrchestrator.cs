@@ -79,8 +79,8 @@ namespace DungeonInn.Application.Actors.Spawn
             var room = floor.Rooms[currentScheduleTick % floor.Rooms.Count];
             var position = floor.Layer.GetCellCenter(room.Center);
 
-            var floorExplorationMaster = masterRepository.GetDungeonFloorExplorationMaster(floor.FloorIndex);
-            var spawnTable = masterRepository.GetSpawnTableMaster(floorExplorationMaster.MonsterSpawnTableId);
+            var depthBandMaster = masterRepository.GetDungeonDepthBandMasterForFloor(floor.FloorIndex);
+            var spawnTable = masterRepository.GetSpawnTableMaster(depthBandMaster.MonsterSpawnTableId);
             if (spawnTable.TargetType != SpawnTableTargetType.ActorArchetype)
             {
                 throw new InvalidOperationException("Monster schedule requires actor archetype spawn table.");

@@ -35,24 +35,24 @@ namespace DungeonInn.Application.Actors.Ai
             }
 
             var actorCombatPower = combatPowerCalculator.Calculate(actor);
-            DungeonFloorExplorationMaster selectedFloor = null;
-            DungeonFloorExplorationMaster lowestFloor = null;
-            foreach (var floorMaster in masterRepository.DungeonFloorExplorationMasters.Values)
+            DungeonDepthBandMaster selectedBand = null;
+            DungeonDepthBandMaster lowestBand = null;
+            foreach (var depthBandMaster in masterRepository.DungeonDepthBandMasters.Values)
             {
-                if (lowestFloor == null || floorMaster.FloorIndex < lowestFloor.FloorIndex)
+                if (lowestBand == null || depthBandMaster.MinFloorIndex < lowestBand.MinFloorIndex)
                 {
-                    lowestFloor = floorMaster;
+                    lowestBand = depthBandMaster;
                 }
 
-                var difficulty = CalculateFloorDifficulty(floorMaster);
+                var difficulty = CalculateFloorDifficulty(depthBandMaster);
                 if (difficulty <= actorCombatPower
-                    && (selectedFloor == null || selectedFloor.FloorIndex < floorMaster.FloorIndex))
+                    && (selectedBand == null || selectedBand.MinFloorIndex < depthBandMaster.MinFloorIndex))
                 {
-                    selectedFloor = floorMaster;
+                    selectedBand = depthBandMaster;
                 }
             }
 
-            if (selectedFloor != null)
+            if (selectedBand != null)
             {
                 eventBus.Publish(new ActorAiDecisionRecorded(
                     actor.Id,
@@ -62,14 +62,14 @@ namespace DungeonInn.Application.Actors.Ai
                     default,
                     0,
                     0,
-                    selectedFloor.FloorIndex,
+                    selectedBand.MinFloorIndex,
                     0));
-                return UniTask.FromResult(selectedFloor.FloorIndex);
+                return UniTask.FromResult(selectedBand.MinFloorIndex);
             }
 
-            if (lowestFloor == null)
+            if (lowestBand == null)
             {
-                throw new InvalidOperationException("Dungeon floor exploration master does not exist.");
+                throw new InvalidOperationException("Dungeon depth band master does not exist.");
             }
 
             eventBus.Publish(new ActorAiDecisionRecorded(
@@ -80,17 +80,17 @@ namespace DungeonInn.Application.Actors.Ai
                 default,
                 0,
                 0,
-                lowestFloor.FloorIndex,
+                lowestBand.MinFloorIndex,
                 0));
-            return UniTask.FromResult(lowestFloor.FloorIndex);
+            return UniTask.FromResult(lowestBand.MinFloorIndex);
         }
 
-        float CalculateFloorDifficulty(DungeonFloorExplorationMaster floorMaster)
+        float CalculateFloorDifficulty(DungeonDepthBandMaster depthBandMaster)
         {
-            var spawnTable = masterRepository.GetSpawnTableMaster(floorMaster.MonsterSpawnTableId);
+            var spawnTable = masterRepository.GetSpawnTableMaster(depthBandMaster.MonsterSpawnTableId);
             if (spawnTable.TargetType != SpawnTableTargetType.ActorArchetype)
             {
-                throw new InvalidOperationException("Dungeon floor exploration requires actor archetype spawn table.");
+                throw new InvalidOperationException("Dungeon depth band requires actor archetype spawn table.");
             }
 
             var totalWeight = 0;
@@ -103,7 +103,7 @@ namespace DungeonInn.Application.Actors.Ai
             }
 
             var averageCombatPower = weightedCombatPower / totalWeight;
-            return averageCombatPower * floorMaster.DifficultyCoefficient;
+            return averageCombatPower * depthBandMaster.DifficultyCoefficient;
         }
     }
 }

@@ -118,9 +118,7 @@ namespace DungeonInn.Application.World
             var startRequest = startRequestStore.Current;
             gameRandom.Initialize(startRequest.GameRandomSeed);
             await initializeGameWorldUseCase.ExecuteAsync(
-                new InitializeGameWorldRequest(
-                    startRequest.DungeonSeed,
-                    Array.Empty<DungeonDepthBandConfig>()));
+                new InitializeGameWorldRequest(startRequest.DungeonSeed));
 
             if (startRequest.Mode == GameSessionStartMode.LoadGame)
             {

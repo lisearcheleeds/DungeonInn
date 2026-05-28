@@ -103,6 +103,25 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void HighPotionHealsSixtyHpOverTenSeconds()
+        {
+            var repository = new HardcodedMasterRepository();
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var useItemUseCase = new UseConsumableItemUseCase(repository, candidateService);
+            var advanceUseCase = new AdvanceActorEffectsUseCase(candidateService);
+            var worldState = CreateWorldState(candidateService);
+            var actor = CreateAdventurer(0);
+            actor.GainItem(new ItemStack(2002, 1));
+            worldState.RegisterActor(actor);
+
+            useItemUseCase.ExecuteAsync(actor, 2002).GetAwaiter().GetResult();
+            advanceUseCase.ExecuteAsync(worldState, 10f).GetAwaiter().GetResult();
+
+            Assert.That(actor.Hp, Is.EqualTo(60));
+            Assert.That(actor.ActorEffects.Count, Is.EqualTo(0));
+        }
+
+        [Test]
         public void LowHpExploringAdventurerUsesRecoveryItemAutomatically()
         {
             var repository = new HardcodedMasterRepository();
@@ -110,11 +129,11 @@ namespace DungeonInn.Tests.EditMode
             var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
             var useConsumableItemUseCase = new UseConsumableItemUseCase(repository, candidateService);
             var useRecoveryItemUseCase = new UseRecoveryItemOrchestrator(
-                repository,
                 useConsumableItemUseCase,
                 eventBus,
                 candidateService,
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                new RecoveryItemSelectionPolicy(repository));
             var worldState = CreateWorldState(candidateService);
             var actor = CreateAdventurer(30);
             actor.GainItem(new ItemStack(2001, 1));
@@ -128,6 +147,33 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(aiEvents.Count, Is.EqualTo(1));
             Assert.That(aiEvents[0].DecisionType, Is.EqualTo(AiDecisionType.UseRecoveryItem));
             Assert.That(aiEvents[0].ReasonType, Is.EqualTo(AiDecisionReasonType.LowHpWithRecoveryItem));
+        }
+
+        [Test]
+        public void RecoveryItemSelectionChoosesLeastWasteRecoveryItem()
+        {
+            var repository = new HardcodedMasterRepository();
+            var policy = new RecoveryItemSelectionPolicy(repository);
+            var actor = CreateAdventurer(40);
+            actor.GainItem(new ItemStack(2001, 1));
+            actor.GainItem(new ItemStack(2002, 1));
+
+            var selectedItemId = policy.SelectItemId(actor);
+
+            Assert.That(selectedItemId, Is.EqualTo(2001));
+        }
+
+        [Test]
+        public void RecoveryItemSelectionChoosesHighPotionWhenOnlyHighPotionExists()
+        {
+            var repository = new HardcodedMasterRepository();
+            var policy = new RecoveryItemSelectionPolicy(repository);
+            var actor = CreateAdventurer(5);
+            actor.GainItem(new ItemStack(2002, 1));
+
+            var selectedItemId = policy.SelectItemId(actor);
+
+            Assert.That(selectedItemId, Is.EqualTo(2002));
         }
 
         static Actor CreateAdventurer(int hp)

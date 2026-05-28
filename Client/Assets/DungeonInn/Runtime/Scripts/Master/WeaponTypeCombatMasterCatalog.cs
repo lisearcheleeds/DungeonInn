@@ -35,6 +35,7 @@ namespace DungeonInn.Master
             {
                 new WeaponTypeCombatMaster(WeaponType.Sword, 2.0f, 1.2f, "", "", 12f, 3f, 3),
                 new WeaponTypeCombatMaster(WeaponType.Bow, 20.0f, 1.5f, "World/Projectile/Arrow", "", 12f, 3f, 3),
+                new WeaponTypeCombatMaster(WeaponType.Dagger, 1.8f, 0.8f, "", "", 12f, 3f, 3),
                 new WeaponTypeCombatMaster(WeaponType.Axe, 2.0f, 1.8f, "", "", 12f, 3f, 3),
                 new WeaponTypeCombatMaster(WeaponType.Scythe, 3.0f, 1.6f, "", "World/AreaEffect/Scythe", 12f, 3f, 3),
                 new WeaponTypeCombatMaster(WeaponType.Staff, 8.0f, 1.6f, "", "", 12f, 3f, 3),

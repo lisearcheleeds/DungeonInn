@@ -12,7 +12,7 @@ namespace DungeonInn.Master
         IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters { get; }
         IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters { get; }
         IReadOnlyDictionary<int, LevelTable> LevelTables { get; }
-        IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters { get; }
+        IReadOnlyDictionary<int, DungeonDepthBandMaster> DungeonDepthBandMasters { get; }
         IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters { get; }
         IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters { get; }
 
@@ -23,7 +23,7 @@ namespace DungeonInn.Master
         SpeciesMaster GetSpeciesMaster(int speciesId);
         SpawnTableMaster GetSpawnTableMaster(int spawnTableId);
         LevelTable GetLevelTable(int levelTableId);
-        DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex);
+        DungeonDepthBandMaster GetDungeonDepthBandMasterForFloor(int floorIndex);
         EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key);
         ActorVisualMaster GetActorVisualMaster(string visualId, int skinId);
     }

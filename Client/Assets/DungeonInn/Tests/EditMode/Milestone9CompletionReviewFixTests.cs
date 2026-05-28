@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
@@ -102,15 +102,13 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository())),
                 repository,
                 new NoOpGameEventBus(),
                 new FixedWorldGameSettingsRepository());
 
             useCase.ExecuteAsync(
-                    new InitializeGameWorldRequest(
-                        InitialWorldSettings.CreateDefault().DungeonSeed,
-                        Array.Empty<DungeonDepthBandConfig>()))
+                    new InitializeGameWorldRequest(InitialWorldSettings.CreateDefault().DungeonSeed))
                 .GetAwaiter()
                 .GetResult();
 

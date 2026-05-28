@@ -38,7 +38,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void EquippedActorTargetsSecondFloor()
+        public void EquippedActorTargetsDeepDepthBand()
         {
             var masterRepository = new HardcodedMasterRepository();
             var useCase = CreateUseCase(masterRepository);
@@ -50,18 +50,18 @@ namespace DungeonInn.Tests.EditMode
 
             var targetFloor = useCase.ExecuteAsync(actor).GetAwaiter().GetResult();
 
-            Assert.That(targetFloor, Is.EqualTo(2));
+            Assert.That(targetFloor, Is.EqualTo(8));
         }
 
         [Test]
-        public void StrongActorTargetsThirdFloor()
+        public void StrongActorTargetsEndlessDepthBand()
         {
             var useCase = CreateUseCase();
             var actor = CreateActor(new ActorStats(30, 30, 30, 30, 30, 30));
 
             var targetFloor = useCase.ExecuteAsync(actor).GetAwaiter().GetResult();
 
-            Assert.That(targetFloor, Is.EqualTo(3));
+            Assert.That(targetFloor, Is.EqualTo(12));
         }
 
         [Test]
@@ -77,12 +77,12 @@ namespace DungeonInn.Tests.EditMode
 
             var targetFloor = useCase.ExecuteAsync(actor).GetAwaiter().GetResult();
 
-            Assert.That(targetFloor, Is.EqualTo(3));
+            Assert.That(targetFloor, Is.EqualTo(12));
             var aiEvents = eventBus.GetEvents<ActorAiDecisionRecorded>();
             Assert.That(aiEvents.Count, Is.EqualTo(1));
             Assert.That(aiEvents[0].DecisionType, Is.EqualTo(AiDecisionType.SelectDungeonFloor));
             Assert.That(aiEvents[0].ReasonType, Is.EqualTo(AiDecisionReasonType.CombatPowerMatchesFloor));
-            Assert.That(aiEvents[0].SelectedFloor, Is.EqualTo(3));
+            Assert.That(aiEvents[0].SelectedFloor, Is.EqualTo(12));
         }
 
         [Test]

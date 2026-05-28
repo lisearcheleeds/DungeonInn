@@ -5,6 +5,7 @@ namespace DungeonInn.Domain.Item
         None,
         Sword,
         Bow,
+        Dagger,
         Axe,
         Scythe,
         Staff,

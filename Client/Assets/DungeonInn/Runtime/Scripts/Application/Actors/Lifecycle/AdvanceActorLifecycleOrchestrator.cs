@@ -163,8 +163,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     worldState.Dungeon,
                     groundMap,
                     actor.Position,
-                    DungeonStairType.Down,
-                    Array.Empty<DungeonDepthBandConfig>());
+                    DungeonStairType.Down);
 
                 MoveTo(actor, arrivalPosition);
                 navigationService.InvalidatePath(actor.Id);
@@ -289,8 +288,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 worldState.Dungeon,
                 worldState.GroundMap,
                 actor.Position,
-                DungeonStairType.Down,
-                Array.Empty<DungeonDepthBandConfig>());
+                DungeonStairType.Down);
 
             MoveTo(actor, nextFloorPosition);
             explorationStateService.RemoveDestination(actor.Id);
@@ -329,8 +327,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     worldState.Dungeon,
                     worldState.GroundMap,
                     actor.Position,
-                    DungeonStairType.Up,
-                    Array.Empty<DungeonDepthBandConfig>());
+                    DungeonStairType.Up);
 
                 if (returnPosition.LayerId.Equals(MapLayerId.Ground))
                 {

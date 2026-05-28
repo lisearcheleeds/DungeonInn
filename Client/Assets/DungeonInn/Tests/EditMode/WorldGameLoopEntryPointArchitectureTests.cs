@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -302,7 +302,7 @@ namespace DungeonInn.Tests.EditMode
                 new InitializeGameWorldOrchestrator(
                     worldState,
                     new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
-                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
+                    new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository())),
                     masterRepository,
                     eventBus,
                     new FixedWorldGameSettingsRepository()),
@@ -333,7 +333,7 @@ namespace DungeonInn.Tests.EditMode
                             actorSpatialIndexService,
                             actorViewDataStore)),
                     new UseDungeonStairOrchestrator(
-                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository()), new NoOpEventPublisher())),
+                        new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository()), new NoOpEventPublisher())),
                     new SelectDungeonTargetFloorUseCase(
                         masterRepository,
                         new ActorCombatPowerCalculator(),
@@ -383,11 +383,11 @@ namespace DungeonInn.Tests.EditMode
                 new UpdateEquipmentUseCase(masterRepository, eventBus, candidateService),
                 new SellItemsUseCase(masterRepository, eventBus, gameClock, candidateService),
                 new UseRecoveryItemOrchestrator(
-                    masterRepository,
                     new UseConsumableItemUseCase(masterRepository, candidateService),
                     eventBus,
                     candidateService,
-                    new FixedWorldGameSettingsRepository()),
+                    new FixedWorldGameSettingsRepository(),
+                    new RecoveryItemSelectionPolicy(masterRepository)),
                 new AdvanceActorEffectsUseCase(candidateService),
                 new DecideAdventurerReturnUseCase(
                     actorCombatService,
@@ -635,4 +635,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

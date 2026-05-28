@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
@@ -13,6 +13,7 @@ using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 
 namespace DungeonInn.Tests.EditMode
@@ -20,18 +21,17 @@ namespace DungeonInn.Tests.EditMode
     public sealed class DungeonFloorGenerationTests
     {
         /// <summary>
-        /// ƒ‰ƒ“ƒ_ƒ€ seed ‚ÌƒtƒƒA‚ğ?E?E??E?¶?E‚µAã‘wŠK’i‚©‚ç‰º‘wŠK’i‚Ü‚Å?E?E??E?ˆÚ“®‰Â”\‚È’Ê˜H‚ÅÚ‘±‚³‚ê‚Ä‚ŸE?E??E?‚±‚Æ‚ğŒŸØ‚·‚éAE        /// </summary>
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ seed ï¿½Ìƒtï¿½ï¿½ï¿½Aï¿½ï¿½?E?E??E?ï¿½ï¿½?Eï¿½ï¿½ï¿½Aï¿½ï¿½wï¿½Kï¿½iï¿½ï¿½ï¿½ç‰ºï¿½wï¿½Kï¿½iï¿½Ü‚ï¿½?E?E??E?ï¿½Ú“ï¿½ï¿½Â”\ï¿½È’Ê˜Hï¿½ÅÚ‘ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½E?E??E?ï¿½ï¿½ï¿½Æ‚ï¿½ï¿½ï¿½Ø‚ï¿½ï¿½ï¿½AE        /// </summary>
         [Test]
         public void GeneratedFloorsConnectUpStairToDownStair()
         {
             for (var seed = 0; seed < 100; seed++)
             {
                 var dungeon = new Dungeon(seed);
-                var useCase = new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository());
+                var useCase = new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository());
                 var floor = useCase.ExecuteAsync(
                         dungeon,
-                        1,
-                        new List<DungeonDepthBandConfig>())
+                        1)
                     .GetAwaiter()
                     .GetResult();
 
@@ -161,4 +161,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

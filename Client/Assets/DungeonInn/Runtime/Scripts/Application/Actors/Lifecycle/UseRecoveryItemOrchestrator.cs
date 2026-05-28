@@ -27,27 +27,28 @@ namespace DungeonInn.Application.Actors.Lifecycle
 {
     public sealed class UseRecoveryItemOrchestrator
     {
-        readonly IMasterRepository masterRepository;
         readonly UseConsumableItemUseCase useConsumableItemUseCase;
         readonly IEventPublisher eventBus;
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly RecoveryItemSelectionPolicy recoveryItemSelectionPolicy;
         readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
         public UseRecoveryItemOrchestrator(
-            IMasterRepository masterRepository,
             UseConsumableItemUseCase useConsumableItemUseCase,
             IEventPublisher eventBus,
             ActorProcessingCandidateService candidateService,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            RecoveryItemSelectionPolicy recoveryItemSelectionPolicy)
         {
-            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
             this.useConsumableItemUseCase = useConsumableItemUseCase ?? throw new ArgumentNullException(nameof(useConsumableItemUseCase));
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.recoveryItemSelectionPolicy =
+                recoveryItemSelectionPolicy ?? throw new ArgumentNullException(nameof(recoveryItemSelectionPolicy));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState)
@@ -81,15 +82,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     continue;
                 }
 
-                var itemId = FindRecoveryItemId(actor);
+                var itemId = recoveryItemSelectionPolicy.SelectItemId(actor);
                 if (itemId < 1)
-                {
-                    candidateService.ClearRecoveryItemCandidate(actor.Id);
-                    continue;
-                }
-
-                var actorEffectId = masterRepository.GetItemMaster(itemId).ActorEffectMasterId;
-                if (actor.HasActorEffect(actorEffectId))
                 {
                     candidateService.ClearRecoveryItemCandidate(actor.Id);
                     continue;
@@ -113,42 +107,5 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
         }
 
-        int FindRecoveryItemId(Actor actor)
-        {
-            foreach (var kvp in actor.Inventory.ItemCounts)
-            {
-                if (kvp.Value < 1)
-                {
-                    continue;
-                }
-
-                var itemMaster = masterRepository.GetItemMaster(kvp.Key);
-                if (!itemMaster.HasTag(ItemTag.Recovery) || itemMaster.ActorEffectMasterId < 1)
-                {
-                    continue;
-                }
-
-                var actorEffectMaster = masterRepository.GetActorEffectMaster(itemMaster.ActorEffectMasterId);
-                if (HasHealHpOverTime(actorEffectMaster))
-                {
-                    return itemMaster.Id;
-                }
-            }
-
-            return 0;
-        }
-
-        static bool HasHealHpOverTime(ActorEffectMaster actorEffectMaster)
-        {
-            foreach (var spec in actorEffectMaster.StatusEffectSpecs)
-            {
-                if (spec.Type == StatusEffectType.HealHpOverTime)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }

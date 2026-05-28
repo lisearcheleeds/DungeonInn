@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
 using DungeonInn.Application.World;
@@ -42,7 +42,7 @@ namespace DungeonInn.Tests.EditMode
             public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => inner.SpeciesMasters;
             public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => inner.SpawnTableMasters;
             public IReadOnlyDictionary<int, LevelTable> LevelTables => inner.LevelTables;
-            public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => inner.DungeonFloorExplorationMasters;
+            public IReadOnlyDictionary<int, DungeonDepthBandMaster> DungeonDepthBandMasters => inner.DungeonDepthBandMasters;
             public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => inner.EnvironmentPropVisualMasters;
             public IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters => inner.ActorVisualMasters;
 
@@ -106,9 +106,9 @@ namespace DungeonInn.Tests.EditMode
                 return inner.GetMaxStackCount(itemId);
             }
 
-            public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex)
+            public DungeonDepthBandMaster GetDungeonDepthBandMasterForFloor(int floorIndex)
             {
-                return inner.GetDungeonFloorExplorationMaster(floorIndex);
+                return inner.GetDungeonDepthBandMasterForFloor(floorIndex);
             }
 
             public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key)
@@ -123,4 +123,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

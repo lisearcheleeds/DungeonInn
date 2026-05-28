@@ -6,6 +6,7 @@ using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.Dungeons
@@ -16,20 +17,23 @@ namespace DungeonInn.Application.Dungeons
     {
         const int ReferencePointPlacementMaxAttempts = 32;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly IMasterRepository masterRepository;
 
         [Inject]
-        public GenerateDungeonFloorUseCase(IWorldGameSettingsRepository worldGameSettingsRepository)
+        public GenerateDungeonFloorUseCase(
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            IMasterRepository masterRepository)
         {
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
         }
 
         /// <summary>
         /// Section 経路、E��路、E��屋、上下階段を持つフロアを生成してダンジョンへ追加する、E        /// </summary>
         public UniTask<DungeonFloor> ExecuteAsync(
             Dungeon dungeon,
-            int floorIndex,
-            IReadOnlyList<DungeonDepthBandConfig> depthBandConfigs)
+            int floorIndex)
         {
             if (dungeon.HasFloor(floorIndex))
             {
@@ -37,7 +41,7 @@ namespace DungeonInn.Application.Dungeons
             }
 
             var generationSettings = worldGameSettingsRepository.GetDungeonMapGenerationSettings();
-            var settings = ResolveSettings(floorIndex, depthBandConfigs, generationSettings);
+            var settings = ResolveSettings(floorIndex, generationSettings);
             var layer = new MapLayer(
                 MapLayerId.DungeonFloor(floorIndex),
                 generationSettings.FloorWidth,
@@ -61,9 +65,8 @@ namespace DungeonInn.Application.Dungeons
             return UniTask.FromResult(floor);
         }
 
-        static DungeonFloorGenerationSettings ResolveSettings(
+        DungeonFloorGenerationSettings ResolveSettings(
             int floorIndex,
-            IReadOnlyList<DungeonDepthBandConfig> depthBandConfigs,
             DungeonMapGenerationSettings generationSettings)
         {
             if (floorIndex < 1)
@@ -71,14 +74,15 @@ namespace DungeonInn.Application.Dungeons
                 throw new ArgumentOutOfRangeException(nameof(floorIndex));
             }
 
-            var config = depthBandConfigs?.FirstOrDefault(x => x.Contains(floorIndex));
-            if (config != null)
+            try
             {
-                return config.GenerationSettings;
+                return masterRepository.GetDungeonDepthBandMasterForFloor(floorIndex).GenerationSettings;
             }
-
-            return new DungeonFloorGenerationSettings(
-                themeId: floorIndex / generationSettings.ThemeFloorsPerTheme);
+            catch (KeyNotFoundException)
+            {
+                return new DungeonFloorGenerationSettings(
+                    themeId: floorIndex / generationSettings.ThemeFloorsPerTheme);
+            }
         }
 
         DungeonFloorBlueprint CreateBlueprint(

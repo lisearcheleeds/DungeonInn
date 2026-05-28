@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using DungeonInn.Domain.Dungeon;
-
 namespace DungeonInn.Application.World
 {
     /// <summary>
@@ -14,17 +9,10 @@ namespace DungeonInn.Application.World
         public int DungeonSeed { get; }
 
         /// <summary>
-        /// ダンジョン階層ごとの生�E設定、E        /// </summary>
-        public IReadOnlyList<DungeonDepthBandConfig> DepthBandConfigs { get; }
-
-        /// <summary>
         /// GameWorldState 初期化リクエストを作�Eする、E        /// </summary>
-        public InitializeGameWorldRequest(
-            int dungeonSeed,
-            IReadOnlyList<DungeonDepthBandConfig> depthBandConfigs)
+        public InitializeGameWorldRequest(int dungeonSeed)
         {
             DungeonSeed = dungeonSeed;
-            DepthBandConfigs = (depthBandConfigs ?? Array.Empty<DungeonDepthBandConfig>()).ToArray();
         }
     }
 }

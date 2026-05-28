@@ -13,7 +13,6 @@ using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Application.GameLoop;
 
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Map;
@@ -39,8 +38,7 @@ namespace DungeonInn.Application.Dungeons
             Dungeon dungeon,
             GroundMap groundMap,
             LayerPosition currentPosition,
-            DungeonStairType stairType,
-            IReadOnlyList<DungeonDepthBandConfig> depthBandConfigs)
+            DungeonStairType stairType)
         {
             if (currentPosition.LayerId.Equals(MapLayerId.Ground))
             {
@@ -49,7 +47,7 @@ namespace DungeonInn.Application.Dungeons
                     throw new InvalidOperationException("Ground dungeon entrance can only move down.");
                 }
 
-                return await EnterDungeonFromGroundAsync(dungeon, groundMap, currentPosition, depthBandConfigs);
+                return await EnterDungeonFromGroundAsync(dungeon, groundMap, currentPosition);
             }
 
             var currentFloor = dungeon.GetFloor(currentPosition.LayerId.Value);
@@ -70,10 +68,7 @@ namespace DungeonInn.Application.Dungeons
             var arrivalStairType = stairType == DungeonStairType.Down
                 ? DungeonStairType.Up
                 : DungeonStairType.Down;
-            var targetFloor = await ensureDungeonFloorGeneratedUseCase.ExecuteAsync(
-                dungeon,
-                targetFloorIndex,
-                depthBandConfigs);
+            var targetFloor = await ensureDungeonFloorGeneratedUseCase.ExecuteAsync(dungeon, targetFloorIndex);
 
             return targetFloor.GetArrivalPosition(arrivalStairType);
         }
@@ -81,8 +76,7 @@ namespace DungeonInn.Application.Dungeons
         async UniTask<LayerPosition> EnterDungeonFromGroundAsync(
             Dungeon dungeon,
             GroundMap groundMap,
-            LayerPosition currentPosition,
-            IReadOnlyList<DungeonDepthBandConfig> depthBandConfigs)
+            LayerPosition currentPosition)
         {
             var currentGrid = groundMap.Layer.ToGridPosition(currentPosition);
             if (!currentGrid.Equals(groundMap.DungeonEntrancePosition))
@@ -90,10 +84,7 @@ namespace DungeonInn.Application.Dungeons
                 throw new InvalidOperationException("Current position is not dungeon entrance.");
             }
 
-            var firstFloor = await ensureDungeonFloorGeneratedUseCase.ExecuteAsync(
-                dungeon,
-                1,
-                depthBandConfigs);
+            var firstFloor = await ensureDungeonFloorGeneratedUseCase.ExecuteAsync(dungeon, 1);
             return firstFloor.GetArrivalPosition(DungeonStairType.Up);
         }
     }

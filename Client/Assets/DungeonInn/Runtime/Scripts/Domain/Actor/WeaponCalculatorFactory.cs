@@ -14,6 +14,8 @@ namespace DungeonInn.Domain.Actor
                     return new SwordWeaponCalculator();
                 case WeaponType.Bow:
                     return new BowWeaponCalculator();
+                case WeaponType.Dagger:
+                    return new BowWeaponCalculator();
                 case WeaponType.Axe:
                     return new AxeWeaponCalculator();
                 case WeaponType.Scythe:
@@ -39,6 +41,8 @@ namespace DungeonInn.Domain.Actor
                 case WeaponType.Sword:
                     return new[] { (StatType.Strength, 3), (StatType.Dexterity, 1) };
                 case WeaponType.Bow:
+                    return new[] { (StatType.Dexterity, 3), (StatType.Strength, 1) };
+                case WeaponType.Dagger:
                     return new[] { (StatType.Dexterity, 3), (StatType.Strength, 1) };
                 case WeaponType.Axe:
                     return new[] { (StatType.Strength, 4) };

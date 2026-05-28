@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Dungeon;
 using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
 
@@ -25,7 +26,7 @@ namespace DungeonInn.Master
         readonly IReadOnlyDictionary<int, SpeciesMaster> speciesMasters;
         readonly IReadOnlyDictionary<int, SpawnTableMaster> spawnTableMasters;
         readonly IReadOnlyDictionary<int, LevelTable> levelTables;
-        readonly IReadOnlyDictionary<int, DungeonFloorExplorationMaster> dungeonFloorExplorationMasters;
+        readonly IReadOnlyDictionary<int, DungeonDepthBandMaster> dungeonDepthBandMasters;
         readonly IReadOnlyDictionary<string, EnvironmentPropVisualMaster> environmentPropVisualMasters;
         readonly IReadOnlyDictionary<string, ActorVisualMaster> actorVisualMasters;
         readonly IReadOnlyDictionary<int, FacilityUpgradeMaster> facilityUpgradeMasters;
@@ -45,7 +46,7 @@ namespace DungeonInn.Master
         public IReadOnlyDictionary<int, SpeciesMaster> SpeciesMasters => speciesMasters;
         public IReadOnlyDictionary<int, SpawnTableMaster> SpawnTableMasters => spawnTableMasters;
         public IReadOnlyDictionary<int, LevelTable> LevelTables => levelTables;
-        public IReadOnlyDictionary<int, DungeonFloorExplorationMaster> DungeonFloorExplorationMasters => dungeonFloorExplorationMasters;
+        public IReadOnlyDictionary<int, DungeonDepthBandMaster> DungeonDepthBandMasters => dungeonDepthBandMasters;
         public IReadOnlyDictionary<string, EnvironmentPropVisualMaster> EnvironmentPropVisualMasters => environmentPropVisualMasters;
         public IReadOnlyDictionary<string, ActorVisualMaster> ActorVisualMasters => actorVisualMasters;
         public IReadOnlyDictionary<int, FacilityUpgradeMaster> FacilityUpgradeMasters => facilityUpgradeMasters;
@@ -61,7 +62,7 @@ namespace DungeonInn.Master
             weaponTypeCombatMasters = WeaponTypeCombatMasterCatalog.CreateAll();
             weaponMasters = CreateWeaponMasters();
             levelTables = CreateLevelTables();
-            dungeonFloorExplorationMasters = CreateDungeonFloorExplorationMasters();
+            dungeonDepthBandMasters = CreateDungeonDepthBandMasters();
             environmentPropVisualMasters = CreateEnvironmentPropVisualMasters();
             actorVisualMasters = CreateActorVisualMasters();
             facilityUpgradeMasters = CreateFacilityUpgradeMasters();
@@ -132,9 +133,29 @@ namespace DungeonInn.Master
             return GetItemMaster(itemId).MaxStackCount;
         }
 
-        public DungeonFloorExplorationMaster GetDungeonFloorExplorationMaster(int floorIndex)
+        public DungeonDepthBandMaster GetDungeonDepthBandMasterForFloor(int floorIndex)
         {
-            return GetRequired(dungeonFloorExplorationMasters, floorIndex, nameof(DungeonFloorExplorationMaster));
+            DungeonDepthBandMaster selectedMaster = null;
+            foreach (var master in dungeonDepthBandMasters.Values)
+            {
+                if (!master.Contains(floorIndex))
+                {
+                    continue;
+                }
+
+                if (selectedMaster == null ||
+                    selectedMaster.SelectionPriority < master.SelectionPriority)
+                {
+                    selectedMaster = master;
+                }
+            }
+
+            if (selectedMaster != null)
+            {
+                return selectedMaster;
+            }
+
+            throw new KeyNotFoundException($"{nameof(DungeonDepthBandMaster)} does not exist. Floor: {floorIndex}");
         }
 
         public EnvironmentPropVisualMaster GetEnvironmentPropVisualMaster(string key)
@@ -259,6 +280,12 @@ namespace DungeonInn.Master
                 new ActorVisualMaster("monster_goblin", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterGoblin"),
                 new ActorVisualMaster("monster_orc", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterOrc"),
                 new ActorVisualMaster("monster_ogre", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterOgre"),
+                new ActorVisualMaster("monster_slime", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterGoblin"),
+                new ActorVisualMaster("monster_wolf", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterGoblin"),
+                new ActorVisualMaster("monster_skeleton", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterGoblin"),
+                new ActorVisualMaster("monster_bat", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterGoblinArcher"),
+                new ActorVisualMaster("monster_golem", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterOgre"),
+                new ActorVisualMaster("monster_dragonkin", GameConstants.DefaultActorSkinId, "World/ActorVisual/MonsterOgre"),
                 new ActorVisualMaster(
                     "monster_goblin_archer",
                     GameConstants.DefaultActorSkinId,
@@ -273,6 +300,12 @@ namespace DungeonInn.Master
                 new ItemMaster(1, "Gold", ItemTag.Currency, 1, 1, false, 100000),
                 new ItemMaster(1001, "薬草", ItemTag.Material | ItemTag.Recovery, 10, 1, true, 10),
                 new ItemMaster(1002, "Goblin Ear", ItemTag.Material | ItemTag.SellOnly, 25, 1, true, 10),
+                new ItemMaster(1003, "Slime Gel", ItemTag.Material | ItemTag.CraftingComponent, 12, 1, true, 20),
+                new ItemMaster(1004, "Wolf Fang", ItemTag.Material | ItemTag.CraftingComponent, 28, 1, true, 20),
+                new ItemMaster(1005, "Bat Wing", ItemTag.Material | ItemTag.CraftingComponent, 24, 1, true, 20),
+                new ItemMaster(1006, "Bone Shard", ItemTag.Material | ItemTag.CraftingComponent, 32, 2, true, 20),
+                new ItemMaster(1007, "Golem Core", ItemTag.Material | ItemTag.Valuable | ItemTag.CraftingComponent, 180, 4, true, 10),
+                new ItemMaster(1008, "Dragon Scale", ItemTag.Material | ItemTag.Valuable | ItemTag.CraftingComponent, 260, 5, true, 10),
                 new ItemMaster(1101, "鉄鉱石", ItemTag.Material | ItemTag.Ore, 35, 1, true, 20),
                 new ItemMaster(1102, "銅鉱石", ItemTag.Material | ItemTag.Ore, 25, 1, true, 20),
                 new ItemMaster(1103, "鉄", ItemTag.Material | ItemTag.Metal, 45, 2, true, 20),
@@ -299,7 +332,7 @@ namespace DungeonInn.Master
                 new ItemMaster(1202, "スコップ", ItemTag.Tool, 60, 1, true, 1),
                 new ItemMaster(1203, "ドライバー", ItemTag.Tool | ItemTag.CraftingComponent, 45, 1, true, 1),
                 new ItemMaster(2001, "ポーション", ItemTag.Recovery, 30, 1, true, 10, 1),
-                new ItemMaster(2002, "ハイポーション", ItemTag.Recovery, 90, 2, true, 10, 1),
+                new ItemMaster(2002, "ハイポーション", ItemTag.Recovery, 90, 2, true, 10, 2),
                 new ItemMaster(2003, "エリクサー", ItemTag.Recovery | ItemTag.ManaRecovery | ItemTag.Valuable, 300, 5, true, 5, 1),
                 new ItemMaster(2004, "マナポーション", ItemTag.ManaRecovery, 50, 1, true, 10),
                 new ItemMaster(2101, "ゆでたまご", ItemTag.Food, 8, 1, true, 20),
@@ -326,10 +359,17 @@ namespace DungeonInn.Master
                 new ItemMaster(3010, "木の杖", ItemTag.Weapon, 70, 1, true, 1),
                 new ItemMaster(3011, "木の棒", ItemTag.Weapon, 20, 1, true, 1),
                 new ItemMaster(3012, "鉄の弓", ItemTag.Weapon, 130, 5, true, 1),
+                new ItemMaster(3013, "木の短剣", ItemTag.Weapon, 70, 1, true, 1),
+                new ItemMaster(3014, "鉄の短剣", ItemTag.Weapon, 125, 5, true, 1),
+                new ItemMaster(3101, "革鎧", ItemTag.Armor, 90, 1, true, 1),
+                new ItemMaster(3102, "鉄鎧", ItemTag.Armor | ItemTag.Metal, 180, 4, true, 1),
+                new ItemMaster(3103, "ローブ", ItemTag.Armor, 110, 2, true, 1),
                 new ItemMaster(4001, "ダイヤのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 420, 5, true, 1),
                 new ItemMaster(4002, "ルビーのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 340, 4, true, 1),
                 new ItemMaster(4003, "サファイアのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 340, 4, true, 1),
-                new ItemMaster(4004, "パールのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 260, 3, true, 1)
+                new ItemMaster(4004, "パールのアクセサリー", ItemTag.Accessory | ItemTag.Gem | ItemTag.Valuable, 260, 3, true, 1),
+                new ItemMaster(4005, "守りの指輪", ItemTag.Accessory, 160, 3, true, 1),
+                new ItemMaster(4006, "知恵の護符", ItemTag.Accessory, 160, 3, true, 1)
             }.ToDictionary(x => x.Id);
         }
 
@@ -350,18 +390,89 @@ namespace DungeonInn.Master
                             10f,
                             1f,
                             StatusEffectAggregationPolicy.Sum)
+                    }),
+                new ActorEffectMaster(
+                    2,
+                    "体力回復ハイポーション",
+                    10f,
+                    ActorEffectReapplyPolicy.AppendDuration,
+                    new[]
+                    {
+                        new StatusEffectSpec(
+                            StatusEffectType.HealHpOverTime,
+                            60,
+                            10f,
+                            1f,
+                            StatusEffectAggregationPolicy.Sum)
                     })
             }.ToDictionary(x => x.Id);
         }
 
-        static IReadOnlyDictionary<int, DungeonFloorExplorationMaster> CreateDungeonFloorExplorationMasters()
+        static IReadOnlyDictionary<int, DungeonDepthBandMaster> CreateDungeonDepthBandMasters()
         {
             return new[]
             {
-                new DungeonFloorExplorationMaster(1, 2, 3.0f),
-                new DungeonFloorExplorationMaster(2, 3, 3.0f),
-                new DungeonFloorExplorationMaster(3, 4, 3.0f)
-            }.ToDictionary(x => x.FloorIndex);
+                new DungeonDepthBandMaster(
+                    1,
+                    "Shallow",
+                    1,
+                    3,
+                    0,
+                    10,
+                    2,
+                    1,
+                    1.0f,
+                    DungeonSpecialRoomType.None,
+                    new DungeonFloorGenerationSettings(0)),
+                new DungeonDepthBandMaster(
+                    2,
+                    "Middle",
+                    4,
+                    7,
+                    0,
+                    10,
+                    3,
+                    3,
+                    1.35f,
+                    DungeonSpecialRoomType.TreasureRoom,
+                    new DungeonFloorGenerationSettings(1)),
+                new DungeonDepthBandMaster(
+                    3,
+                    "Deep",
+                    8,
+                    11,
+                    0,
+                    10,
+                    4,
+                    6,
+                    1.75f,
+                    DungeonSpecialRoomType.RestRoom,
+                    new DungeonFloorGenerationSettings(2)),
+                new DungeonDepthBandMaster(
+                    4,
+                    "Boss",
+                    5,
+                    0,
+                    5,
+                    100,
+                    5,
+                    8,
+                    2.2f,
+                    DungeonSpecialRoomType.BossRoom,
+                    new DungeonFloorGenerationSettings(3)),
+                new DungeonDepthBandMaster(
+                    5,
+                    "Endless",
+                    12,
+                    0,
+                    0,
+                    20,
+                    6,
+                    10,
+                    2.0f,
+                    DungeonSpecialRoomType.None,
+                    new DungeonFloorGenerationSettings(4))
+            }.ToDictionary(x => x.Id);
         }
 
         static IReadOnlyDictionary<int, EquipmentMaster> CreateEquipmentMasters()
@@ -424,6 +535,31 @@ namespace DungeonInn.Master
                     new StatBonus(StatType.Dexterity, 5),
                     new StatBonus(StatType.Strength, 2)
                 }),
+                new EquipmentMaster(3013, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Dexterity, 3),
+                    new StatBonus(StatType.Strength, 1)
+                }),
+                new EquipmentMaster(3014, EquipmentSlot.Weapon, 0, new[]
+                {
+                    new StatBonus(StatType.Dexterity, 5),
+                    new StatBonus(StatType.Strength, 2)
+                }),
+                new EquipmentMaster(3101, EquipmentSlot.Armor, 3, new[]
+                {
+                    new StatBonus(StatType.Dexterity, 1),
+                    new StatBonus(StatType.Constitution, 1)
+                }),
+                new EquipmentMaster(3102, EquipmentSlot.Armor, 8, new[]
+                {
+                    new StatBonus(StatType.Constitution, 3),
+                    new StatBonus(StatType.Strength, 1)
+                }),
+                new EquipmentMaster(3103, EquipmentSlot.Armor, 2, new[]
+                {
+                    new StatBonus(StatType.Intelligence, 2),
+                    new StatBonus(StatType.Wisdom, 2)
+                }),
                 new EquipmentMaster(4001, EquipmentSlot.Accessory, 0, new[]
                 {
                     new StatBonus(StatType.Charisma, 4),
@@ -443,6 +579,15 @@ namespace DungeonInn.Master
                 {
                     new StatBonus(StatType.Constitution, 2),
                     new StatBonus(StatType.Charisma, 1)
+                }),
+                new EquipmentMaster(4005, EquipmentSlot.Accessory, 0, new[]
+                {
+                    new StatBonus(StatType.Constitution, 2)
+                }),
+                new EquipmentMaster(4006, EquipmentSlot.Accessory, 0, new[]
+                {
+                    new StatBonus(StatType.Wisdom, 2),
+                    new StatBonus(StatType.Intelligence, 1)
                 })
             }.ToDictionary(x => x.ItemId);
         }
@@ -461,7 +606,9 @@ namespace DungeonInn.Master
                 new WeaponMaster(3009, WeaponType.Scythe, GetWeaponTypeCombatMaster(WeaponType.Scythe), 8, 0, 0),
                 new WeaponMaster(3010, WeaponType.Staff, GetWeaponTypeCombatMaster(WeaponType.Staff), 6, 0, 0),
                 new WeaponMaster(3011, WeaponType.Staff, GetWeaponTypeCombatMaster(WeaponType.Staff), 2, 0, 0),
-                new WeaponMaster(3012, WeaponType.Bow, GetWeaponTypeCombatMaster(WeaponType.Bow), 10, 0, 0)
+                new WeaponMaster(3012, WeaponType.Bow, GetWeaponTypeCombatMaster(WeaponType.Bow), 10, 0, 0),
+                new WeaponMaster(3013, WeaponType.Dagger, GetWeaponTypeCombatMaster(WeaponType.Dagger), 6, 0, 0),
+                new WeaponMaster(3014, WeaponType.Dagger, GetWeaponTypeCombatMaster(WeaponType.Dagger), 9, 0, 0)
             }.ToDictionary(x => x.ItemId);
         }
 
@@ -492,8 +639,7 @@ namespace DungeonInn.Master
                     new[]
                     {
                         new ActorDropEntry(1002, 0.7f, 1, 1),
-                        new ActorDropEntry(1, 0.5f, 1, 3),
-                        new ActorDropEntry(3004, 1.0f, 1, 1)
+                        new ActorDropEntry(1, 0.5f, 1, 4)
                     }),
                 new SpeciesMaster(
                     2,
@@ -501,7 +647,7 @@ namespace DungeonInn.Master
                     new[]
                     {
                         new ActorDropEntry(1, 0.7f, 3, 8),
-                        new ActorDropEntry(3004, 0.25f, 1, 1)
+                        new ActorDropEntry(3004, 0.18f, 1, 1)
                     }),
                 new SpeciesMaster(
                     3,
@@ -510,6 +656,56 @@ namespace DungeonInn.Master
                     {
                         new ActorDropEntry(1, 0.9f, 8, 15),
                         new ActorDropEntry(3004, 0.4f, 1, 1)
+                    }),
+                new SpeciesMaster(
+                    4,
+                    "Slime",
+                    new[]
+                    {
+                        new ActorDropEntry(1003, 0.8f, 1, 2),
+                        new ActorDropEntry(1, 0.4f, 1, 3)
+                    }),
+                new SpeciesMaster(
+                    5,
+                    "Wolf",
+                    new[]
+                    {
+                        new ActorDropEntry(1004, 0.65f, 1, 1),
+                        new ActorDropEntry(1, 0.5f, 2, 5)
+                    }),
+                new SpeciesMaster(
+                    6,
+                    "Skeleton",
+                    new[]
+                    {
+                        new ActorDropEntry(1006, 0.65f, 1, 2),
+                        new ActorDropEntry(1, 0.55f, 3, 7)
+                    }),
+                new SpeciesMaster(
+                    7,
+                    "Bat",
+                    new[]
+                    {
+                        new ActorDropEntry(1005, 0.7f, 1, 2),
+                        new ActorDropEntry(1, 0.45f, 2, 5)
+                    }),
+                new SpeciesMaster(
+                    8,
+                    "Golem",
+                    new[]
+                    {
+                        new ActorDropEntry(1007, 0.4f, 1, 1),
+                        new ActorDropEntry(1101, 0.7f, 2, 5),
+                        new ActorDropEntry(1, 0.8f, 8, 15)
+                    }),
+                new SpeciesMaster(
+                    9,
+                    "Dragonkin",
+                    new[]
+                    {
+                        new ActorDropEntry(1008, 0.35f, 1, 1),
+                        new ActorDropEntry(1107, 0.25f, 1, 2),
+                        new ActorDropEntry(1, 0.9f, 12, 24)
                     }),
                 new SpeciesMaster(
                     10,
@@ -571,6 +767,166 @@ namespace DungeonInn.Master
                     WeaponType.Bow,
                     new ActorStats(3, 9, 3, 2, 2, 1),
                     1,
+                    2),
+                new ActorArchetypeMaster(
+                    11,
+                    "Warrior Adventurer",
+                    "adventurer_novice",
+                    ActorBehaviorType.Adventurer,
+                    10,
+                    WeaponType.Sword,
+                    new ActorStats(12, 8, 11, 5, 5, 7),
+                    1,
+                    1),
+                new ActorArchetypeMaster(
+                    12,
+                    "Mage Adventurer",
+                    "adventurer_novice",
+                    ActorBehaviorType.Adventurer,
+                    10,
+                    WeaponType.Staff,
+                    new ActorStats(5, 7, 7, 13, 11, 7),
+                    1,
+                    1),
+                new ActorArchetypeMaster(
+                    13,
+                    "Archer Adventurer",
+                    "adventurer_novice",
+                    ActorBehaviorType.Adventurer,
+                    10,
+                    WeaponType.Bow,
+                    new ActorStats(8, 13, 8, 6, 7, 6),
+                    1,
+                    1),
+                new ActorArchetypeMaster(
+                    14,
+                    "Healer Adventurer",
+                    "adventurer_novice",
+                    ActorBehaviorType.Adventurer,
+                    10,
+                    WeaponType.Staff,
+                    new ActorStats(6, 7, 9, 8, 14, 8),
+                    1,
+                    1),
+                new ActorArchetypeMaster(
+                    15,
+                    "Scout Adventurer",
+                    "adventurer_novice",
+                    ActorBehaviorType.Adventurer,
+                    10,
+                    WeaponType.Dagger,
+                    new ActorStats(8, 14, 8, 6, 7, 8),
+                    1,
+                    1),
+                new ActorArchetypeMaster(
+                    101,
+                    "Slime",
+                    "monster_slime",
+                    ActorBehaviorType.Monster,
+                    4,
+                    WeaponType.Fist,
+                    new ActorStats(2, 3, 5, 1, 1, 1),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    102,
+                    "Goblin",
+                    "monster_goblin",
+                    ActorBehaviorType.Monster,
+                    1,
+                    WeaponType.Claws,
+                    new ActorStats(3, 6, 3, 2, 2, 1),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    103,
+                    "Wolf",
+                    "monster_wolf",
+                    ActorBehaviorType.Monster,
+                    5,
+                    WeaponType.Fangs,
+                    new ActorStats(5, 9, 5, 2, 2, 2),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    104,
+                    "Skeleton",
+                    "monster_skeleton",
+                    ActorBehaviorType.Monster,
+                    6,
+                    WeaponType.Sword,
+                    new ActorStats(7, 6, 7, 2, 2, 1),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    105,
+                    "Bat",
+                    "monster_bat",
+                    ActorBehaviorType.Monster,
+                    7,
+                    WeaponType.Fangs,
+                    new ActorStats(3, 11, 3, 2, 2, 1),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    106,
+                    "Orc",
+                    "monster_orc",
+                    ActorBehaviorType.Monster,
+                    2,
+                    WeaponType.Scythe,
+                    new ActorStats(8, 7, 8, 4, 4, 3),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    107,
+                    "Golem",
+                    "monster_golem",
+                    ActorBehaviorType.Monster,
+                    8,
+                    WeaponType.Fist,
+                    new ActorStats(14, 8, 14, 6, 6, 8),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    108,
+                    "Dragonkin",
+                    "monster_dragonkin",
+                    ActorBehaviorType.Monster,
+                    9,
+                    WeaponType.Fangs,
+                    new ActorStats(16, 10, 14, 9, 8, 9),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    109,
+                    "Goblin Archer",
+                    "monster_goblin_archer",
+                    ActorBehaviorType.Monster,
+                    1,
+                    WeaponType.Bow,
+                    new ActorStats(3, 9, 3, 2, 2, 1),
+                    1,
+                    2),
+                new ActorArchetypeMaster(
+                    201,
+                    "Elite Orc",
+                    "monster_orc",
+                    ActorBehaviorType.Monster,
+                    2,
+                    WeaponType.Axe,
+                    new ActorStats(12, 9, 12, 5, 5, 5),
+                    4,
+                    2),
+                new ActorArchetypeMaster(
+                    202,
+                    "Boss Dragonkin",
+                    "monster_dragonkin",
+                    ActorBehaviorType.Monster,
+                    9,
+                    WeaponType.Fangs,
+                    new ActorStats(22, 14, 20, 12, 10, 12),
+                    8,
                     2)
             }.ToDictionary(x => x.Id);
         }
@@ -580,13 +936,18 @@ namespace DungeonInn.Master
             return new[]
             {
                 new AdventurerSpawnMaster(1, "アリス", 1, true),
-                new AdventurerSpawnMaster(2, "ヤスオ", 1, true),
-                new AdventurerSpawnMaster(3, "アカリ", 1, true),
-                new AdventurerSpawnMaster(4, "ゼド", 1, true),
-                new AdventurerSpawnMaster(5, "ラックス", 1, true),
-                new AdventurerSpawnMaster(6, "ガレン", 1, true),
-                new AdventurerSpawnMaster(7, "セト", 1, true),
-                new AdventurerSpawnMaster(8, "ユーミ", 1, true),
+                new AdventurerSpawnMaster(2, "ヤスオ", 15, true),
+                new AdventurerSpawnMaster(3, "アカリ", 13, true),
+                new AdventurerSpawnMaster(4, "ゼド", 15, true),
+                new AdventurerSpawnMaster(5, "ラックス", 12, true),
+                new AdventurerSpawnMaster(6, "ガレン", 11, true),
+                new AdventurerSpawnMaster(7, "セト", 11, true),
+                new AdventurerSpawnMaster(8, "ユーミ", 14, true),
+                new AdventurerSpawnMaster(9, "Warrior", 11, false),
+                new AdventurerSpawnMaster(10, "Mage", 12, false),
+                new AdventurerSpawnMaster(11, "Archer", 13, false),
+                new AdventurerSpawnMaster(12, "Healer", 14, false),
+                new AdventurerSpawnMaster(13, "Scout", 15, false)
             }.ToDictionary(x => x.Id);
         }
 
@@ -601,28 +962,57 @@ namespace DungeonInn.Master
                 new SpawnTableEntryMaster(5, 1, 5, 100, 1, 1),
                 new SpawnTableEntryMaster(6, 1, 6, 100, 1, 1),
                 new SpawnTableEntryMaster(7, 1, 7, 100, 1, 1),
-                new SpawnTableEntryMaster(8, 1, 8, 100, 1, 1)
+                new SpawnTableEntryMaster(8, 1, 8, 100, 1, 1),
+                new SpawnTableEntryMaster(9, 1, 9, 80, 1, 2),
+                new SpawnTableEntryMaster(10, 1, 10, 60, 1, 2),
+                new SpawnTableEntryMaster(11, 1, 11, 70, 1, 2),
+                new SpawnTableEntryMaster(12, 1, 12, 50, 1, 2),
+                new SpawnTableEntryMaster(13, 1, 13, 65, 1, 2)
             };
-            var monsterEntries = new[]
+            var shallowMonsterEntries = new[]
             {
-                new SpawnTableEntryMaster(4, 2, 2, 70, 1, 5),
-                new SpawnTableEntryMaster(7, 2, 5, 30, 1, 5)
+                new SpawnTableEntryMaster(14, 2, 101, 60, 1, 2),
+                new SpawnTableEntryMaster(15, 2, 102, 35, 1, 3),
+                new SpawnTableEntryMaster(16, 2, 103, 25, 1, 3),
+                new SpawnTableEntryMaster(17, 2, 109, 15, 1, 3)
             };
-            var floorTwoMonsterEntries = new[]
+            var middleMonsterEntries = new[]
             {
-                new SpawnTableEntryMaster(5, 3, 3, 100, 1, 5)
+                new SpawnTableEntryMaster(18, 3, 102, 35, 3, 5),
+                new SpawnTableEntryMaster(19, 3, 104, 30, 3, 6),
+                new SpawnTableEntryMaster(20, 3, 105, 30, 3, 5),
+                new SpawnTableEntryMaster(21, 3, 106, 20, 4, 7),
+                new SpawnTableEntryMaster(22, 3, 109, 20, 3, 6)
             };
-            var floorThreeMonsterEntries = new[]
+            var deepMonsterEntries = new[]
             {
-                new SpawnTableEntryMaster(6, 4, 4, 100, 1, 5)
+                new SpawnTableEntryMaster(23, 4, 106, 35, 6, 9),
+                new SpawnTableEntryMaster(24, 4, 107, 25, 7, 10),
+                new SpawnTableEntryMaster(25, 4, 108, 18, 8, 11),
+                new SpawnTableEntryMaster(26, 4, 201, 12, 8, 12)
+            };
+            var bossMonsterEntries = new[]
+            {
+                new SpawnTableEntryMaster(27, 5, 201, 65, 8, 12),
+                new SpawnTableEntryMaster(28, 5, 202, 35, 10, 15)
+            };
+            var endlessMonsterEntries = new[]
+            {
+                new SpawnTableEntryMaster(29, 6, 106, 25, 10, 20),
+                new SpawnTableEntryMaster(30, 6, 107, 25, 10, 20),
+                new SpawnTableEntryMaster(31, 6, 108, 25, 10, 20),
+                new SpawnTableEntryMaster(32, 6, 201, 15, 12, 24),
+                new SpawnTableEntryMaster(33, 6, 202, 10, 15, 30)
             };
 
             return new[]
             {
                 new SpawnTableMaster(1, "Default Adventurer Spawn", SpawnTableTargetType.AdventurerSpawn, adventurerEntries),
-                new SpawnTableMaster(2, "Dungeon Floor 1 Monster Spawn", SpawnTableTargetType.ActorArchetype, monsterEntries),
-                new SpawnTableMaster(3, "Dungeon Floor 2 Monster Spawn", SpawnTableTargetType.ActorArchetype, floorTwoMonsterEntries),
-                new SpawnTableMaster(4, "Dungeon Floor 3 Monster Spawn", SpawnTableTargetType.ActorArchetype, floorThreeMonsterEntries)
+                new SpawnTableMaster(2, "Shallow Monster Spawn", SpawnTableTargetType.ActorArchetype, shallowMonsterEntries),
+                new SpawnTableMaster(3, "Middle Monster Spawn", SpawnTableTargetType.ActorArchetype, middleMonsterEntries),
+                new SpawnTableMaster(4, "Deep Monster Spawn", SpawnTableTargetType.ActorArchetype, deepMonsterEntries),
+                new SpawnTableMaster(5, "Boss Monster Spawn", SpawnTableTargetType.ActorArchetype, bossMonsterEntries),
+                new SpawnTableMaster(6, "Endless Monster Spawn", SpawnTableTargetType.ActorArchetype, endlessMonsterEntries)
             }.ToDictionary(x => x.Id);
         }
 
@@ -685,12 +1075,12 @@ namespace DungeonInn.Master
                 }
             }
 
-            foreach (var floorExplorationMaster in dungeonFloorExplorationMasters.Values)
+            foreach (var depthBandMaster in dungeonDepthBandMasters.Values)
             {
-                var spawnTableMaster = GetSpawnTableMaster(floorExplorationMaster.MonsterSpawnTableId);
+                var spawnTableMaster = GetSpawnTableMaster(depthBandMaster.MonsterSpawnTableId);
                 if (spawnTableMaster.TargetType != SpawnTableTargetType.ActorArchetype)
                 {
-                    throw new InvalidOperationException("Dungeon floor exploration requires actor archetype spawn table.");
+                    throw new InvalidOperationException("Dungeon depth band requires actor archetype spawn table.");
                 }
             }
 

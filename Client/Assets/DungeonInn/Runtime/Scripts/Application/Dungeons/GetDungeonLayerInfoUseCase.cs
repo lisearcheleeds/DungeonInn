@@ -41,16 +41,19 @@ namespace DungeonInn.Application.Dungeons
                 Array.Empty<DungeonLayerMonsterSpawnSummary>(),
                 Array.Empty<DungeonLayerItemDropSummary>()));
 
-            foreach (var floorMaster in masterRepository.DungeonFloorExplorationMasters.Values.OrderBy(x => x.FloorIndex))
+            foreach (var depthBandMaster in masterRepository.DungeonDepthBandMasters.Values
+                .OrderBy(x => x.MinFloorIndex)
+                .ThenByDescending(x => x.SelectionPriority))
             {
-                var monsterSpawnTable = masterRepository.GetSpawnTableMaster(floorMaster.MonsterSpawnTableId);
+                var floorIndex = depthBandMaster.MinFloorIndex;
+                var monsterSpawnTable = masterRepository.GetSpawnTableMaster(depthBandMaster.MonsterSpawnTableId);
                 var monsterSpawns = CreateMonsterSpawnSummaries(monsterSpawnTable);
                 summaries.Add(new DungeonLayerInfoSummary(
-                    floorMaster.FloorIndex,
-                    worldState.Dungeon.HasFloor(floorMaster.FloorIndex),
-                    CountActors(floorMaster.FloorIndex, ActorBehaviorType.Adventurer),
-                    CountActors(floorMaster.FloorIndex, ActorBehaviorType.Monster),
-                    floorMaster.DifficultyCoefficient,
+                    floorIndex,
+                    worldState.Dungeon.HasFloor(floorIndex),
+                    CountActors(floorIndex, ActorBehaviorType.Adventurer),
+                    CountActors(floorIndex, ActorBehaviorType.Monster),
+                    depthBandMaster.DifficultyCoefficient,
                     monsterSpawns,
                     CreateItemDropSummaries(monsterSpawns)));
             }

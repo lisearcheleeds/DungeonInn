@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonInn.Application.Combat;
@@ -335,15 +335,13 @@ namespace DungeonInn.Tests.EditMode
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
                 new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
-                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository())),
+                new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository())),
                 new HardcodedMasterRepository(),
                 new CollectingEventBus(),
                 new FixedWorldGameSettingsRepository());
 
             useCase.ExecuteAsync(
-                    new InitializeGameWorldRequest(
-                        InitialWorld.DungeonSeed,
-                        Array.Empty<DungeonDepthBandConfig>()))
+                    new InitializeGameWorldRequest(InitialWorld.DungeonSeed))
                 .GetAwaiter()
                 .GetResult();
 
@@ -489,4 +487,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-
