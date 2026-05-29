@@ -71,7 +71,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4bab999258a6aa740940759f2ab6f71b
-    m_Address: GameHUD/UI/ActorDetailPopup
+    m_Address: GameHUD/UI/SelectedActorInspectorView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

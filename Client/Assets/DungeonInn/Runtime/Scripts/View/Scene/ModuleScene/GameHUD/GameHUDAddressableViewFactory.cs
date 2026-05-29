@@ -10,7 +10,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
     public sealed class GameHUDAddressableViewFactory : IDisposable
     {
         const string ActorStatusViewAddress = "GameHUD/UI/ActorStatusView";
-        const string ActorDetailPopupAddress = "GameHUD/UI/ActorDetailPopup";
+        const string SelectedActorInspectorViewAddress = "GameHUD/UI/SelectedActorInspectorView";
         const string PlayerEventLogViewAddress = "GameHUD/UI/PlayerEventLogView";
         const string WorldHudViewAddress = "GameHUD/UI/WorldHudView";
         const string InnStatusPanelViewAddress = "GameHUD/UI/InnStatusPanelView";
@@ -31,27 +31,28 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         }
 
         public ActorStatusView ActorStatusViewPrefab { get; private set; }
-        public ActorDetailPopup ActorDetailPopupPrefab { get; private set; }
+        public SelectedActorInspectorView SelectedActorInspectorViewPrefab { get; private set; }
 
         public async UniTask LoadAsync(CancellationToken ct)
         {
             assetScope = assetManager.CreateScope();
             ActorStatusViewPrefab = await LoadComponentPrefabAsync<ActorStatusView>(ActorStatusViewAddress, ct);
-            ActorDetailPopupPrefab = await LoadComponentPrefabAsync<ActorDetailPopup>(ActorDetailPopupAddress, ct);
+            SelectedActorInspectorViewPrefab =
+                await LoadComponentPrefabAsync<SelectedActorInspectorView>(SelectedActorInspectorViewAddress, ct);
             playerEventLogViewPrefab = await LoadComponentPrefabAsync<PlayerEventLogView>(PlayerEventLogViewAddress, ct);
             worldHudViewPrefab = await LoadComponentPrefabAsync<WorldHudView>(WorldHudViewAddress, ct);
             innStatusPanelViewPrefab = await LoadComponentPrefabAsync<InnStatusPanelView>(InnStatusPanelViewAddress, ct);
             minimapViewPrefab = await LoadComponentPrefabAsync<MinimapView>(MinimapViewAddress, ct);
         }
 
-        public ActorDetailPopup CreateActorDetailPopup(Transform parent)
+        public SelectedActorInspectorView CreateSelectedActorInspectorView(Transform parent)
         {
-            if (ActorDetailPopupPrefab == null || parent == null)
+            if (SelectedActorInspectorViewPrefab == null || parent == null)
             {
                 return null;
             }
 
-            return InstantiateHudView(ActorDetailPopupPrefab, parent);
+            return InstantiateHudView(SelectedActorInspectorViewPrefab, parent);
         }
 
         public PlayerEventLogView CreatePlayerEventLogView(Transform parent)

@@ -9,6 +9,7 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace DungeonInn.Editor
@@ -37,7 +38,7 @@ namespace DungeonInn.Editor
         const string ArrowProjectilePrefabPath = WorldPrefabDirectory + "/ArrowProjectileView.prefab";
         const string ScytheAreaEffectPrefabPath = WorldPrefabDirectory + "/ScytheAreaEffectView.prefab";
         const string ActorStatusViewPrefabPath = GameHUDPrefabDirectory + "/ActorStatusView.prefab";
-        const string ActorDetailPopupPrefabPath = GameHUDPrefabDirectory + "/ActorDetailPopup.prefab";
+        const string SelectedActorInspectorViewPrefabPath = GameHUDPrefabDirectory + "/SelectedActorInspectorView.prefab";
         const string PlayerEventLogViewPrefabPath = GameHUDPrefabDirectory + "/PlayerEventLogView.prefab";
         const string WorldHudViewPrefabPath = GameHUDPrefabDirectory + "/WorldHudView.prefab";
         const string InnStatusPanelViewPrefabPath = GameHUDPrefabDirectory + "/InnStatusPanelView.prefab";
@@ -70,7 +71,7 @@ namespace DungeonInn.Editor
                 AssetDatabase.AssetPathExists(ArrowProjectilePrefabPath) &&
                 AssetDatabase.AssetPathExists(ScytheAreaEffectPrefabPath) &&
                 AssetDatabase.AssetPathExists(ActorStatusViewPrefabPath) &&
-                AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath) &&
+                AssetDatabase.AssetPathExists(SelectedActorInspectorViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(PlayerEventLogViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(WorldHudViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(InnStatusPanelViewPrefabPath) &&
@@ -80,11 +81,11 @@ namespace DungeonInn.Editor
                 AssetDatabase.AssetPathExists(MonsterOrcVisualDefinitionPath) &&
                 AssetDatabase.AssetPathExists(MonsterOgreVisualDefinitionPath) &&
                 AssetDatabase.AssetPathExists(MonsterGoblinArcherVisualDefinitionPath);
-            if (!AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath) ||
-                !IsActorDetailPopupPrefabWired())
+            if (!AssetDatabase.AssetPathExists(SelectedActorInspectorViewPrefabPath) ||
+                !IsSelectedActorInspectorViewPrefabWired())
             {
                 Debug.LogWarning(
-                    "[DungeonInn] ActorDetailPopup prefab is missing or not wired. Run DungeonInn/Setup Visual Assets to apply setup.");
+                    "[DungeonInn] SelectedActorInspectorView prefab is missing or not wired. Run DungeonInn/Setup Visual Assets to apply setup.");
             }
 
             if (!assetsExist)
@@ -105,24 +106,20 @@ namespace DungeonInn.Editor
             return assetsExist;
         }
 
-        static bool IsActorDetailPopupPrefabWired()
+        static bool IsSelectedActorInspectorViewPrefabWired()
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ActorDetailPopupPrefabPath);
-            var popup = prefab != null ? prefab.GetComponent<ActorDetailPopup>() : null;
-            if (popup == null)
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(SelectedActorInspectorViewPrefabPath);
+            var view = prefab != null ? prefab.GetComponent<SelectedActorInspectorView>() : null;
+            if (view == null)
             {
                 return false;
             }
 
-            var serializedPopup = new SerializedObject(popup);
-            return serializedPopup.FindProperty("nameText").objectReferenceValue != null &&
-                serializedPopup.FindProperty("levelText").objectReferenceValue != null &&
-                serializedPopup.FindProperty("hpText").objectReferenceValue != null &&
-                serializedPopup.FindProperty("mpText").objectReferenceValue != null &&
-                serializedPopup.FindProperty("fatigueText").objectReferenceValue != null &&
-                serializedPopup.FindProperty("goldText").objectReferenceValue != null &&
-                AreObjectArrayElementsAssigned(serializedPopup.FindProperty("statTexts"), 6) &&
-                AreObjectArrayElementsAssigned(serializedPopup.FindProperty("equipmentTexts"), 3);
+            using var serializedView = new SerializedObject(view);
+            return AreObjectArrayElementsAssigned(serializedView.FindProperty("statRows"), 6) &&
+                AreObjectArrayElementsAssigned(serializedView.FindProperty("equipmentRows"), 3) &&
+                AreObjectArrayElementsAssigned(serializedView.FindProperty("inventoryRows"), 12) &&
+                AreObjectArrayElementsAssigned(serializedView.FindProperty("effectRows"), 8);
         }
 
         static void SetupAddressables()
@@ -158,7 +155,7 @@ namespace DungeonInn.Editor
             CreateOrLoadProjectileViewPrefab();
             CreateOrLoadAreaEffectViewPrefab();
             CreateOrLoadActorStatusViewPrefab();
-            CreateOrLoadActorDetailPopupPrefab();
+            CreateOrLoadSelectedActorInspectorViewPrefab();
             CreateOrLoadPlayerEventLogViewPrefab();
             CreateOrLoadWorldHudViewPrefab();
             CreateOrUpdateActorVisualDefinitions();
@@ -323,29 +320,29 @@ namespace DungeonInn.Editor
             return savedPrefab != null ? savedPrefab.GetComponent<ActorStatusView>() : null;
         }
 
-        static ActorDetailPopup CreateOrLoadActorDetailPopupPrefab()
+        static SelectedActorInspectorView CreateOrLoadSelectedActorInspectorViewPrefab()
         {
-            EnsureDirectory(WorldPrefabDirectory);
-            var prefabExists = AssetDatabase.AssetPathExists(ActorDetailPopupPrefabPath);
-            var popupObject = prefabExists
-                ? PrefabUtility.LoadPrefabContents(ActorDetailPopupPrefabPath)
-                : new GameObject("ActorDetailPopup", typeof(RectTransform));
+            EnsureDirectory(GameHUDPrefabDirectory);
+            var prefabExists = AssetDatabase.AssetPathExists(SelectedActorInspectorViewPrefabPath);
+            var viewObject = prefabExists
+                ? PrefabUtility.LoadPrefabContents(SelectedActorInspectorViewPrefabPath)
+                : new GameObject("SelectedActorInspectorView", typeof(RectTransform));
 
-            ConfigureActorDetailPopupPrefab(popupObject);
-            var savedPrefab = PrefabUtility.SaveAsPrefabAsset(popupObject, ActorDetailPopupPrefabPath);
+            ConfigureSelectedActorInspectorViewPrefab(viewObject);
+            var savedPrefab = PrefabUtility.SaveAsPrefabAsset(viewObject, SelectedActorInspectorViewPrefabPath);
 
             if (prefabExists)
             {
-                PrefabUtility.UnloadPrefabContents(popupObject);
+                PrefabUtility.UnloadPrefabContents(viewObject);
             }
             else
             {
-                Object.DestroyImmediate(popupObject);
+                Object.DestroyImmediate(viewObject);
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[DungeonInn] Updated {ActorDetailPopupPrefabPath}");
-            return savedPrefab != null ? savedPrefab.GetComponent<ActorDetailPopup>() : null;
+            Debug.Log($"[DungeonInn] Updated {SelectedActorInspectorViewPrefabPath}");
+            return savedPrefab != null ? savedPrefab.GetComponent<SelectedActorInspectorView>() : null;
         }
 
         static PlayerEventLogView CreateOrLoadPlayerEventLogViewPrefab()
@@ -384,13 +381,24 @@ namespace DungeonInn.Editor
             return savedPrefab != null ? savedPrefab.GetComponent<WorldHudView>() : null;
         }
 
-        static void ConfigureActorDetailPopupPrefab(GameObject popupObject)
+        static void ConfigureSelectedActorInspectorViewPrefab(GameObject viewObject)
         {
-            popupObject.name = "ActorDetailPopup";
-            var rootRect = popupObject.GetComponent<RectTransform>();
+            const int statRowCount = 6;
+            const int equipmentRowCount = 3;
+            const int inventoryRowCount = 12;
+            const int effectRowCount = 8;
+            var panelColor = new Color(0.05f, 0.06f, 0.07f, 0.86f);
+            var gaugeBackgroundColor = new Color(0.10f, 0.11f, 0.12f, 1f);
+            var headerTextColor = new Color(0.95f, 0.94f, 0.88f, 1f);
+            var bodyTextColor = new Color(0.82f, 0.84f, 0.84f, 1f);
+            var mutedTextColor = new Color(0.57f, 0.60f, 0.61f, 1f);
+            var gaugeTextColor = new Color(0.94f, 0.94f, 0.90f, 1f);
+
+            viewObject.name = "SelectedActorInspectorView";
+            var rootRect = viewObject.GetComponent<RectTransform>();
             if (rootRect == null)
             {
-                rootRect = popupObject.AddComponent<RectTransform>();
+                rootRect = viewObject.AddComponent<RectTransform>();
             }
 
             while (0 < rootRect.childCount)
@@ -398,185 +406,193 @@ namespace DungeonInn.Editor
                 Object.DestroyImmediate(rootRect.GetChild(0).gameObject);
             }
 
-            rootRect.sizeDelta = new Vector2(240f, 210f);
-            rootRect.pivot = new Vector2(0f, 0.5f);
-            var popup = popupObject.GetComponent<ActorDetailPopup>();
-            if (popup == null)
+            rootRect.sizeDelta = new Vector2(360f, 640f);
+            rootRect.anchorMin = new Vector2(0f, 1f);
+            rootRect.anchorMax = new Vector2(0f, 1f);
+            rootRect.pivot = new Vector2(0f, 1f);
+            rootRect.anchoredPosition = new Vector2(16f, -16f);
+            var image = viewObject.GetComponent<Image>();
+            if (image == null)
             {
-                popup = popupObject.AddComponent<ActorDetailPopup>();
+                image = viewObject.AddComponent<Image>();
             }
 
-            var bodyColor = new Color(0.9f, 0.9f, 0.9f, 1f);
-            var statColor = new Color(0.82f, 0.9f, 1f, 1f);
-            var equipmentColor = new Color(0.86f, 0.86f, 0.86f, 1f);
-            var nameText = CreateActorDetailPopupText(
-                rootRect,
-                "NameText",
-                "Name",
-                new Vector2(8f, -8f),
-                new Vector2(224f, 20f),
-                18,
-                new Color(0.95f, 0.95f, 0.95f, 1f));
-            var levelText = CreateActorDetailPopupText(
-                rootRect,
-                "LevelText",
-                "Lv.1",
-                new Vector2(8f, -30f),
-                new Vector2(104f, 18f),
-                14,
-                bodyColor);
-            var hpText = CreateActorDetailPopupText(
-                rootRect,
-                "HpText",
-                "HP 0/0",
-                new Vector2(8f, -50f),
-                new Vector2(104f, 18f),
-                14,
-                bodyColor);
-            var mpText = CreateActorDetailPopupText(
-                rootRect,
-                "MpText",
-                "MP 0/0",
-                new Vector2(120f, -50f),
-                new Vector2(104f, 18f),
-                14,
-                bodyColor);
-            var fatigueText = CreateActorDetailPopupText(
-                rootRect,
-                "FatigueText",
-                "Fatigue 0",
-                new Vector2(8f, -70f),
-                new Vector2(104f, 18f),
-                14,
-                bodyColor);
-            var goldText = CreateActorDetailPopupText(
-                rootRect,
-                "GoldText",
-                "Gold 0",
-                new Vector2(120f, -70f),
-                new Vector2(104f, 18f),
-                14,
-                bodyColor);
-            var statTexts = new[]
+            image.color = panelColor;
+            var fitter = viewObject.GetComponent<ContentSizeFitter>();
+            if (fitter == null)
             {
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "StatStrengthText",
-                    "STR 0",
-                    new Vector2(8f, -96f),
-                    new Vector2(68f, 18f),
-                    13,
-                    statColor),
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "StatDexterityText",
-                    "DEX 0",
-                    new Vector2(84f, -96f),
-                    new Vector2(68f, 18f),
-                    13,
-                    statColor),
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "StatConstitutionText",
-                    "CON 0",
-                    new Vector2(160f, -96f),
-                    new Vector2(68f, 18f),
-                    13,
-                    statColor),
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "StatIntelligenceText",
-                    "INT 0",
-                    new Vector2(8f, -116f),
-                    new Vector2(68f, 18f),
-                    13,
-                    statColor),
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "StatWisdomText",
-                    "WIS 0",
-                    new Vector2(84f, -116f),
-                    new Vector2(68f, 18f),
-                    13,
-                    statColor),
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "StatCharismaText",
-                    "CHA 0",
-                    new Vector2(160f, -116f),
-                    new Vector2(68f, 18f),
-                    13,
-                    statColor)
-            };
-            var equipmentTexts = new[]
-            {
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "EquipmentWeaponText",
-                    "Weapon -",
-                    new Vector2(8f, -148f),
-                    new Vector2(104f, 18f),
-                    13,
-                    equipmentColor),
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "EquipmentArmorText",
-                    "Armor -",
-                    new Vector2(120f, -148f),
-                    new Vector2(104f, 18f),
-                    13,
-                    equipmentColor),
-                CreateActorDetailPopupText(
-                    rootRect,
-                    "EquipmentAccessoryText",
-                    "Accessory -",
-                    new Vector2(8f, -168f),
-                    new Vector2(216f, 18f),
-                    13,
-                    equipmentColor)
-            };
+                fitter = viewObject.AddComponent<ContentSizeFitter>();
+            }
 
-            var serializedPopup = new SerializedObject(popup);
-            serializedPopup.FindProperty("popupOffsetX").floatValue = 120f;
-            serializedPopup.FindProperty("nameText").objectReferenceValue = nameText;
-            serializedPopup.FindProperty("levelText").objectReferenceValue = levelText;
-            serializedPopup.FindProperty("hpText").objectReferenceValue = hpText;
-            serializedPopup.FindProperty("mpText").objectReferenceValue = mpText;
-            serializedPopup.FindProperty("fatigueText").objectReferenceValue = fatigueText;
-            serializedPopup.FindProperty("goldText").objectReferenceValue = goldText;
-            AssignObjectArray(serializedPopup.FindProperty("statTexts"), statTexts);
-            AssignObjectArray(serializedPopup.FindProperty("equipmentTexts"), equipmentTexts);
-            serializedPopup.ApplyModifiedPropertiesWithoutUndo();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var group = viewObject.GetComponent<VerticalLayoutGroup>();
+            if (group == null)
+            {
+                group = viewObject.AddComponent<VerticalLayoutGroup>();
+            }
+
+            group.childControlWidth = true;
+            group.childControlHeight = true;
+            group.childForceExpandWidth = true;
+            group.childForceExpandHeight = false;
+            group.spacing = 8f;
+            group.padding = new RectOffset(14, 14, 12, 12);
+            var view = viewObject.GetComponent<SelectedActorInspectorView>();
+            if (view == null)
+            {
+                view = viewObject.AddComponent<SelectedActorInspectorView>();
+            }
+
+            var titleText = CreateSelectedActorInspectorText("Title", rootRect, 20, headerTextColor, 1);
+            var roleText = CreateSelectedActorInspectorText("Role", rootRect, 12, mutedTextColor, 0);
+            var levelText = CreateSelectedActorInspectorText("Level", rootRect, 13, bodyTextColor, 0);
+            var hpGauge = CreateSelectedActorInspectorGauge(rootRect, "HPGauge", gaugeBackgroundColor, gaugeTextColor);
+            var mpGauge = CreateSelectedActorInspectorGauge(rootRect, "MPGauge", gaugeBackgroundColor, gaugeTextColor);
+            var locationText = CreateSelectedActorInspectorText("Location", rootRect, 12, bodyTextColor, 0);
+            var goalText = CreateSelectedActorInspectorText("Goal", rootRect, 12, bodyTextColor, 0);
+            var conditionText = CreateSelectedActorInspectorText("Condition", rootRect, 12, bodyTextColor, 0);
+            var goldText = CreateSelectedActorInspectorText("Gold", rootRect, 12, bodyTextColor, 0);
+            var statRows = CreateSelectedActorInspectorSection(rootRect, "Stats", statRowCount, bodyTextColor, headerTextColor, out var statTexts);
+            var equipmentRows = CreateSelectedActorInspectorSection(rootRect, "Equipment", equipmentRowCount, bodyTextColor, headerTextColor, out var equipmentTexts);
+            var inventoryRows = CreateSelectedActorInspectorSection(rootRect, "Items", inventoryRowCount, bodyTextColor, headerTextColor, out var inventoryTexts);
+            var effectRows = CreateSelectedActorInspectorSection(rootRect, "Effects", effectRowCount, bodyTextColor, headerTextColor, out var effectTexts);
+
+            using var serializedView = new SerializedObject(view);
+            serializedView.FindProperty("titleText").objectReferenceValue = titleText;
+            serializedView.FindProperty("roleText").objectReferenceValue = roleText;
+            serializedView.FindProperty("levelText").objectReferenceValue = levelText;
+            serializedView.FindProperty("locationText").objectReferenceValue = locationText;
+            serializedView.FindProperty("goalText").objectReferenceValue = goalText;
+            serializedView.FindProperty("conditionText").objectReferenceValue = conditionText;
+            serializedView.FindProperty("goldText").objectReferenceValue = goldText;
+            serializedView.FindProperty("hpGauge").objectReferenceValue = hpGauge;
+            serializedView.FindProperty("mpGauge").objectReferenceValue = mpGauge;
+            AssignObjectArray(serializedView.FindProperty("statRows"), statRows);
+            AssignObjectArray(serializedView.FindProperty("statRowTexts"), statTexts);
+            AssignObjectArray(serializedView.FindProperty("equipmentRows"), equipmentRows);
+            AssignObjectArray(serializedView.FindProperty("equipmentRowTexts"), equipmentTexts);
+            AssignObjectArray(serializedView.FindProperty("inventoryRows"), inventoryRows);
+            AssignObjectArray(serializedView.FindProperty("inventoryRowTexts"), inventoryTexts);
+            AssignObjectArray(serializedView.FindProperty("effectRows"), effectRows);
+            AssignObjectArray(serializedView.FindProperty("effectRowTexts"), effectTexts);
+            serializedView.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        static Component CreateActorDetailPopupText(
+        static RectTransform CreateSelectedActorInspectorVerticalGroup(
+            string objectName,
+            Transform parent,
+            float horizontalPadding,
+            float verticalPadding,
+            float spacing)
+        {
+            var rectTransform = CreateSelectedActorInspectorRectTransform(objectName, parent);
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+            var group = rectTransform.gameObject.AddComponent<VerticalLayoutGroup>();
+            group.childControlWidth = true;
+            group.childControlHeight = true;
+            group.childForceExpandWidth = true;
+            group.childForceExpandHeight = false;
+            group.spacing = spacing;
+            group.padding = new RectOffset(
+                Mathf.RoundToInt(horizontalPadding),
+                Mathf.RoundToInt(horizontalPadding),
+                Mathf.RoundToInt(verticalPadding),
+                Mathf.RoundToInt(verticalPadding));
+            return rectTransform;
+        }
+
+        static GameObject[] CreateSelectedActorInspectorSection(
+            Transform parent,
+            string title,
+            int rowCount,
+            Color bodyTextColor,
+            Color headerTextColor,
+            out Component[] rowTexts)
+        {
+            var section = CreateSelectedActorInspectorVerticalGroup(title, parent, 0f, 0f, 3f);
+            SetText(CreateSelectedActorInspectorText($"{title}Header", section, 12, headerTextColor, 1), title);
+            var rows = new GameObject[rowCount];
+            rowTexts = new Component[rowCount];
+            for (var index = 0; index < rowCount; index++)
+            {
+                var rowText = CreateSelectedActorInspectorText(
+                    $"{title}Row{index + 1:00}",
+                    section,
+                    12,
+                    bodyTextColor,
+                    0);
+                SetText(rowText, string.Empty);
+                rows[index] = rowText.gameObject;
+                rowTexts[index] = rowText;
+            }
+
+            return rows;
+        }
+
+        static ValueGaugeView CreateSelectedActorInspectorGauge(
             Transform parent,
             string objectName,
-            string text,
-            Vector2 anchoredPosition,
-            Vector2 size,
-            int fontSize,
-            Color color)
+            Color backgroundColor,
+            Color textColor)
         {
-            var textType = ResolveTextMeshProType();
-            var textObject = new GameObject(objectName, typeof(RectTransform));
-            var rectTransform = textObject.GetComponent<RectTransform>();
-            rectTransform.SetParent(parent, false);
-            rectTransform.anchorMin = new Vector2(0f, 1f);
-            rectTransform.anchorMax = new Vector2(0f, 1f);
-            rectTransform.pivot = new Vector2(0f, 1f);
-            rectTransform.anchoredPosition = anchoredPosition;
-            rectTransform.sizeDelta = size;
-            var label = (Component)textObject.AddComponent(textType);
-            var serializedLabel = new SerializedObject(label);
-            serializedLabel.FindProperty("m_text").stringValue = text;
-            serializedLabel.FindProperty("m_fontSize").floatValue = fontSize;
-            serializedLabel.FindProperty("m_fontColor").colorValue = color;
-            serializedLabel.FindProperty("m_RaycastTarget").boolValue = false;
-            serializedLabel.FindProperty("m_HorizontalAlignment").intValue = 1;
-            serializedLabel.FindProperty("m_VerticalAlignment").intValue = 256;
-            serializedLabel.ApplyModifiedPropertiesWithoutUndo();
-            return label;
+            var gaugeRoot = CreateSelectedActorInspectorRectTransform(objectName, parent);
+            var layout = gaugeRoot.gameObject.AddComponent<LayoutElement>();
+            layout.minHeight = 20f;
+            layout.preferredHeight = 20f;
+            var background = CreateSelectedActorInspectorGaugeLayer("Background", gaugeRoot, false);
+            background.color = backgroundColor;
+            var fill = CreateSelectedActorInspectorGaugeLayer("Fill", gaugeRoot, true);
+            var valueText = CreateSelectedActorInspectorText("Value", gaugeRoot, 12, textColor, 0);
+            Stretch((RectTransform)valueText.transform);
+            SetTextAlignment(valueText, 2, 512);
+            var gauge = gaugeRoot.gameObject.AddComponent<ValueGaugeView>();
+            using var serializedGauge = new SerializedObject(gauge);
+            serializedGauge.FindProperty("fillImage").objectReferenceValue = fill;
+            serializedGauge.FindProperty("valueText").objectReferenceValue = valueText;
+            serializedGauge.ApplyModifiedPropertiesWithoutUndo();
+            return gauge;
+        }
+
+        static Image CreateSelectedActorInspectorGaugeLayer(string objectName, Transform parent, bool filled)
+        {
+            var rectTransform = CreateSelectedActorInspectorRectTransform(objectName, parent);
+            Stretch(rectTransform);
+            var image = rectTransform.gameObject.AddComponent<Image>();
+            if (filled)
+            {
+                image.type = Image.Type.Filled;
+                image.fillMethod = Image.FillMethod.Horizontal;
+                image.fillOrigin = (int)Image.OriginHorizontal.Left;
+                image.fillClockwise = true;
+            }
+
+            return image;
+        }
+
+        static Component CreateSelectedActorInspectorText(
+            string objectName,
+            Transform parent,
+            int fontSize,
+            Color color,
+            int fontStyle)
+        {
+            var rectTransform = CreateSelectedActorInspectorRectTransform(objectName, parent);
+            var text = (Component)rectTransform.gameObject.AddComponent(ResolveTextMeshProType());
+            var serializedText = new SerializedObject(text);
+            SetFloat(serializedText, "m_fontSize", fontSize);
+            SetColor(serializedText, "m_fontColor", color);
+            SetInt(serializedText, "m_FontStyle", fontStyle);
+            SetBool(serializedText, "m_RaycastTarget", false);
+            SetInt(serializedText, "m_textWrappingMode", 0);
+            SetInt(serializedText, "m_overflowMode", 1);
+            serializedText.ApplyModifiedPropertiesWithoutUndo();
+            var layout = rectTransform.gameObject.AddComponent<LayoutElement>();
+            layout.minHeight = fontSize + 6f;
+            return text;
         }
 
         static Type ResolveTextMeshProType()
@@ -590,7 +606,79 @@ namespace DungeonInn.Editor
             return textType;
         }
 
-        static void AssignObjectArray(SerializedProperty property, Component[] values)
+        static void SetText(Component text, string value)
+        {
+            var serializedText = new SerializedObject(text);
+            var property = serializedText.FindProperty("m_text");
+            if (property != null)
+            {
+                property.stringValue = value;
+            }
+
+            serializedText.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void SetTextAlignment(Component text, int horizontalAlignment, int verticalAlignment)
+        {
+            var serializedText = new SerializedObject(text);
+            SetInt(serializedText, "m_HorizontalAlignment", horizontalAlignment);
+            SetInt(serializedText, "m_VerticalAlignment", verticalAlignment);
+            serializedText.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void SetFloat(SerializedObject serializedObject, string propertyName, float value)
+        {
+            var property = serializedObject.FindProperty(propertyName);
+            if (property != null)
+            {
+                property.floatValue = value;
+            }
+        }
+
+        static void SetInt(SerializedObject serializedObject, string propertyName, int value)
+        {
+            var property = serializedObject.FindProperty(propertyName);
+            if (property != null)
+            {
+                property.intValue = value;
+            }
+        }
+
+        static void SetBool(SerializedObject serializedObject, string propertyName, bool value)
+        {
+            var property = serializedObject.FindProperty(propertyName);
+            if (property != null)
+            {
+                property.boolValue = value;
+            }
+        }
+
+        static void SetColor(SerializedObject serializedObject, string propertyName, Color value)
+        {
+            var property = serializedObject.FindProperty(propertyName);
+            if (property != null)
+            {
+                property.colorValue = value;
+            }
+        }
+
+        static RectTransform CreateSelectedActorInspectorRectTransform(string objectName, Transform parent)
+        {
+            var gameObject = new GameObject(objectName, typeof(RectTransform));
+            gameObject.transform.SetParent(parent, false);
+            return (RectTransform)gameObject.transform;
+        }
+
+        static void Stretch(RectTransform rectTransform)
+        {
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+        }
+
+        static void AssignObjectArray<T>(SerializedProperty property, T[] values)
+            where T : Object
         {
             property.arraySize = values.Length;
             for (var i = 0; i < values.Length; i++)
@@ -776,7 +864,7 @@ namespace DungeonInn.Editor
             MarkAssetAddressable(settings, group, ArrowProjectilePrefabPath, "World/Projectile/Arrow");
             MarkAssetAddressable(settings, group, ScytheAreaEffectPrefabPath, "World/AreaEffect/Scythe");
             MarkAssetAddressable(settings, group, ActorStatusViewPrefabPath, "GameHUD/UI/ActorStatusView");
-            MarkAssetAddressable(settings, group, ActorDetailPopupPrefabPath, "GameHUD/UI/ActorDetailPopup");
+            MarkAssetAddressable(settings, group, SelectedActorInspectorViewPrefabPath, "GameHUD/UI/SelectedActorInspectorView");
             MarkAssetAddressable(settings, group, PlayerEventLogViewPrefabPath, "GameHUD/UI/PlayerEventLogView");
             MarkAssetAddressable(settings, group, WorldHudViewPrefabPath, "GameHUD/UI/WorldHudView");
             MarkAssetAddressable(settings, group, InnStatusPanelViewPrefabPath, "GameHUD/UI/InnStatusPanelView");

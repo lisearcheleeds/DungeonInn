@@ -26,6 +26,8 @@
 - [ ] 一般パターンに反する意図的設計を、根拠記録なしに追加していない
 - [ ] DI constructor（非MonoBehaviour）内で UnityEngine.Object（Texture2D / Sprite / Material / Mesh / GameObject 等）を生成していない
 - [ ] LifetimeScope / Installer にゲームコンテンツ Prefab、UI View Prefab、Popup View 実体を `SerializedField` していない
+- [ ] MonoBehaviour が自身の必須 component を `GetComponent` / `TryGetComponent` で取得していない。原則 `SerializedField` で参照し、例外は理由をコードコメントに残している
+- [ ] Prefab 全体を管理する親スクリプトが、管理対象の子 GameObject / UI component / scene-owned component を暗黙検索せず、原則 `SerializedField` で明示参照している
 - [ ] View 実体を直接 DI 登録せず、Presenter / Pool / Factory の責務境界を通して操作している
 - [ ] 別 Scene / 別 LifetimeScope が所有する Canvas / View / Presenter / Pool / scene-owned component を直接参照・操作していない
 - [ ] 既存 guideline 上で適切な命名・責務・設定配置が判断できるのに、「最小差分」を理由に曖昧な旧名・不適切な責務・互換用 API を残していない
@@ -53,12 +55,87 @@
 - [ ] UnityEngine.Object を保持するコレクションで、スコープ無効化（InvalidateXxx）と Dispose のクリーンアップパスが対称に実装されているか確認した
 - [ ] Fallback / Placeholder アセット生成の定数・ロジックが複数クラスに重複していないか確認した
 - [ ] LifetimeScope がコンテンツ catalog 化していないか確認した
+- [ ] MonoBehaviour の `GetComponent` / `TryGetComponent` / `GetComponentInChildren` / `GetComponentsInChildren` が、`SerializedField` で表現すべき参照を隠していないか確認した
+- [ ] Prefab 管理用親スクリプトの子参照が `SerializedField` で明示され、例外には理由コメントがあることを確認した
 - [ ] Popup / HUD / View の操作入口が Presenter / Pool / Factory に限定されているか確認した
 - [ ] Scene / LifetimeScope 境界を跨ぐ参照が、具象 View ではなく抽象 interface / Application service / 所有者側 Presenter 経由になっている
 - [ ] 最小差分を理由に、本文ルールに沿ったリネーム・責務移動・不要 API 削除を省略していない
 - [ ] System と Content の境界が名前・namespace・配置・依存方向から読み取れる
 - [ ] Runtime 配置が milestone / task / temporary など作業過程ではなく、機能責務・所有 Scene / Module・レイヤー境界で決まっている
 - [ ] 既存実装に合わせる点と、破壊的に直す点を区別して確認した
+
+---
+
+## SerializedField / GetComponent の基準ポリシー
+
+Unity の component 参照は、Prefab 上の契約として Inspector で見える形にする。
+Runtime で component を探す実装は、依存関係をコードの中に隠し、Prefab 編集時の破損検出を遅らせる。
+そのため、MonoBehaviour の必須依存は原則 `SerializedField` で保持し、Prefab / Scene 上で明示的に配線する。
+
+### ハードゲート
+
+- 自身の GameObject に付く必須 component を、`Awake` / `Start` / 初期化処理で `GetComponent` / `TryGetComponent` して取得する実装は禁止する。原則 `SerializedField` で参照する。
+- Prefab 全体を管理する親スクリプトは、管理対象の子 GameObject、`RectTransform`、`TextMeshProUGUI`、`Image`、`Button`、独自 View component などを `SerializedField` で保持することを強く推奨する。`GetComponentInChildren` / 名前検索 / transform traversal による暗黙取得を標準実装にしない。
+- `SerializedField` で設定できない場合は、そうでなければならない理由をコード内コメントに残す。コメントは「なぜ serialized reference では成立しないか」を説明すること。
+- 「既存 Prefab の配線が面倒」「差分を小さくしたい」「動的生成の方が早い」は例外理由にならない。
+
+### 許容される例外
+
+- `[RequireComponent]` と組み合わせた同一 GameObject の optional fallback で、既存 scene / prefab の移行期間に限定され、理由コメントと削除条件が明記されている場合。
+- 実行時に生成される一時 GameObject で、Prefab / Scene 上に serialized reference を置けない場合。
+- Editor / OneShot / Prefab 生成スクリプトが、Prefab を構築・検証するために component を取得する場合。
+- 外部 package / Unity API が実行時に component を追加し、その参照を callback で受け取れない場合。
+
+### Before
+
+```csharp
+public sealed class ActorStatusView : MonoBehaviour
+{
+    Slider hpGauge;
+
+    void Awake()
+    {
+        hpGauge = GetComponentInChildren<Slider>();
+    }
+}
+```
+
+この実装では、Prefab のどの `Slider` が HP 用なのかが Inspector から分からず、子階層変更で壊れる。
+
+### After
+
+```csharp
+public sealed class ActorStatusView : MonoBehaviour
+{
+    [SerializeField] Slider hpGauge;
+
+    void Awake()
+    {
+        Debug.Assert(hpGauge != null, $"{nameof(hpGauge)} is not assigned.", this);
+    }
+}
+```
+
+Prefab の契約が明示され、配線漏れは PlayMode 初期化時に発見できる。
+
+### 例外コメントの例
+
+```csharp
+void Awake()
+{
+    // This component is added by the third-party runtime before Awake.
+    // It cannot be assigned in the prefab, so keep this lookup local and validated.
+    runtimeHandle = GetComponent<ThirdPartyRuntimeHandle>();
+    Debug.Assert(runtimeHandle != null, $"{nameof(runtimeHandle)} is required.", this);
+}
+```
+
+### レビュー観点
+
+- `GetComponent` を見つけたら、まず `SerializedField` で表現できないか確認する
+- UI View / Prefab 親スクリプトが子 component を名前・順序・階層で探していないか確認する
+- 例外コメントが「なぜ必要か」「いつまで許容するか」を説明しているか確認する
+- Runtime View が Prefab 構築責務を持っていないか確認する。Prefab 構築は Editor / OneShot に寄せ、Runtime View は表示反映を担当する
 
 ---
 

@@ -14,7 +14,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 
             builder.Register<ActorHUDViewPool>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<WorldActorStatusPresenter>(Lifetime.Scoped).AsSelf();
-            builder.Register<ActorDetailPopupPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
+            builder.Register<SelectedActorInspectorPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<MinimapPresenter>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
             builder.Register<GameHudScreenStackViewDataFactory>(Lifetime.Scoped);
             builder.Register<GameHudWindowOpenService>(Lifetime.Scoped).AsImplementedInterfaces();

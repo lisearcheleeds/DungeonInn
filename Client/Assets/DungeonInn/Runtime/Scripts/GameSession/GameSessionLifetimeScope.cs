@@ -48,8 +48,8 @@ namespace DungeonInn.GameSession
                 .As<IActorSelectionReader>()
                 .AsSelf();
 
-            // === Application: Actor detail ===
-            builder.Register<GetActorDetailQuery>(Lifetime.Singleton);
+            // === Application: Selected actor inspector ===
+            builder.Register<GetSelectedActorInspectorQuery>(Lifetime.Singleton);
 
             // === Application: Player log ===
             builder.Register<PlayerEventLogFormatter>(Lifetime.Singleton);

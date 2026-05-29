@@ -10,7 +10,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
     {
         readonly GameHUDAddressableViewFactory viewFactory;
         readonly WorldActorStatusPresenter worldActorStatusPresenter;
-        readonly ActorDetailPopupPresenter actorDetailPopupPresenter;
+        readonly SelectedActorInspectorPresenter selectedActorInspectorPresenter;
         readonly PlayerGameEventLogPresenter playerGameEventLogPresenter;
         readonly WorldHudPresenter worldHudPresenter;
         readonly InnStatusPanelPresenter innStatusPanelPresenter;
@@ -21,7 +21,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         public GameHUDEntryPoint(
             GameHUDAddressableViewFactory viewFactory,
             WorldActorStatusPresenter worldActorStatusPresenter,
-            ActorDetailPopupPresenter actorDetailPopupPresenter,
+            SelectedActorInspectorPresenter selectedActorInspectorPresenter,
             PlayerGameEventLogPresenter playerGameEventLogPresenter,
             WorldHudPresenter worldHudPresenter,
             InnStatusPanelPresenter innStatusPanelPresenter,
@@ -30,8 +30,8 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
             this.worldActorStatusPresenter =
                 worldActorStatusPresenter ?? throw new ArgumentNullException(nameof(worldActorStatusPresenter));
-            this.actorDetailPopupPresenter =
-                actorDetailPopupPresenter ?? throw new ArgumentNullException(nameof(actorDetailPopupPresenter));
+            this.selectedActorInspectorPresenter =
+                selectedActorInspectorPresenter ?? throw new ArgumentNullException(nameof(selectedActorInspectorPresenter));
             this.playerGameEventLogPresenter =
                 playerGameEventLogPresenter ?? throw new ArgumentNullException(nameof(playerGameEventLogPresenter));
             this.worldHudPresenter = worldHudPresenter ?? throw new ArgumentNullException(nameof(worldHudPresenter));
@@ -43,7 +43,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
         public async UniTask StartAsync(CancellationToken cancellation)
         {
             await viewFactory.LoadAsync(cancellation);
-            actorDetailPopupPresenter.Initialize();
+            selectedActorInspectorPresenter.Initialize();
             playerGameEventLogPresenter.Initialize();
             worldHudPresenter.Initialize();
             innStatusPanelPresenter.Initialize();
@@ -58,7 +58,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD
                 return;
             }
 
-            actorDetailPopupPresenter.UpdatePopup();
+            selectedActorInspectorPresenter.UpdateInspector();
             worldActorStatusPresenter.UpdatePositions();
             worldHudPresenter.UpdateHud();
             innStatusPanelPresenter.UpdatePanel();
