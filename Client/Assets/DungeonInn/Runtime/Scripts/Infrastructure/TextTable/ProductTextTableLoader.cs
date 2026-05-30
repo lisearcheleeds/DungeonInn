@@ -1,15 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using LighthouseExtends.Font;
 using LighthouseExtends.TextTable;
 using UnityEngine;
-#if UNITY_WEBGL && !UNITY_EDITOR
-using UnityEngine.Networking;
-#endif
 using VContainer;
 
 namespace DungeonInn.Infrastructure.TextTable
@@ -27,58 +23,10 @@ namespace DungeonInn.Infrastructure.TextTable
         }
 
 #if UNITY_WEBGL && !UNITY_EDITOR
-        async UniTask<IReadOnlyDictionary<string, string>> ITextTableLoader.LoadAsync(string languageCode, CancellationToken cancellationToken)
+        UniTask<IReadOnlyDictionary<string, string>> ITextTableLoader.LoadAsync(string languageCode, CancellationToken cancellationToken)
         {
             var result = new Dictionary<string, string>();
-            var folderUrl = $"{UnityEngine.Application.streamingAssetsPath}/{TsvSubFolder}";
-
-            // Load domain list to enumerate TSV files (Directory.GetFiles is unavailable on WebGL)
-            var manifestUrl = $"{folderUrl}/TextTableDomains.txt";
-            string manifestContent;
-            using (var request = UnityWebRequest.Get(manifestUrl))
-            {
-                await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
-                if (request.result != UnityWebRequest.Result.Success)
-                {
-                    Debug.LogError($"[TextTable] Failed to load manifest: '{manifestUrl}'\n{request.error}");
-                    return result;
-                }
-                manifestContent = request.downloadHandler.text;
-            }
-
-            var domains = manifestContent.Split('\n')
-                .Select(line => line.Trim())
-                .Where(line => !string.IsNullOrEmpty(line))
-                .ToArray();
-
-            var tasks = domains.Select(domain => FetchTsvAsync($"{folderUrl}/{domain}.{languageCode}.tsv", cancellationToken));
-            var contents = await UniTask.WhenAll(tasks);
-
-            for (var i = 0; i < domains.Length; i++)
-            {
-                if (contents[i] == null)
-                {
-                    continue;
-                }
-
-                var fileName = $"{domains[i]}.{languageCode}.tsv";
-                try
-                {
-                    ParseTsv(contents[i], fileName, languageCode, result);
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogError($"[TextTable] Failed to parse TSV file: '{fileName}'\n{exception}");
-                }
-            }
-
-            if (result.Count == 0)
-            {
-                Debug.LogWarning($"[TextTable] No entries loaded for language '{languageCode}'. Folder: '{folderUrl}'");
-            }
-
-            PrewarmFontAtlas(languageCode, result);
-            return result;
+            return UniTask.FromResult<IReadOnlyDictionary<string, string>>(result);
         }
 #else
         UniTask<IReadOnlyDictionary<string, string>> ITextTableLoader.LoadAsync(string languageCode, CancellationToken cancellationToken)
@@ -152,15 +100,6 @@ namespace DungeonInn.Infrastructure.TextTable
 
             fontAsset.TryAddCharacters(uniqueChars.ToString());
         }
-
-#if UNITY_WEBGL && !UNITY_EDITOR
-        static async UniTask<string> FetchTsvAsync(string url, CancellationToken cancellationToken)
-        {
-            using var request = UnityWebRequest.Get(url);
-            await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
-            return request.result == UnityWebRequest.Result.Success ? request.downloadHandler.text : null;
-        }
-#endif
 
         static void ParseTsv(string content, string assetName, string languageCode, Dictionary<string, string> table)
         {
