@@ -7,6 +7,9 @@ using Cysharp.Threading.Tasks;
 using LighthouseExtends.Font;
 using LighthouseExtends.TextTable;
 using UnityEngine;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using UnityEngine.Networking;
+#endif
 using VContainer;
 
 namespace DungeonInn.Infrastructure.TextTable
