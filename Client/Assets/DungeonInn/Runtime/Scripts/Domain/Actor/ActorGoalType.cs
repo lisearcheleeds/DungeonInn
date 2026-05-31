@@ -7,6 +7,7 @@ namespace DungeonInn.Domain.Actor
         CollectItem,
         DefeatMonster,
         ReachFloor,
+        EarnMoney,
         WorkAtFacility,
         Patrol,
         Recover,

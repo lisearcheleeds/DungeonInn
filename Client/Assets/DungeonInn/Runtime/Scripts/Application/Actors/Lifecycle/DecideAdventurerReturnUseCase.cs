@@ -9,10 +9,6 @@ using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Common;
-using DungeonInn.Domain.Item;
-using DungeonInn.Domain.Map;
-using DungeonInn.Master;
 using VContainer;
 
 namespace DungeonInn.Application.Actors.Lifecycle
@@ -22,6 +18,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly IActorCombatService actorCombatService;
         readonly IEventPublisher eventPublisher;
         readonly AdventurerReturnTrackingService returnTrackingService;
+        readonly AdventureGoalProgressService goalProgressService;
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly RecoveryItemCandidateQuery recoveryItemCandidateQuery;
@@ -33,6 +30,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             IActorCombatService actorCombatService,
             IEventPublisher eventPublisher,
             AdventurerReturnTrackingService returnTrackingService,
+            AdventureGoalProgressService goalProgressService,
             ActorProcessingCandidateService candidateService,
             IWorldGameSettingsRepository worldGameSettingsRepository,
             RecoveryItemCandidateQuery recoveryItemCandidateQuery,
@@ -41,6 +39,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
             this.actorCombatService = actorCombatService ?? throw new ArgumentNullException(nameof(actorCombatService));
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.returnTrackingService = returnTrackingService ?? throw new ArgumentNullException(nameof(returnTrackingService));
+            this.goalProgressService = goalProgressService ?? throw new ArgumentNullException(nameof(goalProgressService));
             this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
@@ -135,7 +134,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         {
             var returnPolicySettings = worldGameSettingsRepository.GetAdventurerReturnPolicySettings();
             var score = 0;
-            var goalCompleted = TryCompleteGoal(actor);
+            var goalCompleted = goalProgressService.UpdateProgress(actor);
             if (goalCompleted)
             {
                 score += returnPolicySettings.GoalCompletedScore;
@@ -171,63 +170,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
 
             return new AdventurerReturnDecision(score, goalCompleted, reasonType);
-        }
-
-        bool TryCompleteGoal(Actor actor)
-        {
-            switch (actor.CurrentGoal.Type)
-            {
-                case ActorGoalType.LevelUp:
-                    return TryCompleteLevelUpGoal(actor);
-                case ActorGoalType.CollectItem:
-                    return TryCompleteCollectItemGoal(actor);
-                case ActorGoalType.DefeatMonster:
-                    return TryCompleteDefeatMonsterGoal(actor);
-                case ActorGoalType.ReachFloor:
-                    return TryCompleteReachFloorGoal(actor);
-                case ActorGoalType.None:
-                    return false;
-                default:
-                    return false;
-            }
-        }
-
-        bool TryCompleteLevelUpGoal(Actor actor)
-        {
-            if (!actorCombatService.HasParticipatedInCombat(actor.Id))
-            {
-                return false;
-            }
-
-            actor.CurrentGoal.SetProgress(Math.Max(1, actor.CurrentGoal.TargetCount));
-            return true;
-        }
-
-        static bool TryCompleteCollectItemGoal(Actor actor)
-        {
-            actor.Inventory.ItemCounts.TryGetValue(actor.CurrentGoal.TargetId, out var count);
-            actor.CurrentGoal.SetProgress(count);
-            return actor.CurrentGoal.IsCompleted();
-        }
-
-        bool TryCompleteDefeatMonsterGoal(Actor actor)
-        {
-            var count = returnTrackingService.GetDefeatedMonsterCount(actor.Id, actor.CurrentGoal.TargetId);
-            actor.CurrentGoal.SetProgress(count);
-            return actor.CurrentGoal.IsCompleted();
-        }
-
-        static bool TryCompleteReachFloorGoal(Actor actor)
-        {
-            if (actor.Position.LayerId.Equals(MapLayerId.Ground))
-            {
-                actor.CurrentGoal.SetProgress(0);
-                return false;
-            }
-
-            var progress = actor.CurrentGoal.TargetId <= actor.Position.LayerId.Value ? 1 : 0;
-            actor.CurrentGoal.SetProgress(progress);
-            return actor.CurrentGoal.IsCompleted();
         }
 
         static bool HasActiveRecoveryEffect(Actor actor)

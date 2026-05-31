@@ -228,7 +228,8 @@ View/
 - 通常攻撃: `CombatAttackOccurred`
 - 飛翔体命中: `ProjectileHit` → `CombatAttackOccurred`
 - 範囲効果命中: `AreaEffectHit` → ターゲットごとに `CombatAttackOccurred`
-- 撃破トランザクション: 直前の命中イベント → `CombatAttackOccurred` → `CombatEncounterEnded` → `ActorDefeated` → `ItemDropped` → `ExperienceGranted` → （任意）`ActorLeveledUp`
+- モンスター撃破トランザクション: 直前の命中イベント → `CombatAttackOccurred` → `CombatEncounterEnded` → `ActorDefeated` → 種族ドロップの `ItemDropped` → `ExperienceGranted` → （任意）`ActorLeveledUp`
+- 冒険者死亡復活トランザクション: 直前の命中イベント → `CombatAttackOccurred` → `CombatEncounterEnded` → `ActorDefeated` → 所持品 / 装備 / 所持金ロストの `ItemDropped` → `ActorReservedInn` → `ExperienceGranted` → （任意）`ActorLeveledUp`
 
 上記イベントは、所有 UseCase / Orchestrator がトランザクションを完了した後にのみグローバルバスに発行される。
 
@@ -240,6 +241,6 @@ View/
 
 1. 遭遇検出フェーズ: `DetectCombatEncounterUseCase` は同フレームの攻撃解決より先に実行される。グローバルイベントバスを通じて `CombatEncounterStarted` と `CombatEncounterEnded` を即座に発行する可能性があるため、遭遇開始 / 終了通知は同フレームの攻撃・ダメージ結果通知より先に届く。
 2. 通常攻撃フェーズ: `AdvanceCombatUseCase` が近接 / 直接武器攻撃を解決する。`CombatDamageResolver` が `CombatAttackOccurred` を `BufferedEventPublisher` に記録し、連鎖する戦闘効果で `ProjectileFired` や `AreaEffectCreated` も記録される場合がある。バッファは `AdvanceCombatUseCase` 終了時に一度フラッシュされる。
-3. 撃破解決フェーズ: 通常攻撃・飛翔体命中・範囲効果命中がターゲットの死亡を確認した場合、`ActorDefeatOrchestrator` が所有フェーズ内で実行される。現在の順序は、撃破されたアクターを攻撃していた攻撃者の `CombatEncounterEnded`・`ActorDefeated`・各ドロップの `ItemDropped`・`ExperienceGranted`・（任意）`ActorLeveledUp`。これらのイベントはバッファ済みであり、所有フェーズのフラッシュ時にのみ届く。
+3. 撃破解決フェーズ: 通常攻撃・飛翔体命中・範囲効果命中がターゲットの死亡を確認した場合、`ActorDefeatOrchestrator` が所有フェーズ内で実行される。モンスター撃破では、撃破されたアクターを攻撃していた攻撃者の `CombatEncounterEnded`・`ActorDefeated`・種族ドロップの `ItemDropped`・`ExperienceGranted`・（任意）`ActorLeveledUp` の順。冒険者死亡復活では、`CombatEncounterEnded`・`ActorDefeated`・所持品 / 装備 / 所持金ロストの `ItemDropped`・`ActorReservedInn`・`ExperienceGranted`・（任意）`ActorLeveledUp` の順。モンスターが冒険者を倒した場合も、攻撃者が存在するなら経験値報酬を得る。これらのイベントはバッファ済みであり、所有フェーズのフラッシュ時にのみ届く。
 4. 飛翔体フェーズ: `AdvanceProjectileUseCase` が通常攻撃の後に飛翔体を進行させる。命中時、`CombatEffectExecutor.ExecuteProjectileHit()` が `ProjectileHit` を記録し、リンクされた直接ダメージが `CombatAttackOccurred` を記録する。リンクされた効果で `ProjectileFired` や `AreaEffectCreated` などの追加イベントも記録される場合がある。撃破イベントは 3 の順序に従い、飛翔体フェーズ終了時に一度フラッシュされる。
 5. 範囲効果フェーズ: `AdvanceAreaEffectUseCase` が飛翔体の後に範囲効果を進行させる。各ターゲット命中につき、`CombatEffectExecutor.ExecuteAreaHit()` が `AreaEffectHit` を記録し、リンクされた直接ダメージが `CombatAttackOccurred` を記録する。撃破イベントは 3 の順序に従い、範囲効果フェーズ終了時に一度フラッシュされる。

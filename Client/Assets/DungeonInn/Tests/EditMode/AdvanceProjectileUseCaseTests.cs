@@ -219,7 +219,9 @@ namespace DungeonInn.Tests.EditMode
             IGameEventBus eventBus)
         {
             return new ActorDefeatOrchestrator(
-                new CombatDefeatResolver(combatService),
+                new CombatDefeatResolver(
+                    combatService,
+                    TestRuntimeServiceFactory.CreateAdventurerDeathRevivalService()),
                 CreateGrantExperienceUseCase(eventBus),
                 CreateDropItemUseCase(eventBus));
         }

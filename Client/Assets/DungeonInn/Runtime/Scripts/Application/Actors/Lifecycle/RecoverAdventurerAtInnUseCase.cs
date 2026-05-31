@@ -1,11 +1,10 @@
-using DungeonInn.Application.World;
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Economy;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
-using DungeonInn.Application.Economy;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Map;
@@ -21,7 +20,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly FacilityEffectService facilityEffectService;
-        readonly List<Guid> actorIdBuffer = new();
 
         [Inject]
         public RecoverAdventurerAtInnUseCase(
@@ -49,31 +47,21 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
 
             var guild = worldState.Guild;
-            candidateService.CollectRecoveryCandidates(actorIdBuffer);
-            foreach (var actorId in actorIdBuffer)
+            var actors = worldState.Actors;
+            foreach (var actor in actors)
             {
-                var actor = worldState.FindActor(actorId);
-                if (actor == null)
-                {
-                    candidateService.RemoveActor(actorId);
-                    continue;
-                }
-
                 if (actor.Behavior is not AdventurerBehavior behavior)
                 {
-                    candidateService.RemoveActor(actor.Id);
                     continue;
                 }
 
                 if (behavior.LifecycleState != AdventurerLifecycleState.Recovering)
                 {
-                    candidateService.ClearRecoveryCandidate(actor.Id);
                     continue;
                 }
 
                 if (!actor.Position.LayerId.Equals(MapLayerId.Ground))
                 {
-                    candidateService.ClearRecoveryCandidate(actor.Id);
                     continue;
                 }
 
@@ -87,6 +75,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         {
             if (!guild.TryGetActiveInnReservation(actor.Id, out var reservation))
             {
+                candidateService.MarkRecoveryCandidate(actor.Id);
                 return;
             }
 

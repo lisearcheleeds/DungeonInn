@@ -27,7 +27,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase;
         readonly UseDungeonStairOrchestrator useDungeonStairUseCase;
         readonly SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase;
-        readonly SelectDungeonExplorationGoalUseCase selectDungeonExplorationGoalUseCase;
+        readonly SelectAdventureGoalUseCase selectAdventureGoalUseCase;
         readonly IActorNavigationService navigationService;
         readonly IActorCombatService actorCombatService;
         readonly IGameRandom gameRandom;
@@ -37,13 +37,14 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly ActorViewDataStore actorViewDataStore;
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly ActorExplorationAchievementRegistry achievementRegistry;
 
         [Inject]
         public AdvanceActorLifecycleOrchestrator(
             MoveActorTowardDestinationUseCase moveActorTowardDestinationUseCase,
             UseDungeonStairOrchestrator useDungeonStairUseCase,
             SelectDungeonTargetFloorUseCase selectDungeonTargetFloorUseCase,
-            SelectDungeonExplorationGoalUseCase selectDungeonExplorationGoalUseCase,
+            SelectAdventureGoalUseCase selectAdventureGoalUseCase,
             IActorNavigationService navigationService,
             IActorCombatService actorCombatService,
             IGameRandom gameRandom,
@@ -52,7 +53,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             ActorSpatialIndexService actorSpatialIndexService,
             ActorViewDataStore actorViewDataStore,
             ActorProcessingCandidateService candidateService,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            ActorExplorationAchievementRegistry achievementRegistry)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -60,8 +62,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 ?? throw new ArgumentNullException(nameof(useDungeonStairUseCase));
             this.selectDungeonTargetFloorUseCase = selectDungeonTargetFloorUseCase
                 ?? throw new ArgumentNullException(nameof(selectDungeonTargetFloorUseCase));
-            this.selectDungeonExplorationGoalUseCase = selectDungeonExplorationGoalUseCase
-                ?? throw new ArgumentNullException(nameof(selectDungeonExplorationGoalUseCase));
+            this.selectAdventureGoalUseCase = selectAdventureGoalUseCase
+                ?? throw new ArgumentNullException(nameof(selectAdventureGoalUseCase));
             this.navigationService = navigationService
                 ?? throw new ArgumentNullException(nameof(navigationService));
             this.actorCombatService = actorCombatService
@@ -80,6 +82,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 ?? throw new ArgumentNullException(nameof(candidateService));
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.achievementRegistry = achievementRegistry ?? throw new ArgumentNullException(nameof(achievementRegistry));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -183,28 +186,12 @@ namespace DungeonInn.Application.Actors.Lifecycle
             var targetFloorDepth = await selectDungeonTargetFloorUseCase.ExecuteAsync(actor);
             behavior.SetTargetFloorDepth(targetFloorDepth);
 
-            var goal = await selectDungeonExplorationGoalUseCase.ExecuteAsync(
+            var goal = await selectAdventureGoalUseCase.ExecuteAsync(
                 worldState.Guild,
                 actor,
                 targetFloorDepth);
-            actor.ChangeGoal(ToActorGoal(goal));
-        }
-
-        static ActorGoal ToActorGoal(DungeonExplorationGoal goal)
-        {
-            switch (goal.Type)
-            {
-                case DungeonExplorationGoalType.Leveling:
-                    return new ActorGoal(ActorGoalType.LevelUp, 0, 1, 0);
-                case DungeonExplorationGoalType.CollectItem:
-                    return new ActorGoal(ActorGoalType.CollectItem, goal.TargetItemId, goal.TargetItemCount, 0);
-                case DungeonExplorationGoalType.DefeatMonster:
-                    return new ActorGoal(ActorGoalType.DefeatMonster, goal.TargetMonsterId, 1, 0);
-                case DungeonExplorationGoalType.ReachFloor:
-                    return new ActorGoal(ActorGoalType.ReachFloor, goal.TargetFloorId, 1, 0);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(goal));
-            }
+            actor.ChangeGoal(goal);
+            achievementRegistry.RecordAdventureStart(actor);
         }
 
         async UniTask AdvanceExploringAsync(

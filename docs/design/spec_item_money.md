@@ -126,19 +126,18 @@ Gold はアイテムの一種として統一的に扱う。
 | `MinCount` | `int` | 最小個数 |
 | `MaxCount` | `int` | 最大個数 |
 
-### IActorDropSource（Domain/Actor）
+### SpeciesMaster.SpeciesDrops（Master）
 
-```csharp
-interface IActorDropSource { IReadOnlyList<ActorDropEntry> DropTable; }
-```
+通常撃破時の種族由来ドロップは `SpeciesMaster.SpeciesDrops` に定義する。
 
-`MonsterBehavior` と `AdventurerBehavior` の両方が実装する。
-冒険者は現在 `DropTable` が空。将来的に冒険者ドロップを追加する場合は `DropTable` にエントリを追加するだけでよい。
+`MonsterBehavior` / `AdventurerBehavior` は `DropTable` を持たない。`DropItemUseCase` は撃破対象が Monster の場合のみ、撃破対象の `ActorArchetypeMaster.SpeciesId` から `SpeciesMaster` を解決し、`SpeciesDrops` を使ってドロップを生成する。
+
+冒険者の死亡時ロストは通常ドロップとは別の復活フローで扱う。`AdventurerDeathRevivalService` が、インベントリ内の全アイテム、装備中の武器 / 防具 / アクセサリ、`SpecialItemIds.Money` を死亡位置へ `ItemInstance` としてドロップする。
 
 ### DropItemUseCase（Application/UseCase）
 
 ```
-actor.Behavior is IActorDropSource → 各エントリを確率ロール → パスしたものを ItemInstance として WorldState に追加 → ItemDropped イベント発行
+defeatedActor.Behavior is MonsterBehavior → ActorArchetypeMaster から SpeciesMaster を解決 → SpeciesDrops の各エントリを確率ロール → パスしたものを ItemInstance として WorldState に追加 → ItemDropped イベント発行
 ```
 
 1. `IGameRandom.Next(0, 10000) / 10000f` で確率ロール
@@ -148,6 +147,8 @@ actor.Behavior is IActorDropSource → 各エントリを確率ロール → パ
 4. `new ItemInstance(Guid.NewGuid(), new ItemStack(itemId, count), position)` を生成
 5. `GameWorldState.AddItem(instance)` でワールド登録
 6. `ItemDropped` イベント発行
+
+冒険者の死亡復活時に落とす所持品 / 装備 / 所持金は、`DropItemUseCase` ではなく `AdventurerDeathRevivalService` が担当する。
 
 ---
 

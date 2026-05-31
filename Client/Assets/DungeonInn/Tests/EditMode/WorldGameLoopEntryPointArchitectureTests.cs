@@ -375,7 +375,9 @@ namespace DungeonInn.Tests.EditMode
             var completeActorSpawnUseCase = new CompleteActorSpawnUseCase(profileRegistry, eventBus);
             var actorFactory = new ActorFactory(masterRepository);
             var spawnTableResolver = new SpawnTableResolver(masterRepository);
-            var combatDefeatResolver = new CombatDefeatResolver(actorCombatService);
+            var combatDefeatResolver = new CombatDefeatResolver(
+                actorCombatService,
+                new AdventurerDeathRevivalService(gameClock, candidateService));
             var actorDefeatOrchestrator = new ActorDefeatOrchestrator(
                 combatDefeatResolver,
                 new GrantExperienceUseCase(masterRepository, eventBus),
@@ -430,7 +432,7 @@ namespace DungeonInn.Tests.EditMode
                         masterRepository,
                         new ActorCombatPowerCalculator(),
                         eventBus),
-                    new SelectDungeonExplorationGoalUseCase(1),
+                    new SelectAdventureGoalUseCase(masterRepository, 1),
                     navigationService,
                     actorCombatService,
                     new GameRandom(),
@@ -439,7 +441,8 @@ namespace DungeonInn.Tests.EditMode
                     actorSpatialIndexService,
                     actorViewDataStore,
                     TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                    new FixedWorldGameSettingsRepository()),
+                    new FixedWorldGameSettingsRepository(),
+                    achievementRegistry),
                 new DetectCombatEncounterUseCase(
                     actorCombatService,
                     actorSpatialIndexService,
@@ -487,6 +490,7 @@ namespace DungeonInn.Tests.EditMode
                     actorCombatService,
                     eventBus,
                     new AdventurerReturnTrackingService(eventBus, profileRegistry, achievementRegistry),
+                    new AdventureGoalProgressService(actorCombatService, achievementRegistry, masterRepository),
                     candidateService,
                     new FixedWorldGameSettingsRepository(),
                     new RecoveryItemCandidateQuery(masterRepository),

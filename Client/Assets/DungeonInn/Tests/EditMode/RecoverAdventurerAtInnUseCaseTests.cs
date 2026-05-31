@@ -62,6 +62,9 @@ namespace DungeonInn.Tests.EditMode
             useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.WaitingForInn));
+            Assert.That(worldState.Guild.CountQueuedInnReservations(inn.Id), Is.EqualTo(1));
+            Assert.That(worldState.Guild.TryPeekQueuedInnReservation(inn.Id, out var queuedActorId), Is.True);
+            Assert.That(queuedActorId, Is.EqualTo(actor.Id));
             var events = eventBus.GetEvents<ActorWaitingForInn>();
             Assert.That(events.Count, Is.EqualTo(1));
             Assert.That(events[0].ActorId, Is.EqualTo(actor.Id));
@@ -94,21 +97,101 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void RecoveringAdventurerReturnsToPreparingWhenInnFeeCannotBePaid()
+        public void WaitingAdventurersReserveInnByQueueOrder()
+        {
+            var worldState = CreateInitializedWorldState();
+            var inn = worldState.Guild.Facilities[0];
+            var filler = FillInn(worldState, inn.Capacity)[0];
+            var eventBus = new CollectingEventBus();
+            var firstActor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
+            var secondActor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
+            worldState.RegisterActor(firstActor);
+            worldState.RegisterActor(secondActor);
+            var useCase = CreateUseCase(eventBus);
+
+            useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
+            worldState.Guild.ReleaseInnReservation(filler.Id, 2);
+            useCase.EnsureReservationsAsync(worldState, 3).GetAwaiter().GetResult();
+
+            Assert.That(worldState.Guild.HasActiveInnReservation(firstActor.Id), Is.True);
+            Assert.That(worldState.Guild.HasActiveInnReservation(secondActor.Id), Is.False);
+            Assert.That(worldState.Guild.TryPeekQueuedInnReservation(inn.Id, out var queuedActorId), Is.True);
+            Assert.That(queuedActorId, Is.EqualTo(secondActor.Id));
+        }
+
+        [Test]
+        public void RecoveringAdventurerReservesInnWithPartialFeeWhenInnFeeCannotBePaid()
         {
             var worldState = CreateInitializedWorldState();
             var eventBus = new CollectingEventBus();
             var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, 0);
             worldState.RegisterActor(actor);
-            var useCase = CreateUseCase(eventBus);
+            var useCase = CreateUseCase(eventBus, new StubGameClock());
 
             useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
 
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
-            Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Preparing));
+            Assert.That(behavior.LifecycleState, Is.EqualTo(AdventurerLifecycleState.Recovering));
             Assert.That(behavior.WaitingForInnStartedDay, Is.EqualTo(-1));
-            Assert.That(worldState.Guild.HasActiveInnReservation(actor.Id), Is.False);
+            Assert.That(worldState.Guild.HasActiveInnReservation(actor.Id), Is.True);
             Assert.That(eventBus.GetEvents<ActorWaitingForInn>().Count, Is.EqualTo(0));
+            Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<InnFeeCharged>()[0].FeeAmount, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void RecoveringAdventurerWithoutReservationIsMarkedForReservationAgain()
+        {
+            var worldState = CreateInitializedWorldState();
+            var eventBus = new CollectingEventBus();
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
+            worldState.RegisterActor(actor);
+            currentCandidateService.ClearReservationCandidate(actor.Id);
+            var useCase = CreateUseCase(eventBus);
+
+            useCase.ExecuteAsync(worldState, 60f).GetAwaiter().GetResult();
+            useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
+
+            Assert.That(worldState.Guild.HasActiveInnReservation(actor.Id), Is.True);
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Recovering));
+        }
+
+        [Test]
+        public void ActiveInnGuestRecoversEvenWhenRecoveryCandidateIsMissing()
+        {
+            var worldState = CreateInitializedWorldState();
+            var inn = worldState.Guild.Facilities[0];
+            var eventBus = new CollectingEventBus();
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
+            actor.ReceiveDamage(5);
+            worldState.RegisterActor(actor);
+            worldState.Guild.ReserveInn(Guid.NewGuid(), actor, inn.Id, 1);
+            currentCandidateService.ClearRecoveryCandidate(actor.Id);
+            var hpBefore = actor.Hp;
+            var useCase = CreateUseCase(eventBus);
+
+            useCase.ExecuteAsync(worldState, 600f).GetAwaiter().GetResult();
+
+            Assert.That(actor.Hp, Is.GreaterThan(hpBefore));
+            Assert.That(eventBus.GetEvents<ActorRecoveringAtInn>().Count, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void ReservationQueueSkipsMissingActorAtHead()
+        {
+            var worldState = CreateInitializedWorldState();
+            var inn = worldState.Guild.Facilities[0];
+            var eventBus = new CollectingEventBus();
+            var missingActor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, InnBalance.FeePerStay);
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, InnBalance.FeePerStay);
+            worldState.Guild.EnqueueInnReservation(missingActor, inn.Id);
+            worldState.RegisterActor(actor);
+            var useCase = CreateUseCase(eventBus);
+
+            useCase.EnsureReservationsAsync(worldState, 1).GetAwaiter().GetResult();
+
+            Assert.That(worldState.Guild.HasActiveInnReservation(actor.Id), Is.True);
+            Assert.That(worldState.Guild.CountQueuedInnReservations(inn.Id), Is.EqualTo(0));
         }
 
         [Test]
@@ -175,14 +258,14 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, 0);
-            actor.GainItem(new ItemStack(1001, 2));
+            actor.GainItem(new ItemStack(1002, 2));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus, new StubGameClock(), currentCandidateService);
 
             useCase.Execute(worldState);
 
-            Assert.That(actor.Inventory.Gold, Is.EqualTo(10));
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(25));
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(1));
         }
 

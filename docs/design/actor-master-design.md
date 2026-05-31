@@ -4,11 +4,11 @@
 
 Actor の生成単位と種族固有情報を分離し、冒険者・モンスターのどちらも同じマスタ構造で扱えるようにする。
 
-この整理は Milestone 3 Phase 11.5 の差し込みフェーズとして行う。Phase 11 で探索目的・討伐目標が導入され、Actor が削除された後も「何を倒したか」を参照する必要が出たため、Actor 識別情報と種族情報の責務を明確にする。
+この整理は実装済み。Phase 11 で探索目的・討伐目標が導入され、Actor が削除された後も「何を倒したか」を参照する必要が出たため、Actor 識別情報と種族情報の責務を明確にした。
 
-## 現状の問題
+## 整理前の問題
 
-現状は、冒険者とモンスターで参照するマスタ構造が非対称になっている。
+整理前は、冒険者とモンスターで参照するマスタ構造が非対称になっていた。
 
 - 冒険者は主に `ActorArchetypeMaster` から生成される
 - モンスターは `MonsterSpeciesMaster` を入口にし、そこから `ActorArchetypeMaster` を参照して生成される
@@ -58,7 +58,7 @@ AdventurerSpawnMaster
 - `Name`
 - `SpeciesDrops`
 
-`SpeciesDrops` は種族由来のドロップとして扱う。現在の `MonsterSpeciesMaster.SpeciesDrops` はここへ移す。
+`SpeciesDrops` は種族由来のドロップとして扱う。整理前の `MonsterSpeciesMaster.SpeciesDrops` はここへ移動済み。
 
 `SpeciesMaster` は Actor の生成単位ではない。どのステータスで、どの行動種別で、どの初期装備を持つかは `ActorArchetypeMaster` が決める。
 

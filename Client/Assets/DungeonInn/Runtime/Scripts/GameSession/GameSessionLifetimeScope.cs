@@ -71,6 +71,7 @@ namespace DungeonInn.GameSession
             builder.Register<AdventurerReturnTrackingService>(Lifetime.Singleton);
             builder.Register<AdventurerRecoveryStateService>(Lifetime.Singleton);
             builder.Register<ActorProcessingCandidateService>(Lifetime.Singleton);
+            builder.Register<AdventurerDeathRevivalService>(Lifetime.Singleton);
             builder.Register<AdventurerExplorationStateService>(Lifetime.Singleton);
             builder.Register<HardcodedActorActionPhaseMasterRepository>(Lifetime.Singleton)
                 .As<IActorActionPhaseMasterRepository>();
@@ -159,7 +160,7 @@ namespace DungeonInn.GameSession
             builder.Register<MoveActorTowardDestinationUseCase>(Lifetime.Singleton);
             builder.Register<ActorCombatPowerCalculator>(Lifetime.Singleton);
             builder.Register<UseDungeonStairOrchestrator>(Lifetime.Singleton);
-            builder.Register<SelectDungeonExplorationGoalUseCase>(Lifetime.Singleton);
+            builder.Register<SelectAdventureGoalUseCase>(Lifetime.Singleton);
             builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Singleton);
             builder.Register<AdvanceActorLifecycleOrchestrator>(Lifetime.Singleton);
 
@@ -187,6 +188,7 @@ namespace DungeonInn.GameSession
             builder.Register<AdvanceAreaEffectUseCase>(Lifetime.Singleton);
 
             // === Application: Adventurer return / inn processing ===
+            builder.Register<AdventureGoalProgressService>(Lifetime.Singleton);
             builder.Register<DecideAdventurerReturnUseCase>(Lifetime.Singleton);
             builder.Register<ChargeInnFeeUseCase>(Lifetime.Singleton);
             builder.Register<DespawnAdventurerUseCase>(Lifetime.Singleton);

@@ -7,7 +7,9 @@ using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
+using DungeonInn.Master;
 using NUnit.Framework;
 using R3;
 
@@ -67,14 +69,16 @@ namespace DungeonInn.Tests.EditMode
                 achievementRegistry);
             var adventurerId = Guid.NewGuid();
             var monsterId = Guid.NewGuid();
+            var adventurer = CreateAdventurer(adventurerId);
             profileRegistry.Register(adventurerId, "Adventurer", 1, 0, ActorBehaviorType.Adventurer);
             profileRegistry.Register(monsterId, "Slime", 2, 5, ActorBehaviorType.Monster);
 
+            achievementRegistry.RecordAdventureStart(adventurer);
             eventBus.Publish(new ActorDefeated(monsterId, adventurerId, DeathCause.Combat));
 
             Assert.That(returnTrackingService.GetDefeatedMonsterCount(adventurerId, 5), Is.EqualTo(1));
 
-            eventBus.Publish(new ActorEnteredDungeon(adventurerId, 1));
+            achievementRegistry.RecordAdventureStart(adventurer);
 
             Assert.That(returnTrackingService.GetDefeatedMonsterCount(adventurerId, 5), Is.EqualTo(0));
 
@@ -84,6 +88,26 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(returnTrackingService.GetDefeatedMonsterCount(adventurerId, 5), Is.EqualTo(0));
             Assert.That(profileRegistry.TryGetProfile(adventurerId, out var profile), Is.True);
             Assert.That(profile.DisplayName, Is.EqualTo("Adventurer"));
+        }
+
+        static Actor CreateAdventurer(Guid actorId)
+        {
+            return new Actor(
+                actorId,
+                0,
+                new ActorStats(5, 5, 5, 5, 5, 5),
+                new Inventory(new FixedItemStackLimitResolver()),
+                1,
+                0,
+                50,
+                10,
+                0,
+                0,
+                1,
+                new LayerPosition(MapLayerId.Ground, 0f, 0f),
+                new ActorFaction(1, "Adventurer"),
+                new AdventurerBehavior(0, AdventurerLifecycleState.Preparing),
+                WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
         sealed class CollectingGameEventBus : IGameEventBus, IDisposable

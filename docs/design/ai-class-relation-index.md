@@ -50,15 +50,16 @@ AI が調査・実装を始めるときは、以下の順で読む。
 
 | 機能 | 最初に読むクラス | 状態・所有者 | 関連クラス | 関連 docs |
 |---|---|---|---|---|
-| Product / Scene 起動 | `ProductEntryPoint`, `ProductLifetimeScope` | Product lifetime | `RootEntryPoint`, `SceneGroupProvider`, `ProductSceneManager` | `lifetime-scope-game-loop-design.md` |
-| World scene DI | `WorldLifetimeScope` | World scene lifetime | `WorldScene`, `WorldGameLoopEntryPoint`, `WorldGameSettingsSO` | `lifetime-scope-game-loop-design.md`, `refactoring-guidelines.md` |
+| Product / Scene 起動 | `ProductEntryPoint`, `ProductLifetimeScope` | Product lifetime | `RootEntryPoint`, `SceneGroupProvider`, `ProductSceneManager`, `GameSessionLifecycle` | `lifetime-scope-game-loop-design.md` |
+| Game session DI | `GameSessionLifetimeScope` | Game session lifetime | `GameWorldState`, `GameClock`, `WorldSimulationOrchestrator`, Application services | `lifetime-scope-game-loop-design.md`, `refactoring-guidelines.md` |
+| World scene DI | `WorldLifetimeScope` | World scene lifetime | `WorldScene`, `WorldGameLoopEntryPoint`, scene-owned View adapters | `lifetime-scope-game-loop-design.md`, `refactoring-guidelines.md` |
 | Game loop | `WorldSimulationOrchestrator` | `GameClock`, `GameWorldState` | `GameLoopUseCase`, `WorldFrameAdvanceRequest`, `WorldGameLoopEntryPoint` | `lifetime-scope-game-loop-design.md`, `application-boundary-guidelines.md` |
 | World state | `GameWorldState` | `GameWorldState` | `IGameWorldState`, `IGameWorldStateReader`, `ActorViewDataStore` | `lifetime-scope-game-loop-design.md` |
 | Map / Ground | `InitializeWorldMapUseCase` | `GroundMap` | `MapLayer`, `GroundCell`, `GroundMapGenerationSettings` | `map-dungeon-domain-design.md` |
 | Dungeon generation | `GenerateDungeonFloorUseCase` | `Dungeon`, `DungeonFloor` | `InitializeDungeonOrchestrator`, `EnsureDungeonFloorGeneratedOrchestrator`, `UseDungeonStairOrchestrator` | `map-dungeon-domain-design.md` |
 | Actor spawn | `SpawnScheduledAdventurerOrchestrator`, `SpawnScheduledMonsterOrchestrator` | `SpawnScheduleState`, `GameWorldState` | `SpawnAdventurerUseCase`, `SpawnMonsterUseCase`, `ActorFactory` | `actor-master-design.md` |
 | Actor AI | `AdvanceActorAiOrchestrator` | AI policy / behavior | `AdventurerAiPolicy`, `MonsterAiPolicy`, `ActorDecisionScheduler` | `actor-ai-desing.md` |
-| Actor lifecycle | `AdvanceActorLifecycleOrchestrator` | `AdventurerBehavior`, candidate services | `UseRecoveryItemOrchestrator`, `DecideAdventurerReturnUseCase`, `AdvanceInnRecoveryOrchestrator` | `actor-ai-desing.md`, `application-boundary-guidelines.md` |
+| Actor lifecycle | `AdvanceActorLifecycleOrchestrator` | `AdventurerBehavior`, candidate services | `UseRecoveryItemOrchestrator`, `DecideAdventurerReturnUseCase`, `AdvanceInnRecoveryOrchestrator`, `SelectAdventureGoalUseCase`, `AdventureGoalProgressService`, `AdventurerDeathRevivalService` | `actor-ai-desing.md`, `application-boundary-guidelines.md` |
 | Actor movement | `ActorMovementService` | `ActorNavigationService` | `MoveActorTowardDestinationUseCase`, `INavigationPathProvider`, `UnityNavMeshPathProvider` | `map-dungeon-domain-design.md` |
 | Combat detection | `DetectCombatEncounterUseCase` | `ActorCombatService`, spatial index | `CombatEncounterTargetResolver`, `ActorSpatialIndexService` | `combat-domain-design.md` |
 | Combat advance | `AdvanceCombatUseCase` | `ActorCombatService` | `DirectWeaponCombatCalculator`, `CombatEffectExecutor`, `ActorDefeatOrchestrator` | `combat-domain-design.md` |
@@ -92,13 +93,31 @@ WorldGameLoopEntryPoint
       -> DetectCombatEncounterUseCase
       -> AdvanceCombatUseCase
       -> AdvanceProjectileUseCase / AdvanceAreaEffectUseCase
-      -> PickUpItemUseCase / SellItemsUseCase
-      -> UseRecoveryItemOrchestrator / DecideAdventurerReturnUseCase
+      -> PickUpItemUseCase
+      -> UpdateEquipmentUseCase
+      -> SellItemsUseCase
       -> AdvanceInnRecoveryOrchestrator
+      -> UseRecoveryItemOrchestrator / DecideAdventurerReturnUseCase
 ```
 
 `WorldSimulationOrchestrator` はゲーム進行の順序制御を持つ。
 Domain の判定式や個別ビジネスルールを直接肥大化させず、必要な UseCase / Service へ委譲する。
+Ground に戻った Adventurer の準備処理は、装備更新、アイテム売却、宿屋予約・宿代支払い・HP 回復、回復アイテム購入、出発判定の順に固定する。
+
+### Adventure goal
+
+現行実装では、冒険目的の正典を `ActorGoal` に統一している。
+探索専用の重複 DTO / enum である `DungeonExplorationGoal` / `DungeonExplorationGoalType` は使わない。
+
+移行後の入口は以下とする。
+
+- `SelectAdventureGoalUseCase`: Actor / Guild / Dungeon / 直近履歴から、重み付きで `ActorGoal` を選ぶ
+- `AdventureGoalProgressService`: `ReachFloor`, `LevelUp`, `DefeatMonster`, `EarnMoney`, `CollectItem` の進捗を計算する
+- `DecideAdventurerReturnUseCase`: 目的達成、HP 不足、回復アイテム不足などから帰還判断だけを行う
+- `AdvanceActorLifecycleOrchestrator`: 選択された `ActorGoal` を Actor に適用し、冒険開始状態へ進める
+
+`EarnMoney` は `LevelUp` と同じ探索方針を使うが、帰還条件は「今回の冒険で得た売却可能アイテムの見込み売却額」とする。
+素材集めは独立した `CollectMaterial` ではなく、具体的な素材 item id を対象にした `CollectItem` として扱う。
 
 ### World state
 
@@ -154,9 +173,10 @@ Domain Entity や View 実体を広く直接 Inject しない。
 | 目的 | 検索語 |
 |---|---|
 | ゲーム進行順を見たい | `WorldSimulationOrchestrator` |
-| DI 登録を見たい | `WorldLifetimeScope`, `ProductLifetimeScope` |
+| DI 登録を見たい | `ProductLifetimeScope`, `GameSessionLifetimeScope`, `WorldLifetimeScope` |
 | Actor の移動を見たい | `ActorMovementService`, `AdvanceActorLifecycleOrchestrator` |
 | AI 判断を見たい | `AdvanceActorAiOrchestrator`, `AiDecision` |
+| 冒険目的を見たい | `SelectAdventureGoalUseCase`, `ActorGoal`, `AdventureGoalProgressService`, `DecideAdventurerReturnUseCase` |
 | 戦闘を見たい | `AdvanceCombatUseCase`, `CombatEffectExecutor` |
 | Projectile / AreaEffect 表示を見たい | `WorldProjectilePresenter`, `WorldAreaEffectPresenter` |
 | HUD / Popup を見たい | `WorldActorStatusPresenter`, `ActorDetailPopupPresenter` |

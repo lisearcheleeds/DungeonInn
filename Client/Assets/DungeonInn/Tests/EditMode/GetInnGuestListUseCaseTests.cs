@@ -6,6 +6,7 @@ using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Combat;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
@@ -21,7 +22,8 @@ namespace DungeonInn.Tests.EditMode
         {
             var recoveringActor = CreateAdventurer(AdventurerLifecycleState.Recovering, hp: 5);
             var waitingActor = CreateAdventurer(AdventurerLifecycleState.WaitingForInn, hp: 10);
-            var reader = new TestWorldStateReader(true, new[] { recoveringActor, waitingActor });
+            var guild = CreateGuildWithInnReservation(recoveringActor);
+            var reader = new TestWorldStateReader(true, new[] { recoveringActor, waitingActor }, guild);
             var repository = new HardcodedMasterRepository();
             using var recoveryStateService = new AdventurerRecoveryStateService(TestEventSubscriber.Instance);
             recoveryStateService.SetAccumulatedHp(recoveringActor.Id, 0.5f);
@@ -45,6 +47,26 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void ExecuteExcludesReservedAdventurerOutsideGround()
+        {
+            var actor = CreateAdventurer(AdventurerLifecycleState.Recovering, hp: 5);
+            actor.MoveTo(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
+            var guild = CreateGuildWithInnReservation(actor);
+            var reader = new TestWorldStateReader(true, new[] { actor }, guild);
+            using var recoveryStateService = new AdventurerRecoveryStateService(TestEventSubscriber.Instance);
+            var useCase = new GetInnGuestListUseCase(
+                reader,
+                new HardcodedMasterRepository(),
+                recoveryStateService,
+                new FixedWorldGameSettingsRepository());
+            var guests = new List<InnGuestSummary>();
+
+            useCase.Execute(guests);
+
+            Assert.That(guests.Count, Is.EqualTo(0));
+        }
+
+        [Test]
         public void ExecuteReturnsEmptyWhenWorldIsNotInitialized()
         {
             var reader = new TestWorldStateReader(false, Array.Empty<Actor>());
@@ -65,7 +87,8 @@ namespace DungeonInn.Tests.EditMode
         public void ExecuteReturnsZeroRemainingSecondsWhenRecoveryRateIsZero()
         {
             var recoveringActor = CreateAdventurer(AdventurerLifecycleState.Recovering, hp: 5);
-            var reader = new TestWorldStateReader(true, new[] { recoveringActor });
+            var guild = CreateGuildWithInnReservation(recoveringActor);
+            var reader = new TestWorldStateReader(true, new[] { recoveringActor }, guild);
             using var recoveryStateService = new AdventurerRecoveryStateService(TestEventSubscriber.Instance);
             var settingsRepository = new FixedWorldGameSettingsRepository(
                 innBalanceSettings: new InnBalanceSettings(0f, 10, 3, 2, -2, -1));
@@ -101,19 +124,41 @@ namespace DungeonInn.Tests.EditMode
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
+        static AdventurerGuild CreateGuildWithInnReservation(Actor actor)
+        {
+            var inn = new Facility(
+                Guid.NewGuid(),
+                FacilityType.Inn,
+                "Inn",
+                1,
+                1,
+                new Inventory(new FixedItemStackLimitResolver()));
+            var guild = new AdventurerGuild(
+                Guid.NewGuid(),
+                new Inventory(new FixedItemStackLimitResolver()),
+                new[] { inn });
+            guild.ReserveInn(Guid.NewGuid(), actor, inn.Id, 0);
+            return guild;
+        }
+
         sealed class TestWorldStateReader : IGameWorldStateReader
         {
             readonly IReadOnlyList<Actor> actors;
+            readonly AdventurerGuild guild;
 
-            public TestWorldStateReader(bool isInitialized, IReadOnlyList<Actor> actors)
+            public TestWorldStateReader(
+                bool isInitialized,
+                IReadOnlyList<Actor> actors,
+                AdventurerGuild guild = null)
             {
                 IsInitialized = isInitialized;
                 this.actors = actors ?? throw new ArgumentNullException(nameof(actors));
+                this.guild = guild;
             }
 
             public bool IsInitialized { get; }
             public IReadOnlyList<Actor> Actors => actors;
-            public AdventurerGuild Guild => throw new NotSupportedException();
+            public AdventurerGuild Guild => guild ?? throw new NotSupportedException();
             public GroundMap GroundMap => throw new NotSupportedException();
             public Dungeon Dungeon => throw new NotSupportedException();
             public InnEconomyState InnEconomy => throw new NotSupportedException();

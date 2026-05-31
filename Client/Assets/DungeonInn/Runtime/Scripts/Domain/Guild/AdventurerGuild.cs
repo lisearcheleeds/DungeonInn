@@ -15,6 +15,8 @@ namespace DungeonInn.Domain.Guild
         readonly List<GuildStaffAssignment> staffAssignments = new();
         readonly List<InnReservation> innReservations = new();
         readonly Dictionary<Guid, InnReservation> activeReservationByAdventurer = new();
+        readonly Dictionary<Guid, Guid> queuedInnFacilityByAdventurer = new();
+        readonly Dictionary<Guid, List<Guid>> queuedAdventurerIdsByInnFacility = new();
         readonly List<ExchangeOffer> exchangeOffers = new();
         readonly List<ExchangeTransaction> transactions = new();
         readonly Inventory inventory;
@@ -86,9 +88,19 @@ namespace DungeonInn.Domain.Guild
             return activeReservationByAdventurer.ContainsKey(adventurerId);
         }
 
+        public bool HasQueuedInnReservation(Guid adventurerId)
+        {
+            return queuedInnFacilityByAdventurer.ContainsKey(adventurerId);
+        }
+
         public bool TryGetActiveInnReservation(Guid adventurerId, out InnReservation reservation)
         {
             return activeReservationByAdventurer.TryGetValue(adventurerId, out reservation);
+        }
+
+        public bool TryGetQueuedInnFacility(Guid adventurerId, out Guid innFacilityId)
+        {
+            return queuedInnFacilityByAdventurer.TryGetValue(adventurerId, out innFacilityId);
         }
 
         public int CountActiveInnReservations(Guid innFacilityId)
@@ -105,6 +117,29 @@ namespace DungeonInn.Domain.Guild
             return count;
         }
 
+        public int CountQueuedInnReservations(Guid innFacilityId)
+        {
+            if (!queuedAdventurerIdsByInnFacility.TryGetValue(innFacilityId, out var queuedAdventurerIds))
+            {
+                return 0;
+            }
+
+            return queuedAdventurerIds.Count;
+        }
+
+        public bool TryPeekQueuedInnReservation(Guid innFacilityId, out Guid adventurerId)
+        {
+            if (!queuedAdventurerIdsByInnFacility.TryGetValue(innFacilityId, out var queuedAdventurerIds) ||
+                queuedAdventurerIds.Count == 0)
+            {
+                adventurerId = Guid.Empty;
+                return false;
+            }
+
+            adventurerId = queuedAdventurerIds[0];
+            return true;
+        }
+
         public bool CanReserveInn(Guid innFacilityId)
         {
             var facility = GetFacility(innFacilityId);
@@ -114,6 +149,73 @@ namespace DungeonInn.Domain.Guild
             }
 
             return CountActiveInnReservations(innFacilityId) < facility.Capacity;
+        }
+
+        public bool EnqueueInnReservation(ActorEntity adventurer, Guid innFacilityId)
+        {
+            if (adventurer == null)
+            {
+                throw new ArgumentNullException(nameof(adventurer));
+            }
+
+            var facility = GetFacility(innFacilityId);
+            if (facility.Type != FacilityType.Inn)
+            {
+                throw new InvalidOperationException("Facility is not inn.");
+            }
+
+            if (HasActiveInnReservation(adventurer.Id))
+            {
+                return false;
+            }
+
+            if (queuedInnFacilityByAdventurer.TryGetValue(adventurer.Id, out var queuedInnFacilityId))
+            {
+                if (queuedInnFacilityId.Equals(innFacilityId))
+                {
+                    return false;
+                }
+
+                RemoveQueuedInnReservation(adventurer.Id);
+            }
+
+            if (!queuedAdventurerIdsByInnFacility.TryGetValue(innFacilityId, out var queuedAdventurerIds))
+            {
+                queuedAdventurerIds = new List<Guid>();
+                queuedAdventurerIdsByInnFacility[innFacilityId] = queuedAdventurerIds;
+            }
+
+            queuedInnFacilityByAdventurer[adventurer.Id] = innFacilityId;
+            queuedAdventurerIds.Add(adventurer.Id);
+            return true;
+        }
+
+        public void RemoveQueuedInnReservation(Guid adventurerId)
+        {
+            if (!queuedInnFacilityByAdventurer.TryGetValue(adventurerId, out var innFacilityId))
+            {
+                return;
+            }
+
+            queuedInnFacilityByAdventurer.Remove(adventurerId);
+            if (!queuedAdventurerIdsByInnFacility.TryGetValue(innFacilityId, out var queuedAdventurerIds))
+            {
+                return;
+            }
+
+            for (var i = queuedAdventurerIds.Count - 1; 0 <= i; i--)
+            {
+                if (queuedAdventurerIds[i].Equals(adventurerId))
+                {
+                    queuedAdventurerIds.RemoveAt(i);
+                    break;
+                }
+            }
+
+            if (queuedAdventurerIds.Count == 0)
+            {
+                queuedAdventurerIdsByInnFacility.Remove(innFacilityId);
+            }
         }
 
         public InnReservation ReserveInn(Guid reservationId, ActorEntity adventurer, Guid innFacilityId, int occurredAtTick)
@@ -147,6 +249,41 @@ namespace DungeonInn.Domain.Guild
 
             innReservations.Add(reservation);
             activeReservationByAdventurer[adventurer.Id] = reservation;
+            RemoveQueuedInnReservation(adventurer.Id);
+            return reservation;
+        }
+
+        public InnReservation ReserveInnForRevival(
+            Guid reservationId,
+            ActorEntity adventurer,
+            Guid innFacilityId,
+            int occurredAtTick)
+        {
+            if (adventurer == null)
+            {
+                throw new ArgumentNullException(nameof(adventurer));
+            }
+
+            var facility = GetFacility(innFacilityId);
+            if (facility.Type != FacilityType.Inn)
+            {
+                throw new InvalidOperationException("Facility is not inn.");
+            }
+
+            if (TryGetActiveInnReservation(adventurer.Id, out var activeReservation))
+            {
+                return activeReservation;
+            }
+
+            var reservation = new InnReservation(
+                reservationId,
+                adventurer.Id,
+                innFacilityId,
+                occurredAtTick);
+
+            innReservations.Add(reservation);
+            activeReservationByAdventurer[adventurer.Id] = reservation;
+            RemoveQueuedInnReservation(adventurer.Id);
             return reservation;
         }
 

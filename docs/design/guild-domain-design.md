@@ -438,11 +438,11 @@ Factory は以下を行う。
 
 現在の接続 UseCase:
 
-- `SpawnAdventurerFromMasterUseCase`
+- `SpawnAdventurerUseCase`
   - `AdventurerSpawnMaster` から固有名と `ActorArchetypeMaster` を解決して Actor を生成する。
   - Lv1 冒険者の初期装備はギルド在庫から支給し、`ExchangeTransaction` に記録する。
   - 支給後に装備状態へ反映する。
-- `SpawnMonsterFromMasterUseCase`
+- `SpawnMonsterUseCase`
   - モンスターの `ActorArchetypeMaster` から Actor を生成する。
   - `ActorArchetypeMaster.DefaultWeaponType` を自然武器として反映する。
 
@@ -540,7 +540,7 @@ Factory は以下を行う。
 - スタッフ化したキャラクターの扱いは、冒険者から完全に外れるか兼任可能にするかを別途決める。
 - スカウト可否には本人の能力、評判、所持金、関係性などを後から追加できる。
 
-現状の実装では `Character.CanBeScouted` が `Adventurer` または `RecruitCandidate` の場合に true となる。
+現状の実装では `Character` は廃止済み。スカウト可否は `RecruitStaffOrchestrator` が Actor の `AdventurerBehavior` と所持金、`CalculateScoutCostUseCase` の結果から判定する。
 
 `CharacterRole` と `ScoutCost` は廃止する。
 
@@ -552,7 +552,7 @@ Factory は以下を行う。
 
 - `ScoutCostPolicy`
 - `CalculateScoutCostUseCase`
-- `RecruitStaffUseCase`
+- `RecruitStaffOrchestrator`
 
 スカウト実行時は費用を再計算し、ギルド在庫から支払い、Actor の Behavior を `AdventurerBehavior` から `GuildStaffBehavior` へ差し替える。その結果を `ExchangeTransaction` に記録する。
 
@@ -627,7 +627,7 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 
 宿屋の居住権は長期滞在枠に近い。居住権を持つ冒険者は、Lv5 以上になっても通常は旅立ちによってデスポーンしない。
 
-現時点で、一度居着いた Lv5 以上の冒険者がデスポーンする条件は、ダンジョン内で死亡した時のみ。
+死亡はデスポーン条件ではない。現在の実装では、冒険者が戦闘で死亡し、宿屋施設が存在する場合、冒険者は所持品・装備・所持金を死亡位置へドロップし、無料の復活用宿屋予約を得て `Recovering` に戻る。
 
 `InnReservation` は以下を持つ想定とする。
 
@@ -644,7 +644,9 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 - 酒場利用
 - 不要物や素材の売却・交換
 
-宿屋に空きがなく、HP が減っている場合でも、現状では HP が減ったまま再度ダンジョンに潜る可能性がある。
+宿屋に空きがなく、HP が減っている場合は `WaitingForInn` で待機し、宿屋施設ごとの予約キューに追加する。部屋が空いたらキューの先頭から順に `InnReservation` を作成し、`Recovering` へ移行する。待機中に設定された待機日数を超えると離脱対象になり、予約キューからも取り除かれる。
+
+宿代は満額を払える場合は満額を徴収する。宿代が足りない場合でも宿泊は成立し、所持 Gold 全額だけを徴収する。所持 Gold が 0 の場合も 0G の宿泊として扱う。これは開発中の詰まりを避けるための暫定仕様であり、宿代不足を理由に `Preparing` へ戻したり、次回冒険目的を `EarnMoney` に固定したりしない。
 
 ### 旅立ちとデスポーン
 
@@ -653,7 +655,7 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 - ただし、Lv5 以上でも必ず旅立つわけではなく、再度ダンジョンに潜る可能性がある。
 - 宿屋居住権を持たない冒険者は、旅立つ準備が整った時点でデスポーンする可能性がある。
 - 宿屋居住権を持つ冒険者は、旅立ちではデスポーンしない。
-- 宿屋居住権を持つ冒険者のデスポーン条件は、現時点ではダンジョン内死亡のみ。
+- 死亡は通常の旅立ち / デスポーンとは別の復活フローとして扱う。
 
 ### 冒険者状態
 
@@ -663,6 +665,7 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 - `Resident`
 - `Preparing`
 - `Exploring`
+- `WaitingForInn`
 - `Recovering`
 - `ReadyToLeave`
 - `Dead`
@@ -673,9 +676,26 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 - `Resident`: 宿屋居住権を持ち、ギルド圏に居着いている。
 - `Preparing`: 探索前準備中。売買、補給、装備更新、酒場バフなどを行う。
 - `Exploring`: ダンジョン探索中。
+- `WaitingForInn`: 宿屋予約待ち。空きが出るまで待機する。
 - `Recovering`: 宿屋で回復中。全回復まで宿屋から出ない。
 - `ReadyToLeave`: 非居住の Lv5 以上冒険者が旅立ち可能な状態。
-- `Dead`: ダンジョン内死亡。デスポーン対象。
+- `Dead`: 死亡状態を表す予約値。現在の戦闘死亡処理では、宿屋が存在する冒険者は `Dead` に留まらず、死亡位置に所持品・装備・所持金をドロップして宿屋で `Recovering` に戻る。
+
+### 死亡復活
+
+冒険者が戦闘で死亡した場合、通常の Ground return cycle は通らない。
+
+宿屋施設が存在する場合の現在順序:
+
+1. 戦闘状態とターゲット参照を解除する。
+2. `ActorDefeated` を発行する。
+3. 冒険者のインベントリ内の全アイテム、装備中の武器 / 防具 / アクセサリ、`SpecialItemIds.Money` を死亡位置へ `ItemInstance` としてドロップする。
+4. 冒険者を地上のダンジョン入口へ移動する。
+5. Goal / Plan / Action を `None` に戻し、宿屋待ち状態を解除する。
+6. 宿屋料金と空き枠チェックを行わない復活用予約を作る。
+7. 冒険者を `Recovering` にして、宿屋で全回復するまで留める。
+
+モンスターが冒険者を倒した場合でも、攻撃者が存在するなら通常の撃破報酬として経験値を得る。復活は冒険者側の救済処理であり、撃破事実や経験値報酬を取り消さない。
 
 ### 時間と回復
 
@@ -712,29 +732,21 @@ AI は Unity のオブジェクトや座標を直接扱わない。目的地が�
 - 特定アイテム収集
 - 特定モンスター討伐
 - 特定フロア到達
+- お金稼ぎ
 
-現時点ではモンスターとフロアの Domain は未定義のため、対象モンスター ID や対象フロア ID は仮の `int` として扱う。
+対象モンスター ID や対象フロア ID は `ActorGoal.TargetId` の `int` として保持し、必要に応じて `ActorProfileRegistry`、`ActorArchetypeMaster`、`SpeciesMaster`、`DungeonFloor` と照合する。
 
-探索目的は、冒険者のレベルと、冒険者ギルドの雑貨店・装備店で交換対象となっているアイテムから決定する。
+探索目的は `SelectAdventureGoalUseCase` が重み付きで決定する。
 
-雑貨店や装備店に交換項目がある場合、その納品対象アイテムが特定アイテム収集の探索目的候補に入る。
+現在の候補:
 
-例:
+- `LevelUp`: 基本候補。経験値を持っている Actor は次レベルが近い可能性があるため重みを上げる。
+- `EarnMoney`: 基本候補。雑貨店または装備店の保有 Gold が不足している場合は重みを上げる。
+- `CollectItem`: 雑貨店または装備店の有効な交換項目がある場合、納品対象アイテムを候補に入れる。
+- `DefeatMonster`: 目標フロアの spawn table から種族を選び、討伐候補に入れる。
+- `ReachFloor`: 目標フロアが 2F 以上の場合に候補に入れる。
 
-- 薬草 10 個を納品する。
-- 報酬として 100 ゴールドを得る。
-- この交換項目が存在する場合、冒険者の探索目的候補に「薬草 10 個を集める」が入る。
-
-探索目的の抽選対象は以下。
-
-| 条件 | 抽選対象 |
-|---|---|
-| Lv10 未満、交換項目なし | レベル上げ |
-| Lv10 未満、交換項目あり | レベル上げ、特定アイテム収集 |
-| Lv10 以上、交換項目なし | レベル上げ、特定フロア到達 |
-| Lv10 以上、交換項目あり | レベル上げ、特定アイテム収集、特定フロア到達 |
-
-特定モンスター討伐は、モンスターや討伐依頼の Domain が追加された後に抽選対象へ入れる。
+素材集めは独立した探索目的ではなく、具体的な ItemId を対象にした特定アイテム収集として扱う。
 
 ### 交換項目
 
@@ -785,9 +797,6 @@ Domain/
 │   ├── ExchangeTransaction
 │   ├── ExchangeOffer
 │   └── PricePolicy
-├── Dungeon/
-│   ├── DungeonExplorationGoal
-│   └── DungeonExplorationGoalType
 ├── Common/
 │   ├── DomainMath
 │   └── GameConstants
@@ -812,7 +821,7 @@ Application/
 │   ├── ActorFactoryCore
 │   └── ActorFactoryRequest
 └── UseCase/
-    ├── RecruitStaffUseCase
+    ├── RecruitStaffOrchestrator
     ├── AssignStaffUseCase
     ├── ProcessFacilityUsageUseCase
     ├── ProcessAdventurerSaleUseCase
@@ -820,15 +829,15 @@ Application/
     ├── CalculateScoutCostUseCase
     ├── PayStaffSalaryUseCase
     ├── SpawnAdventurerUseCase
-    ├── SpawnAdventurerFromMasterUseCase
-    ├── SpawnMonsterFromMasterUseCase
-    ├── SelectDungeonExplorationGoalUseCase
+    ├── SpawnMonsterUseCase
+    ├── SelectAdventureGoalUseCase
+    ├── AdventureGoalProgressService
     └── AdvanceActorLifecycleOrchestrator
 ```
 
 ## 先に実装できる UseCase 候補
 
-### RecruitStaffUseCase
+### RecruitStaffOrchestrator
 
 冒険者をギルドスタッフとしてスカウトする。
 

@@ -194,6 +194,58 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
+        public void DefeatedAdventurerDropsInventoryAndEquipmentThenRevivesAtInn()
+        {
+            var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var worldState = CreateWorldStateWithInn(candidateService);
+            var combatService = new ActorCombatService();
+            var eventBus = new CollectingGameEventBus();
+            var phaseStateStore = CreatePhaseStateStore();
+            var deathRevivalService = new AdventurerDeathRevivalService(clock, candidateService);
+            var useCase = CreateAdvanceCombatUseCase(
+                combatService,
+                clock,
+                eventBus,
+                phaseStateStore,
+                deathRevivalService);
+            var masterRepository = new HardcodedMasterRepository();
+            var deathPosition = new LayerPosition(MapLayerId.DungeonFloor(1), 6f, 5f);
+            var attacker = CreateActor("Attacker", 2, new LayerPosition(MapLayerId.DungeonFloor(1), 5f, 5f), 50);
+            var target = CreateActor("Target", 1, deathPosition, 1);
+            target.GainItems(new[]
+            {
+                new ItemStack(SpecialItemIds.Money, 7),
+                new ItemStack(1002, 2)
+            });
+            target.Equip(
+                masterRepository.GetEquipmentMaster(3001),
+                masterRepository.GetWeaponMaster(3001));
+            target.Equip(masterRepository.GetEquipmentMaster(3003));
+            worldState.RegisterActor(attacker);
+            worldState.RegisterActor(target);
+            combatService.SetTarget(attacker.Id, target.Id);
+            combatService.SetTarget(target.Id, attacker.Id);
+
+            ExecuteAttackAtEffect(useCase, phaseStateStore, clock, worldState);
+
+            var revivedActor = worldState.FindActor(target.Id);
+            Assert.That(revivedActor, Is.Not.Null);
+            Assert.That(revivedActor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Recovering));
+            Assert.That(revivedActor.Position.LayerId, Is.EqualTo(MapLayerId.Ground));
+            Assert.That(revivedActor.Inventory.ItemCounts, Is.Empty);
+            Assert.That(revivedActor.Equipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.Null);
+            Assert.That(revivedActor.Equipment.GetEquippedItemId(EquipmentSlot.Armor), Is.Null);
+            Assert.That(worldState.Guild.TryGetActiveInnReservation(target.Id, out _), Is.True);
+
+            AssertDroppedItem(worldState, SpecialItemIds.Money, 7, deathPosition);
+            AssertDroppedItem(worldState, 1002, 2, deathPosition);
+            AssertDroppedItem(worldState, 3001, 1, deathPosition);
+            AssertDroppedItem(worldState, 3003, 1, deathPosition);
+            Assert.That(eventBus.GetEvents<ActorReservedInn>().Count, Is.EqualTo(1));
+        }
+
+        [Test]
         public void AreaAttackCreatesAreaEffectWithoutImmediateDamage()
         {
             var clock = new FakeGameClock { ElapsedGameTimeSeconds = 0f };
@@ -438,8 +490,19 @@ namespace DungeonInn.Tests.EditMode
             IActorCombatService combatService,
             IGameEventBus eventBus)
         {
+            return CreateActorDefeatOrchestrator(
+                combatService,
+                eventBus,
+                TestRuntimeServiceFactory.CreateAdventurerDeathRevivalService());
+        }
+
+        static ActorDefeatOrchestrator CreateActorDefeatOrchestrator(
+            IActorCombatService combatService,
+            IGameEventBus eventBus,
+            AdventurerDeathRevivalService deathRevivalService)
+        {
             return new ActorDefeatOrchestrator(
-                new CombatDefeatResolver(combatService),
+                new CombatDefeatResolver(combatService, deathRevivalService),
                 CreateGrantExperienceUseCase(eventBus),
                 CreateDropItemUseCase(eventBus));
         }
@@ -458,6 +521,21 @@ namespace DungeonInn.Tests.EditMode
             IGameEventBus eventBus,
             IActorActionPhaseStateStore phaseStateStore)
         {
+            return CreateAdvanceCombatUseCase(
+                combatService,
+                clock,
+                eventBus,
+                phaseStateStore,
+                TestRuntimeServiceFactory.CreateAdventurerDeathRevivalService());
+        }
+
+        static AdvanceCombatUseCase CreateAdvanceCombatUseCase(
+            IActorCombatService combatService,
+            IGameClock clock,
+            IGameEventBus eventBus,
+            IActorActionPhaseStateStore phaseStateStore,
+            AdventurerDeathRevivalService deathRevivalService)
+        {
             var spatialIndex = new ActorSpatialIndexService(new FixedWorldGameSettingsRepository());
             var actorViewDataStore = ActorViewDataStoreTestFactory.Create();
             var navigationService = new ActorNavigationService(
@@ -469,7 +547,7 @@ namespace DungeonInn.Tests.EditMode
                 clock,
                 new GameWorldFrameBuffer(),
                 CreateCombatEffectExecutor(combatService, eventBus),
-                CreateActorDefeatOrchestrator(combatService, eventBus),
+                CreateActorDefeatOrchestrator(combatService, eventBus, deathRevivalService),
                 eventBus,
                 new ActorMovementService(
                     navigationService,
@@ -518,12 +596,55 @@ namespace DungeonInn.Tests.EditMode
             return worldState;
         }
 
+        static GameWorldState CreateWorldStateWithInn(ActorProcessingCandidateService candidateService)
+        {
+            var worldState = new GameWorldState(
+                new ActorSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                new ItemSpatialIndexService(new FixedWorldGameSettingsRepository()),
+                candidateService,
+                ActorViewDataStoreTestFactory.Create(),
+                new FixedWorldGameSettingsRepository());
+            worldState.Initialize(CreateGuildWithInn(), CreateGroundMap(), CreateDungeonWithWall(new GridPosition(-1, -1)));
+            return worldState;
+        }
+
         static AdventurerGuild CreateGuild()
         {
             return new AdventurerGuild(
                 Guid.NewGuid(),
                 new Inventory(new FixedItemStackLimitResolver()),
                 Array.Empty<Facility>());
+        }
+
+        static AdventurerGuild CreateGuildWithInn()
+        {
+            return new AdventurerGuild(
+                Guid.NewGuid(),
+                new Inventory(new FixedItemStackLimitResolver()),
+                new[]
+                {
+                    new Facility(
+                        Guid.NewGuid(),
+                        FacilityType.Inn,
+                        "Inn",
+                        1,
+                        1,
+                        new Inventory(new FixedItemStackLimitResolver()))
+                });
+        }
+
+        static void AssertDroppedItem(
+            GameWorldState worldState,
+            int itemId,
+            int count,
+            LayerPosition expectedPosition)
+        {
+            Assert.That(
+                worldState.Items.Any(item =>
+                    item.Stack.ItemId == itemId &&
+                    item.Stack.Count == count &&
+                    item.Position.Equals(expectedPosition)),
+                Is.True);
         }
 
         static GroundMap CreateGroundMap()

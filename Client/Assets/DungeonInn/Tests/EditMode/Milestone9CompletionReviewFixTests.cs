@@ -16,6 +16,7 @@ using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
+using DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack;
 using NUnit.Framework;
 using R3;
 
@@ -68,6 +69,53 @@ namespace DungeonInn.Tests.EditMode
 
             Assert.That(layers[0].FloorIndex, Is.EqualTo(0));
             Assert.That(layers[0].IsGenerated, Is.True);
+        }
+
+        [Test]
+        public void DungeonLayerInfoShowsGeneratedFloorsAndNextUnreachedFloor()
+        {
+            var repository = new HardcodedMasterRepository();
+            var worldState = CreateInitializedWorldState(repository);
+            var useCase = new GetDungeonLayerInfoUseCase(worldState, repository);
+
+            var layers = useCase.Execute();
+
+            Assert.That(layers.Select(x => x.FloorIndex), Is.EqualTo(new[] { 0, 1, 2 }));
+            Assert.That(layers[1].IsGenerated, Is.True);
+            Assert.That(layers[2].IsGenerated, Is.False);
+        }
+
+        [Test]
+        public void DungeonInfoViewDataDisplaysUnreachedForNextFloor()
+        {
+            var dungeonInfoService = new StubDungeonInfoScreenService(new[]
+            {
+                new DungeonLayerInfoSummary(
+                    1,
+                    true,
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<DungeonLayerMonsterSpawnSummary>(),
+                    Array.Empty<DungeonLayerItemDropSummary>()),
+                new DungeonLayerInfoSummary(
+                    2,
+                    false,
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<DungeonLayerMonsterSpawnSummary>(),
+                    Array.Empty<DungeonLayerItemDropSummary>())
+            });
+            var factory = new GameHudScreenStackViewDataFactory(
+                dungeonInfoService,
+                new ThrowingGuildManagementScreenService(),
+                new ThrowingMarketScreenService());
+
+            var viewData = factory.CreateDungeonInfo();
+
+            Assert.That(viewData.Layers[1].Title, Is.EqualTo("Floor 2"));
+            Assert.That(viewData.Layers[1].Status, Is.EqualTo("未到達"));
         }
 
         [Test]
@@ -124,6 +172,47 @@ namespace DungeonInn.Tests.EditMode
             public Observable<T> OnEvent<T>() where T : class, IGameEvent
             {
                 return Observable.Empty<T>();
+            }
+        }
+
+        sealed class StubDungeonInfoScreenService : IDungeonInfoScreenService
+        {
+            readonly DungeonLayerInfoSummary[] layers;
+
+            public StubDungeonInfoScreenService(DungeonLayerInfoSummary[] layers)
+            {
+                this.layers = layers;
+            }
+
+            public System.Collections.Generic.IReadOnlyList<DungeonLayerInfoSummary> GetLayers()
+            {
+                return layers;
+            }
+        }
+
+        sealed class ThrowingGuildManagementScreenService : IGuildManagementScreenService
+        {
+            public GuildManagementStatusSummary GetStatus()
+            {
+                throw new NotSupportedException();
+            }
+
+            public FacilityUpgradeResult UpgradeFacility(Guid facilityId)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        sealed class ThrowingMarketScreenService : IMarketScreenService
+        {
+            public System.Collections.Generic.IReadOnlyList<MarketOfferSummary> GetOffers()
+            {
+                throw new NotSupportedException();
+            }
+
+            public MarketOfferFulfillmentResult FulfillOffer(int offerId)
+            {
+                throw new NotSupportedException();
             }
         }
     }

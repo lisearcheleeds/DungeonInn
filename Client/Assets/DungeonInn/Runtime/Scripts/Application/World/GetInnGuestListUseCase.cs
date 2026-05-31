@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Map;
 using DungeonInn.Master;
 using VContainer;
 
@@ -49,6 +50,16 @@ namespace DungeonInn.Application.World
             {
                 if (actor.Behavior is not AdventurerBehavior adventurerBehavior ||
                     adventurerBehavior.LifecycleState != AdventurerLifecycleState.Recovering)
+                {
+                    continue;
+                }
+
+                if (!actor.Position.LayerId.Equals(MapLayerId.Ground))
+                {
+                    continue;
+                }
+
+                if (!worldState.Guild.HasActiveInnReservation(actor.Id))
                 {
                     continue;
                 }

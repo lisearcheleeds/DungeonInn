@@ -66,17 +66,10 @@ namespace DungeonInn.Application.Economy
             var innBalanceSettings = worldGameSettingsRepository.GetInnBalanceSettings();
             var fee = innBalanceSettings.FeePerStay;
 
-            if (!actor.TrySpendGold(fee))
-            {
-                eventPublisher.Publish(new InnSatisfactionChanged(
-                    actor.Id,
-                    innBalanceSettings.CannotPaySatisfactionDelta,
-                    InnSatisfactionChangeReason.CannotPayInnFee));
-                return false;
-            }
-
-            facility.ReceiveUsageFee(fee);
-            eventPublisher.Publish(new InnFeeCharged(actor.Id, fee, actor.Inventory.Gold, facility.Inventory.Gold));
+            var chargedFee = Math.Min(fee, actor.Inventory.Gold);
+            actor.TrySpendGold(chargedFee);
+            facility.ReceiveUsageFee(chargedFee);
+            eventPublisher.Publish(new InnFeeCharged(actor.Id, chargedFee, actor.Inventory.Gold, facility.Inventory.Gold));
             eventPublisher.Publish(new InnSatisfactionChanged(
                 actor.Id,
                 innBalanceSettings.StayedSatisfactionDelta,

@@ -13,6 +13,7 @@ namespace DungeonInn.Application.Actors.Ai
             { ActorGoalType.CollectItem, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
             { ActorGoalType.DefeatMonster, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
             { ActorGoalType.ReachFloor, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
+            { ActorGoalType.EarnMoney, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
             { ActorGoalType.WorkAtFacility, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
             { ActorGoalType.Patrol, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },
             { ActorGoalType.Recover, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm },

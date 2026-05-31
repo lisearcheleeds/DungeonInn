@@ -348,3 +348,123 @@ Decisionの結果をDomainへ適用するUseCase。
 - `CurrentScheduleTick` をAI評価間隔に使わない。
 - PolicyはDecisionを返し、Domain更新はUseCaseで行う。
 - イベントを細かくdirtyに直結させすぎない。
+
+## Ground return cycle
+
+Adventurer が Dungeon から Ground に戻った後の準備サイクルは、宿代不足による不要な再出発を避けるため、以下の順序に固定する。
+
+1. 装備更新
+2. 冒険者ギルドでのアイテム売却
+3. 宿屋予約、宿代支払い、HP 回復
+4. 回復アイテムなどの購入
+5. 次の冒険への出発判定
+
+装備更新は売却より前に行う。拾得した装備が現在の装備より強い場合、先に装備へ反映してから売却することで、使用すべき装備が売却対象になることを防ぐ。
+
+宿代が払えない Actor でも宿泊は成立する。満額を払える場合は満額を徴収し、足りない場合は所持 Gold 全額だけを徴収する。所持 Gold が 0 の場合も 0G の宿泊として扱い、宿代不足を理由に回復を諦めて次の冒険へ出発してはならない。
+
+現時点では、回復アイテムの購入処理は未実装の可能性がある。既存の `UseRecoveryItemOrchestrator` は購入ではなく、探索中に回復アイテムを使用する処理として扱う。
+
+## Adventure goal design
+
+Adventurer の冒険目的は、Actor が現在の冒険で「何を達成したら帰還してよいか」を表す。行動経路そのものではなく、探索中の終了条件を定義する。
+
+冒険目的の正典は `ActorGoal` に統一する。`DungeonExplorationGoal` / `DungeonExplorationGoalType` のような探索専用の重複 DTO / enum は廃止し、目的選択 UseCase は直接 `ActorGoal` を返す。これにより、目的選択、Actor への適用、帰還判定で別々の型変換を持たない。
+
+冒険目的は以下を標準とする。
+
+| Goal | 行動方針 | 達成条件 |
+|---|---|---|
+| `ReachFloor` | 戦闘力に応じた目標フロアへ向かう | 指定フロアに到達する |
+| `LevelUp` | 適切なフロアで探索・戦闘する | レベル上昇、またはレベル上昇に必要な経験値進捗を満たす |
+| `DefeatMonster` | 指定モンスターが出るフロアを優先して探索・戦闘する | 指定 species のモンスターを指定数倒す |
+| `EarnMoney` | 適切なフロアでモンスターを狩り、売却価値のあるドロップを集める | 今回の冒険で得た売却可能アイテムの見込み売却額が目標額に達する |
+| `CollectItem` | 指定アイテムが落ちるフロア・敵を優先して探索する | 指定 item id を指定数集める |
+
+`CollectMaterial` は独立 Goal として追加しない。素材集めは、具体的な素材 item id を指定する `CollectItem` として扱う。将来「素材タグのどれでもよい」目的が必要になった場合は、`CollectItem` を拡張するのではなく、タグ条件を表現できる Goal target を設計してから追加する。
+
+### EarnMoney
+
+`EarnMoney` は「Gold を直接拾う」ことではなく、「売却用または売却可能なドロップを集めて、帰還後に冒険者ギルドへ売る」ことを目的とする。
+
+`EarnMoney` の行動方針は `LevelUp` と同じでよい。Actor は自分の戦闘力に合うフロアを選び、モンスターを狩り、ドロップを拾う。差分は帰還条件だけである。
+
+`EarnMoney` の達成判定は以下で行う。
+
+1. 今回の冒険開始時点の所持品を基準として記録する
+2. 探索中に増えた売却可能アイテムを抽出する
+3. 装備中のアイテム、回復アイテム、保持すべき非売却アイテムは除外する
+4. `PricePolicy` と item master を使って、帰還後に施設へ売れる見込み金額を計算する
+5. 見込み売却額が `ActorGoal.TargetCount` 以上なら達成とする
+
+`EarnMoney` は `SpecialItemIds.Money` の所持数だけで判定してはならない。Dungeon 内で得た Gold がある場合は加算してよいが、主対象は売却可能ドロップの換金価値である。
+
+`EarnMoney` の `ActorGoal` は以下の意味を持つ。
+
+| Field | Meaning |
+|---|---|
+| `Type` | `ActorGoalType.EarnMoney` |
+| `TargetId` | 0。特定 item / monster を指定しない |
+| `TargetCount` | 目標見込み売却額 |
+| `ProgressCount` | 現在の見込み売却額 |
+
+探索中の基準所持品や討伐数など、冒険単位で変化する進捗は `ActorGoal` に直接詰め込まない。`ActorGoal` は目標と表示可能な進捗だけを持ち、冒険開始時点の inventory snapshot や討伐記録は Application service が管理する。
+
+### Goal selection
+
+冒険目的の選択は `SelectAdventureGoalUseCase` が担当する。探索専用の旧 `SelectDungeonExplorationGoalUseCase` は残さない。
+
+`SelectAdventureGoalUseCase` は以下の入力から候補を作る。
+
+- Actor のレベル、戦闘力、装備、所持品
+- Guild の施設状態、依頼、交換需要、現在の Gold 不足
+- Dungeon の深度帯、spawn table、drop table
+- 直近の冒険履歴
+
+候補選択は単純な均等ランダムではなく、重み付き選択にする。重みは後から調整可能な設定値として扱い、最低限以下の状況を反映する。
+
+- 宿屋・店・施設アップグレードなどで Guild 側の Gold が不足している場合、`EarnMoney` の重みを上げる
+- 未到達フロアがある場合、`ReachFloor` の重みを上げる
+- Actor が次レベルに近い場合、`LevelUp` の重みを上げる
+- 有効な依頼や交換需要がある場合、`CollectItem` の重みを上げる
+- 特定 monster の討伐需要がある場合、`DefeatMonster` の重みを上げる
+
+宿代不足時の `EarnMoney` 強制は行わない。宿代が足りない Actor も宿泊できるため、次回冒険目的は通常の `SelectAdventureGoalUseCase` による重み付き選択で決める。
+
+### Adventurer death revival
+
+Adventurer death is an exception to the normal Ground return cycle. When an Adventurer is defeated in combat and an Inn facility exists, the actor does not despawn. Instead, the death transaction performs the following order.
+
+1. Publish `ActorDefeated` and clear combat state.
+2. Drop every inventory item at the death position, including `SpecialItemIds.Money`.
+3. Unequip every equipped item and drop each equipment item at the death position.
+4. Move the Adventurer to Ground and set lifecycle to `Recovering`.
+5. Create a free Inn revival reservation and publish `ActorReservedInn`.
+
+The revival reservation does not charge the normal inn fee because all carried money has already been dropped at the death position. This flow is owned by Application lifecycle service state, not by permanent Domain actor state. If there is no Inn facility in the world, defeat keeps the legacy behavior and removes the actor from the world.
+
+If a Monster defeats an Adventurer, the Monster still receives the normal defeat experience reward. Revival is an Adventurer-side recovery flow and does not cancel the `ActorDefeated` fact.
+
+### Goal completion
+
+冒険目的の達成判定は `DecideAdventurerReturnUseCase` に閉じ込めすぎない。理想設計では、Goal ごとの進捗計算を `AdventureGoalProgressService` に分離し、`DecideAdventurerReturnUseCase` は以下だけを行う。
+
+1. `AdventureGoalProgressService` から現在の進捗を受け取る
+2. Goal 達成、HP 不足、回復アイテム不足などをスコア化する
+3. 帰還するかどうかを決める
+
+`AdventureGoalProgressService` は `ActorGoalType` ごとの進捗計算を持つ。
+
+- `ReachFloor`: 現在 LayerId
+- `LevelUp`: 冒険開始時点からの Level / Experience 差分
+- `DefeatMonster`: 冒険単位の defeated species count
+- `EarnMoney`: 冒険単位の sellable loot value
+- `CollectItem`: 冒険単位の item count 差分、または現在所持数
+
+### Floor and target selection
+
+`LevelUp` と `EarnMoney` は、どちらも「戦闘力に合う適切なフロアでモンスターを狩る」目的である。そのため、フロア選択処理は共有する。
+
+`DefeatMonster` / `CollectItem` は、将来的には spawn table / drop table を見て、対象 monster または item の期待値が高いフロアを選ぶ。ただし対象フロアが Actor の戦闘力を大きく超える場合は、より安全なフロアへフォールバックする。
+
+`ReachFloor` は到達可能な最深フロアを優先する。到達目標と戦闘力が矛盾する場合は、到達できる範囲の次フロアを選ぶ。

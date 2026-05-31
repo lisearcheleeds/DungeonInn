@@ -43,6 +43,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.ReachFloor, 2, 1, 0));
             worldState.RegisterActor(actor);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new ActorEnteredDungeon(actor.Id, 2));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -59,6 +60,7 @@ namespace DungeonInn.Tests.EditMode
             using var useCase = CreateUseCase(combatService, eventBus);
             var worldState = CreateWorldState();
             var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
+            useCase.RecordAdventureStart(actor);
             actor.GainItem(new ItemStack(1002, 2));
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
@@ -84,6 +86,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.DefeatMonster, 1, 1, 0));
             worldState.RegisterActor(actor);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new ActorDefeated(monsterId, actor.Id, DeathCause.Combat));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -101,11 +104,32 @@ namespace DungeonInn.Tests.EditMode
             var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
             actor.ChangeGoal(new ActorGoal(ActorGoalType.LevelUp, 0, 1, 0));
             worldState.RegisterActor(actor);
-            combatService.MarkCombatParticipation(actor.Id);
 
+            useCase.RecordAdventureStart(actor);
+            actor.GainExperience(1);
             eventBus.Publish(new CombatEncounterEnded(actor.Id));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
+            Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
+        }
+
+        [Test]
+        public void EarnMoneyGoalStartsReturningWhenSellableLootValueReachesTarget()
+        {
+            var combatService = new ActorCombatService();
+            using var eventBus = new CollectingGameEventBus();
+            using var useCase = CreateUseCase(combatService, eventBus);
+            var worldState = CreateWorldState();
+            var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
+            actor.ChangeGoal(new ActorGoal(ActorGoalType.EarnMoney, 0, 12, 0));
+            worldState.RegisterActor(actor);
+
+            useCase.RecordAdventureStart(actor);
+            actor.GainItem(new ItemStack(1002, 1));
+            eventBus.Publish(new ItemPickedUp(actor.Id, CreateItemInstance(1002, actor.Position)));
+            useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
+
+            Assert.That(actor.CurrentGoal.ProgressCount, Is.EqualTo(12));
             Assert.That(actor.RequireBehavior<AdventurerBehavior>().LifecycleState, Is.EqualTo(AdventurerLifecycleState.Returning));
         }
 
@@ -120,6 +144,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new ActorEnteredDungeon(actor.Id, 1));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -138,6 +163,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new CombatEncounterEnded(actor.Id));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -156,6 +182,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new CombatEncounterEnded(actor.Id));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -180,6 +207,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new CombatEncounterEnded(actor.Id));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -199,6 +227,7 @@ namespace DungeonInn.Tests.EditMode
             actor.ChangeGoal(new ActorGoal(ActorGoalType.CollectItem, 1002, 2, 0));
             worldState.RegisterActor(actor);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new CombatEncounterEnded(actor.Id));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -240,6 +269,7 @@ namespace DungeonInn.Tests.EditMode
             worldState.RegisterActor(monster);
             combatService.SetTarget(actor.Id, monster.Id);
 
+            useCase.RecordAdventureStart(actor);
             eventBus.Publish(new CombatEncounterEnded(actor.Id));
             useCase.ExecuteAsync(worldState).GetAwaiter().GetResult();
 
@@ -306,10 +336,15 @@ namespace DungeonInn.Tests.EditMode
             var achievementRegistry = new ActorExplorationAchievementRegistry(eventBus);
             var trackingService = new AdventurerReturnTrackingService(eventBus, profileRegistry, achievementRegistry);
             var masterRepository = new HardcodedMasterRepository();
+            var goalProgressService = new AdventureGoalProgressService(
+                combatService,
+                achievementRegistry,
+                masterRepository);
             var useCase = new DecideAdventurerReturnUseCase(
                 combatService,
                 eventBus,
                 trackingService,
+                goalProgressService,
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 new FixedWorldGameSettingsRepository(),
                 new RecoveryItemCandidateQuery(masterRepository),
@@ -378,6 +413,11 @@ namespace DungeonInn.Tests.EditMode
             public UniTask ExecuteAsync(IGameWorldState worldState)
             {
                 return useCase.ExecuteAsync(worldState);
+            }
+
+            public void RecordAdventureStart(Actor actor)
+            {
+                achievementRegistry.RecordAdventureStart(actor);
             }
 
             public void Dispose()

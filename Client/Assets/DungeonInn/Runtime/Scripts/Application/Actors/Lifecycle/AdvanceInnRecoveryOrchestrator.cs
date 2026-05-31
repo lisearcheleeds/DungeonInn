@@ -58,7 +58,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
             var guild = worldState.Guild;
             candidateService.CollectReservationCandidates(reservationActorIdBuffer);
-            for (var i = reservationActorIdBuffer.Count - 1; 0 <= i; i--)
+            for (var i = 0; i < reservationActorIdBuffer.Count; i++)
             {
                 var actorId = reservationActorIdBuffer[i];
                 var actor = worldState.FindActor(actorId);
@@ -124,20 +124,21 @@ namespace DungeonInn.Application.Actors.Lifecycle
                     continue;
                 }
 
-                if (!guild.CanReserveInn(facility.Id))
+                RemoveInvalidQueuedInnReservations(worldState, guild, facility.Id);
+                if (guild.TryPeekQueuedInnReservation(facility.Id, out var queuedActorId) &&
+                    !queuedActorId.Equals(actor.Id))
                 {
-                    ChangeToWaitingForInn(worldState, actor, behavior, facility);
-                    continue;
-                }
-
-                if (!chargeInnFeeUseCase.Execute(actor, guild, facility))
-                {
-                    behavior.ClearWaitingForInn();
-                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
-                    candidateService.ClearReservationCandidate(actor.Id);
+                    ChangeToWaitingForInn(worldState, guild, actor, behavior, facility);
                     return;
                 }
 
+                if (!guild.CanReserveInn(facility.Id))
+                {
+                    ChangeToWaitingForInn(worldState, guild, actor, behavior, facility);
+                    return;
+                }
+
+                chargeInnFeeUseCase.Execute(actor, guild, facility);
                 guild.ReserveInn(Guid.NewGuid(), actor, facility.Id, currentTick);
                 behavior.ClearWaitingForInn();
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
@@ -147,14 +148,66 @@ namespace DungeonInn.Application.Actors.Lifecycle
             }
         }
 
+        void RemoveInvalidQueuedInnReservations(
+            IGameWorldState worldState,
+            AdventurerGuild guild,
+            Guid innFacilityId)
+        {
+            while (guild.TryPeekQueuedInnReservation(innFacilityId, out var queuedActorId))
+            {
+                var queuedActor = worldState.FindActor(queuedActorId);
+                if (IsValidQueuedInnReservation(guild, queuedActorId, queuedActor))
+                {
+                    return;
+                }
+
+                guild.RemoveQueuedInnReservation(queuedActorId);
+                if (queuedActor == null)
+                {
+                    candidateService.RemoveActor(queuedActorId);
+                }
+            }
+        }
+
+        static bool IsValidQueuedInnReservation(
+            AdventurerGuild guild,
+            Guid queuedActorId,
+            Actor queuedActor)
+        {
+            if (guild.HasActiveInnReservation(queuedActorId))
+            {
+                return false;
+            }
+
+            if (queuedActor == null)
+            {
+                return false;
+            }
+
+            if (queuedActor.Behavior is not AdventurerBehavior queuedBehavior)
+            {
+                return false;
+            }
+
+            if (queuedBehavior.LifecycleState != AdventurerLifecycleState.Recovering &&
+                queuedBehavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
+            {
+                return false;
+            }
+
+            return queuedActor.Position.LayerId.Equals(MapLayerId.Ground);
+        }
+
         void ChangeToWaitingForInn(
             IGameWorldState worldState,
+            AdventurerGuild guild,
             Actor actor,
             AdventurerBehavior behavior,
             Facility facility)
         {
             var wasWaiting = behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn;
             var innBalanceSettings = worldGameSettingsRepository.GetInnBalanceSettings();
+            guild.EnqueueInnReservation(actor, facility.Id);
             behavior.StartWaitingForInn(gameClock.CurrentDay);
 
             var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;

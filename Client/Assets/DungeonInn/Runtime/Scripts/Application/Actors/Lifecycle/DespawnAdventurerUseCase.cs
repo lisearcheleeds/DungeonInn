@@ -45,6 +45,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 return;
             }
 
+            worldState.Guild.RemoveQueuedInnReservation(actor.Id);
             eventPublisher.Publish(new ActorDeparted(actor.Id, waitedDays));
         }
     }

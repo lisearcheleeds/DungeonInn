@@ -178,6 +178,11 @@ namespace DungeonInn.Application.Economy
 
         static bool IsSellable(Actor actor, ItemMaster itemMaster)
         {
+            if (itemMaster.HasTag(ItemTag.Recovery) || itemMaster.HasTag(ItemTag.ManaRecovery))
+            {
+                return false;
+            }
+
             if (IsEquipmentItem(itemMaster))
             {
                 return !IsEquipped(actor, itemMaster.Id);

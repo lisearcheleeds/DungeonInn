@@ -279,11 +279,11 @@ namespace DungeonInn.Application.World
 
             await AdvanceScheduledActorLifecycleAsync(scheduleTicks);
             cancellationToken.ThrowIfCancellationRequested();
-            await advanceInnRecoveryOrchestrator.EnsureReservationsAsync(gameWorldState, currentScheduleTick);
-            cancellationToken.ThrowIfCancellationRequested();
 
             updateEquipmentUseCase.Execute(gameWorldState);
             sellItemsUseCase.Execute(gameWorldState);
+            await advanceInnRecoveryOrchestrator.EnsureReservationsAsync(gameWorldState, currentScheduleTick);
+            cancellationToken.ThrowIfCancellationRequested();
             await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
             cancellationToken.ThrowIfCancellationRequested();
             await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);

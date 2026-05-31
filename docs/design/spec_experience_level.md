@@ -63,7 +63,7 @@
 
 - 冒険者 Lv1→Lv2 に必要な累計XP = 30
 - Lv1ゴブリンを倒すと 10 XP 獲得
-- → **2体倒してレベルアップ**（2体で20 XP + 初期0 XP = 累計20、3体目で30 XP到達）
+- → **3体倒してレベルアップ**（2体で20 XP、3体目で30 XP到達）
 
 ---
 
@@ -71,14 +71,16 @@
 
 ```
 ActorDefeatOrchestrator（敵HPが0になった時）
-  └─ GrantExperienceService.Grant(killer, defeated)
+  └─ GrantExperienceUseCase.Execute(killer, defeated)
        1. killer.ArchetypeId <= 0 なら早期リターン（テスト用アクター対策）
        2. xpReward を計算
        3. killer.GainExperience(xpReward)
-       4. IGameEventBus.Publish(ExperienceGranted)
+       4. IEventPublisher.Publish(ExperienceGranted)
        5. killer.RecalculateLevel(levelTable)
-       6. レベルが上昇していれば IGameEventBus.Publish(ActorLeveledUp)
+       6. レベルが上昇していれば IEventPublisher.Publish(ActorLeveledUp)
 ```
+
+撃破報酬は「倒した事実」に対して発生する。モンスターが冒険者を倒した場合も、攻撃者が存在するなら `GrantExperienceUseCase` により経験値を得る。冒険者側が宿屋で復活しても、撃破報酬は取り消さない。
 
 ### Actor.RecalculateLevel(LevelTable)
 
@@ -112,5 +114,5 @@ RefreshParams();  // Stats / 武器パラメータを再計算
 ## 設計上の注意
 
 - `Level` は経験値から常に算出可能なキャッシュ。経験値を直接変更した場合は必ず `RecalculateLevel` を呼ぶこと
-- `ArchetypeId = 0` のアクター（テスト用途）は `GrantExperienceService` が早期リターンするため経験値処理をスキップする
+- `ArchetypeId = 0` のアクター（テスト用途）は `GrantExperienceUseCase` が早期リターンするため経験値処理をスキップする
 - `LevelTable` は最大レベルを `cumulativeXp.Length - 1` で表現する。配列は `[0..MaxLevel]` のサイズが必要

@@ -41,24 +41,42 @@ namespace DungeonInn.Application.Dungeons
                 Array.Empty<DungeonLayerMonsterSpawnSummary>(),
                 Array.Empty<DungeonLayerItemDropSummary>()));
 
-            foreach (var depthBandMaster in masterRepository.DungeonDepthBandMasters.Values
-                .OrderBy(x => x.MinFloorIndex)
-                .ThenByDescending(x => x.SelectionPriority))
+            foreach (var floorIndex in worldState.Dungeon.Floors.Keys.OrderBy(x => x))
             {
-                var floorIndex = depthBandMaster.MinFloorIndex;
-                var monsterSpawnTable = masterRepository.GetSpawnTableMaster(depthBandMaster.MonsterSpawnTableId);
-                var monsterSpawns = CreateMonsterSpawnSummaries(monsterSpawnTable);
-                summaries.Add(new DungeonLayerInfoSummary(
-                    floorIndex,
-                    worldState.Dungeon.HasFloor(floorIndex),
-                    CountActors(floorIndex, ActorBehaviorType.Adventurer),
-                    CountActors(floorIndex, ActorBehaviorType.Monster),
-                    depthBandMaster.DifficultyCoefficient,
-                    monsterSpawns,
-                    CreateItemDropSummaries(monsterSpawns)));
+                summaries.Add(CreateFloorSummary(floorIndex, true));
             }
 
+            summaries.Add(CreateFloorSummary(GetNextUnreachedFloorIndex(), false));
             return summaries;
+        }
+
+        DungeonLayerInfoSummary CreateFloorSummary(int floorIndex, bool isGenerated)
+        {
+            var depthBandMaster = masterRepository.GetDungeonDepthBandMasterForFloor(floorIndex);
+            var monsterSpawnTable = masterRepository.GetSpawnTableMaster(depthBandMaster.MonsterSpawnTableId);
+            var monsterSpawns = CreateMonsterSpawnSummaries(monsterSpawnTable);
+            return new DungeonLayerInfoSummary(
+                floorIndex,
+                isGenerated,
+                isGenerated ? CountActors(floorIndex, ActorBehaviorType.Adventurer) : 0,
+                isGenerated ? CountActors(floorIndex, ActorBehaviorType.Monster) : 0,
+                depthBandMaster.DifficultyCoefficient,
+                monsterSpawns,
+                CreateItemDropSummaries(monsterSpawns));
+        }
+
+        int GetNextUnreachedFloorIndex()
+        {
+            var maxFloorIndex = 0;
+            foreach (var floorIndex in worldState.Dungeon.Floors.Keys)
+            {
+                if (maxFloorIndex < floorIndex)
+                {
+                    maxFloorIndex = floorIndex;
+                }
+            }
+
+            return maxFloorIndex + 1;
         }
 
         IReadOnlyList<DungeonLayerMonsterSpawnSummary> CreateMonsterSpawnSummaries(SpawnTableMaster spawnTable)

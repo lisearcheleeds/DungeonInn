@@ -66,7 +66,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void ChargeInnFeeRecordsRejectedGuestWhenActorCannotPay()
+        public void ChargeInnFeeChargesRemainingGoldWhenActorCannotPayFullFee()
         {
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(0);
@@ -75,10 +75,11 @@ namespace DungeonInn.Tests.EditMode
 
             var charged = useCase.Execute(actor, worldState.Guild);
 
-            Assert.That(charged, Is.False);
-            Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(0));
+            Assert.That(charged, Is.True);
+            Assert.That(eventBus.GetEvents<InnFeeCharged>().Count, Is.EqualTo(1));
+            Assert.That(eventBus.GetEvents<InnFeeCharged>()[0].FeeAmount, Is.EqualTo(0));
             Assert.That(eventBus.GetEvents<InnSatisfactionChanged>().Count, Is.EqualTo(1));
-            Assert.That(eventBus.GetEvents<InnSatisfactionChanged>()[0].Reason, Is.EqualTo(InnSatisfactionChangeReason.CannotPayInnFee));
+            Assert.That(eventBus.GetEvents<InnSatisfactionChanged>()[0].Reason, Is.EqualTo(InnSatisfactionChangeReason.StayedAtInn));
         }
 
         [Test]
@@ -94,10 +95,10 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void AutomatedItemSaleTransfersItemsToFacilityAndRecordsTransaction()
         {
-            const int herbItemId = 1001;
+            const int sellableItemId = 1002;
             var worldState = CreateInitializedWorldState();
             var actor = CreateAdventurer(0);
-            actor.GainItem(new ItemStack(herbItemId, 2));
+            actor.GainItem(new ItemStack(sellableItemId, 2));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var clock = new StubGameClock { CurrentScheduleTickValue = 123 };
@@ -107,30 +108,30 @@ namespace DungeonInn.Tests.EditMode
 
             useCase.Execute(worldState);
 
-            Assert.That(actor.Inventory.Gold, Is.EqualTo(10));
-            Assert.That(actor.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(25));
+            Assert.That(actor.Inventory.Has(new ItemStack(sellableItemId, 1)), Is.False);
             Assert.That(worldState.Guild.Inventory.Gold, Is.EqualTo(InitialWorld.GuildReserveGold));
-            Assert.That(generalStore.Inventory.Gold, Is.EqualTo(initialGeneralStoreGold - 10));
-            Assert.That(generalStore.Inventory.Has(new ItemStack(herbItemId, 2)), Is.True);
+            Assert.That(generalStore.Inventory.Gold, Is.EqualTo(initialGeneralStoreGold - 25));
+            Assert.That(generalStore.Inventory.Has(new ItemStack(sellableItemId, 2)), Is.True);
             Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(1));
             Assert.That(worldState.Guild.Transactions[0].InitiatorId, Is.EqualTo(actor.Id));
             Assert.That(worldState.Guild.Transactions[0].CounterpartyId, Is.EqualTo(generalStore.Id));
-            Assert.That(worldState.Guild.Transactions[0].InitiatorItems[0].ItemId, Is.EqualTo(herbItemId));
-            Assert.That(worldState.Guild.Transactions[0].CounterpartyItems[0].Count, Is.EqualTo(10));
+            Assert.That(worldState.Guild.Transactions[0].InitiatorItems[0].ItemId, Is.EqualTo(sellableItemId));
+            Assert.That(worldState.Guild.Transactions[0].CounterpartyItems[0].Count, Is.EqualTo(25));
             Assert.That(worldState.Guild.Transactions[0].OccurredAtTick, Is.EqualTo(123));
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(1));
-            Assert.That(eventBus.GetEvents<ItemSold>()[0].TotalPrice, Is.EqualTo(10));
+            Assert.That(eventBus.GetEvents<ItemSold>()[0].TotalPrice, Is.EqualTo(25));
         }
 
         [Test]
         public void AutomatedItemSaleSkipsWhenFacilityCannotPay()
         {
-            const int herbItemId = 1001;
+            const int sellableItemId = 1002;
             var worldState = CreateInitializedWorldState();
             var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
             ((IExchangeParticipant)generalStore).Remove(new ItemStack(SpecialItemIds.Money, InitialWorld.GeneralStoreGold));
             var actor = CreateAdventurer(0);
-            actor.GainItem(new ItemStack(herbItemId, 1));
+            actor.GainItem(new ItemStack(sellableItemId, 1));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var useCase = new SellItemsUseCase(
@@ -142,8 +143,8 @@ namespace DungeonInn.Tests.EditMode
             useCase.Execute(worldState);
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
-            Assert.That(actor.Inventory.Has(new ItemStack(herbItemId, 1)), Is.True);
-            Assert.That(generalStore.Inventory.Has(new ItemStack(herbItemId, 1)), Is.False);
+            Assert.That(actor.Inventory.Has(new ItemStack(sellableItemId, 1)), Is.True);
+            Assert.That(generalStore.Inventory.Has(new ItemStack(sellableItemId, 1)), Is.False);
             Assert.That(worldState.Guild.Transactions.Count, Is.EqualTo(0));
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(0));
         }
@@ -177,7 +178,7 @@ namespace DungeonInn.Tests.EditMode
         [Test]
         public void AutomatedItemSaleUsesCandidateActorWhenManyActorsExist()
         {
-            const int herbItemId = 1001;
+            const int sellableItemId = 1002;
             var worldState = CreateInitializedWorldState();
             for (var i = 0; i < 120; i++)
             {
@@ -185,7 +186,7 @@ namespace DungeonInn.Tests.EditMode
             }
 
             var actor = CreateAdventurer(0, AdventurerLifecycleState.WaitingForInn);
-            actor.GainItem(new ItemStack(herbItemId, 2));
+            actor.GainItem(new ItemStack(sellableItemId, 2));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
             var useCase = new SellItemsUseCase(
@@ -196,7 +197,7 @@ namespace DungeonInn.Tests.EditMode
 
             useCase.Execute(worldState);
 
-            Assert.That(actor.Inventory.Gold, Is.EqualTo(10));
+            Assert.That(actor.Inventory.Gold, Is.EqualTo(25));
             Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(1));
         }
 

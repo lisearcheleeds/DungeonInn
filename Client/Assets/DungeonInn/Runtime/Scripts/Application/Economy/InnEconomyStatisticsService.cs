@@ -52,8 +52,7 @@ namespace DungeonInn.Application.Economy
         {
             var statistics = GetMutableStatistics(gameClock.CurrentDay);
             statistics.SatisfactionDelta += gameEvent.Delta;
-            if (gameEvent.Reason == InnSatisfactionChangeReason.WaitingForInn ||
-                gameEvent.Reason == InnSatisfactionChangeReason.CannotPayInnFee)
+            if (gameEvent.Reason == InnSatisfactionChangeReason.WaitingForInn)
             {
                 statistics.RejectedGuests++;
             }

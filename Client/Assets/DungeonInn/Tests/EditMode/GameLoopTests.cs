@@ -242,7 +242,7 @@ namespace DungeonInn.Tests.EditMode
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository())), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
-                new SelectDungeonExplorationGoalUseCase(1),
+                new SelectAdventureGoalUseCase(new HardcodedMasterRepository(), 1),
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(),
@@ -251,7 +251,8 @@ namespace DungeonInn.Tests.EditMode
                 spatialIndex,
                 actorViewDataStore,
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()));
             var before = actor.Position;
 
             for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
@@ -319,7 +320,7 @@ namespace DungeonInn.Tests.EditMode
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository())), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
-                new SelectDungeonExplorationGoalUseCase(1),
+                new SelectAdventureGoalUseCase(new HardcodedMasterRepository(), 1),
                 navigationService,
                 new ActorCombatService(),
                 new GameRandom(),
@@ -328,7 +329,8 @@ namespace DungeonInn.Tests.EditMode
                 spatialIndex,
                 actorViewDataStore,
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()));
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
 
             for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
@@ -840,7 +842,7 @@ namespace DungeonInn.Tests.EditMode
                 new UseDungeonStairOrchestrator(
                     new EnsureDungeonFloorGeneratedOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository())), new NoOpEventPublisher())),
                 CreateSelectDungeonTargetFloorUseCase(),
-                new SelectDungeonExplorationGoalUseCase(1),
+                new SelectAdventureGoalUseCase(new HardcodedMasterRepository(), 1),
                 navigationService,
                 combatService,
                 new GameRandom(),
@@ -849,7 +851,8 @@ namespace DungeonInn.Tests.EditMode
                 spatialIndex,
                 actorViewDataStore,
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()));
         }
 
         static SelectDungeonTargetFloorUseCase CreateSelectDungeonTargetFloorUseCase()

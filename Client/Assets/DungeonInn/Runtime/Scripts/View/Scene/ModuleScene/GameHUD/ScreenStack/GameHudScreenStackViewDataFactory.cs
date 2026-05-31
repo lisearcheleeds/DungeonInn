@@ -47,7 +47,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack
 
                 layers.Add(new DungeonLayerListItemViewData(
                     summary.FloorIndex == 0 ? "Ground" : $"Floor {summary.FloorIndex}",
-                    summary.IsGenerated ? "Generated" : "Not generated",
+                    summary.IsGenerated ? "Generated" : "未到達",
                     $"Adventurers {summary.AdventurerCount} / Monsters {summary.MonsterCount}",
                     new DungeonLayerPopupViewData(monsters, drops)));
             }
