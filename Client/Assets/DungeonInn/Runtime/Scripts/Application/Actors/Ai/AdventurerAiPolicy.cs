@@ -4,7 +4,9 @@ using R3;
 using VContainer;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Map;
 
 namespace DungeonInn.Application.Actors.Ai
 {
@@ -12,15 +14,20 @@ namespace DungeonInn.Application.Actors.Ai
     {
         readonly Dictionary<Guid, int> lastKnownExplorationRoomArrivalCountByActor = new();
         readonly Dictionary<Guid, int> lastKnownInventoryCountByActor = new();
+        readonly FacilityNeedSelector facilityNeedSelector;
         DisposableBag bag;
 
         [Inject]
-        public AdventurerAiPolicy(IEventSubscriber eventSubscriber)
+        public AdventurerAiPolicy(
+            IEventSubscriber eventSubscriber,
+            FacilityNeedSelector facilityNeedSelector)
         {
             if (eventSubscriber == null)
             {
                 throw new ArgumentNullException(nameof(eventSubscriber));
             }
+
+            this.facilityNeedSelector = facilityNeedSelector;
 
             eventSubscriber.OnEvent<ActorDefeated>()
                 .Subscribe(gameEvent => { RemoveState(gameEvent.ActorId); })
@@ -51,6 +58,34 @@ namespace DungeonInn.Application.Actors.Ai
         public ActorAiDecision EvaluateMidTerm(ActorAiContext context)
         {
             if (context.Actor.CurrentPlan.Type != ActorPlanType.None)
+            {
+                return ActorAiDecision.None();
+            }
+
+            var actor = context.Actor;
+            if (actor.Behavior is AdventurerBehavior behavior &&
+                actor.Position.LayerId.Equals(MapLayerId.Ground) &&
+                behavior.LifecycleState == AdventurerLifecycleState.Recovering)
+            {
+                if (context.WorldState != null &&
+                    facilityNeedSelector != null &&
+                    facilityNeedSelector.TrySelectFacility(context.WorldState.Guild, actor, out var facility))
+                {
+                    return new ActorAiDecision(
+                        null,
+                        ActorPlan.UseFacility(facility.Id),
+                        null);
+                }
+
+                if (actor.Hp < actor.Params.MaxHp)
+                {
+                    return ActorAiDecision.None();
+                }
+            }
+
+            if (actor.Behavior is AdventurerBehavior waitingBehavior &&
+                actor.Position.LayerId.Equals(MapLayerId.Ground) &&
+                waitingBehavior.LifecycleState == AdventurerLifecycleState.WaitingForInn)
             {
                 return ActorAiDecision.None();
             }
@@ -95,6 +130,11 @@ namespace DungeonInn.Application.Actors.Ai
             }
 
             if (context.Actor.CurrentAction.State == ActorActionState.Running)
+            {
+                return ActorAiDecision.None();
+            }
+
+            if (context.Actor.CurrentPlan.Type == ActorPlanType.UseFacility)
             {
                 return ActorAiDecision.None();
             }

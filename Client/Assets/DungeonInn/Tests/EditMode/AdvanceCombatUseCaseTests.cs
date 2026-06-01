@@ -5,7 +5,6 @@ using NUnit.Framework;
 using R3;
 using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;

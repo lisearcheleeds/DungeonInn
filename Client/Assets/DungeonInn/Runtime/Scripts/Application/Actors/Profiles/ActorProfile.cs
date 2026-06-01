@@ -10,24 +10,22 @@ namespace DungeonInn.Application.Actors.Profiles
         public int ArchetypeId { get; }
         public int SpeciesId { get; }
         public ActorBehaviorType BehaviorType { get; }
-
-        public ActorProfile(Guid actorId, string displayName)
-            : this(actorId, displayName, 0, 0, ActorBehaviorType.None)
-        {
-        }
+        public int AdventurerSpawnMasterId { get; }
 
         public ActorProfile(
             Guid actorId,
             string displayName,
             int archetypeId,
             int speciesId,
-            ActorBehaviorType behaviorType)
+            ActorBehaviorType behaviorType,
+            int adventurerSpawnMasterId)
         {
             ActorId = actorId;
             DisplayName = displayName ?? string.Empty;
             ArchetypeId = Math.Max(0, archetypeId);
             SpeciesId = Math.Max(0, speciesId);
             BehaviorType = behaviorType;
+            AdventurerSpawnMasterId = Math.Max(0, adventurerSpawnMasterId);
         }
     }
 }

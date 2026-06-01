@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -21,7 +20,7 @@ using VContainer;
 namespace DungeonInn.Application.Dungeons
 {
     /// <summary>
-    /// ダンジョン階段を利用して、地上また�E別フロアへ移動するユースケース、E    /// </summary>
+    /// 繝繝ｳ繧ｸ繝ｧ繝ｳ髫取ｮｵ繧貞茜逕ｨ縺励※縲∝慍荳翫∪縺滂ｿｽE蛻･繝輔Ο繧｢縺ｸ遘ｻ蜍輔☆繧九Θ繝ｼ繧ｹ繧ｱ繝ｼ繧ｹ縲・    /// </summary>
     public sealed class UseDungeonStairOrchestrator
     {
         readonly EnsureDungeonFloorGeneratedOrchestrator ensureDungeonFloorGeneratedUseCase;
@@ -33,7 +32,7 @@ namespace DungeonInn.Application.Dungeons
         }
 
         /// <summary>
-        /// 現在位置が階段上であることを確認し、移動�Eレイヤーの対応階段付近へワープする、E        /// </summary>
+        /// 迴ｾ蝨ｨ菴咲ｽｮ縺碁嚴谿ｵ荳翫〒縺ゅｋ縺薙→繧堤｢ｺ隱阪＠縲∫ｧｻ蜍包ｿｽE繝ｬ繧､繝､繝ｼ縺ｮ蟇ｾ蠢憺嚴谿ｵ莉倩ｿ代∈繝ｯ繝ｼ繝励☆繧九・        /// </summary>
         public async UniTask<LayerPosition> ExecuteAsync(
             Dungeon dungeon,
             GroundMap groundMap,

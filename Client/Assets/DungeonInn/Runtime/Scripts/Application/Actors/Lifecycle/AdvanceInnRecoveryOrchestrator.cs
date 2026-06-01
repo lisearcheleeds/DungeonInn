@@ -1,16 +1,6 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Economy;
-using DungeonInn.Application.Event;
-using DungeonInn.Application.Event.Events;
-using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.World;
-using DungeonInn.Domain.Actor;
-using DungeonInn.Domain.Facility;
-using DungeonInn.Domain.Guild;
-using DungeonInn.Domain.Map;
 using VContainer;
 
 namespace DungeonInn.Application.Actors.Lifecycle
@@ -18,226 +8,18 @@ namespace DungeonInn.Application.Actors.Lifecycle
     public sealed class AdvanceInnRecoveryOrchestrator
     {
         readonly RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase;
-        readonly ChargeInnFeeUseCase chargeInnFeeUseCase;
-        readonly DespawnAdventurerUseCase despawnAdventurerUseCase;
-        readonly IEventPublisher eventPublisher;
-        readonly IGameClock gameClock;
-        readonly ActorProcessingCandidateService candidateService;
-        readonly IWorldGameSettingsRepository worldGameSettingsRepository;
-        readonly List<Guid> reservationActorIdBuffer = new();
 
         [Inject]
         public AdvanceInnRecoveryOrchestrator(
-            RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase,
-            ChargeInnFeeUseCase chargeInnFeeUseCase,
-            DespawnAdventurerUseCase despawnAdventurerUseCase,
-            IEventPublisher eventPublisher,
-            IGameClock gameClock,
-            ActorProcessingCandidateService candidateService,
-            IWorldGameSettingsRepository worldGameSettingsRepository)
+            RecoverAdventurerAtInnUseCase recoverAdventurerAtInnUseCase)
         {
             this.recoverAdventurerAtInnUseCase = recoverAdventurerAtInnUseCase
                 ?? throw new ArgumentNullException(nameof(recoverAdventurerAtInnUseCase));
-            this.chargeInnFeeUseCase = chargeInnFeeUseCase
-                ?? throw new ArgumentNullException(nameof(chargeInnFeeUseCase));
-            this.despawnAdventurerUseCase = despawnAdventurerUseCase
-                ?? throw new ArgumentNullException(nameof(despawnAdventurerUseCase));
-            this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
-            this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
-            this.candidateService = candidateService ?? throw new ArgumentNullException(nameof(candidateService));
-            this.worldGameSettingsRepository =
-                worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
-        }
-
-        public UniTask EnsureReservationsAsync(IGameWorldState worldState, int currentTick)
-        {
-            if (worldState == null)
-            {
-                throw new ArgumentNullException(nameof(worldState));
-            }
-
-            var guild = worldState.Guild;
-            candidateService.CollectReservationCandidates(reservationActorIdBuffer);
-            for (var i = 0; i < reservationActorIdBuffer.Count; i++)
-            {
-                var actorId = reservationActorIdBuffer[i];
-                var actor = worldState.FindActor(actorId);
-                if (actor == null)
-                {
-                    candidateService.RemoveActor(actorId);
-                    continue;
-                }
-
-                if (actor.Behavior is not AdventurerBehavior behavior)
-                {
-                    candidateService.RemoveActor(actor.Id);
-                    continue;
-                }
-
-                if (behavior.LifecycleState != AdventurerLifecycleState.Recovering &&
-                    behavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
-                {
-                    candidateService.ClearReservationCandidate(actor.Id);
-                    continue;
-                }
-
-                if (!actor.Position.LayerId.Equals(MapLayerId.Ground))
-                {
-                    candidateService.ClearReservationCandidate(actor.Id);
-                    continue;
-                }
-
-                EnsureInnReservation(worldState, guild, actor, behavior, currentTick);
-            }
-
-            return UniTask.CompletedTask;
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
         {
             return recoverAdventurerAtInnUseCase.ExecuteAsync(worldState, deltaGameSeconds);
-        }
-
-        void EnsureInnReservation(
-            IGameWorldState worldState,
-            AdventurerGuild guild,
-            Actor actor,
-            AdventurerBehavior behavior,
-            int currentTick)
-        {
-            if (guild.HasActiveInnReservation(actor.Id))
-            {
-                if (behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn)
-                {
-                    behavior.ClearWaitingForInn();
-                    behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                    candidateService.MarkRecoveryCandidate(actor.Id);
-                }
-
-                return;
-            }
-
-            foreach (var facility in guild.Facilities)
-            {
-                if (facility.Type != FacilityType.Inn)
-                {
-                    continue;
-                }
-
-                RemoveInvalidQueuedInnReservations(worldState, guild, facility.Id);
-                if (guild.TryPeekQueuedInnReservation(facility.Id, out var queuedActorId) &&
-                    !queuedActorId.Equals(actor.Id))
-                {
-                    ChangeToWaitingForInn(worldState, guild, actor, behavior, facility);
-                    return;
-                }
-
-                if (!guild.CanReserveInn(facility.Id))
-                {
-                    ChangeToWaitingForInn(worldState, guild, actor, behavior, facility);
-                    return;
-                }
-
-                chargeInnFeeUseCase.Execute(actor, guild, facility);
-                guild.ReserveInn(Guid.NewGuid(), actor, facility.Id, currentTick);
-                behavior.ClearWaitingForInn();
-                behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                candidateService.MarkRecoveryCandidate(actor.Id);
-                eventPublisher.Publish(new ActorReservedInn(actor.Id, facility.Id));
-                return;
-            }
-        }
-
-        void RemoveInvalidQueuedInnReservations(
-            IGameWorldState worldState,
-            AdventurerGuild guild,
-            Guid innFacilityId)
-        {
-            while (guild.TryPeekQueuedInnReservation(innFacilityId, out var queuedActorId))
-            {
-                var queuedActor = worldState.FindActor(queuedActorId);
-                if (IsValidQueuedInnReservation(guild, queuedActorId, queuedActor))
-                {
-                    return;
-                }
-
-                guild.RemoveQueuedInnReservation(queuedActorId);
-                if (queuedActor == null)
-                {
-                    candidateService.RemoveActor(queuedActorId);
-                }
-            }
-        }
-
-        static bool IsValidQueuedInnReservation(
-            AdventurerGuild guild,
-            Guid queuedActorId,
-            Actor queuedActor)
-        {
-            if (guild.HasActiveInnReservation(queuedActorId))
-            {
-                return false;
-            }
-
-            if (queuedActor == null)
-            {
-                return false;
-            }
-
-            if (queuedActor.Behavior is not AdventurerBehavior queuedBehavior)
-            {
-                return false;
-            }
-
-            if (queuedBehavior.LifecycleState != AdventurerLifecycleState.Recovering &&
-                queuedBehavior.LifecycleState != AdventurerLifecycleState.WaitingForInn)
-            {
-                return false;
-            }
-
-            return queuedActor.Position.LayerId.Equals(MapLayerId.Ground);
-        }
-
-        void ChangeToWaitingForInn(
-            IGameWorldState worldState,
-            AdventurerGuild guild,
-            Actor actor,
-            AdventurerBehavior behavior,
-            Facility facility)
-        {
-            var wasWaiting = behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn;
-            var innBalanceSettings = worldGameSettingsRepository.GetInnBalanceSettings();
-            guild.EnqueueInnReservation(actor, facility.Id);
-            behavior.StartWaitingForInn(gameClock.CurrentDay);
-
-            var waitedDays = gameClock.CurrentDay - behavior.WaitingForInnStartedDay;
-            if (innBalanceSettings.AdventurerWaitDepartureDays <= waitedDays)
-            {
-                candidateService.RemoveActor(actor.Id);
-                despawnAdventurerUseCase.Execute(worldState, actor, waitedDays);
-                return;
-            }
-
-            if (wasWaiting)
-            {
-                return;
-            }
-
-            eventPublisher.Publish(new InnSatisfactionChanged(
-                actor.Id,
-                innBalanceSettings.WaitingSatisfactionDelta,
-                InnSatisfactionChangeReason.WaitingForInn));
-            eventPublisher.Publish(new ActorAiDecisionRecorded(
-                actor.Id,
-                AiDecisionType.WaitForInn,
-                AiDecisionReasonType.NoVacantInnRoom,
-                default,
-                facility.Id,
-                0,
-                0,
-                0,
-                0));
-            eventPublisher.Publish(new ActorWaitingForInn(actor.Id, facility.Id));
         }
     }
 }

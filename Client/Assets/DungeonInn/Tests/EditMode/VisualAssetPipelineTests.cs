@@ -138,7 +138,7 @@ namespace DungeonInn.Tests.EditMode
                 Assert.That(serializedGameSettings.FindProperty("actorMoveArrivalDistanceMeters"), Is.Null);
             }
 
-            Assert.That(spawnBalanceSettings.MaxAdventurerCount, Is.EqualTo(8));
+            Assert.That(spawnBalanceSettings.MaxAdventurerCount, Is.EqualTo(30));
             Assert.That(returnPolicySettings.GoalCompletedScore, Is.EqualTo(100));
             Assert.That(combatBalanceSettings.ProjectileHitRadiusMeters, Is.EqualTo(0.5f));
             Assert.That(worldMapViewSettings.ChunkTileSize, Is.EqualTo(16));

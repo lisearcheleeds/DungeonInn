@@ -1,5 +1,4 @@
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Phase;
@@ -32,7 +31,8 @@ namespace DungeonInn.GameSession
                 .As<IAssetScope>();
             builder.Register<WorldGameSettingsRepository>(Lifetime.Singleton).AsSelf();
             builder.Register(container => container.Resolve<WorldGameSettingsRepository>(), Lifetime.Singleton)
-                .As<IWorldGameSettingsRepository>();
+                .As<IWorldGameSettingsRepository>()
+                .As<IFacilityBuildingDefinitionRepository>();
 
             // === View: Shared utilities ===
             builder.Register<ActorScreenPositionProviderProxy>(Lifetime.Singleton)
@@ -71,6 +71,7 @@ namespace DungeonInn.GameSession
             builder.Register<AdventurerReturnTrackingService>(Lifetime.Singleton);
             builder.Register<AdventurerRecoveryStateService>(Lifetime.Singleton);
             builder.Register<ActorProcessingCandidateService>(Lifetime.Singleton);
+            builder.Register<ActorFacilityPresenceService>(Lifetime.Singleton);
             builder.Register<AdventurerDeathRevivalService>(Lifetime.Singleton);
             builder.Register<AdventurerExplorationStateService>(Lifetime.Singleton);
             builder.Register<HardcodedActorActionPhaseMasterRepository>(Lifetime.Singleton)
@@ -83,6 +84,7 @@ namespace DungeonInn.GameSession
             builder.Register<ActorCombatService>(Lifetime.Singleton).As<IActorCombatService>();
             builder.Register<ActorSpatialIndexService>(Lifetime.Singleton);
             builder.Register<ItemSpatialIndexService>(Lifetime.Singleton);
+            builder.Register<FacilityBuildingRegistry>(Lifetime.Singleton);
 
             // === Application: World state / game loop ===
             builder.Register<GameRandom>(Lifetime.Singleton).As<IGameRandom>().AsSelf();
@@ -163,6 +165,9 @@ namespace DungeonInn.GameSession
             builder.Register<SelectAdventureGoalUseCase>(Lifetime.Singleton);
             builder.Register<SelectDungeonTargetFloorUseCase>(Lifetime.Singleton);
             builder.Register<AdvanceActorLifecycleOrchestrator>(Lifetime.Singleton);
+            builder.Register<FacilityNeedSelector>(Lifetime.Singleton);
+            builder.Register<FacilityInteractionOrchestrator>(Lifetime.Singleton);
+            builder.Register<AdvanceGroundFacilityTaskOrchestrator>(Lifetime.Singleton);
 
             // === Application: Combat ===
             builder.Register<CombatEncounterTargetResolver>(Lifetime.Singleton);
@@ -170,8 +175,6 @@ namespace DungeonInn.GameSession
             builder.Register<GrantExperienceUseCase>(Lifetime.Singleton);
             builder.Register<DropItemUseCase>(Lifetime.Singleton);
             builder.Register<PickUpItemUseCase>(Lifetime.Singleton);
-            builder.Register<UpdateEquipmentUseCase>(Lifetime.Singleton);
-            builder.Register<SellItemsUseCase>(Lifetime.Singleton);
             builder.Register<UseConsumableItemUseCase>(Lifetime.Singleton);
             builder.Register<RecoveryItemCandidateQuery>(Lifetime.Singleton);
             builder.Register<RecoveryEffectEstimator>(Lifetime.Singleton);

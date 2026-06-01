@@ -38,6 +38,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 masterRepository,
                 naturalWeaponTypeCombatMaster);
             ApplyLoadout(actor, archetypeMaster);
+            RecoverFully(actor);
             return actor;
         }
 
@@ -108,6 +109,11 @@ namespace DungeonInn.Application.Actors.Spawn
             }
 
             actor.Equip(masterRepository.GetEquipmentMaster(itemId));
+        }
+
+        static void RecoverFully(Actor actor)
+        {
+            actor.Recover(actor.Params.MaxHp, actor.Params.MaxMp, 0, 0, 0);
         }
     }
 }

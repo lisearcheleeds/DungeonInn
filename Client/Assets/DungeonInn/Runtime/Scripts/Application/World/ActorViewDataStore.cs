@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
 using VContainer;
@@ -9,6 +10,7 @@ namespace DungeonInn.Application.World
     public sealed class ActorViewDataStore : IActorViewDataProvider, IActorStatusViewDataProvider, IActorSelectionCandidateProvider
     {
         readonly IMasterRepository masterRepository;
+        readonly ActorFacilityPresenceService actorFacilityPresenceService;
         readonly Dictionary<Guid, ActorViewData> actorViewDataById = new();
         readonly HashSet<Guid> dirtyActorIds = new();
         readonly HashSet<Guid> removedActorIdSet = new();
@@ -18,9 +20,13 @@ namespace DungeonInn.Application.World
         readonly List<Guid> statusRemovedActors = new();
 
         [Inject]
-        public ActorViewDataStore(IMasterRepository masterRepository)
+        public ActorViewDataStore(
+            IMasterRepository masterRepository,
+            ActorFacilityPresenceService actorFacilityPresenceService)
         {
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
+            this.actorFacilityPresenceService = actorFacilityPresenceService
+                ?? throw new ArgumentNullException(nameof(actorFacilityPresenceService));
         }
 
         public void SyncActor(Actor actor)
@@ -35,7 +41,8 @@ namespace DungeonInn.Application.World
                 actor.Id,
                 actor.Position,
                 ResolveBehaviorType(actor),
-                archetypeMaster.VisualId);
+                archetypeMaster.VisualId,
+                !actorFacilityPresenceService.IsInsideFacility(actor.Id));
             if (actorViewDataById.TryGetValue(actor.Id, out var current) && IsSame(current, viewData))
             {
                 return;
@@ -132,7 +139,8 @@ namespace DungeonInn.Application.World
                 first.Position.X.Equals(second.Position.X) &&
                 first.Position.Z.Equals(second.Position.Z) &&
                 first.BehaviorType == second.BehaviorType &&
-                first.VisualId == second.VisualId;
+                first.VisualId == second.VisualId &&
+                first.IsVisible == second.IsVisible;
         }
 
         static ActorBehaviorType ResolveBehaviorType(Actor actor)

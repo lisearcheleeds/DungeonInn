@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -24,7 +23,7 @@ using VContainer;
 namespace DungeonInn.Application.Facilities
 {
     /// <summary>
-    /// 冒険老E��た�Eスカウト候補をギルドスタチE��として雁E��するユースケース、E    /// </summary>
+    /// 蜀帝匱閠・・ｽ・ｽ縺滂ｿｽE繧ｹ繧ｫ繧ｦ繝亥呵｣懊ｒ繧ｮ繝ｫ繝峨せ繧ｿ繝・・ｽ・ｽ縺ｨ縺励※髮・・ｽ・ｽ縺吶ｋ繝ｦ繝ｼ繧ｹ繧ｱ繝ｼ繧ｹ縲・    /// </summary>
     public sealed class RecruitStaffOrchestrator
     {
         readonly CalculateScoutCostUseCase calculateScoutCostUseCase;
@@ -37,7 +36,7 @@ namespace DungeonInn.Application.Facilities
         }
 
         /// <summary>
-        /// スカウト費用を支払い、候補老E�E役割変更と取引履歴の記録を行う、E        /// </summary>
+        /// 繧ｹ繧ｫ繧ｦ繝郁ｲｻ逕ｨ繧呈髪謇輔＞縲∝呵｣懆・・ｽE蠖ｹ蜑ｲ螟画峩縺ｨ蜿門ｼ募ｱ･豁ｴ縺ｮ險倬鹸繧定｡後≧縲・        /// </summary>
         public async UniTask ExecuteAsync(AdventurerGuild guild, Actor candidate, IReadOnlyList<ItemStack> staffSalary, int occurredAtTick)
         {
             if (candidate.Behavior is not AdventurerBehavior)

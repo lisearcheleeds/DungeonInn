@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Phase;
@@ -83,8 +82,6 @@ namespace DungeonInn.Tests.EditMode
             var scheduleMethodBody = source.Substring(scheduleMethodStart);
             var scheduleOnlyCalls = new[]
             {
-                "updateEquipmentUseCase.Execute",
-                "sellItemsUseCase.Execute",
                 "useRecoveryItemUseCase.ExecuteAsync",
                 "decideAdventurerReturnUseCase.ExecuteAsync"
             };
@@ -384,6 +381,10 @@ namespace DungeonInn.Tests.EditMode
                 new DropItemUseCase(new GameRandom(), eventBus, masterRepository));
             var combatEffectExecutor = new CombatEffectExecutor(new CombatDamageResolver(actorCombatService));
             var recoveryStateService = new AdventurerRecoveryStateService(eventBus);
+            var settingsRepository = new FixedWorldGameSettingsRepository();
+            var actorFacilityPresenceService = new ActorFacilityPresenceService();
+            var lineupUseCase = new GetFacilityLineupUseCase(masterRepository, masterRepository);
+            var facilityNeedSelector = new FacilityNeedSelector(masterRepository, lineupUseCase);
 
             return new WorldSimulationOrchestrator(
                 gameLoopUseCase,
@@ -391,11 +392,13 @@ namespace DungeonInn.Tests.EditMode
                 worldState,
                 new InitializeGameWorldOrchestrator(
                     worldState,
-                    new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                    new InitializeWorldMapUseCase(settingsRepository, settingsRepository),
                     new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()))),
                     masterRepository,
                     eventBus,
-                    new FixedWorldGameSettingsRepository()),
+                    new FixedWorldGameSettingsRepository(),
+                    settingsRepository,
+                    new FacilityBuildingRegistry()),
                 new SpawnScheduledAdventurerOrchestrator(
                     new SpawnAdventurerUseCase(
                         actorFactory,
@@ -405,7 +408,8 @@ namespace DungeonInn.Tests.EditMode
                     new GameRandom(),
                     new FixedWorldGameSettingsRepository(),
                     spawnTableResolver,
-                    gameClock),
+                    gameClock,
+                    profileRegistry),
                 new SpawnScheduledMonsterOrchestrator(
                     new SpawnMonsterUseCase(
                         actorFactory,
@@ -417,7 +421,7 @@ namespace DungeonInn.Tests.EditMode
                     spawnTableResolver),
                 new AdvanceActorAiOrchestrator(
                     TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
-                    new IActorAiPolicy[] { new AdventurerAiPolicy(TestEventSubscriber.Instance) },
+                    new IActorAiPolicy[] { new AdventurerAiPolicy(TestEventSubscriber.Instance, facilityNeedSelector) },
                     new ApplyActorAiDecisionUseCase(phaseStateStore),
                     phaseStateStore),
                 new AdvanceActorLifecycleOrchestrator(
@@ -442,7 +446,27 @@ namespace DungeonInn.Tests.EditMode
                     actorViewDataStore,
                     TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                     new FixedWorldGameSettingsRepository(),
-                    achievementRegistry),
+                    achievementRegistry,
+                    new AdvanceGroundFacilityTaskOrchestrator(
+                        new MoveActorTowardDestinationUseCase(
+                            new ActorMovementService(navigationService, actorSpatialIndexService, actorViewDataStore)),
+                        new FacilityBuildingRegistry(),
+                        new FacilityInteractionOrchestrator(
+                            new ChargeInnFeeUseCase(eventBus, settingsRepository),
+                            facilityNeedSelector,
+                            lineupUseCase,
+                            masterRepository,
+                            gameClock,
+                            eventBus,
+                            candidateService,
+                            settingsRepository),
+                        actorFacilityPresenceService,
+                        actorSpatialIndexService,
+                        actorViewDataStore,
+                        settingsRepository,
+                        TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
+                        gameClock,
+                        new DespawnAdventurerUseCase(eventBus))),
                 new DetectCombatEncounterUseCase(
                     actorCombatService,
                     actorSpatialIndexService,
@@ -476,8 +500,6 @@ namespace DungeonInn.Tests.EditMode
                     itemSpatialIndexService,
                     candidateService,
                     new FixedWorldGameSettingsRepository()),
-                new UpdateEquipmentUseCase(masterRepository, eventBus, candidateService),
-                new SellItemsUseCase(masterRepository, eventBus, gameClock, candidateService),
                 new UseRecoveryItemOrchestrator(
                     new UseConsumableItemUseCase(masterRepository, candidateService),
                     eventBus,
@@ -502,13 +524,9 @@ namespace DungeonInn.Tests.EditMode
                         recoveryStateService,
                         candidateService,
                         new FixedWorldGameSettingsRepository(),
-                        new FacilityEffectService()),
-                    new ChargeInnFeeUseCase(eventBus, new FixedWorldGameSettingsRepository()),
-                    new DespawnAdventurerUseCase(eventBus),
-                    eventBus,
-                    gameClock,
-                    candidateService,
-                    new FixedWorldGameSettingsRepository()),
+                        new FacilityEffectService(),
+                        actorFacilityPresenceService,
+                        ActorViewDataStoreTestFactory.Create(actorFacilityPresenceService))),
                 new PublishInnDailyReportUseCase(
                     worldState,
                     new InnEconomyStatisticsService(eventBus, gameClock),

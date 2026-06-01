@@ -12,24 +12,23 @@ namespace DungeonInn.Application.Actors.Profiles
     {
         readonly Dictionary<Guid, ActorProfile> profiles = new();
 
-        public void Register(Guid actorId, string displayName)
-        {
-            if (!profiles.ContainsKey(actorId))
-            {
-                profiles[actorId] = new ActorProfile(actorId, displayName);
-            }
-        }
-
         public void Register(
             Guid actorId,
             string displayName,
             int archetypeId,
             int speciesId,
-            ActorBehaviorType behaviorType)
+            ActorBehaviorType behaviorType,
+            int adventurerSpawnMasterId)
         {
             if (!profiles.ContainsKey(actorId))
             {
-                profiles[actorId] = new ActorProfile(actorId, displayName, archetypeId, speciesId, behaviorType);
+                profiles[actorId] = new ActorProfile(
+                    actorId,
+                    displayName,
+                    archetypeId,
+                    speciesId,
+                    behaviorType,
+                    adventurerSpawnMasterId);
             }
         }
 

@@ -38,7 +38,7 @@ namespace DungeonInn.Application.Actors.Spawn
 
             var archetypeMaster = masterRepository.GetActorArchetypeMaster(request.ArchetypeId);
             var actor = actorFactory.Create(request);
-            completeActorSpawnUseCase.Complete(actor, archetypeMaster, string.Empty);
+            completeActorSpawnUseCase.Complete(actor, archetypeMaster, string.Empty, 0);
             return UniTask.FromResult(actor);
         }
     }

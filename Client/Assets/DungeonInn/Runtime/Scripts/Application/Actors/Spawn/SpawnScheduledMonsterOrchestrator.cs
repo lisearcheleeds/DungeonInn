@@ -3,7 +3,6 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -93,7 +92,8 @@ namespace DungeonInn.Application.Actors.Spawn
                 faction,
                 gameRandom.Next(),
                 ActorBehaviorType.Monster,
-                string.Empty);
+                string.Empty,
+                0);
 
             var actor = await spawnMonsterUseCase.ExecuteAsync(request);
             worldState.RegisterActor(actor);

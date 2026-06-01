@@ -22,7 +22,11 @@ namespace DungeonInn.Application.Actors.Spawn
             this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
-        public void Complete(Actor actor, ActorArchetypeMaster archetypeMaster, string displayName)
+        public void Complete(
+            Actor actor,
+            ActorArchetypeMaster archetypeMaster,
+            string displayName,
+            int adventurerSpawnMasterId)
         {
             if (actor == null)
             {
@@ -43,7 +47,8 @@ namespace DungeonInn.Application.Actors.Spawn
                 resolvedDisplayName,
                 archetypeMaster.Id,
                 archetypeMaster.SpeciesId,
-                archetypeMaster.BehaviorType);
+                archetypeMaster.BehaviorType,
+                adventurerSpawnMasterId);
             eventBus.Publish(new ActorSpawned(actor.Id));
         }
     }

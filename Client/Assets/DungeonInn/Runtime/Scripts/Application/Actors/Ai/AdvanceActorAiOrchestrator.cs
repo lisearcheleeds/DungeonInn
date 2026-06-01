@@ -1,9 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using VContainer;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
@@ -74,6 +73,35 @@ namespace DungeonInn.Application.Actors.Ai
             int evaluationFrameId,
             float cooldownSeconds)
         {
+            return await ExecuteAsync(actors, null, currentTimeSeconds, evaluationFrameId, cooldownSeconds);
+        }
+
+        public async UniTask<bool> ExecuteAsync(
+            IGameWorldStateReader worldState,
+            float currentTimeSeconds,
+            int evaluationFrameId,
+            float cooldownSeconds)
+        {
+            if (worldState == null)
+            {
+                throw new ArgumentNullException(nameof(worldState));
+            }
+
+            return await ExecuteAsync(
+                worldState.Actors,
+                worldState,
+                currentTimeSeconds,
+                evaluationFrameId,
+                cooldownSeconds);
+        }
+
+        async UniTask<bool> ExecuteAsync(
+            IEnumerable<Actor> actors,
+            IGameWorldStateReader worldState,
+            float currentTimeSeconds,
+            int evaluationFrameId,
+            float cooldownSeconds)
+        {
             if (actors == null)
             {
                 throw new ArgumentNullException(nameof(actors));
@@ -90,7 +118,7 @@ namespace DungeonInn.Application.Actors.Ai
             }
 
             var policy = ResolvePolicy(actor);
-            var context = new ActorAiContext(actor, currentTimeSeconds, runtimeState);
+            var context = new ActorAiContext(actor, currentTimeSeconds, runtimeState, worldState);
             var dirty = runtimeState.GetHighestDirty();
             try
             {

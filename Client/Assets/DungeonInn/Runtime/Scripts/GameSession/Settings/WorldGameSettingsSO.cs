@@ -1,5 +1,6 @@
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Item;
 using UnityEngine;
 
@@ -46,6 +47,13 @@ namespace DungeonInn.GameSession.Settings
         [SerializeField] int initialGeneralStoreBasePrice = 10;
         [SerializeField] int initialEquipmentShopBasePrice = 10;
         [SerializeField] int initialShopCapacity = 1;
+        [SerializeField] FacilityBuildingSettings[] initialFacilityBuildings =
+        {
+            new FacilityBuildingSettings(FacilityType.Inn, 8, 8, 5, 5, 10, 8, BuildingFacingDirection.South),
+            new FacilityBuildingSettings(FacilityType.Tavern, 17, 8, 5, 5, 19, 8, BuildingFacingDirection.South),
+            new FacilityBuildingSettings(FacilityType.GeneralStore, 8, 17, 5, 5, 10, 17, BuildingFacingDirection.South),
+            new FacilityBuildingSettings(FacilityType.EquipmentShop, 17, 17, 5, 5, 19, 17, BuildingFacingDirection.South)
+        };
 
         [Header("Initial Guild Inventory")]
         [SerializeField] int initialRookieSwordItemId = 3001;
@@ -137,6 +145,37 @@ namespace DungeonInn.GameSession.Settings
                     new ItemStack(initialRookieSwordItemId, initialRookieSwordCount),
                     new ItemStack(initialRookieArmorItemId, initialRookieArmorCount)
                 });
+        }
+
+        public FacilityBuildingDefinition[] ToFacilityBuildingDefinitions()
+        {
+            if (initialFacilityBuildings == null || initialFacilityBuildings.Length == 0)
+            {
+                return CreateDefaultFacilityBuildingDefinitions();
+            }
+
+            var definitions = new FacilityBuildingDefinition[initialFacilityBuildings.Length];
+            for (var i = 0; i < initialFacilityBuildings.Length; i++)
+            {
+                definitions[i] = initialFacilityBuildings[i].ToDefinition();
+            }
+
+            return definitions;
+        }
+
+        public static FacilityBuildingDefinition[] CreateDefaultFacilityBuildingDefinitions()
+        {
+            return new[]
+            {
+                new FacilityBuildingSettings(FacilityType.Inn, 8, 8, 5, 5, 10, 8, BuildingFacingDirection.South)
+                    .ToDefinition(),
+                new FacilityBuildingSettings(FacilityType.Tavern, 17, 8, 5, 5, 19, 8, BuildingFacingDirection.South)
+                    .ToDefinition(),
+                new FacilityBuildingSettings(FacilityType.GeneralStore, 8, 17, 5, 5, 10, 17, BuildingFacingDirection.South)
+                    .ToDefinition(),
+                new FacilityBuildingSettings(FacilityType.EquipmentShop, 17, 17, 5, 5, 19, 17, BuildingFacingDirection.South)
+                    .ToDefinition()
+            };
         }
 
         public InnBalanceSettings ToInnBalanceSettings()

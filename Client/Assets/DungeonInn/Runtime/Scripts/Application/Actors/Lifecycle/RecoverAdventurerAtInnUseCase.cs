@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Economy;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
@@ -20,6 +21,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly FacilityEffectService facilityEffectService;
+        readonly ActorFacilityPresenceService actorFacilityPresenceService;
+        readonly ActorViewDataStore actorViewDataStore;
 
         [Inject]
         public RecoverAdventurerAtInnUseCase(
@@ -28,7 +31,9 @@ namespace DungeonInn.Application.Actors.Lifecycle
             AdventurerRecoveryStateService recoveryStateService,
             ActorProcessingCandidateService candidateService,
             IWorldGameSettingsRepository worldGameSettingsRepository,
-            FacilityEffectService facilityEffectService)
+            FacilityEffectService facilityEffectService,
+            ActorFacilityPresenceService actorFacilityPresenceService,
+            ActorViewDataStore actorViewDataStore)
         {
             this.eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
@@ -37,6 +42,9 @@ namespace DungeonInn.Application.Actors.Lifecycle
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
             this.facilityEffectService = facilityEffectService ?? throw new ArgumentNullException(nameof(facilityEffectService));
+            this.actorFacilityPresenceService = actorFacilityPresenceService
+                ?? throw new ArgumentNullException(nameof(actorFacilityPresenceService));
+            this.actorViewDataStore = actorViewDataStore;
         }
 
         public UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -101,7 +109,11 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 recoveryStateService.Remove(actor.Id);
                 candidateService.ClearRecoveryCandidate(actor.Id);
                 guild.ReleaseInnReservation(actor.Id, gameClock.CurrentScheduleTick);
+                actorFacilityPresenceService.Exit(actor.Id);
+                actor.ChangePlan(ActorPlan.None());
+                actor.ChangeAction(ActorAction.None());
                 behavior.ChangeLifecycleState(AdventurerLifecycleState.Preparing);
+                actorViewDataStore?.SyncActor(actor);
                 eventPublisher.Publish(new ActorFullyRecovered(actor.Id));
             }
         }

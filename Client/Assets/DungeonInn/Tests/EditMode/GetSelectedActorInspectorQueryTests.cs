@@ -28,8 +28,8 @@ namespace DungeonInn.Tests.EditMode
             firstActor.GainItem(new ItemStack(2001, 2));
             var secondActor = CreateActor(new LayerPosition(MapLayerId.Ground, 10f, 10f));
             var profileRegistry = new ActorProfileRegistry();
-            profileRegistry.Register(firstActor.Id, "First");
-            profileRegistry.Register(secondActor.Id, "Second");
+            profileRegistry.Register(firstActor.Id, "First", 1, 0, ActorBehaviorType.Adventurer, 0);
+            profileRegistry.Register(secondActor.Id, "Second", 1, 0, ActorBehaviorType.Adventurer, 0);
             var query = new GetSelectedActorInspectorQuery(
                 new TestWorldState(firstActor, secondActor),
                 masterRepository,

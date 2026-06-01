@@ -55,7 +55,11 @@ namespace DungeonInn.Application.Actors.Spawn
             {
                 actor.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Arrived);
             }
-            completeActorSpawnUseCase.Complete(actor, archetypeMaster, request.DisplayName);
+            completeActorSpawnUseCase.Complete(
+                actor,
+                archetypeMaster,
+                request.DisplayName,
+                request.AdventurerSpawnMasterId);
             return UniTask.FromResult(actor);
         }
     }

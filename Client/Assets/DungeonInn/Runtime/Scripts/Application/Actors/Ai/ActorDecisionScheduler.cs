@@ -38,6 +38,12 @@ namespace DungeonInn.Application.Actors.Ai
             eventSubscriber.OnEvent<ActorActionSequenceCompletedEvent>()
                 .Subscribe(gameEvent => { MarkEvent(gameEvent.ActorId, ActorAiEventType.CurrentActionCompleted); })
                 .AddTo(ref bag);
+            eventSubscriber.OnEvent<ActorExitedDungeon>()
+                .Subscribe(gameEvent => { MarkDirty(gameEvent.ActorId, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm); })
+                .AddTo(ref bag);
+            eventSubscriber.OnEvent<ActorFullyRecovered>()
+                .Subscribe(gameEvent => { MarkDirty(gameEvent.ActorId, ActorAiDirtyFlags.MidTerm | ActorAiDirtyFlags.ShortTerm); })
+                .AddTo(ref bag);
         }
 
         public ActorAiRuntimeState GetOrCreateState(Guid actorId)

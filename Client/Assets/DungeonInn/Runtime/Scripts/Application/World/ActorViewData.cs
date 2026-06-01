@@ -11,6 +11,16 @@ namespace DungeonInn.Application.World
             LayerPosition position,
             ActorBehaviorType behaviorType,
             string visualId)
+            : this(actorId, position, behaviorType, visualId, true)
+        {
+        }
+
+        public ActorViewData(
+            Guid actorId,
+            LayerPosition position,
+            ActorBehaviorType behaviorType,
+            string visualId,
+            bool isVisible)
         {
             if (string.IsNullOrWhiteSpace(visualId))
             {
@@ -21,11 +31,13 @@ namespace DungeonInn.Application.World
             Position = position;
             BehaviorType = behaviorType;
             VisualId = visualId;
+            IsVisible = isVisible;
         }
 
         public Guid ActorId { get; }
         public LayerPosition Position { get; }
         public ActorBehaviorType BehaviorType { get; }
         public string VisualId { get; }
+        public bool IsVisible { get; }
     }
 }

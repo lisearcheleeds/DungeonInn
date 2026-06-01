@@ -1,12 +1,16 @@
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Application.World;
+using DungeonInn.Domain.Facility;
 using DungeonInn.View.Scene.MainScene.World;
 
 namespace DungeonInn.Tests.EditMode
 {
     public sealed class FixedWorldGameSettingsRepository :
         IWorldGameSettingsRepository,
+        IFacilityBuildingDefinitionRepository,
         IWorldMapViewSettingsRepository
     {
         readonly InitialWorldSettings initialWorldSettings;
@@ -18,6 +22,7 @@ namespace DungeonInn.Tests.EditMode
         readonly AdventurerReturnPolicySettings adventurerReturnPolicySettings;
         readonly CombatBalanceSettings combatBalanceSettings;
         readonly WorldMapViewSettings worldMapViewSettings;
+        readonly IReadOnlyList<FacilityBuildingDefinition> facilityBuildingDefinitions;
 
         public FixedWorldGameSettingsRepository(
             InitialWorldSettings initialWorldSettings = null,
@@ -28,7 +33,8 @@ namespace DungeonInn.Tests.EditMode
             SpawnBalanceSettings spawnBalanceSettings = null,
             AdventurerReturnPolicySettings adventurerReturnPolicySettings = null,
             CombatBalanceSettings combatBalanceSettings = null,
-            WorldMapViewSettings worldMapViewSettings = null)
+            WorldMapViewSettings worldMapViewSettings = null,
+            IReadOnlyList<FacilityBuildingDefinition> facilityBuildingDefinitions = null)
         {
             this.initialWorldSettings = initialWorldSettings ?? InitialWorldSettings.CreateDefault();
             this.groundMapGenerationSettings = groundMapGenerationSettings ?? GroundMapGenerationSettings.CreateDefault();
@@ -40,6 +46,8 @@ namespace DungeonInn.Tests.EditMode
                 adventurerReturnPolicySettings ?? AdventurerReturnPolicySettings.CreateDefault();
             this.combatBalanceSettings = combatBalanceSettings ?? CombatBalanceSettings.CreateDefault();
             this.worldMapViewSettings = worldMapViewSettings ?? WorldMapViewSettings.CreateDefault();
+            this.facilityBuildingDefinitions = facilityBuildingDefinitions ??
+                DungeonInn.GameSession.Settings.WorldGameSettingsSO.CreateDefaultFacilityBuildingDefinitions();
         }
 
         public UniTask LoadAsync(CancellationToken cancellationToken)
@@ -90,6 +98,11 @@ namespace DungeonInn.Tests.EditMode
         public WorldMapViewSettings GetWorldMapViewSettings()
         {
             return worldMapViewSettings;
+        }
+
+        public IReadOnlyList<FacilityBuildingDefinition> GetDefinitions()
+        {
+            return facilityBuildingDefinitions;
         }
     }
 }

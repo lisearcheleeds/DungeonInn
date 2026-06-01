@@ -6,6 +6,7 @@ using DungeonInn.Application.Combat;
 using DungeonInn.Application.Dungeons;
 using DungeonInn.Application.Economy;
 using DungeonInn.Application.Event;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Application.Items;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
@@ -131,11 +132,11 @@ namespace DungeonInn.Tests.EditMode
                 combinedInventoryViewService,
                 progressService);
 
-            Assert.That(useCase.Execute().Select(x => x.OfferId), Is.EqualTo(new[] { 1 }));
+            Assert.That(useCase.Execute().Select(x => x.OfferId), Is.EqualTo(new[] { 1, 2 }));
 
             worldState.Guild.Facilities[1].UpgradeTo(2, 2, 1);
 
-            Assert.That(useCase.Execute().Select(x => x.OfferId), Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(useCase.Execute().Select(x => x.OfferId), Is.EqualTo(new[] { 1, 2, 3 }));
         }
 
         static GameWorldState CreateInitializedWorldState(HardcodedMasterRepository repository)
@@ -147,13 +148,16 @@ namespace DungeonInn.Tests.EditMode
                 candidateService,
                 ActorViewDataStoreTestFactory.Create(),
                 new FixedWorldGameSettingsRepository());
+            var settingsRepository = new FixedWorldGameSettingsRepository();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                new InitializeWorldMapUseCase(settingsRepository, settingsRepository),
                 new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()))),
                 repository,
                 new NoOpGameEventBus(),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                settingsRepository,
+                new FacilityBuildingRegistry());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(InitialWorldSettings.CreateDefault().DungeonSeed))

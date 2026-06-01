@@ -10,7 +10,6 @@ using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Lifecycle;
 
-using DungeonInn.Application.Actors.Equipment;
 
 using DungeonInn.Application.Actors.Movement;
 
@@ -82,7 +81,7 @@ namespace DungeonInn.Tests.EditMode
             var worldState = CreateWorldState();
             var actor = CreateExploringAdventurer(new LayerPosition(MapLayerId.DungeonFloor(1), 0f, 0f));
             var monsterId = Guid.NewGuid();
-            profileRegistry.Register(monsterId, "Goblin", 2, 1, ActorBehaviorType.Monster);
+            profileRegistry.Register(monsterId, "Goblin", 2, 1, ActorBehaviorType.Monster, 0);
             actor.ChangeGoal(new ActorGoal(ActorGoalType.DefeatMonster, 1, 1, 0));
             worldState.RegisterActor(actor);
 

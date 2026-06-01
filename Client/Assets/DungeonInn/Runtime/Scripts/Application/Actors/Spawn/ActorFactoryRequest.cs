@@ -13,6 +13,7 @@ namespace DungeonInn.Application.Actors.Spawn
         public int PreferenceSeed { get; }
         public ActorBehaviorType RequiredBehaviorType { get; }
         public string DisplayName { get; }
+        public int AdventurerSpawnMasterId { get; }
 
         public ActorFactoryRequest(
             int archetypeId,
@@ -21,7 +22,8 @@ namespace DungeonInn.Application.Actors.Spawn
             ActorFaction faction,
             int preferenceSeed,
             ActorBehaviorType requiredBehaviorType,
-            string displayName)
+            string displayName,
+            int adventurerSpawnMasterId)
         {
             if (archetypeId < 1)
             {
@@ -35,6 +37,7 @@ namespace DungeonInn.Application.Actors.Spawn
             PreferenceSeed = preferenceSeed;
             RequiredBehaviorType = requiredBehaviorType;
             DisplayName = displayName ?? string.Empty;
+            AdventurerSpawnMasterId = Math.Max(0, adventurerSpawnMasterId);
         }
     }
 }

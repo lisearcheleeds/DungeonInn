@@ -6,7 +6,6 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -93,7 +92,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void AutomatedItemSaleTransfersItemsToFacilityAndRecordsTransaction()
+        public void GeneralStoreInteractionTransfersItemsToFacilityAndRecordsTransaction()
         {
             const int sellableItemId = 1002;
             var worldState = CreateInitializedWorldState();
@@ -104,9 +103,9 @@ namespace DungeonInn.Tests.EditMode
             var clock = new StubGameClock { CurrentScheduleTickValue = 123 };
             var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
             var initialGeneralStoreGold = generalStore.Inventory.Gold;
-            var useCase = new SellItemsUseCase(new HardcodedMasterRepository(), eventBus, clock, currentCandidateService);
+            var orchestrator = CreateFacilityInteractionOrchestrator(eventBus, clock);
 
-            useCase.Execute(worldState);
+            orchestrator.ExecuteAsync(worldState, actor, generalStore).GetAwaiter().GetResult();
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(25));
             Assert.That(actor.Inventory.Has(new ItemStack(sellableItemId, 1)), Is.False);
@@ -124,7 +123,7 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void AutomatedItemSaleSkipsWhenFacilityCannotPay()
+        public void GeneralStoreInteractionSkipsSaleWhenFacilityCannotPay()
         {
             const int sellableItemId = 1002;
             var worldState = CreateInitializedWorldState();
@@ -134,13 +133,9 @@ namespace DungeonInn.Tests.EditMode
             actor.GainItem(new ItemStack(sellableItemId, 1));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
-            var useCase = new SellItemsUseCase(
-                new HardcodedMasterRepository(),
-                eventBus,
-                new StubGameClock(),
-                currentCandidateService);
+            var orchestrator = CreateFacilityInteractionOrchestrator(eventBus, new StubGameClock());
 
-            useCase.Execute(worldState);
+            orchestrator.ExecuteAsync(worldState, actor, generalStore).GetAwaiter().GetResult();
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
             Assert.That(actor.Inventory.Has(new ItemStack(sellableItemId, 1)), Is.True);
@@ -150,23 +145,20 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void AutomatedItemSaleDoesNotSellEquippedEquipment()
+        public void EquipmentShopInteractionDoesNotSellEquippedEquipment()
         {
             const int armorItemId = 3003;
             var masterRepository = new HardcodedMasterRepository();
             var worldState = CreateInitializedWorldState();
+            var equipmentShop = worldState.Guild.Facilities.First(x => x.Type == FacilityType.EquipmentShop);
             var actor = CreateAdventurer(0);
             actor.GainItem(new ItemStack(armorItemId, 1));
             actor.Equip(masterRepository.GetEquipmentMaster(armorItemId));
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
-            var useCase = new SellItemsUseCase(
-                masterRepository,
-                eventBus,
-                new StubGameClock(),
-                currentCandidateService);
+            var orchestrator = CreateFacilityInteractionOrchestrator(eventBus, new StubGameClock());
 
-            useCase.Execute(worldState);
+            orchestrator.ExecuteAsync(worldState, actor, equipmentShop).GetAwaiter().GetResult();
 
             Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
             Assert.That(actor.Inventory.Has(new ItemStack(armorItemId, 1)), Is.True);
@@ -176,29 +168,18 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void AutomatedItemSaleUsesCandidateActorWhenManyActorsExist()
+        public void GeneralStoreInteractionBuysPotionsUpToTwoWhenAffordable()
         {
-            const int sellableItemId = 1002;
             var worldState = CreateInitializedWorldState();
-            for (var i = 0; i < 120; i++)
-            {
-                worldState.RegisterActor(CreateAdventurer(0, AdventurerLifecycleState.Exploring));
-            }
-
-            var actor = CreateAdventurer(0, AdventurerLifecycleState.WaitingForInn);
-            actor.GainItem(new ItemStack(sellableItemId, 2));
+            var actor = CreateAdventurer(1000);
             worldState.RegisterActor(actor);
             var eventBus = new CollectingEventBus();
-            var useCase = new SellItemsUseCase(
-                new HardcodedMasterRepository(),
-                eventBus,
-                new StubGameClock(),
-                currentCandidateService);
+            var generalStore = worldState.Guild.Facilities.First(x => x.Type == FacilityType.GeneralStore);
+            var orchestrator = CreateFacilityInteractionOrchestrator(eventBus, new StubGameClock());
 
-            useCase.Execute(worldState);
+            orchestrator.ExecuteAsync(worldState, actor, generalStore).GetAwaiter().GetResult();
 
-            Assert.That(actor.Inventory.Gold, Is.EqualTo(25));
-            Assert.That(eventBus.GetEvents<ItemSold>().Count, Is.EqualTo(1));
+            Assert.That(actor.Inventory.ItemCounts[SpecialItemIds.Potion], Is.EqualTo(2));
         }
 
 
@@ -333,13 +314,16 @@ namespace DungeonInn.Tests.EditMode
                 currentCandidateService,
                 ActorViewDataStoreTestFactory.Create(),
                 new FixedWorldGameSettingsRepository());
+            var settingsRepository = new FixedWorldGameSettingsRepository();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                new InitializeWorldMapUseCase(settingsRepository, settingsRepository),
                 new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()))),
                 new HardcodedMasterRepository(),
                 new CollectingEventBus(),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                settingsRepository,
+                new FacilityBuildingRegistry());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(InitialWorld.DungeonSeed))
@@ -385,6 +369,24 @@ namespace DungeonInn.Tests.EditMode
         static int CountItem(GameWorldState worldState, int itemId)
         {
             return worldState.Guild.Inventory.ItemCounts.TryGetValue(itemId, out var count) ? count : 0;
+        }
+
+        static FacilityInteractionOrchestrator CreateFacilityInteractionOrchestrator(
+            IGameEventBus eventBus,
+            IGameClock gameClock)
+        {
+            var settingsRepository = new FixedWorldGameSettingsRepository();
+            var masterRepository = new HardcodedMasterRepository();
+            var lineupUseCase = new GetFacilityLineupUseCase(masterRepository, masterRepository);
+            return new FacilityInteractionOrchestrator(
+                new ChargeInnFeeUseCase(eventBus, settingsRepository),
+                new FacilityNeedSelector(masterRepository, lineupUseCase),
+                lineupUseCase,
+                masterRepository,
+                gameClock,
+                eventBus,
+                currentCandidateService,
+                settingsRepository);
         }
 
         static Domain.Guild.InnDailyReport CreateReport(

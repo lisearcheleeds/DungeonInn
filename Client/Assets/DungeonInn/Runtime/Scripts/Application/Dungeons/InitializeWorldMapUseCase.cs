@@ -1,6 +1,9 @@
 using Cysharp.Threading.Tasks;
+using System;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Application.World;
 using DungeonInn.Domain.Common;
+using DungeonInn.Domain.Facility;
 using DungeonInn.Domain.Map;
 using VContainer;
 
@@ -12,12 +15,17 @@ namespace DungeonInn.Application.Dungeons
     public sealed class InitializeWorldMapUseCase
     {
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
+        readonly IFacilityBuildingDefinitionRepository facilityBuildingDefinitionRepository;
 
         [Inject]
-        public InitializeWorldMapUseCase(IWorldGameSettingsRepository worldGameSettingsRepository)
+        public InitializeWorldMapUseCase(
+            IWorldGameSettingsRepository worldGameSettingsRepository,
+            IFacilityBuildingDefinitionRepository facilityBuildingDefinitionRepository)
         {
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new System.ArgumentNullException(nameof(worldGameSettingsRepository));
+            this.facilityBuildingDefinitionRepository = facilityBuildingDefinitionRepository
+                ?? throw new ArgumentNullException(nameof(facilityBuildingDefinitionRepository));
         }
 
         /// <summary>
@@ -35,52 +43,39 @@ namespace DungeonInn.Application.Dungeons
             var dungeonEntrance = new GridPosition(
                 settings.Width / 2,
                 settings.Depth / 2);
-            var innerOrigin = settings.Width / 2
-                - settings.FacilityBuildingInnerOffsetCells;
-            var outerOrigin = settings.Width / 2
-                + settings.FacilityBuildingOuterOffsetCells;
 
             SetCell(cells, layer, dungeonEntrance, GroundCellType.DungeonEntrance, MapCellBlockType.Walkable);
-            FillRectangle(
-                cells,
-                layer,
-                innerOrigin,
-                innerOrigin,
-                settings.FacilityBuildingSizeCells,
-                settings.FacilityBuildingSizeCells,
-                GroundCellType.Building,
-                MapCellBlockType.Blocked);
-            FillRectangle(
-                cells,
-                layer,
-                outerOrigin,
-                innerOrigin,
-                settings.FacilityBuildingSizeCells,
-                settings.FacilityBuildingSizeCells,
-                GroundCellType.Building,
-                MapCellBlockType.Blocked);
-            FillRectangle(
-                cells,
-                layer,
-                innerOrigin,
-                outerOrigin,
-                settings.FacilityBuildingSizeCells,
-                settings.FacilityBuildingSizeCells,
-                GroundCellType.Building,
-                MapCellBlockType.Blocked);
-            FillRectangle(
-                cells,
-                layer,
-                outerOrigin,
-                outerOrigin,
-                settings.FacilityBuildingSizeCells,
-                settings.FacilityBuildingSizeCells,
-                GroundCellType.Building,
-                MapCellBlockType.Blocked);
+            BuildFacilityBuildings(cells, layer, facilityBuildingDefinitionRepository.GetDefinitions());
 
             BuildTownWalls(cells, layer);
 
             return UniTask.FromResult(new GroundMap(layer, dungeonEntrance, cells));
+        }
+
+        static void BuildFacilityBuildings(
+            GroundCell[] cells,
+            MapLayer layer,
+            System.Collections.Generic.IReadOnlyList<FacilityBuildingDefinition> definitions)
+        {
+            for (var i = 0; i < definitions.Count; i++)
+            {
+                var definition = definitions[i];
+                FillRectangle(
+                    cells,
+                    layer,
+                    definition.Origin.X,
+                    definition.Origin.Z,
+                    definition.Width,
+                    definition.Depth,
+                    GroundCellType.Building,
+                    MapCellBlockType.Blocked);
+                SetCell(
+                    cells,
+                    layer,
+                    definition.EntranceCell,
+                    GroundCellType.Building,
+                    MapCellBlockType.Walkable);
+            }
         }
 
         // Town wall 3 cells from each edge, 2-cell-wide openings at center of each side.

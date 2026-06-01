@@ -1,11 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DungeonInn.Application.Actors.Ai;
 using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -29,6 +28,10 @@ using DungeonInn.Application.World;
 
 
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Combat;
+using DungeonInn.Domain.Dungeon;
+using DungeonInn.Domain.Facility;
+using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
@@ -206,6 +209,57 @@ namespace DungeonInn.Tests.EditMode
                 Is.True);
         }
 
+        [Test]
+        public void RecoveringActiveInnGuestDoesNotPrepareBeforeFullRecovery()
+        {
+            var actor = CreateAdventurer();
+            actor.ReceiveDamage(10);
+            actor.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Recovering);
+            var inn = CreateFacility(FacilityType.Inn);
+            var guild = CreateGuild(inn);
+            guild.ReserveInn(Guid.NewGuid(), actor, inn.Id, 0);
+            var masterRepository = new HardcodedMasterRepository();
+            var lineupUseCase = new GetFacilityLineupUseCase(masterRepository, masterRepository);
+            using var policy = new AdventurerAiPolicy(
+                TestEventSubscriber.Instance,
+                new FacilityNeedSelector(masterRepository, lineupUseCase));
+
+            var decision = policy.EvaluateMidTerm(new ActorAiContext(
+                actor,
+                0f,
+                new ActorAiRuntimeState(actor.Id),
+                new StubWorldState(guild, actor)));
+
+            Assert.That(decision.NextPlan, Is.Null);
+            Assert.That(decision.NextAction, Is.Null);
+        }
+
+        [Test]
+        public void RecoveringAdventurerUsesStoreForSellableItemsEvenWhenFullyRecovered()
+        {
+            var actor = CreateAdventurer();
+            actor.RequireBehavior<AdventurerBehavior>().ChangeLifecycleState(AdventurerLifecycleState.Recovering);
+            actor.GainItem(new ItemStack(1003, 1));
+            var generalStore = CreateFacility(
+                FacilityType.GeneralStore,
+                new ItemStack(SpecialItemIds.Money, 1000));
+            var guild = CreateGuild(generalStore, CreateFacility(FacilityType.Inn));
+            var masterRepository = new HardcodedMasterRepository();
+            var lineupUseCase = new GetFacilityLineupUseCase(masterRepository, masterRepository);
+            using var policy = new AdventurerAiPolicy(
+                TestEventSubscriber.Instance,
+                new FacilityNeedSelector(masterRepository, lineupUseCase));
+
+            var decision = policy.EvaluateMidTerm(new ActorAiContext(
+                actor,
+                0f,
+                new ActorAiRuntimeState(actor.Id),
+                new StubWorldState(guild, actor)));
+
+            Assert.That(decision.NextPlan.Type, Is.EqualTo(ActorPlanType.UseFacility));
+            Assert.That(decision.NextPlan.TargetGuid, Is.EqualTo(generalStore.Id));
+        }
+
         static Actor CreateAdventurer()
         {
             return new Actor(
@@ -226,6 +280,27 @@ namespace DungeonInn.Tests.EditMode
                 WeaponTypeCombatMasterCatalog.Get(WeaponType.Fist));
         }
 
+        static AdventurerGuild CreateGuild(params Facility[] facilities)
+        {
+            return new AdventurerGuild(
+                Guid.NewGuid(),
+                new Inventory(new FixedItemStackLimitResolver()),
+                facilities);
+        }
+
+        static Facility CreateFacility(FacilityType facilityType, params ItemStack[] initialItems)
+        {
+            var inventory = new Inventory(new FixedItemStackLimitResolver());
+            inventory.AddRange(initialItems);
+            return new Facility(
+                Guid.NewGuid(),
+                facilityType,
+                facilityType.ToString(),
+                1,
+                1,
+                inventory);
+        }
+
         static AdvanceActorAiOrchestrator CreateUseCase()
         {
             return CreateUseCase(TestRuntimeServiceFactory.CreateActorDecisionScheduler(), CreatePhaseStateStore());
@@ -240,11 +315,15 @@ namespace DungeonInn.Tests.EditMode
             ActorDecisionScheduler scheduler,
             IActorActionPhaseStateStore phaseStateStore)
         {
+            var masterRepository = new HardcodedMasterRepository();
+            var lineupUseCase = new GetFacilityLineupUseCase(masterRepository, masterRepository);
             return new AdvanceActorAiOrchestrator(
                 scheduler,
                 new IActorAiPolicy[]
                 {
-                    new AdventurerAiPolicy(TestEventSubscriber.Instance),
+                    new AdventurerAiPolicy(
+                        TestEventSubscriber.Instance,
+                        new FacilityNeedSelector(masterRepository, lineupUseCase)),
                     new MonsterAiPolicy(),
                     new PetAiPolicy(),
                     new GuildStaffAiPolicy()
@@ -298,6 +377,33 @@ namespace DungeonInn.Tests.EditMode
         {
             public void Record(IGameEvent gameEvent)
             {
+            }
+        }
+
+        sealed class StubWorldState : IGameWorldStateReader
+        {
+            readonly Actor actor;
+
+            public StubWorldState(AdventurerGuild guild, Actor actor)
+            {
+                Guild = guild;
+                this.actor = actor;
+            }
+
+            public bool IsInitialized => true;
+            public AdventurerGuild Guild { get; }
+            public GroundMap GroundMap => null;
+            public Dungeon Dungeon => null;
+            public InnEconomyState InnEconomy => null;
+            public IReadOnlyList<Actor> Actors => new[] { actor };
+            public IReadOnlyList<ItemInstance> Items => Array.Empty<ItemInstance>();
+            public IReadOnlyList<ProjectileInstance> Projectiles => Array.Empty<ProjectileInstance>();
+            public IReadOnlyList<AreaEffectInstance> AreaEffects => Array.Empty<AreaEffectInstance>();
+            public SpawnScheduleState SpawnSchedule { get; } = new();
+
+            public Actor FindActor(Guid actorId)
+            {
+                return actor.Id.Equals(actorId) ? actor : null;
             }
         }
     }

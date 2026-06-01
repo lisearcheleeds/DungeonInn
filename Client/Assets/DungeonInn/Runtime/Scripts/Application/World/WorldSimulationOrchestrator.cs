@@ -1,9 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Phase;
@@ -41,8 +40,6 @@ namespace DungeonInn.Application.World
         readonly AdvanceProjectileUseCase advanceProjectileUseCase;
         readonly AdvanceAreaEffectUseCase advanceAreaEffectUseCase;
         readonly PickUpItemUseCase pickUpItemUseCase;
-        readonly UpdateEquipmentUseCase updateEquipmentUseCase;
-        readonly SellItemsUseCase sellItemsUseCase;
         readonly UseRecoveryItemOrchestrator useRecoveryItemUseCase;
         readonly AdvanceActorEffectsUseCase advanceActorEffectsUseCase;
         readonly DecideAdventurerReturnUseCase decideAdventurerReturnUseCase;
@@ -74,8 +71,6 @@ namespace DungeonInn.Application.World
             AdvanceProjectileUseCase advanceProjectileUseCase,
             AdvanceAreaEffectUseCase advanceAreaEffectUseCase,
             PickUpItemUseCase pickUpItemUseCase,
-            UpdateEquipmentUseCase updateEquipmentUseCase,
-            SellItemsUseCase sellItemsUseCase,
             UseRecoveryItemOrchestrator useRecoveryItemUseCase,
             AdvanceActorEffectsUseCase advanceActorEffectsUseCase,
             DecideAdventurerReturnUseCase decideAdventurerReturnUseCase,
@@ -101,8 +96,6 @@ namespace DungeonInn.Application.World
             this.advanceProjectileUseCase = advanceProjectileUseCase ?? throw new ArgumentNullException(nameof(advanceProjectileUseCase));
             this.advanceAreaEffectUseCase = advanceAreaEffectUseCase ?? throw new ArgumentNullException(nameof(advanceAreaEffectUseCase));
             this.pickUpItemUseCase = pickUpItemUseCase ?? throw new ArgumentNullException(nameof(pickUpItemUseCase));
-            this.updateEquipmentUseCase = updateEquipmentUseCase ?? throw new ArgumentNullException(nameof(updateEquipmentUseCase));
-            this.sellItemsUseCase = sellItemsUseCase ?? throw new ArgumentNullException(nameof(sellItemsUseCase));
             this.useRecoveryItemUseCase = useRecoveryItemUseCase ?? throw new ArgumentNullException(nameof(useRecoveryItemUseCase));
             this.advanceActorEffectsUseCase = advanceActorEffectsUseCase ?? throw new ArgumentNullException(nameof(advanceActorEffectsUseCase));
             this.decideAdventurerReturnUseCase = decideAdventurerReturnUseCase ?? throw new ArgumentNullException(nameof(decideAdventurerReturnUseCase));
@@ -191,7 +184,7 @@ namespace DungeonInn.Application.World
 
                 aiEvaluationFrameId++;
                 await advanceActorAiOrchestrator.ExecuteAsync(
-                    gameWorldState.Actors,
+                    gameWorldState,
                     result.ElapsedGameTimeSeconds,
                     aiEvaluationFrameId,
                     0f);
@@ -280,10 +273,6 @@ namespace DungeonInn.Application.World
             await AdvanceScheduledActorLifecycleAsync(scheduleTicks);
             cancellationToken.ThrowIfCancellationRequested();
 
-            updateEquipmentUseCase.Execute(gameWorldState);
-            sellItemsUseCase.Execute(gameWorldState);
-            await advanceInnRecoveryOrchestrator.EnsureReservationsAsync(gameWorldState, currentScheduleTick);
-            cancellationToken.ThrowIfCancellationRequested();
             await useRecoveryItemUseCase.ExecuteAsync(gameWorldState);
             cancellationToken.ThrowIfCancellationRequested();
             await decideAdventurerReturnUseCase.ExecuteAsync(gameWorldState);

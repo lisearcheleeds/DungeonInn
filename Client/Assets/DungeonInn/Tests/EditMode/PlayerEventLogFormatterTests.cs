@@ -4,6 +4,7 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.World;
+using DungeonInn.Domain.Actor;
 using DungeonInn.Master;
 using NUnit.Framework;
 
@@ -16,7 +17,7 @@ namespace DungeonInn.Tests.EditMode
         {
             var actorId = Guid.NewGuid();
             var profileRegistry = new ActorProfileRegistry();
-            profileRegistry.Register(actorId, "アリス");
+            profileRegistry.Register(actorId, "アリス", 1, 0, ActorBehaviorType.Adventurer, 0);
             var formatter = new PlayerEventLogFormatter(profileRegistry, new HardcodedMasterRepository());
 
             Assert.That(
@@ -37,7 +38,7 @@ namespace DungeonInn.Tests.EditMode
             var clock = new GameClock();
             var eventBus = new GameEventBus(new GameEventHistoryService(clock));
             var profileRegistry = new ActorProfileRegistry();
-            profileRegistry.Register(actorId, "アリス");
+            profileRegistry.Register(actorId, "アリス", 1, 0, ActorBehaviorType.Adventurer, 0);
             var store = new PlayerEventLogStore(
                 eventBus,
                 new PlayerEventLogFormatter(profileRegistry, new HardcodedMasterRepository()),

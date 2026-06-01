@@ -13,9 +13,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly HashSet<Guid> itemPickupActorIds = new();
         readonly HashSet<Guid> actorEffectActorIds = new();
         readonly HashSet<Guid> recoveryActorIds = new();
-        readonly HashSet<Guid> reservationActorIds = new();
-        readonly HashSet<Guid> equipmentActorIds = new();
-        readonly HashSet<Guid> saleActorIds = new();
         readonly HashSet<Guid> recoveryItemActorIds = new();
         DisposableBag bag;
 
@@ -68,9 +65,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
         public bool HasItemPickupCandidates => 0 < itemPickupActorIds.Count;
         public bool HasActorEffectCandidates => 0 < actorEffectActorIds.Count;
         public bool HasRecoveryCandidates => 0 < recoveryActorIds.Count;
-        public bool HasReservationCandidates => 0 < reservationActorIds.Count;
-        public bool HasEquipmentCandidates => 0 < equipmentActorIds.Count;
-        public bool HasSaleCandidates => 0 < saleActorIds.Count;
         public bool HasRecoveryItemCandidates => 0 < recoveryItemActorIds.Count;
 
         public void SyncActor(Actor actor)
@@ -106,12 +100,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
             if (behavior.LifecycleState == AdventurerLifecycleState.Recovering)
             {
                 recoveryActorIds.Add(actor.Id);
-                reservationActorIds.Add(actor.Id);
-            }
-
-            if (behavior.LifecycleState == AdventurerLifecycleState.WaitingForInn)
-            {
-                reservationActorIds.Add(actor.Id);
             }
         }
 
@@ -128,29 +116,20 @@ namespace DungeonInn.Application.Actors.Lifecycle
         public void MarkRecoveryCandidate(Guid actorId)
         {
             recoveryActorIds.Add(actorId);
-            reservationActorIds.Add(actorId);
         }
 
         public void MarkInnCandidates(Guid actorId)
         {
             recoveryActorIds.Add(actorId);
-            reservationActorIds.Add(actorId);
-            saleActorIds.Add(actorId);
-            equipmentActorIds.Add(actorId);
         }
 
         public void MarkPostDungeonScheduleCandidates(Guid actorId)
         {
-            equipmentActorIds.Add(actorId);
-            saleActorIds.Add(actorId);
             recoveryItemActorIds.Add(actorId);
-            reservationActorIds.Add(actorId);
         }
 
         public void MarkInventoryChanged(Guid actorId)
         {
-            equipmentActorIds.Add(actorId);
-            saleActorIds.Add(actorId);
             recoveryItemActorIds.Add(actorId);
         }
 
@@ -167,21 +146,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
         public void ClearRecoveryCandidate(Guid actorId)
         {
             recoveryActorIds.Remove(actorId);
-        }
-
-        public void ClearReservationCandidate(Guid actorId)
-        {
-            reservationActorIds.Remove(actorId);
-        }
-
-        public void ClearEquipmentCandidate(Guid actorId)
-        {
-            equipmentActorIds.Remove(actorId);
-        }
-
-        public void ClearSaleCandidate(Guid actorId)
-        {
-            saleActorIds.Remove(actorId);
         }
 
         public void ClearRecoveryItemCandidate(Guid actorId)
@@ -204,21 +168,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
             Collect(recoveryActorIds, results, false);
         }
 
-        public void CollectReservationCandidates(List<Guid> results)
-        {
-            Collect(reservationActorIds, results, false);
-        }
-
-        public void CollectEquipmentCandidates(List<Guid> results)
-        {
-            Collect(equipmentActorIds, results, false);
-        }
-
-        public void CollectSaleCandidates(List<Guid> results)
-        {
-            Collect(saleActorIds, results, false);
-        }
-
         public void CollectRecoveryItemCandidates(List<Guid> results)
         {
             Collect(recoveryItemActorIds, results, false);
@@ -229,9 +178,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
             itemPickupActorIds.Remove(actorId);
             actorEffectActorIds.Remove(actorId);
             recoveryActorIds.Remove(actorId);
-            reservationActorIds.Remove(actorId);
-            equipmentActorIds.Remove(actorId);
-            saleActorIds.Remove(actorId);
             recoveryItemActorIds.Remove(actorId);
         }
 
@@ -243,7 +189,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
         void ClearInnCandidates(Guid actorId)
         {
             recoveryActorIds.Remove(actorId);
-            reservationActorIds.Remove(actorId);
         }
 
         static void Collect(HashSet<Guid> source, List<Guid> results, bool clear)

@@ -70,8 +70,8 @@ namespace DungeonInn.Tests.EditMode
             var adventurerId = Guid.NewGuid();
             var monsterId = Guid.NewGuid();
             var adventurer = CreateAdventurer(adventurerId);
-            profileRegistry.Register(adventurerId, "Adventurer", 1, 0, ActorBehaviorType.Adventurer);
-            profileRegistry.Register(monsterId, "Slime", 2, 5, ActorBehaviorType.Monster);
+            profileRegistry.Register(adventurerId, "Adventurer", 1, 0, ActorBehaviorType.Adventurer, 0);
+            profileRegistry.Register(monsterId, "Slime", 2, 5, ActorBehaviorType.Monster, 0);
 
             achievementRegistry.RecordAdventureStart(adventurer);
             eventBus.Publish(new ActorDefeated(monsterId, adventurerId, DeathCause.Combat));

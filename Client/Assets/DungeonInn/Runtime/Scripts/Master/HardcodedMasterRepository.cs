@@ -1024,7 +1024,25 @@ namespace DungeonInn.Master
                 new AdventurerSpawnMaster(10, "マルザハール", 12, false),
                 new AdventurerSpawnMaster(11, "アッシュ", 13, false),
                 new AdventurerSpawnMaster(12, "ソラカ", 14, false),
-                new AdventurerSpawnMaster(13, "クイン", 15, false)
+                new AdventurerSpawnMaster(13, "クイン", 15, false),
+                new AdventurerSpawnMaster(14, "ケイトリン", 15, false),
+                new AdventurerSpawnMaster(15, "ウーコン", 15, false),
+                new AdventurerSpawnMaster(16, "アーゴット", 15, false),
+                new AdventurerSpawnMaster(17, "アーリ", 15, false),
+                new AdventurerSpawnMaster(18, "アイバーン", 15, false),
+                new AdventurerSpawnMaster(19, "ヨネ", 15, false),
+                new AdventurerSpawnMaster(20, "イー", 15, false),
+                new AdventurerSpawnMaster(21, "ケネン", 15, false),
+                new AdventurerSpawnMaster(22, "スレッシュ", 15, false),
+                new AdventurerSpawnMaster(23, "セジュアニ", 15, false),
+                new AdventurerSpawnMaster(24, "タロン", 15, false),
+                new AdventurerSpawnMaster(25, "ニーコ", 15, false),
+                new AdventurerSpawnMaster(26, "ヨリック", 15, false),
+                new AdventurerSpawnMaster(27, "ユナラ", 15, false),
+                new AdventurerSpawnMaster(28, "サイオン", 15, false),
+                new AdventurerSpawnMaster(29, "ヴァイ", 15, false),
+                new AdventurerSpawnMaster(30, "ジンクス", 15, false),
+                new AdventurerSpawnMaster(31, "ラカン", 15, false)
             }.ToDictionary(x => x.Id);
         }
 

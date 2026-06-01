@@ -1,6 +1,5 @@
 using System;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -30,6 +29,7 @@ namespace DungeonInn.Application.Actors.Spawn
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly SpawnTableResolver spawnTableResolver;
         readonly IGameClock gameClock;
+        readonly IActorProfileRegistry actorProfileRegistry;
 
         [Inject]
         public SpawnScheduledAdventurerOrchestrator(
@@ -38,7 +38,8 @@ namespace DungeonInn.Application.Actors.Spawn
             IGameRandom gameRandom,
             IWorldGameSettingsRepository worldGameSettingsRepository,
             SpawnTableResolver spawnTableResolver,
-            IGameClock gameClock)
+            IGameClock gameClock,
+            IActorProfileRegistry actorProfileRegistry)
         {
             this.spawnAdventurerUseCase = spawnAdventurerUseCase ?? throw new ArgumentNullException(nameof(spawnAdventurerUseCase));
             this.masterRepository = masterRepository ?? throw new ArgumentNullException(nameof(masterRepository));
@@ -47,6 +48,7 @@ namespace DungeonInn.Application.Actors.Spawn
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
             this.spawnTableResolver = spawnTableResolver ?? throw new ArgumentNullException(nameof(spawnTableResolver));
             this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
+            this.actorProfileRegistry = actorProfileRegistry ?? throw new ArgumentNullException(nameof(actorProfileRegistry));
         }
 
         public async UniTask<Actor> ExecuteAsync(IGameWorldState worldState, int currentScheduleTick)
@@ -106,7 +108,8 @@ namespace DungeonInn.Application.Actors.Spawn
                 faction,
                 gameRandom.Next(),
                 ActorBehaviorType.Adventurer,
-                adventurerSpawnMaster.DisplayName);
+                adventurerSpawnMaster.DisplayName,
+                adventurerSpawnMaster.Id);
 
             var actor = await spawnAdventurerUseCase.ExecuteAsync(request);
             worldState.RegisterActor(actor);
@@ -126,6 +129,11 @@ namespace DungeonInn.Application.Actors.Spawn
                 var adventurerSpawnMaster = masterRepository.GetAdventurerSpawnMaster(entry.TargetMasterId);
                 if (adventurerSpawnMaster.SpawnOnce &&
                     worldState.SpawnSchedule.HasSpawnedAdventurerSpawn(adventurerSpawnMaster.Id))
+                {
+                    continue;
+                }
+
+                if (HasActiveAdventurerSpawnMaster(worldState, adventurerSpawnMaster.Id))
                 {
                     continue;
                 }
@@ -150,6 +158,11 @@ namespace DungeonInn.Application.Actors.Spawn
                     continue;
                 }
 
+                if (HasActiveAdventurerSpawnMaster(worldState, adventurerSpawnMaster.Id))
+                {
+                    continue;
+                }
+
                 fallbackEntry = entry;
                 currentWeight += entry.Weight;
                 if (roll < currentWeight)
@@ -159,6 +172,29 @@ namespace DungeonInn.Application.Actors.Spawn
             }
 
             return fallbackEntry;
+        }
+
+        bool HasActiveAdventurerSpawnMaster(IGameWorldState worldState, int adventurerSpawnMasterId)
+        {
+            foreach (var actor in worldState.Actors)
+            {
+                if (actor.Behavior is not AdventurerBehavior)
+                {
+                    continue;
+                }
+
+                if (!actorProfileRegistry.TryGetProfile(actor.Id, out var profile))
+                {
+                    continue;
+                }
+
+                if (profile.AdventurerSpawnMasterId == adventurerSpawnMasterId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         GridPosition PickRandomEdgePosition()

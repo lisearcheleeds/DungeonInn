@@ -41,6 +41,39 @@ MonoBehaviour:
   initialGeneralStoreBasePrice: 10
   initialEquipmentShopBasePrice: 10
   initialShopCapacity: 1
+  initialFacilityBuildings:
+  - facilityType: 0
+    originX: 8
+    originZ: 8
+    width: 5
+    depth: 5
+    entranceX: 10
+    entranceZ: 8
+    facingDirection: 0
+  - facilityType: 1
+    originX: 17
+    originZ: 8
+    width: 5
+    depth: 5
+    entranceX: 19
+    entranceZ: 8
+    facingDirection: 0
+  - facilityType: 2
+    originX: 8
+    originZ: 17
+    width: 5
+    depth: 5
+    entranceX: 10
+    entranceZ: 17
+    facingDirection: 0
+  - facilityType: 3
+    originX: 17
+    originZ: 17
+    width: 5
+    depth: 5
+    entranceX: 19
+    entranceZ: 17
+    facingDirection: 0
   initialRookieSwordItemId: 3001
   initialRookieSwordCount: 20
   initialRookieArmorItemId: 3003
@@ -56,8 +89,8 @@ MonoBehaviour:
   adventurerExplorationRoomArrivalTarget: 8
   adventurerSpawnIntervalTicks: 5
   monsterSpawnIntervalTicks: 3
-  initialMaxAdventurerCount: 8
-  initialMaxMonsterCount: 20
+  initialMaxAdventurerCount: 30
+  initialMaxMonsterCount: 30
   adventurerReturnDecisionThresholdScore: 100
   adventurerReturnGoalCompletedScore: 100
   adventurerReturnCriticalHpScore: 100

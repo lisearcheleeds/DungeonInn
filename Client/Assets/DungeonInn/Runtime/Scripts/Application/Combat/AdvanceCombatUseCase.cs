@@ -1,8 +1,7 @@
-using System;
+﻿using System;
 using Cysharp.Threading.Tasks;
 using VContainer;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Phase;

@@ -129,7 +129,7 @@ namespace DungeonInn.View.Scene.MainScene.World
 
             var isVisible = worldCameraController.IsWorldPositionVisible(
                 actorView.transform.position,
-                worldCameraController.ActorViewportMargin);
+                worldCameraController.ActorViewportMargin) && viewData.IsVisible;
             actorView.SetVisible(isVisible);
             if (!isVisible)
             {

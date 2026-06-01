@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using DungeonInn.Application.Facilities;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Item;
 using DungeonInn.Master;
-using DungeonInn.Application.World;
 
 namespace DungeonInn.Tests.EditMode
 {
@@ -9,7 +10,12 @@ namespace DungeonInn.Tests.EditMode
     {
         public static ActorViewDataStore Create()
         {
-            return new ActorViewDataStore(new TestMasterRepository());
+            return Create(new ActorFacilityPresenceService());
+        }
+
+        public static ActorViewDataStore Create(ActorFacilityPresenceService actorFacilityPresenceService)
+        {
+            return new ActorViewDataStore(new TestMasterRepository(), actorFacilityPresenceService);
         }
 
         sealed class TestMasterRepository : IMasterRepository
@@ -135,5 +141,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-
-

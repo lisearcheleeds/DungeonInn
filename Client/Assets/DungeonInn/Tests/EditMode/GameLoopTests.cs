@@ -5,7 +5,6 @@ using DungeonInn.Application.Combat;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.GameLoop;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
@@ -196,13 +195,16 @@ namespace DungeonInn.Tests.EditMode
         {
             var worldState = CreateWorldState();
             var eventBus = new NoOpGameEventBus();
+            var settingsRepository = new FixedWorldGameSettingsRepository();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                new InitializeWorldMapUseCase(settingsRepository, settingsRepository),
                 new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()))),
                 new HardcodedMasterRepository(),
                 eventBus,
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                settingsRepository,
+                new FacilityBuildingRegistry());
 
             var result = useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(InitialWorld.DungeonSeed))
@@ -214,8 +216,9 @@ namespace DungeonInn.Tests.EditMode
             Assert.That(result.Dungeon, Is.Not.Null);
             Assert.That(result.Dungeon.HasFloor(1), Is.True);
             Assert.That(result.Guild, Is.Not.Null);
-            Assert.That(result.Guild.Facilities.Count, Is.EqualTo(3));
+            Assert.That(result.Guild.Facilities.Count, Is.EqualTo(4));
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.Inn), Is.True);
+            Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.Tavern), Is.True);
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.GeneralStore), Is.True);
             Assert.That(result.Guild.Facilities.Any(x => x.Type == FacilityType.EquipmentShop), Is.True);
             Assert.That(result.Guild.Inventory.HasAll(new[] { new ItemStack(SpecialItemIds.Money, InitialWorld.GuildReserveGold) }), Is.True);
@@ -252,7 +255,8 @@ namespace DungeonInn.Tests.EditMode
                 actorViewDataStore,
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 new FixedWorldGameSettingsRepository(),
-                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()));
+                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()),
+                CreateGroundFacilityTask(navigationService, spatialIndex, actorViewDataStore));
             var before = actor.Position;
 
             for (var i = 0; i < 10 && actor.Position.DistanceSquaredTo(before) <= 0f; i++)
@@ -330,7 +334,8 @@ namespace DungeonInn.Tests.EditMode
                 actorViewDataStore,
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 new FixedWorldGameSettingsRepository(),
-                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()));
+                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()),
+                CreateGroundFacilityTask(navigationService, spatialIndex, actorViewDataStore));
             var behavior = actor.RequireBehavior<AdventurerBehavior>();
 
             for (var i = 0; i < 500 && behavior.LifecycleState == AdventurerLifecycleState.Exploring; i++)
@@ -736,13 +741,16 @@ namespace DungeonInn.Tests.EditMode
         static GameWorldState CreateInitializedWorldState()
         {
             var worldState = CreateWorldState();
+            var settingsRepository = new FixedWorldGameSettingsRepository();
             var useCase = new InitializeGameWorldOrchestrator(
                 worldState,
-                new InitializeWorldMapUseCase(new FixedWorldGameSettingsRepository()),
+                new InitializeWorldMapUseCase(settingsRepository, settingsRepository),
                 new InitializeDungeonOrchestrator(new GenerateDungeonFloorUseCase(new FixedWorldGameSettingsRepository(), new HardcodedMasterRepository(), new AssignDungeonRoomRolesUseCase(new HardcodedMasterRepository()))),
                 new HardcodedMasterRepository(),
                 new NoOpGameEventBus(),
-                new FixedWorldGameSettingsRepository());
+                new FixedWorldGameSettingsRepository(),
+                settingsRepository,
+                new FacilityBuildingRegistry());
 
             useCase.ExecuteAsync(
                     new InitializeGameWorldRequest(InitialWorld.DungeonSeed))
@@ -852,7 +860,42 @@ namespace DungeonInn.Tests.EditMode
                 actorViewDataStore,
                 TestRuntimeServiceFactory.CreateActorProcessingCandidateService(),
                 new FixedWorldGameSettingsRepository(),
-                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()));
+                new ActorExplorationAchievementRegistry(new NoOpGameEventBus()),
+                CreateGroundFacilityTask(navigationService, spatialIndex, actorViewDataStore));
+        }
+
+        static AdvanceGroundFacilityTaskOrchestrator CreateGroundFacilityTask(
+            ActorNavigationService navigationService,
+            ActorSpatialIndexService spatialIndex,
+            ActorViewDataStore actorViewDataStore)
+        {
+            var eventBus = new NoOpGameEventBus();
+            var settingsRepository = new FixedWorldGameSettingsRepository();
+            var masterRepository = new HardcodedMasterRepository();
+            var candidateService = TestRuntimeServiceFactory.CreateActorProcessingCandidateService();
+            var lineupUseCase = new GetFacilityLineupUseCase(masterRepository, masterRepository);
+            var facilityNeedSelector = new FacilityNeedSelector(masterRepository, lineupUseCase);
+
+            return new AdvanceGroundFacilityTaskOrchestrator(
+                new MoveActorTowardDestinationUseCase(
+                    new ActorMovementService(navigationService, spatialIndex, actorViewDataStore)),
+                new FacilityBuildingRegistry(),
+                new FacilityInteractionOrchestrator(
+                    new ChargeInnFeeUseCase(eventBus, settingsRepository),
+                    facilityNeedSelector,
+                    lineupUseCase,
+                    masterRepository,
+                    new GameClock(),
+                    eventBus,
+                    candidateService,
+                    settingsRepository),
+                new ActorFacilityPresenceService(),
+                spatialIndex,
+                actorViewDataStore,
+                settingsRepository,
+                TestRuntimeServiceFactory.CreateActorDecisionScheduler(),
+                new GameClock(),
+                new DespawnAdventurerUseCase(eventBus));
         }
 
         static SelectDungeonTargetFloorUseCase CreateSelectDungeonTargetFloorUseCase()

@@ -64,7 +64,7 @@ AI が調査・実装を始めるときは、以下の順で読む。
 | Combat detection | `DetectCombatEncounterUseCase` | `ActorCombatService`, spatial index | `CombatEncounterTargetResolver`, `ActorSpatialIndexService` | `combat-domain-design.md` |
 | Combat advance | `AdvanceCombatUseCase` | `ActorCombatService` | `DirectWeaponCombatCalculator`, `CombatEffectExecutor`, `ActorDefeatOrchestrator` | `combat-domain-design.md` |
 | Projectile / AreaEffect | `AdvanceProjectileUseCase`, `AdvanceAreaEffectUseCase` | `GameWorldState` projectile / area effect lists | `ProjectileInstance`, `AreaEffectInstance`, `WorldProjectilePresenter`, `WorldAreaEffectPresenter` | `combat-domain-design.md`, `refactoring-guidelines.md` |
-| Item pickup / sale | `PickUpItemUseCase`, `SellItemsUseCase` | `ItemSpatialIndexService`, inventories | `ItemInstance`, `Inventory`, `IItemStackLimitResolver` | `spec_item_money.md` |
+| Item pickup / facility trade | `PickUpItemUseCase`, `FacilityInteractionOrchestrator` | `ItemSpatialIndexService`, inventories, facilities | `ItemInstance`, `Inventory`, `IItemStackLimitResolver` | `spec_item_money.md` |
 | Guild / Economy | `ChargeInnFeeUseCase`, `PublishInnDailyReportUseCase` | `AdventurerGuild`, `InnEconomyState`, `InnDailyReportStore` | `InnEconomyStatusCalculator`, `InnEconomyStatisticsService` | `guild-domain-design.md`, `spec_item_money.md` |
 | Master data | `HardcodedMasterRepository` | Master repository | `WeaponTypeCombatMasterCatalog`, `ActorArchetypeMaster`, `EnvironmentPropVisualMaster` | `actor-master-design.md`, `combat-domain-design.md` |
 | Event system | `IGameEventBus`, `GameEventBus` | Event stream / history | `IEventPublisher`, `IEventSubscriber`, `PlayerEventLogStore` | `game-event-design.md` |
@@ -94,8 +94,7 @@ WorldGameLoopEntryPoint
       -> AdvanceCombatUseCase
       -> AdvanceProjectileUseCase / AdvanceAreaEffectUseCase
       -> PickUpItemUseCase
-      -> UpdateEquipmentUseCase
-      -> SellItemsUseCase
+      -> AdvanceGroundFacilityTaskOrchestrator / FacilityInteractionOrchestrator
       -> AdvanceInnRecoveryOrchestrator
       -> UseRecoveryItemOrchestrator / DecideAdventurerReturnUseCase
 ```

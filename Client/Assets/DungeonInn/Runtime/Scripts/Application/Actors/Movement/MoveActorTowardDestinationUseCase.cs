@@ -24,6 +24,25 @@ namespace DungeonInn.Application.Actors.Movement
             float speedMetersPerSecond,
             float deltaGameSeconds)
         {
+            return Execute(
+                actor,
+                destination,
+                layer,
+                walkability,
+                speedMetersPerSecond,
+                deltaGameSeconds,
+                layer.CellSizeMeters * 0.5f);
+        }
+
+        public bool Execute(
+            Actor actor,
+            LayerPosition destination,
+            MapLayer layer,
+            IGridWalkability walkability,
+            float speedMetersPerSecond,
+            float deltaGameSeconds,
+            float arrivalRadiusMeters)
+        {
             return actorMovementService.MoveToward(
                 actor,
                 destination,
@@ -31,7 +50,7 @@ namespace DungeonInn.Application.Actors.Movement
                 walkability,
                 speedMetersPerSecond,
                 deltaGameSeconds,
-                layer.CellSizeMeters * 0.5f,
+                arrivalRadiusMeters,
                 snapToDestinationOnArrival: false);
         }
     }

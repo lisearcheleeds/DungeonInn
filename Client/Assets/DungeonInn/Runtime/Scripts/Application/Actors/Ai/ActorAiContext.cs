@@ -1,4 +1,5 @@
 using System;
+using DungeonInn.Application.World;
 using DungeonInn.Domain.Actor;
 
 namespace DungeonInn.Application.Actors.Ai
@@ -8,12 +9,18 @@ namespace DungeonInn.Application.Actors.Ai
         public Actor Actor { get; }
         public float CurrentTimeSeconds { get; }
         public ActorAiRuntimeState RuntimeState { get; }
+        public IGameWorldStateReader WorldState { get; }
 
-        public ActorAiContext(Actor actor, float currentTimeSeconds, ActorAiRuntimeState runtimeState)
+        public ActorAiContext(
+            Actor actor,
+            float currentTimeSeconds,
+            ActorAiRuntimeState runtimeState,
+            IGameWorldStateReader worldState)
         {
             Actor = actor ?? throw new ArgumentNullException(nameof(actor));
             CurrentTimeSeconds = currentTimeSeconds;
             RuntimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
+            WorldState = worldState;
         }
     }
 }

@@ -3,7 +3,6 @@ using DungeonInn.Application.Event;
 using DungeonInn.Application.Actors.Spawn;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Lifecycle;
 using DungeonInn.Application.Actors.Movement;
 
@@ -38,7 +37,8 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(1, "Adventurer"),
                 123,
                 ActorBehaviorType.Adventurer,
-                string.Empty));
+                string.Empty,
+                0));
 
             Assert.That(actor.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
             Assert.That(actor.Inventory.Gold, Is.EqualTo(0));
@@ -61,7 +61,8 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(2, "Monster"),
                 456,
                 ActorBehaviorType.Monster,
-                string.Empty));
+                string.Empty,
+                0));
 
             var behavior = actor.RequireBehavior<MonsterBehavior>();
 
@@ -83,7 +84,8 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(1, "Adventurer"),
                 123,
                 ActorBehaviorType.Adventurer,
-                string.Empty));
+                string.Empty,
+                0));
             var monster = factory.Create(new ActorFactoryRequest(
                 2,
                 Guid.NewGuid(),
@@ -91,7 +93,8 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(2, "Monster"),
                 456,
                 ActorBehaviorType.Monster,
-                string.Empty));
+                string.Empty,
+                0));
 
             Assert.That(adventurer.RequireBehavior<AdventurerBehavior>(), Is.Not.Null);
             Assert.That(adventurer.Inventory.Has(new ItemStack(2001, 1)), Is.False);
@@ -118,7 +121,8 @@ namespace DungeonInn.Tests.EditMode
                     new ActorFaction(1, "Adventurer"),
                     123,
                     ActorBehaviorType.Adventurer,
-                    string.Empty)).GetAwaiter().GetResult();
+                    string.Empty,
+                    0)).GetAwaiter().GetResult();
 
             Assert.That(guild.Inventory.Has(new ItemStack(3001, 1)), Is.True);
             Assert.That(guild.Inventory.Has(new ItemStack(3003, 1)), Is.True);
@@ -144,13 +148,16 @@ namespace DungeonInn.Tests.EditMode
                 new ActorFaction(1, "Adventurer"),
                 123,
                 ActorBehaviorType.Adventurer,
-                string.Empty));
+                string.Empty,
+                0));
 
             Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Weapon), Is.EqualTo(3001));
             Assert.That(actor.Equipment.GetEquippedItemId(EquipmentSlot.Armor), Is.EqualTo(3101));
             Assert.That(actor.Inventory.Has(new ItemStack(2001, 1)), Is.True);
             Assert.That(actor.Inventory.Has(new ItemStack(3001, 1)), Is.False);
             Assert.That(actor.Equipment.EquippedWeaponType, Is.EqualTo(WeaponType.Sword));
+            Assert.That(actor.Hp, Is.EqualTo(actor.Params.MaxHp));
+            Assert.That(actor.Mp, Is.EqualTo(actor.Params.MaxMp));
         }
 
         [Test]
@@ -169,11 +176,13 @@ namespace DungeonInn.Tests.EditMode
                     new ActorFaction(1, "Adventurer"),
                     123,
                     ActorBehaviorType.Adventurer,
-                    "Alice")).GetAwaiter().GetResult();
+                    "Alice",
+                    42)).GetAwaiter().GetResult();
 
             Assert.That(profileRegistry.TryGetProfile(actorId, out var profile), Is.True);
             Assert.That(profile.DisplayName, Is.EqualTo("Alice"));
             Assert.That(profile.ArchetypeId, Is.EqualTo(1));
+            Assert.That(profile.AdventurerSpawnMasterId, Is.EqualTo(42));
         }
 
         static SpawnAdventurerUseCase CreateSpawnAdventurerUseCase(
@@ -189,15 +198,13 @@ namespace DungeonInn.Tests.EditMode
 
         sealed class NoOpActorProfileRegistry : IActorProfileRegistry
         {
-            public void Register(Guid actorId, string displayName)
-            {
-            }
             public void Register(
                 Guid actorId,
                 string displayName,
                 int archetypeId,
                 int speciesId,
-                ActorBehaviorType behaviorType)
+                ActorBehaviorType behaviorType,
+                int adventurerSpawnMasterId)
             {
             }
             public bool TryGetProfile(Guid actorId, out ActorProfile profile)
@@ -211,18 +218,21 @@ namespace DungeonInn.Tests.EditMode
         {
             readonly ActorProfileRegistry inner = new();
 
-            public void Register(Guid actorId, string displayName)
-            {
-                inner.Register(actorId, displayName);
-            }
             public void Register(
                 Guid actorId,
                 string displayName,
                 int archetypeId,
                 int speciesId,
-                ActorBehaviorType behaviorType)
+                ActorBehaviorType behaviorType,
+                int adventurerSpawnMasterId)
             {
-                inner.Register(actorId, displayName, archetypeId, speciesId, behaviorType);
+                inner.Register(
+                    actorId,
+                    displayName,
+                    archetypeId,
+                    speciesId,
+                    behaviorType,
+                    adventurerSpawnMasterId);
             }
             public bool TryGetProfile(Guid actorId, out ActorProfile profile)
             {
@@ -242,4 +252,3 @@ namespace DungeonInn.Tests.EditMode
         }
     }
 }
-

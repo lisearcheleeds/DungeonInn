@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DungeonInn.Application.Facilities;
 using DungeonInn.Application.World;
+using DungeonInn.Domain.Facility;
 using LighthouseExtends.Addressable;
 using VContainer;
 
 namespace DungeonInn.GameSession.Settings
 {
-    public sealed class WorldGameSettingsRepository : IWorldGameSettingsRepository
+    public sealed class WorldGameSettingsRepository : IWorldGameSettingsRepository, IFacilityBuildingDefinitionRepository
     {
         const string Address = "Config/WorldGameSettings";
 
@@ -21,6 +24,7 @@ namespace DungeonInn.GameSession.Settings
         SpawnBalanceSettings spawnBalanceSettings;
         AdventurerReturnPolicySettings adventurerReturnPolicySettings;
         CombatBalanceSettings combatBalanceSettings;
+        IReadOnlyList<FacilityBuildingDefinition> facilityBuildingDefinitions;
         bool loaded;
 
         [Inject]
@@ -48,6 +52,7 @@ namespace DungeonInn.GameSession.Settings
                 spawnBalanceSettings = SpawnBalanceSettings.CreateDefault();
                 adventurerReturnPolicySettings = AdventurerReturnPolicySettings.CreateDefault();
                 combatBalanceSettings = CombatBalanceSettings.CreateDefault();
+                facilityBuildingDefinitions = WorldGameSettingsSO.CreateDefaultFacilityBuildingDefinitions();
                 loaded = true;
                 return;
             }
@@ -60,6 +65,7 @@ namespace DungeonInn.GameSession.Settings
             spawnBalanceSettings = settingsSO.ToSpawnBalanceSettings();
             adventurerReturnPolicySettings = settingsSO.ToAdventurerReturnPolicySettings();
             combatBalanceSettings = settingsSO.ToCombatBalanceSettings();
+            facilityBuildingDefinitions = settingsSO.ToFacilityBuildingDefinitions();
             loaded = true;
         }
 
@@ -109,6 +115,12 @@ namespace DungeonInn.GameSession.Settings
         {
             EnsureLoaded();
             return combatBalanceSettings;
+        }
+
+        public IReadOnlyList<FacilityBuildingDefinition> GetDefinitions()
+        {
+            EnsureLoaded();
+            return facilityBuildingDefinitions;
         }
 
         void EnsureLoaded()

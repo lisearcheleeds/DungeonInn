@@ -1,8 +1,7 @@
-using System;
+﻿using System;
 using Cysharp.Threading.Tasks;
 using VContainer;
 using DungeonInn.Application.Actors.Ai;
-using DungeonInn.Application.Actors.Equipment;
 using DungeonInn.Application.Actors.Movement;
 using DungeonInn.Application.Actors.Profiles;
 using DungeonInn.Application.Actors.Spawn;
@@ -38,6 +37,7 @@ namespace DungeonInn.Application.Actors.Lifecycle
         readonly ActorProcessingCandidateService candidateService;
         readonly IWorldGameSettingsRepository worldGameSettingsRepository;
         readonly ActorExplorationAchievementRegistry achievementRegistry;
+        readonly AdvanceGroundFacilityTaskOrchestrator advanceGroundFacilityTaskOrchestrator;
 
         [Inject]
         public AdvanceActorLifecycleOrchestrator(
@@ -54,7 +54,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             ActorViewDataStore actorViewDataStore,
             ActorProcessingCandidateService candidateService,
             IWorldGameSettingsRepository worldGameSettingsRepository,
-            ActorExplorationAchievementRegistry achievementRegistry)
+            ActorExplorationAchievementRegistry achievementRegistry,
+            AdvanceGroundFacilityTaskOrchestrator advanceGroundFacilityTaskOrchestrator)
         {
             this.moveActorTowardDestinationUseCase = moveActorTowardDestinationUseCase
                 ?? throw new ArgumentNullException(nameof(moveActorTowardDestinationUseCase));
@@ -83,6 +84,8 @@ namespace DungeonInn.Application.Actors.Lifecycle
             this.worldGameSettingsRepository =
                 worldGameSettingsRepository ?? throw new ArgumentNullException(nameof(worldGameSettingsRepository));
             this.achievementRegistry = achievementRegistry ?? throw new ArgumentNullException(nameof(achievementRegistry));
+            this.advanceGroundFacilityTaskOrchestrator = advanceGroundFacilityTaskOrchestrator
+                ?? throw new ArgumentNullException(nameof(advanceGroundFacilityTaskOrchestrator));
         }
 
         public async UniTask ExecuteAsync(IGameWorldState worldState, float deltaGameSeconds)
@@ -138,6 +141,14 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
                 case AdventurerLifecycleState.Returning:
                     await AdvanceReturningAsync(actor, behavior, worldState, deltaGameSeconds);
+                    break;
+
+                case AdventurerLifecycleState.Recovering:
+                case AdventurerLifecycleState.WaitingForInn:
+                    if (advanceGroundFacilityTaskOrchestrator != null)
+                    {
+                        await advanceGroundFacilityTaskOrchestrator.ExecuteAsync(worldState, actor, behavior, deltaGameSeconds);
+                    }
                     break;
             }
         }
@@ -321,8 +332,9 @@ namespace DungeonInn.Application.Actors.Lifecycle
                 {
                     MoveTo(actor, returnPosition);
                     navigationService.InvalidatePath(actor.Id);
+                    actor.ChangePlan(ActorPlan.None());
+                    actor.ChangeAction(ActorAction.None());
                     behavior.ChangeLifecycleState(AdventurerLifecycleState.Recovering);
-                    candidateService.MarkRecoveryCandidate(actor.Id);
                     candidateService.MarkPostDungeonScheduleCandidates(actor.Id);
                     eventPublisher.Publish(new ActorExitedDungeon(actor.Id));
                     return;
@@ -402,5 +414,6 @@ namespace DungeonInn.Application.Actors.Lifecycle
 
             return false;
         }
+
     }
 }

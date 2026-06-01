@@ -142,16 +142,16 @@ cellZ = floor(z / CellSizeMeters)
 
 ## 地上マップ
 
-地上マップは `100 x 100` タイルとする。
+地上マップは `30 x 30` タイルとする。
 
 - 1 タイルは 5m。
-- 地上全体は `500m x 500m`。
+- 地上全体は `150m x 150m`。
 - マップ中央にダンジョン入口がある。
-- ダンジョン入口の周囲に以下の施設が建つ。
-  - 冒険者ギルド
-  - 宿屋
-  - アイテム店
-  - 装備店
+- マップ四隅方向に施設建物（3x3 タイル）が配置される。
+  - Inn（宿屋）、Tavern、GeneralStore（雑貨屋）、EquipmentShop（装備屋）
+  - 配置座標・サイズは `WorldGameSettingsSO` の `FacilityBuildingDefinition[]` で管理する。
+  - 詳細は `docs/design/ground-facility-placement-design.md` を参照。
+- Actor は施設建物に隣接するタイルまで移動しなければ施設を利用できない。
 
 地上表示中は View 側で NavMesh を使った高品質な移動表示を行える。ただし、地上が表示されていない場合は GameObject や NavMesh が存在しないため、Domain/Application のしきい値判定で移動処理を行う。
 
@@ -230,18 +230,21 @@ public enum MapCellBlockType
 }
 ```
 
-将来的に用途を持たせる場合は、以下のようなセル種別を追加できる。
+地上セルの種別は以下のとおり。
 
 ```csharp
 public enum GroundCellType
 {
-    Open,
-    Building,
-    DungeonEntrance,
-    FacilityEntrance,
-    Road
+    Open,             // 通行可能な空きエリア
+    Building,         // 施設建物タイル（通行不可）
+    TownWall,         // 町の外壁（通行不可）
+    DungeonEntrance,  // ダンジョン入口（通行可能）
+    FacilityEntrance, // 施設建物内の入口タイル（通行可能・Actor 入室判定に使用）
+    Road              // 道路（通行可能）
 }
 ```
+
+`FacilityEntrance` は建物矩形内に 1 つだけ設置され、Actor が占有すると「入室中」と判定される。詳細は `docs/design/ground-facility-placement-design.md` を参照。
 
 ## 移動判定
 
