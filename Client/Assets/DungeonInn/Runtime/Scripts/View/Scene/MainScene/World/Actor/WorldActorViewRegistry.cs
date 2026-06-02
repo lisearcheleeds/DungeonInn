@@ -59,6 +59,11 @@ namespace DungeonInn.View.Scene.MainScene.World
             actorViewPool.Return(actorView);
         }
 
+        public bool TryGetActorView(Guid actorId, out ActorView actorView)
+        {
+            return actorViews.TryGetValue(actorId, out actorView);
+        }
+
         public void ForEachActorView(Action<Guid, ActorView> action)
         {
             if (action == null)

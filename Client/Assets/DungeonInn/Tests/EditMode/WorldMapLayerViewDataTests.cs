@@ -199,30 +199,60 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void ActorStatusViewAppliesHpRatioToHorizontalFillImage()
+        public void ActorStatusViewAppliesHpRatioToWorldSpaceFillRenderer()
         {
-            var viewObject = new GameObject("ActorStatusView", typeof(RectTransform));
-            var fillObject = new GameObject("HpFill", typeof(RectTransform), typeof(Image));
-            fillObject.transform.SetParent(viewObject.transform, false);
+            var viewObject = new GameObject("ActorStatusView");
+            var hpBarObject = new GameObject("HpBar");
+            hpBarObject.transform.SetParent(viewObject.transform, false);
             var view = viewObject.AddComponent<ActorStatusView>();
-            var fillImage = fillObject.GetComponent<Image>();
-            typeof(ActorStatusView)
-                .GetField("hpBarFillImage", BindingFlags.Instance | BindingFlags.NonPublic)
-                ?.SetValue(view, fillImage);
+            var hpBarRenderer = hpBarObject.AddComponent<SpriteRenderer>();
+            view.EditorAssign(null, hpBarRenderer, Array.Empty<SpriteRenderer>());
 
             try
             {
-                fillImage.type = Image.Type.Simple;
-
                 view.SetHpRatio(0.25f);
 
-                Assert.That(fillImage.type, Is.EqualTo(Image.Type.Filled));
-                Assert.That(fillImage.fillMethod, Is.EqualTo(Image.FillMethod.Horizontal));
-                Assert.That(fillImage.fillOrigin, Is.EqualTo((int)Image.OriginHorizontal.Left));
-                Assert.That(fillImage.fillAmount, Is.EqualTo(0.25f).Within(0.001f));
+                Assert.That(hpBarRenderer.color.a, Is.EqualTo(0.25f).Within(0.001f));
+                Assert.That(hpBarRenderer.transform.localScale, Is.EqualTo(Vector3.one));
+                Assert.That(hpBarRenderer.transform.localPosition, Is.EqualTo(Vector3.zero));
             }
             finally
             {
+                UnityEngine.Object.DestroyImmediate(viewObject);
+            }
+        }
+
+        [Test]
+        public void ActorStatusViewAppliesScreenScaleFromWorldUnitsPerPixel()
+        {
+            var viewObject = new GameObject("ActorStatusViewScale");
+            var hpBarObject = new GameObject("HpBar");
+            hpBarObject.transform.SetParent(viewObject.transform, false);
+            var view = viewObject.AddComponent<ActorStatusView>();
+            var hpBarRenderer = hpBarObject.AddComponent<SpriteRenderer>();
+            var texture = new Texture2D(10, 10, TextureFormat.RGBA32, false);
+            var sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, 10f, 10f),
+                new Vector2(0.5f, 0.5f),
+                10f);
+            hpBarRenderer.sprite = sprite;
+            hpBarRenderer.drawMode = SpriteDrawMode.Sliced;
+            hpBarRenderer.size = new Vector2(0.8f, 0.08f);
+            view.EditorAssign(null, hpBarRenderer, Array.Empty<SpriteRenderer>());
+
+            try
+            {
+                view.SetScreenScale(0.02f);
+
+                Assert.That(view.transform.localScale, Is.EqualTo(Vector3.one));
+                Assert.That(hpBarRenderer.size.x, Is.EqualTo(2.4f).Within(0.0001f));
+                Assert.That(hpBarRenderer.size.y, Is.EqualTo(0.56f).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sprite);
+                UnityEngine.Object.DestroyImmediate(texture);
                 UnityEngine.Object.DestroyImmediate(viewObject);
             }
         }
@@ -419,39 +449,44 @@ namespace DungeonInn.Tests.EditMode
         }
 
         [Test]
-        public void WorldActorScreenPositionProviderConvertsLayerPositionToScreenPosition()
+        public void WorldActorWorldAnchorProviderReturnsAnchorWithoutVisibilityCulling()
         {
             var layerPosition = new LayerPosition(MapLayerId.Ground, 7.5f, 10.5f);
             var viewRoot = new WorldViewRoot();
             var layerRegistry = new MapLayerViewRegistry(viewRoot);
-            var cameraObject = new GameObject("WorldActorScreenPositionProviderCamera");
-            var camera = cameraObject.AddComponent<Camera>();
-            camera.orthographic = true;
-            camera.pixelRect = new Rect(0f, 0f, 800f, 600f);
-            var cameraController = new WorldCameraController(new FixedWorldCameraSettingsRepository(CreateWorldCameraSettingsForPresenterTest()));
-            cameraController.BindCamera(camera);
-            cameraController.UpdateCamera(0f);
-            var positionMapper = new LayerPositionViewMapper(new FixedLayerPositionViewSettingsRepository(new LayerPositionViewSettings(-240f, 0f)));
-            var provider = new WorldActorScreenPositionProvider(
-                cameraController,
+            var prefabSource = new ActorPrefabSource(null);
+            var pool = new WorldActorViewPool(prefabSource);
+            var actorRegistry = new WorldActorViewRegistry(pool, layerRegistry);
+            var positionMapper = new LayerPositionViewMapper(
+                new FixedLayerPositionViewSettingsRepository(new LayerPositionViewSettings(-240f, 0f)));
+            var provider = new WorldActorWorldAnchorProvider(
+                new WorldCameraController(new FixedWorldCameraSettingsRepository(CreateWorldCameraSettingsForPresenterTest())),
                 positionMapper,
-                layerRegistry);
+                layerRegistry,
+                actorRegistry);
 
             try
             {
+                var actorId = Guid.NewGuid();
+                var actorView = actorRegistry.GetOrCreateActorView(actorId, layerPosition, out _);
+                actorView.UpdateFacing(layerPosition);
                 var actorRoot = layerRegistry.GetOrCreateActorRoot(layerPosition.LayerId);
-                var expectedWorldPosition = actorRoot.TransformPoint(positionMapper.ToActorLayerLocalPosition(layerPosition));
+                var expectedWorldPosition = actorRoot.TransformPoint(
+                    positionMapper.ToActorLayerLocalPosition(layerPosition) + Vector3.up * 1.15f);
 
-                var result = provider.TryGetScreenPosition(layerPosition, out var screenPosition);
-                var expected = camera.WorldToScreenPoint(expectedWorldPosition);
+                var result = provider.TryGetWorldAnchor(actorId, out var worldPosition, out var layerId);
 
                 Assert.That(result, Is.True);
-                Assert.That(screenPosition.x, Is.EqualTo(expected.x).Within(0.0001f));
-                Assert.That(screenPosition.y, Is.EqualTo(expected.y).Within(0.0001f));
+                Assert.That(layerId.Value, Is.EqualTo(layerPosition.LayerId.Value));
+                Assert.That(worldPosition.x, Is.EqualTo(expectedWorldPosition.x).Within(0.0001f));
+                Assert.That(worldPosition.y, Is.EqualTo(expectedWorldPosition.y).Within(0.0001f));
+                Assert.That(worldPosition.z, Is.EqualTo(expectedWorldPosition.z).Within(0.0001f));
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(cameraObject);
+                actorRegistry.Dispose();
+                pool.Dispose();
+                prefabSource.Dispose();
                 layerRegistry.Dispose();
                 viewRoot.Dispose();
             }
@@ -561,18 +596,22 @@ namespace DungeonInn.Tests.EditMode
             store.SyncActor(dungeonActor);
             var worldState = new ActorStatusWorldState(groundActor, dungeonActor);
             var hudObject = new GameObject("GameHUDTest");
-            var canvas = hudObject.AddComponent<Canvas>();
             var gameHUDModuleScene = hudObject.AddComponent<GameHUDModuleScene>();
-            SetHudCanvas(gameHUDModuleScene, canvas);
-            var viewFactory = new GameHUDAddressableViewFactory(new ThrowingAssetManager());
-            var pool = new ActorHUDViewPool(viewFactory, gameHUDModuleScene);
+            var actorEffectIconSpriteCatalog = hudObject.AddComponent<ActorEffectIconSpriteCatalog>();
+            var viewFactory = new GameHUDViewFactory(new ThrowingAssetManager());
+            var actorStatusPrefab = CreateActorStatusViewPrefab();
+            AssignActorStatusViewPrefab(viewFactory, actorStatusPrefab);
+            var pool = new ActorStatusViewPool(viewFactory, gameHUDModuleScene);
             var activeLayerProvider = new TestActiveLayerProvider(MapLayerId.Ground.Value);
+            var anchorProvider = new TestActorWorldAnchorProvider();
             var presenter = new WorldActorStatusPresenter(
                 store,
                 new GetActorStatusSummaryQuery(worldState, new HardcodedMasterRepository()),
                 pool,
-                new TestActorScreenPositionProvider(),
-                activeLayerProvider);
+                anchorProvider,
+                anchorProvider,
+                activeLayerProvider,
+                actorEffectIconSpriteCatalog);
 
             try
             {
@@ -586,6 +625,47 @@ namespace DungeonInn.Tests.EditMode
 
                 Assert.That(pool.TryGetActive(groundActor.Id, out _), Is.False);
                 Assert.That(pool.TryGetActive(dungeonActor.Id, out _), Is.True);
+            }
+            finally
+            {
+                pool.Dispose();
+                UnityEngine.Object.DestroyImmediate(actorStatusPrefab.gameObject);
+                UnityEngine.Object.DestroyImmediate(hudObject);
+            }
+        }
+
+        [Test]
+        public void ActorStatusViewPoolRequiresLoadedPrefab()
+        {
+            var hudObject = new GameObject("GameHUDMissingPrefabTest");
+            var gameHUDModuleScene = hudObject.AddComponent<GameHUDModuleScene>();
+            var viewFactory = new GameHUDViewFactory(new ThrowingAssetManager());
+            var pool = new ActorStatusViewPool(viewFactory, gameHUDModuleScene);
+
+            try
+            {
+                Assert.Throws<InvalidOperationException>(() => pool.Rent(Guid.NewGuid()));
+                Assert.That(GameObject.Find("ActorStatusView_Fallback"), Is.Null);
+            }
+            finally
+            {
+                pool.Dispose();
+                UnityEngine.Object.DestroyImmediate(hudObject);
+            }
+        }
+
+        [Test]
+        public void DamageNumberViewPoolRequiresLoadedPrefab()
+        {
+            var hudObject = new GameObject("GameHUDMissingDamagePrefabTest");
+            var gameHUDModuleScene = hudObject.AddComponent<GameHUDModuleScene>();
+            var viewFactory = new GameHUDViewFactory(new ThrowingAssetManager());
+            var pool = new DamageNumberViewPool(viewFactory, gameHUDModuleScene, new TestActorWorldAnchorProvider());
+
+            try
+            {
+                Assert.Throws<InvalidOperationException>(() => pool.Spawn(8, Vector3.one));
+                Assert.That(GameObject.Find("DamageNumberView_Fallback"), Is.Null);
             }
             finally
             {
@@ -745,6 +825,32 @@ namespace DungeonInn.Tests.EditMode
             return propsByLayer.Count;
         }
 
+        static ActorStatusView CreateActorStatusViewPrefab()
+        {
+            var viewObject = new GameObject("ActorStatusViewPrefab");
+            var view = viewObject.AddComponent<ActorStatusView>();
+            var billboardRoot = new GameObject("BillboardRoot").transform;
+            billboardRoot.SetParent(viewObject.transform, false);
+            var hpBar = new GameObject("HpBar").AddComponent<SpriteRenderer>();
+            hpBar.transform.SetParent(billboardRoot, false);
+            var statusIcons = new SpriteRenderer[4];
+            for (var index = 0; index < statusIcons.Length; index++)
+            {
+                statusIcons[index] = new GameObject($"StatusIcon{index + 1}").AddComponent<SpriteRenderer>();
+                statusIcons[index].transform.SetParent(billboardRoot, false);
+            }
+
+            view.EditorAssign(billboardRoot, hpBar, statusIcons);
+            return view;
+        }
+
+        static void AssignActorStatusViewPrefab(GameHUDViewFactory viewFactory, ActorStatusView prefab)
+        {
+            typeof(GameHUDViewFactory)
+                .GetField("<ActorStatusViewPrefab>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(viewFactory, prefab);
+        }
+
         static WorldCameraSettings CreateWorldCameraSettings()
         {
             return new WorldCameraSettings(
@@ -775,14 +881,6 @@ namespace DungeonInn.Tests.EditMode
                 maxOrthographicSize: 120f,
                 actorViewportMargin: 0.08f,
                 actorSelectionZoomRatio: 0.2f);
-        }
-
-        static void SetHudCanvas(GameHUDModuleScene moduleScene, Canvas canvas)
-        {
-            var field = typeof(GameHUDModuleScene).GetField(
-                "hudCanvas",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            field.SetValue(moduleScene, canvas);
         }
 
         sealed class TestWorldState : IGameWorldStateReader
@@ -941,11 +1039,15 @@ namespace DungeonInn.Tests.EditMode
             }
         }
 
-        sealed class TestActorScreenPositionProvider : IActorScreenPositionProvider
+        sealed class TestActorWorldAnchorProvider : IActorWorldAnchorProvider, IWorldHudCameraProvider
         {
-            public bool TryGetScreenPosition(LayerPosition position, out Vector2 screenPosition)
+            public Quaternion CameraRotation => Quaternion.identity;
+            public float WorldUnitsPerPixel => 0.02f;
+
+            public bool TryGetWorldAnchor(Guid actorId, out Vector3 worldPosition, out MapLayerId layerId)
             {
-                screenPosition = new Vector2(position.X, position.Z);
+                worldPosition = Vector3.up;
+                layerId = MapLayerId.Ground;
                 return true;
             }
         }

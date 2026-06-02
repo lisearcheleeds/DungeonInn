@@ -1,4 +1,4 @@
-using DungeonInn.View.Scene.ModuleScene.GameHUD;
+﻿using DungeonInn.View.Scene.ModuleScene.GameUI;
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -9,9 +9,9 @@ namespace DungeonInn.Editor.OneShot
 {
     public static class SetupSelectedActorInspectorViewPrefab
     {
-        const string GameHUDPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameHUD";
+        const string GameUIPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameUI";
         const string SelectedActorInspectorViewPrefabPath =
-            GameHUDPrefabDirectory + "/SelectedActorInspectorView.prefab";
+            GameUIPrefabDirectory + "/SelectedActorInspectorView.prefab";
         const int StatRowCount = 6;
         const int EquipmentRowCount = 3;
         const int InventoryRowCount = 12;
@@ -30,7 +30,7 @@ namespace DungeonInn.Editor.OneShot
 
         static SelectedActorInspectorView CreateOrLoadSelectedActorInspectorViewPrefab()
         {
-            EnsureDirectory(GameHUDPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var prefabExists = AssetDatabase.AssetPathExists(SelectedActorInspectorViewPrefabPath);
             var viewObject = prefabExists
                 ? PrefabUtility.LoadPrefabContents(SelectedActorInspectorViewPrefabPath)
@@ -348,3 +348,4 @@ namespace DungeonInn.Editor.OneShot
         }
     }
 }
+

@@ -71,7 +71,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4bab999258a6aa740940759f2ab6f71b
-    m_Address: GameHUD/UI/SelectedActorInspectorView
+    m_Address: GameUI/SelectedActorInspectorView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -111,7 +111,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 87cb9a720bf39a149956feea9d48bf14
-    m_Address: GameHUD/UI/WorldHudView
+    m_Address: GameUI/WorldHudView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -161,7 +161,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: aff29ca1148a4794a922b7ca7886cb18
-    m_Address: GameHUD/UI/InnStatusPanelView
+    m_Address: GameUI/InnStatusPanelView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -196,7 +196,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: cb61ee1e47df6674ca74c1e6ad7e4a0e
-    m_Address: GameHUD/UI/ActorStatusView
+    m_Address: GameHUD/ActorStatusView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -221,7 +221,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d7e0bc3d739d11048891877d37011d13
-    m_Address: GameHUD/UI/MinimapView
+    m_Address: GameUI/MinimapView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -270,8 +270,13 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f519290001ee41e41a1d14e502621ee4
+    m_Address: GameHUD/DamageNumberView
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f6b2d15dcd9ccda499e9d2c833a1eb77
-    m_Address: GameHUD/UI/PlayerEventLogView
+    m_Address: GameUI/PlayerEventLogView
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

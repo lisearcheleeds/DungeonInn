@@ -6,6 +6,7 @@ using DungeonInn.Domain.Actor;
 using DungeonInn.Domain.Common;
 using DungeonInn.Domain.Map;
 using DungeonInn.GameSession.Settings;
+using DungeonInn.View.Scene.ModuleScene.GameHUD;
 using DungeonInn.View.Scene.MainScene.World;
 using LighthouseExtends.Addressable;
 using NUnit.Framework;
@@ -24,6 +25,12 @@ namespace DungeonInn.Tests.EditMode
         const string WorldCameraSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/WorldCameraSettings.asset";
         const string WorldGameSettingsPath = "Assets/DungeonInn/Runtime/StaticResources/Visual/WorldGameSettings.asset";
         const string ActorViewPrefabPath = "Assets/DungeonInn/Runtime/Prefab/World/ActorView.prefab";
+        const string ActorStatusViewPrefabPath = "Assets/DungeonInn/Runtime/Prefab/GameHUD/ActorStatusView.prefab";
+        const string DamageNumberViewPrefabPath = "Assets/DungeonInn/Runtime/Prefab/GameHUD/DamageNumberView.prefab";
+        const string BaseSpritePath = "Assets/DungeonInn/Runtime/StaticResources/Scene/Common/Sprite/BaseSprite.png";
+        const string DamageDigitsPath = "Assets/DungeonInn/Runtime/Art/Sprites/UI/DamageDigits.png";
+        const string GameHUDSortingLayerName = "GameHUD";
+        const string GameHUDOverlaySortingLayerName = "GameHUDOverlay";
         const string AddressablesGroupName = "DungeonInn Visual";
 
         [Test]
@@ -87,6 +94,164 @@ namespace DungeonInn.Tests.EditMode
             {
                 Assert.That(addresses, Contains.Item($"World/ActorVisual/{actorVisual}"));
             }
+
+            foreach (var hudAddress in new[]
+            {
+                "GameHUD/ActorStatusView",
+                "GameHUD/DamageNumberView",
+                "GameUI/SelectedActorInspectorView",
+                "GameUI/PlayerEventLogView",
+                "GameUI/WorldHudView",
+                "GameUI/InnStatusPanelView",
+                "GameUI/MinimapView"
+            })
+            {
+                Assert.That(addresses, Contains.Item(hudAddress));
+            }
+        }
+
+        [Test]
+        public void DamageNumberViewPrefabReferencesDigitSprites()
+        {
+            var view = AssetDatabase.LoadAssetAtPath<DamageNumberView>(DamageNumberViewPrefabPath);
+            Assert.That(view, Is.Not.Null);
+
+            using var serialized = new SerializedObject(view);
+            Assert.That(serialized.FindProperty("digitRoot").objectReferenceValue, Is.Not.Null);
+            var digitTemplate = serialized.FindProperty("digitTemplate").objectReferenceValue as SpriteRenderer;
+            Assert.That(digitTemplate, Is.Not.Null);
+            Assert.That(digitTemplate.sprite, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(digitTemplate.sprite), Is.EqualTo(DamageDigitsPath));
+
+            var digitSprites = serialized.FindProperty("digitSprites");
+            Assert.That(digitSprites.arraySize, Is.EqualTo(10));
+            for (var index = 0; index < digitSprites.arraySize; index++)
+            {
+                var digitSprite = digitSprites.GetArrayElementAtIndex(index).objectReferenceValue as Sprite;
+                Assert.That(digitSprite, Is.Not.Null, $"digitSprites[{index}]");
+                Assert.That(digitSprite.name, Is.EqualTo($"DamageDigit_{index}"));
+                Assert.That(AssetDatabase.GetAssetPath(digitSprite), Is.EqualTo(DamageDigitsPath));
+            }
+        }
+
+        [Test]
+        public void ActorStatusViewPrefabReferencesRendererSprites()
+        {
+            var view = AssetDatabase.LoadAssetAtPath<ActorStatusView>(ActorStatusViewPrefabPath);
+            Assert.That(view, Is.Not.Null);
+
+            var renderers = view.GetComponentsInChildren<SpriteRenderer>(true);
+            Assert.That(renderers.Length, Is.GreaterThanOrEqualTo(2));
+            Assert.That(renderers.Count(renderer => renderer.sprite != null), Is.EqualTo(renderers.Length));
+        }
+
+        [Test]
+        public void ActorStatusViewPrefabUsesSingleShaderDrivenHpBar()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ActorStatusViewPrefabPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            var renderers = prefab.GetComponentsInChildren<SpriteRenderer>(true);
+            var hpBar = renderers.FirstOrDefault(renderer => renderer.name == "HpBar");
+            var baseSprite = AssetDatabase.LoadAssetAtPath<Sprite>(BaseSpritePath);
+
+            Assert.That(hpBar, Is.Not.Null);
+            Assert.That(hpBar.sprite, Is.EqualTo(baseSprite));
+            Assert.That(hpBar.sharedMaterial, Is.Not.Null);
+            Assert.That(hpBar.sharedMaterial.shader.name, Is.EqualTo("DungeonInn/GameHUD/HpBar"));
+            Assert.That(hpBar.drawMode, Is.EqualTo(SpriteDrawMode.Sliced));
+            Assert.That(hpBar.sortingLayerName, Is.EqualTo(GameHUDSortingLayerName));
+            Assert.That(hpBar.sortingOrder, Is.EqualTo(100));
+            Assert.That(renderers.Any(renderer => renderer.name == "HpBackground"), Is.False);
+            Assert.That(renderers.Any(renderer => renderer.name == "HpFill"), Is.False);
+            Assert.That(hpBar.size.x, Is.EqualTo(1.2f).Within(0.0001f));
+            Assert.That(hpBar.size.y, Is.EqualTo(0.28f).Within(0.0001f));
+            Assert.That(CalculateVisualWidthHeightRatio(hpBar), Is.EqualTo(120f / 28f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ActorStatusViewHpRatioUpdatesRendererVertexAlpha()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ActorStatusViewPrefabPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            try
+            {
+                var view = instance.GetComponent<ActorStatusView>();
+                var hpBar = instance.GetComponentsInChildren<SpriteRenderer>(true)
+                    .FirstOrDefault(renderer => renderer.name == "HpBar");
+                Assert.That(view, Is.Not.Null);
+                Assert.That(hpBar, Is.Not.Null);
+
+                var sizeBefore = hpBar.size;
+                var positionBefore = hpBar.transform.localPosition;
+
+                view.SetHpRatio(0.5f);
+
+                Assert.That(hpBar.color.a, Is.EqualTo(0.5f).Within(0.0001f));
+                Assert.That(hpBar.size, Is.EqualTo(sizeBefore));
+                Assert.That(hpBar.transform.localPosition, Is.EqualTo(positionBefore));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void GameHUDSortingLayersExist()
+        {
+            Assert.That(SortingLayer.NameToID("World"), Is.Not.EqualTo(0));
+            Assert.That(SortingLayer.NameToID("WorldEffect"), Is.Not.EqualTo(0));
+            Assert.That(SortingLayer.NameToID(GameHUDSortingLayerName), Is.Not.EqualTo(0));
+            Assert.That(SortingLayer.NameToID(GameHUDOverlaySortingLayerName), Is.Not.EqualTo(0));
+        }
+
+        [Test]
+        public void DamageNumberViewPrefabUsesGameHUDOverlaySortingLayer()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(DamageNumberViewPrefabPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            var digitTemplate = prefab.GetComponentsInChildren<SpriteRenderer>(true)
+                .FirstOrDefault(renderer => renderer.name == "DigitTemplate");
+
+            Assert.That(digitTemplate, Is.Not.Null);
+            Assert.That(digitTemplate.sharedMaterial, Is.Not.Null);
+            Assert.That(digitTemplate.sharedMaterial.shader.name, Is.EqualTo("DungeonInn/GameHUD/SpriteOverlay"));
+            Assert.That(digitTemplate.sortingLayerName, Is.EqualTo(GameHUDOverlaySortingLayerName));
+            Assert.That(digitTemplate.sortingOrder, Is.EqualTo(200));
+        }
+
+        [Test]
+        public void GameHUDPrefabsUseWorldRenderingLayer()
+        {
+            var worldLayer = LayerMask.NameToLayer("World");
+            Assert.That(worldLayer, Is.GreaterThanOrEqualTo(0));
+
+            foreach (var prefabPath in new[] { ActorStatusViewPrefabPath, DamageNumberViewPrefabPath })
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                Assert.That(prefab, Is.Not.Null, prefabPath);
+                var transforms = prefab.GetComponentsInChildren<Transform>(true);
+                Assert.That(
+                    transforms.Select(transform => transform.gameObject.layer),
+                    Is.All.EqualTo(worldLayer),
+                    prefabPath);
+            }
+        }
+
+        static float CalculateVisualWidthHeightRatio(SpriteRenderer renderer)
+        {
+            if (renderer.drawMode != SpriteDrawMode.Simple)
+            {
+                return renderer.size.x / renderer.size.y;
+            }
+
+            var width = renderer.sprite.bounds.size.x * Mathf.Abs(renderer.transform.localScale.x);
+            var height = renderer.sprite.bounds.size.y * Mathf.Abs(renderer.transform.localScale.y);
+            return width / height;
         }
 
         [Test]
@@ -183,6 +348,39 @@ namespace DungeonInn.Tests.EditMode
                     Quaternion.Angle(controller.CurrentCameraRotation, Quaternion.Euler(33f, 77f, 0f)),
                     Is.LessThan(0.0001f));
                 Assert.That(controller.ActorViewportMargin, Is.EqualTo(0.25f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+            }
+        }
+
+        [Test]
+        public void WorldCameraControllerCalculatesWorldUnitsPerPixelFromOrthographicCamera()
+        {
+            var cameraObject = new GameObject("WorldCameraControllerWorldUnitsPerPixel");
+            var camera = cameraObject.AddComponent<Camera>();
+            var settings = new WorldCameraSettings(
+                Vector3.zero,
+                initialPitchDegrees: 45f,
+                initialYawDegrees: 45f,
+                initialOrthographicSize: 20f,
+                moveSpeed: 1f,
+                rotationSensitivity: 1f,
+                zoomSensitivity: 1f,
+                minOrthographicSize: 1f,
+                maxOrthographicSize: 40f,
+                actorViewportMargin: 0.25f,
+                actorSelectionZoomRatio: 0.2f);
+            var controller = new WorldCameraController(new FixedWorldCameraSettingsRepository(settings));
+
+            try
+            {
+                camera.pixelRect = new Rect(0f, 0f, 800f, 400f);
+                controller.BindCamera(camera);
+                controller.UpdateCamera(0f);
+
+                Assert.That(controller.WorldUnitsPerPixel, Is.EqualTo(0.1f).Within(0.0001f));
             }
             finally
             {

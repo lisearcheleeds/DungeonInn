@@ -1,4 +1,4 @@
-using DungeonInn.View.Scene.ModuleScene.GameHUD;
+﻿using DungeonInn.View.Scene.ModuleScene.GameUI;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -11,10 +11,10 @@ namespace DungeonInn.Editor.OneShot
 {
     public static class SetupMinimapViewPrefabOneShot
     {
-        const string GameHUDPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameHUD";
-        const string MinimapViewPrefabPath = GameHUDPrefabDirectory + "/MinimapView.prefab";
+        const string GameUIPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameUI";
+        const string MinimapViewPrefabPath = GameUIPrefabDirectory + "/MinimapView.prefab";
         const string AddressablesGroupName = "DungeonInn Visual";
-        const string MinimapViewAddress = "GameHUD/UI/MinimapView";
+        const string MinimapViewAddress = "GameUI/MinimapView";
 
         public static void Run()
         {
@@ -24,7 +24,7 @@ namespace DungeonInn.Editor.OneShot
 
         static MinimapView CreateOrLoadMinimapViewPrefab()
         {
-            EnsureDirectory(GameHUDPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var prefabExists = AssetDatabase.AssetPathExists(MinimapViewPrefabPath);
             var minimapObject = prefabExists
                 ? PrefabUtility.LoadPrefabContents(MinimapViewPrefabPath)
@@ -195,3 +195,4 @@ namespace DungeonInn.Editor.OneShot
         }
     }
 }
+

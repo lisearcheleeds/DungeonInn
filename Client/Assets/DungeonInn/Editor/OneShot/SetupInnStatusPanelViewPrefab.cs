@@ -1,5 +1,5 @@
-using System;
-using DungeonInn.View.Scene.ModuleScene.GameHUD;
+﻿using System;
+using DungeonInn.View.Scene.ModuleScene.GameUI;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -13,10 +13,10 @@ namespace DungeonInn.Editor.OneShot
     public static class SetupInnStatusPanelViewPrefabOneShot
     {
         const int GuestDisplayLimit = 5;
-        const string GameHUDPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameHUD";
-        const string InnStatusPanelViewPrefabPath = GameHUDPrefabDirectory + "/InnStatusPanelView.prefab";
+        const string GameUIPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameUI";
+        const string InnStatusPanelViewPrefabPath = GameUIPrefabDirectory + "/InnStatusPanelView.prefab";
         const string AddressablesGroupName = "DungeonInn Visual";
-        const string InnStatusPanelViewAddress = "GameHUD/UI/InnStatusPanelView";
+        const string InnStatusPanelViewAddress = "GameUI/InnStatusPanelView";
 
         public static void Run()
         {
@@ -26,7 +26,7 @@ namespace DungeonInn.Editor.OneShot
 
         static InnStatusPanelView CreateOrLoadInnStatusPanelViewPrefab()
         {
-            EnsureDirectory(GameHUDPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var prefabExists = AssetDatabase.AssetPathExists(InnStatusPanelViewPrefabPath);
             var panelObject = prefabExists
                 ? PrefabUtility.LoadPrefabContents(InnStatusPanelViewPrefabPath)
@@ -313,3 +313,4 @@ namespace DungeonInn.Editor.OneShot
         }
     }
 }
+

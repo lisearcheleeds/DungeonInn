@@ -62,8 +62,8 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.Register<WorldActorSelectionInputHandler>(Lifetime.Scoped);
             builder.Register<WorldActorCameraFollowController>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
 
-            builder.Register<WorldActorScreenPositionProvider>(Lifetime.Scoped).AsSelf();
-            builder.RegisterEntryPoint<WorldActorScreenPositionProviderEntryPoint>();
+            builder.Register<WorldActorWorldAnchorProvider>(Lifetime.Scoped).AsSelf();
+            builder.RegisterEntryPoint<WorldActorWorldAnchorProviderEntryPoint>();
             builder.Register<WorldActiveLayerProvider>(Lifetime.Scoped).AsSelf();
             builder.RegisterEntryPoint<WorldActiveLayerProviderEntryPoint>();
 #if DEBUG

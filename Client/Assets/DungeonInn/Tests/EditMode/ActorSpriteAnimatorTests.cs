@@ -4,6 +4,7 @@ using DungeonInn.Application.Actors.Phase;
 using DungeonInn.Application.Event;
 using DungeonInn.Application.Event.Events;
 using DungeonInn.Domain.Actor;
+using DungeonInn.Domain.Map;
 using DungeonInn.View.Scene.MainScene.World;
 using NUnit.Framework;
 using R3;
@@ -108,7 +109,11 @@ namespace DungeonInn.Tests.EditMode
             {
                 presenter.Initialize();
 
-                subscriber.Publish(new CombatAttackOccurred(attackerId, targetId, 1, 9));
+                subscriber.Publish(new CombatAttackOccurred(
+                    attackerId,
+                    targetId,
+                    1,
+                    9));
                 Assert.That(presenter.TryGetOverride(attackerId, out var attackState), Is.True);
                 Assert.That(attackState, Is.EqualTo(ActorAnimationState.Attack));
 

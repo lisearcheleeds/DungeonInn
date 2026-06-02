@@ -1,4 +1,4 @@
-# AI Class Relation Index
+﻿# AI Class Relation Index
 
 このドキュメントは、AI が DungeonInn の全体像を検索なしで把握するための入口である。
 目的は、全クラスを網羅することではなく、「どの機能を見るときに、どのクラスから読み始めるべきか」を短時間で判断できるようにすること。
@@ -71,7 +71,7 @@ AI が調査・実装を始めるときは、以下の順で読む。
 | World map view | `WorldMapView` | Map layer view registry / generated meshes | `MapMeshBuildService`, `MapLayerViewRegistry`, `EnvironmentObjectPlacer`, `NavMeshBuildService` | `map-dungeon-domain-design.md` |
 | Actor world view | `WorldActorPresenter` | Actor view pool / view data | `ActorView`, `ActorSpriteAnimator`, `ActorSpriteVisualConfig`, `ActorCombatAnimationPresenter` | `actor-visual-size-tier-design.md` |
 | Camera | `WorldCameraController` | Camera settings | `WorldActorCameraFollowController`, `WorldCameraSettingsSO` | `lifetime-scope-game-loop-design.md` |
-| HUD / Popup | `WorldActorStatusPresenter`, `ActorDetailPopupPresenter` | UI ModuleScene / pools | `WorldHudCanvasProvider`, `ActorHUDViewPool`, `ActorDetailPopup` | `lighthouse-patterns.md`, `refactoring-guidelines.md` |
+| HUD / Popup | `WorldActorStatusPresenter`, `GameUIEntryPoint`, `GameHUDEntryPoint` | GameUI / GameHUD ModuleScene / pools | `ActorStatusViewPool`, `DamageNumberViewPool`, `SelectedActorInspectorPresenter` | `lighthouse-patterns.md`, `refactoring-guidelines.md` |
 | Addressable view creation | `WorldAddressableViewFactory` | `IAssetScope` lifetime | `ProjectilePrefabSource`, `AreaEffectPrefabSource`, `VisualConfigLoader` | `lighthouse-patterns.md`, `refactoring-guidelines.md` |
 | Input | `WorldSceneInputLayer` | Input layer lifecycle | `WorldActorSelectionInputHandler`, generated `InputActions` | `lighthouse-patterns.md` |
 | Settings / Config | `WorldGameSettingsSO` | SO -> runtime settings | `WorldGameSettings`, `WorldMapViewSettings`, `WorldCameraSettingsSO` | `refactoring-guidelines.md` |
@@ -211,3 +211,4 @@ Domain Entity や View 実体を広く直接 Inject しない。
 仕様の正本は `docs/spec*.md`、設計の詳細は各 `docs/design/*.md`、実装ルールは `docs/guidelines/*.md`、現在の挙動はコードで確認する。
 
 このファイルとコードが食い違っている場合は、コードを確認した上でこのファイルを更新する。
+

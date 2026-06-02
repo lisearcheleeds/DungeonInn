@@ -32,6 +32,18 @@ namespace DungeonInn.View.Scene.MainScene.World
         public float CurrentYawDegrees => yawDegrees;
         public Quaternion CurrentCameraRotation => camera != null ? camera.transform.rotation : Quaternion.identity;
         public float ActorViewportMargin => settingsRepository.Get().ActorViewportMargin;
+        public float WorldUnitsPerPixel
+        {
+            get
+            {
+                if (camera == null || camera.pixelHeight <= 0)
+                {
+                    return settingsRepository.Get().InitialOrthographicSize * 2f / Mathf.Max(1, Screen.height);
+                }
+
+                return camera.orthographicSize * 2f / camera.pixelHeight;
+            }
+        }
 
         [Inject]
         public WorldCameraController(IWorldCameraSettingsRepository settingsRepository)

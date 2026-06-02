@@ -35,9 +35,12 @@ namespace DungeonInn.GameSession
                 .As<IFacilityBuildingDefinitionRepository>();
 
             // === View: Shared utilities ===
-            builder.Register<ActorScreenPositionProviderProxy>(Lifetime.Singleton)
-                .As<IActorScreenPositionProvider>()
-                .As<IActorScreenPositionProviderRegistry>();
+            builder.Register<ActorWorldAnchorProviderProxy>(Lifetime.Singleton)
+                .As<IActorWorldAnchorProvider>()
+                .As<IActorWorldAnchorProviderRegistry>();
+            builder.Register<WorldHudCameraProviderProxy>(Lifetime.Singleton)
+                .As<IWorldHudCameraProvider>()
+                .As<IWorldHudCameraProviderRegistry>();
             builder.Register<ActiveLayerProviderProxy>(Lifetime.Singleton)
                 .As<IActiveLayerProvider>()
                 .As<IActiveLayerProviderRegistry>();

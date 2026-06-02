@@ -1,5 +1,5 @@
-using System;
-using DungeonInn.View.Scene.ModuleScene.GameHUD;
+﻿using System;
+using DungeonInn.View.Scene.ModuleScene.GameUI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,8 +9,8 @@ namespace DungeonInn.Editor.OneShot
 {
     public static class SetupWorldHudViewPrefabOneShot
     {
-        const string GameHUDPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameHUD";
-        const string WorldHudViewPrefabPath = GameHUDPrefabDirectory + "/WorldHudView.prefab";
+        const string GameUIPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameUI";
+        const string WorldHudViewPrefabPath = GameUIPrefabDirectory + "/WorldHudView.prefab";
 
         public static void Run()
         {
@@ -20,7 +20,7 @@ namespace DungeonInn.Editor.OneShot
 
         static WorldHudView CreateOrLoadWorldHudViewPrefab()
         {
-            EnsureDirectory(GameHUDPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var prefabExists = AssetDatabase.AssetPathExists(WorldHudViewPrefabPath);
             var hudObject = prefabExists
                 ? PrefabUtility.LoadPrefabContents(WorldHudViewPrefabPath)
@@ -234,3 +234,4 @@ namespace DungeonInn.Editor.OneShot
         }
     }
 }
+

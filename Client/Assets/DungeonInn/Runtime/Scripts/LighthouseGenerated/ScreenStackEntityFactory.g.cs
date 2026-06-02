@@ -8,7 +8,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using LighthouseExtends.ScreenStack;
 using VContainer;
-using DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack;
+using DungeonInn.View.Scene.ModuleScene.GameUI.ScreenStack;
 
 namespace DungeonInn
 {

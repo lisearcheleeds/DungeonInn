@@ -1,23 +1,15 @@
-using UnityEngine;
-using Lighthouse.Scene;
 using DungeonInn.LighthouseGenerated;
-using DungeonInn.View.Base;
+using Lighthouse.Scene;
+using Lighthouse.Scene.SceneBase;
+using UnityEngine;
 
 namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 {
-    public sealed class GameHUDModuleScene : ProductCanvasModuleSceneBase
+    public sealed class GameHUDModuleScene : ModuleSceneBase
     {
-        [SerializeField] Canvas hudCanvas;
+        [SerializeField] Transform hudRoot;
 
         public override ModuleSceneId ModuleSceneId => DungeonInnModuleSceneId.GameHUD;
-        public Canvas HUDCanvas => hudCanvas;
-
-        void Awake()
-        {
-            if (hudCanvas != null)
-            {
-                GameHUDRenderingLayer.ApplyToHierarchy(hudCanvas.gameObject);
-            }
-        }
+        public Transform HudRoot => hudRoot != null ? hudRoot : transform;
     }
 }

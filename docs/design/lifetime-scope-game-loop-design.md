@@ -92,7 +92,8 @@ Application 層そのものが LifetimeScope を持つわけではない。Appli
 - View 子 Scope と共有する抽象
   - `IWorldMapViewDataProvider`
   - `IActorSelectionReader`
-  - `IActorScreenPositionProvider` proxy
+  - `IActorWorldAnchorProvider` proxy
+  - `IWorldHudCameraProvider` proxy
   - `IActiveLayerProvider` proxy
   - `INavigationPathProvider` proxy
 
@@ -114,7 +115,7 @@ Application 層そのものが LifetimeScope を持つわけではない。Appli
   - `WorldActorPresenter`
   - `WorldProjectilePresenter`
   - `WorldAreaEffectPresenter`
-  - `WorldActorScreenPositionProvider`
+  - `WorldActorWorldAnchorProvider`
   - `WorldActiveLayerProvider`
   - `UnityNavMeshPathProvider`
   - `WorldCameraController`
@@ -335,7 +336,7 @@ AI評価、スポーン、移動、戦闘、アイテム取得、宿屋処理な
   - `WorldLayerViewController`
   - `WorldActorSelectionInputHandler`
   - `WorldActorCameraFollowController`
-  - `WorldActorScreenPositionProvider`
+  - `WorldActorWorldAnchorProvider`
   - `WorldActiveLayerProvider`
   - `UnityNavMeshPathProvider`
   - `WorldNavigationPathProviderEntryPoint`

@@ -1,109 +1,152 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using DungeonInn.Application.World;
 
 namespace DungeonInn.View.Scene.ModuleScene.GameHUD
 {
     public sealed class ActorStatusView : MonoBehaviour
     {
-        [SerializeField] Image hpBarFillImage;
-        [SerializeField] Image[] statusIconImages;
+        const int MaxStatusIconCount = 4;
+        const float TargetWidthPixels = 120f;
+        const float TargetHeightPixels = 28f;
+        const float StatusIconSizePixels = 16f;
+        const float StatusIconSpacingPixels = 20f;
+        const float StatusIconTopOffsetPixels = 22f;
 
-        void Awake()
-        {
-            ConfigureHpBarFillImage();
-        }
+        [SerializeField] Transform billboardRoot;
+        [SerializeField] SpriteRenderer hpBarRenderer;
+        [SerializeField] SpriteRenderer[] statusIconRenderers;
 
         public void SetHpRatio(float ratio)
         {
-            if (hpBarFillImage != null)
+            if (hpBarRenderer == null)
             {
-                ConfigureHpBarFillImage();
-                hpBarFillImage.fillAmount = Mathf.Clamp01(ratio);
+                return;
             }
+
+            var clampedRatio = Mathf.Clamp01(ratio);
+            hpBarRenderer.color = new Color(1f, 1f, 1f, clampedRatio);
         }
 
-        public void SetStatusIcons(IReadOnlyList<ActorEffectIconViewData> effects)
+        public void SetStatusIcons(
+            IReadOnlyList<ActorEffectIconViewData> effects,
+            ActorEffectIconSpriteCatalog iconSpriteCatalog)
         {
             if (effects == null)
             {
                 throw new ArgumentNullException(nameof(effects));
             }
 
-            if (statusIconImages == null)
+            if (iconSpriteCatalog == null)
+            {
+                throw new ArgumentNullException(nameof(iconSpriteCatalog));
+            }
+
+            if (statusIconRenderers == null)
             {
                 return;
             }
 
-            for (var index = 0; index < statusIconImages.Length; index++)
+            for (var index = 0; index < statusIconRenderers.Length; index++)
             {
-                if (statusIconImages[index] == null)
+                var iconRenderer = statusIconRenderers[index];
+                if (iconRenderer == null)
                 {
                     continue;
                 }
 
-                statusIconImages[index].gameObject.SetActive(index < effects.Count);
-            }
-        }
-
-        public void SetScreenPosition(Vector2 screenPosition)
-        {
-            var rectTransform = (RectTransform)transform;
-            if (rectTransform.parent is not RectTransform parentRectTransform)
-            {
-                rectTransform.position = screenPosition;
-                return;
-            }
-
-            var canvas = GetComponentInParent<Canvas>();
-            var camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? canvas.worldCamera
-                : null;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    parentRectTransform,
-                    screenPosition,
-                    camera,
-                    out var localPoint))
-            {
-                rectTransform.anchoredPosition = localPoint;
-            }
-        }
-
-        public void Reset()
-        {
-            if (hpBarFillImage != null)
-            {
-                ConfigureHpBarFillImage();
-                hpBarFillImage.fillAmount = 1f;
-            }
-
-            if (statusIconImages == null)
-            {
-                return;
-            }
-
-            for (var index = 0; index < statusIconImages.Length; index++)
-            {
-                if (statusIconImages[index] != null)
+                var isActive = index < effects.Count;
+                iconRenderer.gameObject.SetActive(isActive);
+                if (isActive)
                 {
-                    statusIconImages[index].gameObject.SetActive(false);
+                    var hasSprite = iconSpriteCatalog.TryGetSprite(effects[index], out var sprite);
+                    iconRenderer.sprite = sprite;
+                    iconRenderer.gameObject.SetActive(hasSprite);
                 }
             }
         }
 
-        void ConfigureHpBarFillImage()
+        public void SetWorldPosition(Vector3 worldPosition, Quaternion cameraRotation)
         {
-            if (hpBarFillImage == null)
+            transform.position = worldPosition;
+            if (billboardRoot != null)
+            {
+                billboardRoot.rotation = cameraRotation;
+            }
+        }
+
+        public void SetScreenScale(float worldUnitsPerPixel)
+        {
+            var unitPerPixel = Mathf.Max(0f, worldUnitsPerPixel);
+            transform.localScale = Vector3.one;
+            if (hpBarRenderer != null)
+            {
+                hpBarRenderer.size = new Vector2(
+                    TargetWidthPixels * unitPerPixel,
+                    TargetHeightPixels * unitPerPixel);
+            }
+
+            ApplyStatusIconScreenLayout(unitPerPixel);
+        }
+
+        public void ResetView()
+        {
+            transform.localScale = Vector3.one;
+            SetHpRatio(1f);
+            if (statusIconRenderers == null)
             {
                 return;
             }
 
-            hpBarFillImage.type = Image.Type.Filled;
-            hpBarFillImage.fillMethod = Image.FillMethod.Horizontal;
-            hpBarFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
-            hpBarFillImage.fillClockwise = true;
+            for (var index = 0; index < statusIconRenderers.Length; index++)
+            {
+                if (statusIconRenderers[index] != null)
+                {
+                    statusIconRenderers[index].sprite = null;
+                    statusIconRenderers[index].gameObject.SetActive(false);
+                }
+            }
         }
+
+        void ApplyStatusIconScreenLayout(float worldUnitsPerPixel)
+        {
+            if (statusIconRenderers == null)
+            {
+                return;
+            }
+
+            var iconSize = StatusIconSizePixels * worldUnitsPerPixel;
+            var iconSpacing = StatusIconSpacingPixels * worldUnitsPerPixel;
+            var topOffset = StatusIconTopOffsetPixels * worldUnitsPerPixel;
+            var startX = -iconSpacing * (MaxStatusIconCount - 1) * 0.5f;
+            for (var index = 0; index < statusIconRenderers.Length; index++)
+            {
+                var iconRenderer = statusIconRenderers[index];
+                if (iconRenderer == null)
+                {
+                    continue;
+                }
+
+                iconRenderer.size = new Vector2(iconSize, iconSize);
+                iconRenderer.transform.localScale = Vector3.one;
+                iconRenderer.transform.localPosition = new Vector3(
+                    startX + iconSpacing * index,
+                    topOffset,
+                    0f);
+            }
+        }
+
+#if UNITY_EDITOR
+        public void EditorAssign(
+            Transform newBillboardRoot,
+            SpriteRenderer newHpBarRenderer,
+            SpriteRenderer[] newStatusIconRenderers)
+        {
+            billboardRoot = newBillboardRoot;
+            hpBarRenderer = newHpBarRenderer;
+            statusIconRenderers = newStatusIconRenderers;
+        }
+#endif
     }
 }

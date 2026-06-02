@@ -17,7 +17,7 @@ using DungeonInn.Domain.Guild;
 using DungeonInn.Domain.Item;
 using DungeonInn.Domain.Map;
 using DungeonInn.Master;
-using DungeonInn.View.Scene.ModuleScene.GameHUD.ScreenStack;
+using DungeonInn.View.Scene.ModuleScene.GameUI.ScreenStack;
 using NUnit.Framework;
 using R3;
 
@@ -108,7 +108,7 @@ namespace DungeonInn.Tests.EditMode
                     Array.Empty<DungeonLayerMonsterSpawnSummary>(),
                     Array.Empty<DungeonLayerItemDropSummary>())
             });
-            var factory = new GameHudScreenStackViewDataFactory(
+            var factory = new GameUIScreenStackViewDataFactory(
                 dungeonInfoService,
                 new ThrowingGuildManagementScreenService(),
                 new ThrowingMarketScreenService());

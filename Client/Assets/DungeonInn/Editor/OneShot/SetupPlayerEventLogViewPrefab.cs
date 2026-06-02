@@ -1,5 +1,5 @@
-using System;
-using DungeonInn.View.Scene.ModuleScene.GameHUD;
+﻿using System;
+using DungeonInn.View.Scene.ModuleScene.GameUI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,8 +9,8 @@ namespace DungeonInn.Editor.OneShot
 {
     public static class SetupPlayerEventLogViewPrefabOneShot
     {
-        const string GameHUDPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameHUD";
-        const string PrefabPath = GameHUDPrefabDirectory + "/PlayerEventLogView.prefab";
+        const string GameUIPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameUI";
+        const string PrefabPath = GameUIPrefabDirectory + "/PlayerEventLogView.prefab";
         const int LineCount = 10;
         const float LineHeight = 18f;
         const float PanelWidth = 420f;
@@ -18,7 +18,7 @@ namespace DungeonInn.Editor.OneShot
 
         public static void Run()
         {
-            EnsureDirectory(GameHUDPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var prefabExists = AssetDatabase.AssetPathExists(PrefabPath);
             var root = prefabExists
                 ? PrefabUtility.LoadPrefabContents(PrefabPath)
@@ -132,3 +132,4 @@ namespace DungeonInn.Editor.OneShot
         }
     }
 }
+

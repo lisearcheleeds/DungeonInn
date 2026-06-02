@@ -18,7 +18,7 @@ namespace DungeonInn.Core
             new Dictionary<MainSceneId, ModuleSceneId[]>
             {
                 { DungeonInnMainSceneId.Title, null },
-                { DungeonInnMainSceneId.World, new[] { DungeonInnModuleSceneId.GameHUD } },
+                { DungeonInnMainSceneId.World, new[] { DungeonInnModuleSceneId.GameUI, DungeonInnModuleSceneId.GameHUD } },
             };
 
         static readonly MainSceneId[][] MainSceneGroupList =

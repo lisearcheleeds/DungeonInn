@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.IO;
 using DungeonInn.Domain.Actor;
 using DungeonInn.GameSession.Settings;
-using DungeonInn.View.Scene.ModuleScene.GameHUD;
+using DungeonInn.View.Scene.ModuleScene.GameUI;
 using DungeonInn.View.Scene.MainScene.World;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -32,23 +32,26 @@ namespace DungeonInn.Editor
         const string MonsterGoblinArcherVisualDefinitionPath = ActorVisualDefinitionDirectory + "/MonsterGoblinArcher.asset";
         const string WorldPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/World";
         const string GameHUDPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameHUD";
+        const string GameUIPrefabDirectory = "Assets/DungeonInn/Runtime/Prefab/GameUI";
         const string ActorPrefabPath = WorldPrefabDirectory + "/ActorView.prefab";
         const string StairUpPropPrefabPath = WorldPrefabDirectory + "/StairUpPropView.prefab";
         const string StairDownPropPrefabPath = WorldPrefabDirectory + "/StairDownPropView.prefab";
         const string ArrowProjectilePrefabPath = WorldPrefabDirectory + "/ArrowProjectileView.prefab";
         const string ScytheAreaEffectPrefabPath = WorldPrefabDirectory + "/ScytheAreaEffectView.prefab";
         const string ActorStatusViewPrefabPath = GameHUDPrefabDirectory + "/ActorStatusView.prefab";
-        const string SelectedActorInspectorViewPrefabPath = GameHUDPrefabDirectory + "/SelectedActorInspectorView.prefab";
-        const string PlayerEventLogViewPrefabPath = GameHUDPrefabDirectory + "/PlayerEventLogView.prefab";
-        const string WorldHudViewPrefabPath = GameHUDPrefabDirectory + "/WorldHudView.prefab";
-        const string InnStatusPanelViewPrefabPath = GameHUDPrefabDirectory + "/InnStatusPanelView.prefab";
-        const string MinimapViewPrefabPath = GameHUDPrefabDirectory + "/MinimapView.prefab";
-        const string DungeonInfoWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/DungeonInfoWindow.prefab";
-        const string GuildManagementWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/GuildManagementWindow.prefab";
-        const string MarketWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/MarketWindow.prefab";
-        const string SystemMenuWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/SystemMenuWindow.prefab";
-        const string SaveSlotSelectionWindowPrefabPath = GameHUDPrefabDirectory + "/ScreenStack/SaveSlotSelectionWindow.prefab";
+        const string SelectedActorInspectorViewPrefabPath = GameUIPrefabDirectory + "/SelectedActorInspectorView.prefab";
+        const string PlayerEventLogViewPrefabPath = GameUIPrefabDirectory + "/PlayerEventLogView.prefab";
+        const string WorldHudViewPrefabPath = GameUIPrefabDirectory + "/WorldHudView.prefab";
+        const string InnStatusPanelViewPrefabPath = GameUIPrefabDirectory + "/InnStatusPanelView.prefab";
+        const string MinimapViewPrefabPath = GameUIPrefabDirectory + "/MinimapView.prefab";
+        const string DamageNumberViewPrefabPath = GameHUDPrefabDirectory + "/DamageNumberView.prefab";
+        const string DungeonInfoWindowPrefabPath = GameUIPrefabDirectory + "/ScreenStack/DungeonInfoWindow.prefab";
+        const string GuildManagementWindowPrefabPath = GameUIPrefabDirectory + "/ScreenStack/GuildManagementWindow.prefab";
+        const string MarketWindowPrefabPath = GameUIPrefabDirectory + "/ScreenStack/MarketWindow.prefab";
+        const string SystemMenuWindowPrefabPath = GameUIPrefabDirectory + "/ScreenStack/SystemMenuWindow.prefab";
+        const string SaveSlotSelectionWindowPrefabPath = GameUIPrefabDirectory + "/ScreenStack/SaveSlotSelectionWindow.prefab";
         const string EffectDummySpritePath = "Assets/DungeonInn/Runtime/Art/Sprites/Effect/Dummy.png";
+        const string DamageDigitAtlasPath = "Assets/DungeonInn/Runtime/Art/Sprites/UI/DamageDigits.png";
         const string AddressablesGroupName = "DungeonInn Visual";
         const string MapMaterialShaderName = "Universal Render Pipeline/Lit";
 
@@ -76,6 +79,8 @@ namespace DungeonInn.Editor
                 AssetDatabase.AssetPathExists(WorldHudViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(InnStatusPanelViewPrefabPath) &&
                 AssetDatabase.AssetPathExists(MinimapViewPrefabPath) &&
+                AssetDatabase.AssetPathExists(DamageNumberViewPrefabPath) &&
+                AssetDatabase.AssetPathExists(DamageDigitAtlasPath) &&
                 AssetDatabase.AssetPathExists(AdventurerNoviceVisualDefinitionPath) &&
                 AssetDatabase.AssetPathExists(MonsterGoblinVisualDefinitionPath) &&
                 AssetDatabase.AssetPathExists(MonsterOrcVisualDefinitionPath) &&
@@ -154,7 +159,6 @@ namespace DungeonInn.Editor
             CreateOrLoadPropViewPrefab(StairDownPropPrefabPath, "StairDownPropView");
             CreateOrLoadProjectileViewPrefab();
             CreateOrLoadAreaEffectViewPrefab();
-            CreateOrLoadActorStatusViewPrefab();
             CreateOrLoadSelectedActorInspectorViewPrefab();
             CreateOrLoadPlayerEventLogViewPrefab();
             CreateOrLoadWorldHudViewPrefab();
@@ -162,6 +166,7 @@ namespace DungeonInn.Editor
             var layerSettingsSo = CreateOrLoadLayerPositionViewSettingsSO();
             var cameraSettingsSo = CreateOrLoadWorldCameraSettingsSO();
             var gameSettingsSo = CreateOrLoadWorldGameSettingsSO();
+            OneShot.SetupGameHUDWorldSpaceAssets.Run();
 
             AssignToWorldLifetimeScope(mapSo, actorSo, layerSettingsSo, cameraSettingsSo, gameSettingsSo);
             SetupAddressables();
@@ -176,6 +181,12 @@ namespace DungeonInn.Editor
         public static void RunAddressablesSetup()
         {
             SetupAddressables();
+        }
+
+        [MenuItem("DungeonInn/Setup Damage Number HUD")]
+        public static void RunDamageNumberSetup()
+        {
+            OneShot.SetupGameHUDWorldSpaceAssets.Run();
         }
 
         static LayerPositionViewSettingsSO CreateOrLoadLayerPositionViewSettingsSO()
@@ -302,27 +313,9 @@ namespace DungeonInn.Editor
             return prefab != null ? prefab.GetComponent<AreaEffectView>() : null;
         }
 
-        static ActorStatusView CreateOrLoadActorStatusViewPrefab()
-        {
-            if (AssetDatabase.AssetPathExists(ActorStatusViewPrefabPath))
-            {
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ActorStatusViewPrefabPath);
-                return prefab != null ? prefab.GetComponent<ActorStatusView>() : null;
-            }
-
-            EnsureDirectory(WorldPrefabDirectory);
-            var viewObject = new GameObject("ActorStatusView", typeof(RectTransform));
-            viewObject.AddComponent<ActorStatusView>();
-            var savedPrefab = PrefabUtility.SaveAsPrefabAsset(viewObject, ActorStatusViewPrefabPath);
-            Object.DestroyImmediate(viewObject);
-
-            Debug.Log($"[DungeonInn] Created {ActorStatusViewPrefabPath}");
-            return savedPrefab != null ? savedPrefab.GetComponent<ActorStatusView>() : null;
-        }
-
         static SelectedActorInspectorView CreateOrLoadSelectedActorInspectorViewPrefab()
         {
-            EnsureDirectory(GameHUDPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var prefabExists = AssetDatabase.AssetPathExists(SelectedActorInspectorViewPrefabPath);
             var viewObject = prefabExists
                 ? PrefabUtility.LoadPrefabContents(SelectedActorInspectorViewPrefabPath)
@@ -353,7 +346,7 @@ namespace DungeonInn.Editor
                 return prefab != null ? prefab.GetComponent<PlayerEventLogView>() : null;
             }
 
-            EnsureDirectory(WorldPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var viewObject = new GameObject("PlayerEventLogView", typeof(RectTransform));
             viewObject.AddComponent<PlayerEventLogView>();
             var savedPrefab = PrefabUtility.SaveAsPrefabAsset(viewObject, PlayerEventLogViewPrefabPath);
@@ -371,7 +364,7 @@ namespace DungeonInn.Editor
                 return prefab != null ? prefab.GetComponent<WorldHudView>() : null;
             }
 
-            EnsureDirectory(WorldPrefabDirectory);
+            EnsureDirectory(GameUIPrefabDirectory);
             var viewObject = new GameObject("WorldHudView", typeof(RectTransform));
             viewObject.AddComponent<WorldHudView>();
             var savedPrefab = PrefabUtility.SaveAsPrefabAsset(viewObject, WorldHudViewPrefabPath);
@@ -863,12 +856,13 @@ namespace DungeonInn.Editor
             MarkAssetAddressable(settings, group, StairDownPropPrefabPath, "World/Prop/StairDown");
             MarkAssetAddressable(settings, group, ArrowProjectilePrefabPath, "World/Projectile/Arrow");
             MarkAssetAddressable(settings, group, ScytheAreaEffectPrefabPath, "World/AreaEffect/Scythe");
-            MarkAssetAddressable(settings, group, ActorStatusViewPrefabPath, "GameHUD/UI/ActorStatusView");
-            MarkAssetAddressable(settings, group, SelectedActorInspectorViewPrefabPath, "GameHUD/UI/SelectedActorInspectorView");
-            MarkAssetAddressable(settings, group, PlayerEventLogViewPrefabPath, "GameHUD/UI/PlayerEventLogView");
-            MarkAssetAddressable(settings, group, WorldHudViewPrefabPath, "GameHUD/UI/WorldHudView");
-            MarkAssetAddressable(settings, group, InnStatusPanelViewPrefabPath, "GameHUD/UI/InnStatusPanelView");
-            MarkAssetAddressable(settings, group, MinimapViewPrefabPath, "GameHUD/UI/MinimapView");
+            MarkAssetAddressable(settings, group, ActorStatusViewPrefabPath, "GameHUD/ActorStatusView");
+            MarkAssetAddressable(settings, group, SelectedActorInspectorViewPrefabPath, "GameUI/SelectedActorInspectorView");
+            MarkAssetAddressable(settings, group, PlayerEventLogViewPrefabPath, "GameUI/PlayerEventLogView");
+            MarkAssetAddressable(settings, group, WorldHudViewPrefabPath, "GameUI/WorldHudView");
+            MarkAssetAddressable(settings, group, InnStatusPanelViewPrefabPath, "GameUI/InnStatusPanelView");
+            MarkAssetAddressable(settings, group, MinimapViewPrefabPath, "GameUI/MinimapView");
+            MarkAssetAddressable(settings, group, DamageNumberViewPrefabPath, "GameHUD/DamageNumberView");
             MarkAssetAddressable(settings, group, DungeonInfoWindowPrefabPath, "DungeonInfoWindow");
             MarkAssetAddressable(settings, group, GuildManagementWindowPrefabPath, "GuildManagementWindow");
             MarkAssetAddressable(settings, group, MarketWindowPrefabPath, "MarketWindow");
@@ -1292,5 +1286,27 @@ namespace DungeonInn.Editor
                 current = next;
             }
         }
+
+        static GameObject GetOrCreateChild(Transform parent, string childName, params Type[] componentTypes)
+        {
+            var existing = parent.Find(childName);
+            if (existing != null)
+            {
+                for (var index = 0; index < componentTypes.Length; index++)
+                {
+                    if (existing.GetComponent(componentTypes[index]) == null)
+                    {
+                        existing.gameObject.AddComponent(componentTypes[index]);
+                    }
+                }
+
+                return existing.gameObject;
+            }
+
+            var child = new GameObject(childName, componentTypes);
+            child.transform.SetParent(parent, false);
+            return child;
+        }
     }
 }
+
