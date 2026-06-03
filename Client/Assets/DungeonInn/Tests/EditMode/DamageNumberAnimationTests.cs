@@ -44,7 +44,7 @@ namespace DungeonInn.Tests.EditMode
 
                 Assert.That(view.transform.localScale.x, Is.EqualTo(0.64f).Within(0.001f));
                 Assert.That(view.transform.localScale.y, Is.EqualTo(0.64f).Within(0.001f));
-                Assert.That(view.transform.position.y, Is.EqualTo(2.16f).Within(0.001f));
+                Assert.That(view.transform.position.y, Is.EqualTo(1.4f).Within(0.001f));
             }
             finally
             {

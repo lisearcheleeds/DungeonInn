@@ -68,7 +68,10 @@ namespace DungeonInn.Editor.OneShot
             rootRect.sizeDelta = new Vector2(200f, 200f);
 
             var panel = CreatePanel(rootRect);
-            var rawImage = CreateMapImage(panel);
+            var mapRoot = CreateMapRoot(panel);
+            var rawImage = CreateMapImage(mapRoot);
+            var actorDotRoot = CreateActorDotRoot(mapRoot);
+            var actorDotTemplate = CreateActorDotTemplate(actorDotRoot);
             var view = minimapObject.GetComponent<MinimapView>();
             if (view == null)
             {
@@ -76,7 +79,10 @@ namespace DungeonInn.Editor.OneShot
             }
 
             var serializedView = new SerializedObject(view);
+            serializedView.FindProperty("mapRoot").objectReferenceValue = mapRoot;
             serializedView.FindProperty("mapImage").objectReferenceValue = rawImage;
+            serializedView.FindProperty("actorDotRoot").objectReferenceValue = actorDotRoot;
+            serializedView.FindProperty("actorDotTemplate").objectReferenceValue = actorDotTemplate;
             serializedView.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -94,6 +100,18 @@ namespace DungeonInn.Editor.OneShot
             return rectTransform;
         }
 
+        static RectTransform CreateMapRoot(RectTransform parent)
+        {
+            var rootObject = new GameObject("MapRoot", typeof(RectTransform));
+            var rectTransform = rootObject.GetComponent<RectTransform>();
+            rectTransform.SetParent(parent, false);
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = new Vector2(6f, 6f);
+            rectTransform.offsetMax = new Vector2(-6f, -6f);
+            return rectTransform;
+        }
+
         static RawImage CreateMapImage(RectTransform parent)
         {
             var imageObject = new GameObject("MapImage", typeof(RectTransform));
@@ -101,12 +119,41 @@ namespace DungeonInn.Editor.OneShot
             rectTransform.SetParent(parent, false);
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.one;
-            rectTransform.offsetMin = new Vector2(6f, 6f);
-            rectTransform.offsetMax = new Vector2(-6f, -6f);
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
             var rawImage = imageObject.AddComponent<RawImage>();
             rawImage.color = Color.white;
             rawImage.raycastTarget = false;
             return rawImage;
+        }
+
+        static RectTransform CreateActorDotRoot(RectTransform parent)
+        {
+            var dotRootObject = new GameObject("ActorDots", typeof(RectTransform));
+            var rectTransform = dotRootObject.GetComponent<RectTransform>();
+            rectTransform.SetParent(parent, false);
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+            return rectTransform;
+        }
+
+        static Image CreateActorDotTemplate(RectTransform parent)
+        {
+            var dotObject = new GameObject("ActorDot", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rectTransform = dotObject.GetComponent<RectTransform>();
+            rectTransform.SetParent(parent, false);
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.sizeDelta = new Vector2(8f, 8f);
+
+            var image = dotObject.GetComponent<Image>();
+            image.color = Color.blue;
+            image.raycastTarget = false;
+            dotObject.SetActive(false);
+            return image;
         }
 
         static void RegisterAddressable()

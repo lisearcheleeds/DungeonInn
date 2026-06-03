@@ -2,6 +2,9 @@ using System;
 using Cysharp.Threading.Tasks;
 using DungeonInn.Application.NewGame;
 using DungeonInn.Application.SaveLoad;
+#if DEBUG
+using DungeonInn.Debugging;
+#endif
 using DungeonInn.GameSession;
 using UnityEngine;
 using VContainer;
@@ -54,6 +57,9 @@ namespace DungeonInn.View.Scene.MainScene.Title
             titleView.SetContinueInteractable(getLatestSaveSlotUseCase.TryExecute(out _));
             titleView.HideSeedPanel();
             titleView.HideSlotPanel();
+#if DEBUG
+            PlayModeAutomation.RegisterTitleActions(ShowNewGameSeedPanel, StartNewGameFromSeed);
+#endif
         }
 
         void ShowNewGameSeedPanel()

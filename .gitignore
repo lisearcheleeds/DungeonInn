@@ -2,3 +2,4 @@
 .claude/
 claude-codex-communication.log
 codex_*.tmp
+Client/.uloop/outputs/

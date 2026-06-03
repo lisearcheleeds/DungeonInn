@@ -68,6 +68,7 @@ namespace DungeonInn.View.Scene.MainScene.World
             builder.RegisterEntryPoint<WorldActiveLayerProviderEntryPoint>();
 #if DEBUG
             builder.RegisterEntryPoint<WorldDebugGameLogPresenter>(Lifetime.Scoped);
+            builder.RegisterEntryPoint<WorldActorSelectionAutomation>(Lifetime.Scoped);
 #endif
         }
     }

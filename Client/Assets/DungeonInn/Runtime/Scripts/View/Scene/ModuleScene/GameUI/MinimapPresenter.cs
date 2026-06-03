@@ -11,37 +11,33 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
 {
     public sealed class MinimapPresenter : IDisposable
     {
-        const int ActorDotSize = 3;
-
         static readonly Color GroundWalkableColor = new(0.7f, 0.7f, 0.7f, 1f);
         static readonly Color GroundBlockedColor = new(0.15f, 0.15f, 0.15f, 1f);
         static readonly Color DungeonWalkableColor = new(0.5f, 0.45f, 0.3f, 1f);
         static readonly Color DungeonBlockedColor = new(0.1f, 0.1f, 0.1f, 1f);
-        static readonly Color StairUpColor = new(0.2f, 0.8f, 0.2f, 1f);
-        static readonly Color StairDownColor = new(0.8f, 0.2f, 0.2f, 1f);
-        static readonly Color AdventurerDotColor = Color.blue;
-        static readonly Color MonsterDotColor = Color.red;
-        static readonly Color OtherActorDotColor = Color.yellow;
 
         readonly IWorldMapViewDataProvider mapViewDataProvider;
         readonly IActorSelectionCandidateProvider actorSelectionCandidateProvider;
         readonly IActiveLayerProvider activeLayerProvider;
+        readonly IWorldHudCameraProvider worldHudCameraProvider;
         readonly GameUIAddressableViewFactory viewFactory;
         readonly GameUIModuleScene gameUIModuleScene;
         readonly List<ActorViewData> actorBuffer = new();
+        readonly List<Vector2> adventurerDotPositions = new();
 
         MinimapView minimapView;
         Texture2D mapTexture;
         Color[] basePixels;
-        Color[] workPixels;
         WorldMapLayerViewData currentLayerData;
         int? lastLayerId;
+        bool hasCurrentLayerData;
 
         [Inject]
         public MinimapPresenter(
             IWorldMapViewDataProvider mapViewDataProvider,
             IActorSelectionCandidateProvider actorSelectionCandidateProvider,
             IActiveLayerProvider activeLayerProvider,
+            IWorldHudCameraProvider worldHudCameraProvider,
             GameUIAddressableViewFactory viewFactory,
             GameUIModuleScene gameUIModuleScene)
         {
@@ -49,6 +45,8 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
             this.actorSelectionCandidateProvider =
                 actorSelectionCandidateProvider ?? throw new ArgumentNullException(nameof(actorSelectionCandidateProvider));
             this.activeLayerProvider = activeLayerProvider ?? throw new ArgumentNullException(nameof(activeLayerProvider));
+            this.worldHudCameraProvider =
+                worldHudCameraProvider ?? throw new ArgumentNullException(nameof(worldHudCameraProvider));
             this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
             this.gameUIModuleScene = gameUIModuleScene ?? throw new ArgumentNullException(nameof(gameUIModuleScene));
         }
@@ -79,7 +77,8 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
                 lastLayerId = currentLayerId.Value;
             }
 
-            UpdateActorDots(currentLayerId.Value);
+            minimapView.SetMapRotation(worldHudCameraProvider.CameraRotation.eulerAngles.y);
+            UpdateAdventurerDots(currentLayerId.Value);
         }
 
         public void Dispose()
@@ -97,9 +96,10 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
             }
 
             basePixels = null;
-            workPixels = null;
             actorBuffer.Clear();
+            adventurerDotPositions.Clear();
             lastLayerId = null;
+            hasCurrentLayerData = false;
         }
 
         void EnsureView()
@@ -115,6 +115,7 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
         void RebuildMapTexture(int layerId)
         {
             currentLayerData = mapViewDataProvider.GetLayerById(layerId);
+            hasCurrentLayerData = true;
             var width = currentLayerData.Width;
             var height = currentLayerData.Height;
             CreateTextureIfNeeded(width, height);
@@ -141,7 +142,6 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
                 if (basePixels == null || basePixels.Length != pixelCount)
                 {
                     basePixels = new Color[pixelCount];
-                    workPixels = new Color[pixelCount];
                 }
 
                 return;
@@ -158,54 +158,31 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
                 wrapMode = TextureWrapMode.Clamp
             };
             basePixels = new Color[pixelCount];
-            workPixels = new Color[pixelCount];
         }
 
-        void UpdateActorDots(int layerId)
+        void UpdateAdventurerDots(int layerId)
         {
-            if (mapTexture == null || basePixels == null || workPixels == null)
+            if (!hasCurrentLayerData)
             {
                 return;
             }
 
-            Array.Copy(basePixels, workPixels, basePixels.Length);
+            adventurerDotPositions.Clear();
             actorSelectionCandidateProvider.CopySelectionCandidatesTo(actorBuffer);
             foreach (var actor in actorBuffer)
             {
-                if (actor.Position.LayerId.Value != layerId)
+                if (actor.Position.LayerId.Value != layerId ||
+                    actor.BehaviorType != ActorBehaviorType.Adventurer)
                 {
                     continue;
                 }
 
-                var x = Mathf.Clamp((int)(actor.Position.X / GameConstants.MapCellWidthMeters), 0, currentLayerData.Width - 1);
-                var z = Mathf.Clamp((int)(actor.Position.Z / GameConstants.MapCellWidthMeters), 0, currentLayerData.Height - 1);
-                DrawActorDot(x, z, ResolveActorDotColor(actor.BehaviorType));
+                adventurerDotPositions.Add(new Vector2(
+                    Mathf.Clamp01(actor.Position.X / (currentLayerData.Width * GameConstants.MapCellWidthMeters)),
+                    Mathf.Clamp01(actor.Position.Z / (currentLayerData.Height * GameConstants.MapCellWidthMeters))));
             }
 
-            mapTexture.SetPixels(workPixels);
-            mapTexture.Apply(false);
-        }
-
-        void DrawActorDot(int centerX, int centerZ, Color color)
-        {
-            var radius = ActorDotSize / 2;
-            for (var z = centerZ - radius; z <= centerZ + radius; z++)
-            {
-                if (z < 0 || currentLayerData.Height <= z)
-                {
-                    continue;
-                }
-
-                for (var x = centerX - radius; x <= centerX + radius; x++)
-                {
-                    if (x < 0 || currentLayerData.Width <= x)
-                    {
-                        continue;
-                    }
-
-                    workPixels[z * currentLayerData.Width + x] = color;
-                }
-            }
+            minimapView.SetAdventurerDots(adventurerDotPositions);
         }
 
         static Color ResolveCellColor(WorldMapCellViewKind cellKind)
@@ -221,28 +198,10 @@ namespace DungeonInn.View.Scene.ModuleScene.GameUI
                 case WorldMapCellViewKind.DungeonBlocked:
                     return DungeonBlockedColor;
                 case WorldMapCellViewKind.StairUp:
-                    return StairUpColor;
                 case WorldMapCellViewKind.StairDown:
-                    return StairDownColor;
+                    return DungeonWalkableColor;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(cellKind));
-            }
-        }
-
-        static Color ResolveActorDotColor(ActorBehaviorType behaviorType)
-        {
-            switch (behaviorType)
-            {
-                case ActorBehaviorType.Adventurer:
-                    return AdventurerDotColor;
-                case ActorBehaviorType.Monster:
-                    return MonsterDotColor;
-                case ActorBehaviorType.None:
-                case ActorBehaviorType.GuildStaff:
-                case ActorBehaviorType.Pet:
-                    return OtherActorDotColor;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(behaviorType));
             }
         }
     }
